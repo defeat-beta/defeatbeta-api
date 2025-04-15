@@ -5,17 +5,19 @@ from typing import Optional, Dict, Any
 
 import duckdb
 
-from client.duckdb_conf import duckdb_settings
+from client.duckdb_conf import Configuration
 
 
 class DuckDBClient:
-    """
-    A robust DuckDB client for querying local and remote data with optimized configurations.
-    """
-    def __init__(self, http_proxy: Optional[str] = None):
+    def __init__(self, http_proxy: Optional[str] = None, config: Optional[Configuration] = None):
         self.connection = None
         self.http_proxy = http_proxy
-        logging.basicConfig(level=logging.INFO)
+        self.config = config if config is not None else Configuration()
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
         self.logger = logging.getLogger("defeat-beta")
         self._initialize_connection()
 
@@ -24,8 +26,9 @@ class DuckDBClient:
             self.connection = duckdb.connect(":memory:")
             self.logger.info("DuckDB connection initialized.")
 
+            duckdb_settings = self.config.get_duckdb_settings()
             if self.http_proxy:
-                duckdb_settings.append(f"SET http_proxy = '{self.http_proxy}';")
+                duckdb_settings.append(f"SET GLOBAL http_proxy = '{self.http_proxy}';")
 
             for query in duckdb_settings:
                 self.logger.info(f"duckdb settings: {query}")
@@ -36,9 +39,6 @@ class DuckDBClient:
 
     @contextmanager
     def _get_cursor(self):
-        """
-        Context manager for DuckDB cursor to ensure proper resource management.
-        """
         cursor = self.connection.cursor()
         try:
             yield cursor
@@ -63,9 +63,6 @@ class DuckDBClient:
             raise Exception(f"Query failed: {str(e)}")
 
     def close(self) -> None:
-        """
-        Close the DuckDB connection.
-        """
         if self.connection:
             self.connection.close()
             self.logger.info("DuckDB connection closed.")
