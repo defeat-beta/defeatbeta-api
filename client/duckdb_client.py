@@ -1,6 +1,7 @@
 import duckdb
 import logging
 import time
+import pandas as pd
 from contextlib import contextmanager
 from typing import Optional, Dict, Any
 from client.duckdb_conf import Configuration
@@ -42,15 +43,12 @@ class DuckDBClient:
         finally:
             cursor.close()
 
-    def query(self, sql: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    def query(self, sql: str) -> pd.DataFrame:
         self.logger.info(f"Executing query: {sql}")
         try:
             start_time = time.perf_counter()
             with self._get_cursor() as cursor:
-                if params:
-                    result = cursor.sql(sql, params=params).df()
-                else:
-                    result = cursor.sql(sql).df()
+                result = cursor.sql(sql).df()
                 end_time = time.perf_counter()
                 duration = end_time - start_time
                 self.logger.info(f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
