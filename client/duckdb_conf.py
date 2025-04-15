@@ -16,7 +16,8 @@ class Configuration:
         cache_httpfs_cache_block_size=1*1024*1024,
         cache_httpfs_glob_cache_entry_size=512,
         cache_httpfs_metadata_cache_entry_size=512,
-        cache_httpfs_file_handle_cache_entry_size=512
+        cache_httpfs_file_handle_cache_entry_size=512,
+        cache_httpfs_max_in_mem_cache_block_count=64
     ):
         configs = locals()
         configs.pop('self')
@@ -42,5 +43,6 @@ class Configuration:
             f"SET GLOBAL cache_httpfs_profile_type='temp'",
             f"SET GLOBAL cache_httpfs_glob_cache_entry_size={self.cache_httpfs_glob_cache_entry_size}",
             f"SET GLOBAL cache_httpfs_metadata_cache_entry_size={self.cache_httpfs_metadata_cache_entry_size}",
-            f"SET GLOBAL cache_httpfs_file_handle_cache_entry_size={self.cache_httpfs_file_handle_cache_entry_size}"
+            f"SET GLOBAL cache_httpfs_file_handle_cache_entry_size={self.cache_httpfs_file_handle_cache_entry_size}",
+            f"SET GLOBAL cache_httpfs_max_in_mem_cache_block_count={self.cache_httpfs_max_in_mem_cache_block_count}"
         ]

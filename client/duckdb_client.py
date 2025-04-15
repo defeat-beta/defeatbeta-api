@@ -28,7 +28,7 @@ class DuckDBClient:
                 duckdb_settings.append(f"SET GLOBAL http_proxy = '{self.http_proxy}';")
 
             for query in duckdb_settings:
-                self.logger.info(f"duckdb settings: {query}")
+                self.logger.info(f"DuckDB settings: {query}")
                 self.connection.execute(query)
         except Exception as e:
             self.logger.error(f"Failed to initialize connection: {str(e)}")
