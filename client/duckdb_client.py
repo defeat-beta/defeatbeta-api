@@ -1,12 +1,9 @@
+import duckdb
 import logging
 import time
 from contextlib import contextmanager
 from typing import Optional, Dict, Any
-
-import duckdb
-
 from client.duckdb_conf import Configuration
-
 
 class DuckDBClient:
     def __init__(self, http_proxy: Optional[str] = None, config: Optional[Configuration] = None):
@@ -15,10 +12,10 @@ class DuckDBClient:
         self.config = config if config is not None else Configuration()
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            format='%(asctime)s %(levelname)s %(name)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
         )
-        self.logger = logging.getLogger("defeat-beta")
+        self.logger = logging.getLogger(self.__class__.__name__)
         self._initialize_connection()
 
     def _initialize_connection(self) -> None:
@@ -69,13 +66,7 @@ class DuckDBClient:
             self.connection = None
 
     def __enter__(self):
-        """
-        Support for context manager to ensure connection is initialized.
-        """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Ensure connection is closed when exiting context.
-        """
         self.close()
