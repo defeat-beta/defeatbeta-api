@@ -1,6 +1,6 @@
 import requests
 
-from utils.const import TABLES
+from utils.const import tables
 
 
 class HuggingFaceClient:
@@ -22,8 +22,15 @@ class HuggingFaceClient:
             raise RuntimeError(f"Failed to fetch spec.json: {e}")
 
     def get_url_path(self, table: str):
-        if table not in TABLES:
-            raise ValueError(f"Table '{table}' is not valid. Please choose from: {', '.join(TABLES)}")
+        if table not in tables:
+            raise ValueError(f"Table '{table}' is not valid. Please choose from: {', '.join(tables)}")
 
         url = f"{self.base_url}/resolve/main/data/{table}.parquet"
         return url
+
+    def get_duckdb_query_sql(self, table: str, ticker: str):
+        if table not in tables:
+            raise ValueError(f"Table '{table}' is not valid. Please choose from: {', '.join(tables)}")
+
+        url = f"{self.base_url}/resolve/main/data/{table}.parquet"
+        return f"SELECT * FROM '{url}' WHERE symbol = '{ticker}'"

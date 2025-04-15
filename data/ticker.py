@@ -1,0 +1,37 @@
+from typing import Optional
+
+import pandas as pd
+
+from client.duckdb_client import DuckDBClient
+from client.duckdb_conf import Configuration
+from client.hugging_face_client import HuggingFaceClient
+from utils.const import stock_profile, stock_earning_calendar, stock_historical_eps
+
+
+class Ticker:
+    def __init__(self, ticker, http_proxy: Optional[str] = None, config: Optional[Configuration] = None):
+        self.ticker = ticker.upper()
+        self.http_proxy = http_proxy
+        self.duckdb_client = DuckDBClient(http_proxy=self.http_proxy, config=config)
+        self.huggingface_client = HuggingFaceClient()
+
+    def info(self) -> pd.DataFrame:
+        sql = self.huggingface_client.get_duckdb_query_sql(stock_profile, self.ticker)
+        return self.duckdb_client.query(sql)
+
+    def calendar(self) -> pd.DataFrame:
+        sql = self.huggingface_client.get_duckdb_query_sql(stock_earning_calendar, self.ticker)
+        return self.duckdb_client.query(sql)
+
+    def earnings(self) -> pd.DataFrame:
+        sql = self.huggingface_client.get_duckdb_query_sql(stock_historical_eps, self.ticker)
+        return self.duckdb_client.query(sql)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.duckdb_client.close()
+
+    def __del__(self):
+        self.duckdb_client.close()
