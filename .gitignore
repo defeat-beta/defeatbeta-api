@@ -1,10 +1,6 @@
 */target/*
 .idea/*
 */.idea/*
-*/financial-database.iml
-*/.idea/*
-*/financial-website.iml
-*/.idea/*
 */parquets/*
 */__pycache__/*
 *yarn.lock
