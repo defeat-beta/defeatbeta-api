@@ -1,6 +1,8 @@
 import psutil
 import re
 import os
+import platform
+import tempfile
 
 def validate_memory_limit(memory_limit: str) -> str:
     valid_units = {"KB", "MB", "GB", "TB", "KiB", "MiB", "GiB", "TiB"}
@@ -32,10 +34,10 @@ def validate_memory_limit(memory_limit: str) -> str:
     )
 
 def validate_httpfs_cache_directory(name: str) -> str:
-    if os.name == "nt":
-        temp_dir = os.environ.get("TEMP") or os.environ.get("TMP") or r"C:\Temp"
-    else:
+    if platform.system() in ("Darwin", "Linux"):
         temp_dir = "/tmp"
+    else:
+        temp_dir = tempfile.gettempdir()
     cache_dir = os.path.join(temp_dir, name)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
