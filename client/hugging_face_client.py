@@ -1,23 +1,23 @@
 import requests
 
-from data.const import TABLES
+from utils.const import TABLES
 
 
 class HuggingFaceClient:
     def __init__(self):
         self.base_url = "https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data"
 
-    def __get_latest_data_tag(self) -> str:
+    def get_data_update_time(self) -> str:
         url = f"{self.base_url}/resolve/main/spec.json"
         try:
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-            latest_data_tag = data.get("latest_data_tag", None)
-            if latest_data_tag:
-                return latest_data_tag
+            update_time = data.get("update_time", None)
+            if update_time:
+                return update_time
             else:
-                raise ValueError("latest_data_tag not found in the spec.json file")
+                raise ValueError("update_time not found in the spec.json file")
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"Failed to fetch spec.json: {e}")
 
@@ -25,6 +25,5 @@ class HuggingFaceClient:
         if table not in TABLES:
             raise ValueError(f"Table '{table}' is not valid. Please choose from: {', '.join(TABLES)}")
 
-        latest_data_tag = self.__get_latest_data_tag()
-        url = f"{self.base_url}/resolve/{latest_data_tag}/{table}/{table}.parquet"
+        url = f"{self.base_url}/resolve/main/data/{table}.parquet"
         return url
