@@ -20,10 +20,22 @@ class TestDuckDBClient(unittest.TestCase):
         result = self.ticker.info()
         print(result.to_string())
 
+    def test_officers(self):
+        result = self.ticker.officers()
+        print(result.to_string())
+
     def test_calendar(self):
         result = self.ticker.calendar()
         print(result.to_string())
 
     def test_earnings(self):
         result = self.ticker.earnings()
+        print(result.to_string())
+
+    def test_splits(self):
+        result = self.ticker.splits()
+        print(result.to_string())
+
+    def test_dividends(self):
+        result = self.ticker.dividends()
         print(result.to_string())
