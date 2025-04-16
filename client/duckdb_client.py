@@ -1,3 +1,5 @@
+import sys
+
 import duckdb
 import logging
 import time
@@ -7,14 +9,15 @@ from typing import Optional, Dict, Any
 from client.duckdb_conf import Configuration
 
 class DuckDBClient:
-    def __init__(self, http_proxy: Optional[str] = None, config: Optional[Configuration] = None):
+    def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
         self.connection = None
         self.http_proxy = http_proxy
         self.config = config if config is not None else Configuration()
         logging.basicConfig(
-            level=logging.INFO,
+            level=log_level,
             format='%(asctime)s %(levelname)s %(name)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            datefmt='%Y-%m-%d %H:%M:%S',
+            stream=sys.stdout
         )
         self.logger = logging.getLogger(self.__class__.__name__)
         self._initialize_connection()
@@ -22,14 +25,14 @@ class DuckDBClient:
     def _initialize_connection(self) -> None:
         try:
             self.connection = duckdb.connect(":memory:")
-            self.logger.info("DuckDB connection initialized.")
+            self.logger.debug("DuckDB connection initialized.")
 
             duckdb_settings = self.config.get_duckdb_settings()
             if self.http_proxy:
                 duckdb_settings.append(f"SET GLOBAL http_proxy = '{self.http_proxy}';")
 
             for query in duckdb_settings:
-                self.logger.info(f"DuckDB settings: {query}")
+                self.logger.debug(f"DuckDB settings: {query}")
                 self.connection.execute(query)
         except Exception as e:
             self.logger.error(f"Failed to initialize connection: {str(e)}")
@@ -44,14 +47,14 @@ class DuckDBClient:
             cursor.close()
 
     def query(self, sql: str) -> pd.DataFrame:
-        self.logger.info(f"Executing query: {sql}")
+        self.logger.debug(f"Executing query: {sql}")
         try:
             start_time = time.perf_counter()
             with self._get_cursor() as cursor:
                 result = cursor.sql(sql).df()
                 end_time = time.perf_counter()
                 duration = end_time - start_time
-                self.logger.info(f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
+                self.logger.debug(f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
                 return result
         except Exception as e:
             self.logger.error(f"Query failed: {str(e)}")
@@ -60,7 +63,7 @@ class DuckDBClient:
     def close(self) -> None:
         if self.connection:
             self.connection.close()
-            self.logger.info("DuckDB connection closed.")
+            self.logger.debug("DuckDB connection closed.")
             self.connection = None
 
     def __enter__(self):
