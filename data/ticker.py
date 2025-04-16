@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 import pandas as pd
@@ -6,14 +7,14 @@ from client.duckdb_client import DuckDBClient
 from client.duckdb_conf import Configuration
 from client.hugging_face_client import HuggingFaceClient
 from utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
-    stock_dividend_events
+    stock_dividend_events, stock_revenue_estimates
 
 
 class Ticker:
-    def __init__(self, ticker, http_proxy: Optional[str] = None, config: Optional[Configuration] = None):
+    def __init__(self, ticker, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
         self.ticker = ticker.upper()
         self.http_proxy = http_proxy
-        self.duckdb_client = DuckDBClient(http_proxy=self.http_proxy, config=config)
+        self.duckdb_client = DuckDBClient(http_proxy=self.http_proxy, log_level=log_level, config=config)
         self.huggingface_client = HuggingFaceClient()
     def data_time(self) -> str:
         return self.huggingface_client.get_data_update_time()
@@ -45,6 +46,11 @@ class Ticker:
 
     def dividends(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_dividend_events)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
+        return self.duckdb_client.query(sql)
+
+    def revenue_forecasts(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_revenue_estimates)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
 

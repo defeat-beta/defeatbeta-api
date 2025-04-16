@@ -1,3 +1,4 @@
+import logging
 import unittest
 
 from data.ticker import Ticker
@@ -39,3 +40,7 @@ class TestDuckDBClient(unittest.TestCase):
     def test_dividends(self):
         result = self.ticker.dividends()
         print(result.to_string())
+
+    def test_revenue_forecasts(self):
+        result = self.ticker.revenue_forecasts()
+        print(result.to_string(float_format="{:,}".format))
