@@ -5,7 +5,8 @@ import pandas as pd
 from client.duckdb_client import DuckDBClient
 from client.duckdb_conf import Configuration
 from client.hugging_face_client import HuggingFaceClient
-from utils.const import stock_profile, stock_earning_calendar, stock_historical_eps
+from utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
+    stock_dividend_events
 
 
 class Ticker:
@@ -18,7 +19,12 @@ class Ticker:
         return self.huggingface_client.get_data_update_time()
 
     def info(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_earning_calendar)
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
+        return self.duckdb_client.query(sql)
+
+    def officers(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_officers)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
 
@@ -28,7 +34,17 @@ class Ticker:
         return self.duckdb_client.query(sql)
 
     def earnings(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_earning_calendar)
+        url = self.huggingface_client.get_url_path(stock_historical_eps)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
+        return self.duckdb_client.query(sql)
+
+    def splits(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_split_events)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
+        return self.duckdb_client.query(sql)
+
+    def dividends(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_dividend_events)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
 
