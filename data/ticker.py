@@ -14,17 +14,22 @@ class Ticker:
         self.http_proxy = http_proxy
         self.duckdb_client = DuckDBClient(http_proxy=self.http_proxy, config=config)
         self.huggingface_client = HuggingFaceClient()
+    def data_time(self) -> str:
+        return self.huggingface_client.get_data_update_time()
 
     def info(self) -> pd.DataFrame:
-        sql = self.huggingface_client.get_duckdb_query_sql(stock_profile, self.ticker)
+        url = self.huggingface_client.get_url_path(stock_earning_calendar)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
 
     def calendar(self) -> pd.DataFrame:
-        sql = self.huggingface_client.get_duckdb_query_sql(stock_earning_calendar, self.ticker)
+        url = self.huggingface_client.get_url_path(stock_earning_calendar)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
 
     def earnings(self) -> pd.DataFrame:
-        sql = self.huggingface_client.get_duckdb_query_sql(stock_historical_eps, self.ticker)
+        url = self.huggingface_client.get_url_path(stock_earning_calendar)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
 
     def __enter__(self):
