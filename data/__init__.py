@@ -17,8 +17,8 @@ def _print_welcome():
         ascii_art = '\n'.join(line for line in ascii_lines if line.strip())
         colored_art = "\033[38;5;10m" + ascii_art + "\033[0m"
         print(f"{colored_art}\n"
-              f"\033[1;38;5;10m:: 📈Data Update Time 📈::\033[0m\t{data_update_time}\n"
-              f"\033[1;38;5;10m:: 📈Version          📈::\033[0m\t{__version__}")
+              f"\033[1;38;5;10m📈:: Data Update Time ::\033[0m\t{data_update_time}\n"
+              f"\033[1;38;5;10m📈:: Version          ::\033[0m\t{__version__}")
         _welcome_printed = True
 
 _print_welcome()
