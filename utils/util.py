@@ -1,8 +1,13 @@
+from typing import List, Dict
+import json
+
 import psutil
 import re
 import os
 import platform
 import tempfile
+
+from data.finance_item import FinanceItem
 
 def validate_memory_limit(memory_limit: str) -> str:
     valid_units = {"KB", "MB", "GB", "TB", "KiB", "MiB", "GiB", "TiB"}
@@ -41,3 +46,29 @@ def validate_httpfs_cache_directory(name: str) -> str:
     cache_dir = os.path.join(temp_dir, name)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
+
+
+def parse_finance_item_template(json_data: str) -> Dict[str, FinanceItem]:
+    data = json.loads(json_data)
+    template_array = data["FinancialTemplateStore"]["template"]
+
+    finance_template = {}
+    for item in _parse_finance_item_template(template_array):
+        finance_template[item.title] = item
+    return finance_template
+
+
+def _parse_finance_item_template(array: List[Dict]) -> List[FinanceItem]:
+    result = []
+    for item in array:
+        children = item.get("children")
+        finance_item = FinanceItem(
+            key=item["key"],
+            title=item["title"],
+            children=_parse_finance_item_template(children) if children else [],
+            spec=item["spec"],
+            ref=item["ref"],
+            industry=item.get("industry")
+        )
+        result.append(finance_item)
+    return result
