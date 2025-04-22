@@ -1,3 +1,4 @@
+from importlib.resources import files, open_text
 from typing import List, Dict
 import json
 
@@ -47,6 +48,29 @@ def validate_httpfs_cache_directory(name: str) -> str:
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
+def load_item_dictionary() -> Dict[str, str]:
+    text = files("data").joinpath('dictionary.json').read_text(encoding="utf-8")
+    data = json.loads(text)
+    return {key: str(value) for key, value in data.items()}
+
+def load_finance_template(template_name: str) -> Dict[str, FinanceItem]:
+    json_data = files("data").joinpath(template_name + ".json").read_text(encoding="utf-8")
+    return parse_finance_item_template(json_data)
+
+def parse_all_title_keys(items: List['FinanceItem'],
+                        finance_item_title_keys: Dict[str, str]) -> None:
+    for item in items:
+        finance_item_title_keys[item.get_title()] = item.get_key()
+        if not item.children_is_empty():
+            parse_all_title_keys(item.get_children(), finance_item_title_keys)
+
+
+def parse_all_key_titles(items: List['FinanceItem'],
+                         finance_item_key_titles: Dict[str, str]) -> None:
+    for item in items:
+        finance_item_key_titles[item.get_key()] = item.get_title()
+        if not item.children_is_empty():
+            parse_all_key_titles(item.get_children(), finance_item_key_titles)
 
 def parse_finance_item_template(json_data: str) -> Dict[str, FinanceItem]:
     data = json.loads(json_data)
@@ -66,8 +90,8 @@ def _parse_finance_item_template(array: List[Dict]) -> List[FinanceItem]:
             key=item["key"],
             title=item["title"],
             children=_parse_finance_item_template(children) if children else [],
-            spec=item["spec"],
-            ref=item["ref"],
+            spec=item.get("spec"),
+            ref=item.get("ref"),
             industry=item.get("industry")
         )
         result.append(finance_item)

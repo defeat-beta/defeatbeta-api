@@ -1,14 +1,23 @@
 import logging
-from typing import Optional
+from collections import defaultdict
+from decimal import Decimal
+from typing import Optional, List, Dict
 
 import pandas as pd
 
 from client.duckdb_client import DuckDBClient
 from client.duckdb_conf import Configuration
 from client.hugging_face_client import HuggingFaceClient
+from data.finance_item import FinanceItem
+from data.finance_value import FinanceValue
+from data.income_statement import IncomeStatement
+from data.print_visitor import PrintVisitor
+from data.stock_statement import StockStatement
+from utils.case_insensitive_dict import CaseInsensitiveDict
 from utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
-    stock_prices
+    stock_prices, stock_statement, income_statement, balance_sheet, cash_flow
+from utils.util import load_finance_template, parse_all_title_keys
 
 
 class Ticker:
@@ -72,6 +81,72 @@ class Ticker:
         url = self.huggingface_client.get_url_path(stock_prices)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
+
+    def statement(self, finance_type: str, period_type: str) -> str:
+        info = self.info()
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and finance_type = '{finance_type}' and period_type = '{period_type}'"
+        df = self.duckdb_client.query(sql)
+        stock_statements = self.__dataframe_to_stock_statements__(df=df)
+        template = load_finance_template(income_statement)
+        finance_values_map = self.__get_finance_values_map__(statements=stock_statements, finance_template=template)
+        if finance_type == income_statement:
+            stmt = IncomeStatement(finance_template=template, income_finance_values=finance_values_map)
+            printer = PrintVisitor(info)
+            stmt.accept(printer)
+            return printer.get_table_string()
+        else:
+            raise ValueError(f"unknown finance type: {finance_type}")
+
+    @staticmethod
+    def __dataframe_to_stock_statements__(df: pd.DataFrame) -> List[StockStatement]:
+        statements = []
+
+        for _, row in df.iterrows():
+            try:
+                item_value = Decimal(str(row['item_value'])) if not pd.isna(row['item_value']) else None
+                statement = StockStatement(
+                    symbol=str(row['symbol']),
+                    report_date=str(row['report_date']),
+                    item_name=str(row['item_name']),
+                    item_value=item_value,
+                    finance_type=str(row['finance_type']),
+                    period_type=str(row['period_type'])
+                )
+                statements.append(statement)
+            except Exception as e:
+                print(f"Error processing row {row}: {str(e)}")
+                continue
+
+        return statements
+
+    @staticmethod
+    def __get_finance_values_map__(statements: List['StockStatement'],
+                               finance_template: Dict[str, 'FinanceItem']) -> Dict[str, List['FinanceValue']]:
+        finance_item_title_keys = CaseInsensitiveDict()
+        parse_all_title_keys(list(finance_template.values()), finance_item_title_keys)
+
+        finance_values = defaultdict(list)
+
+        for statement in statements:
+            period = "TTM" if statement.report_date == "TTM" else (
+                "3M" if statement.period_type == "quarterly" else "12M")
+            value = FinanceValue(
+                finance_key=statement.item_name,
+                report_date=statement.report_date,
+                report_value=statement.item_value,
+                period_type=period
+            )
+            finance_values[statement.item_name].append(value)
+
+        final_map = CaseInsensitiveDict()
+
+        for title, values in finance_values.items():
+            key = finance_item_title_keys.get(title)
+            if key is not None:
+                final_map[key] = values
+
+        return final_map
 
     def download_data_performance(self) -> pd.DataFrame:
         return self.duckdb_client.query(
