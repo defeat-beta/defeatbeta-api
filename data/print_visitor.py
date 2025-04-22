@@ -2,7 +2,6 @@ from typing import Dict, List, Optional
 from decimal import Decimal
 
 import pandas as pd
-from tabulate import tabulate  # 新增导入
 
 from data.finance_item import FinanceItem
 from data.finance_value import FinanceValue

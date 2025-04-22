@@ -3,7 +3,7 @@ import unittest
 
 from data import data_update_time
 from data.ticker import Ticker
-from utils.const import income_statement, quarterly, annual
+from utils.const import income_statement, quarterly, annual, balance_sheet, cash_flow
 
 
 class TestDuckDBClient(unittest.TestCase):
@@ -68,9 +68,25 @@ class TestDuckDBClient(unittest.TestCase):
         print(result)
 
     def test_statement_1(self):
-        result = self.ticker.statement(finance_type=income_statement, period_type=quarterly)
+        result = self.ticker._statement(finance_type=income_statement, period_type=quarterly)
         print(result)
 
     def test_statement_2(self):
-        result = self.ticker.statement(finance_type=income_statement, period_type=annual)
+        result = self.ticker._statement(finance_type=income_statement, period_type=annual)
+        print(result)
+
+    def test_statement_3(self):
+        result = self.ticker._statement(finance_type=balance_sheet, period_type=quarterly)
+        print(result)
+
+    def test_statement_4(self):
+        result = self.ticker._statement(finance_type=balance_sheet, period_type=annual)
+        print(result)
+
+    def test_statement_5(self):
+        result = self.ticker._statement(finance_type=cash_flow, period_type=quarterly)
+        print(result)
+
+    def test_statement_6(self):
+        result = self.ticker._statement(finance_type=cash_flow, period_type=annual)
         print(result)
