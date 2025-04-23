@@ -1,3 +1,4 @@
 # defeat-beta-api
 
-A more reliable alternative to Yahoo! Finance's public APIs for accessing market data.
+An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
+
