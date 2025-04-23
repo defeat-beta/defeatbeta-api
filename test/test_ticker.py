@@ -12,9 +12,7 @@ class TestDuckDBClient(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         result = cls.ticker.download_data_performance()
-        print(f"-------------- Download Data Performance ---------------")
-        print(result.to_string())
-        print(f"--------------------------------------------------------")
+        print(result)
         cls.ticker.__del__()
 
     def test_data_time(self):
