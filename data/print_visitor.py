@@ -9,7 +9,6 @@ from data.statement import Statement
 from data.statement_visitor import StatementVisitor
 from utils.util import load_item_dictionary
 
-
 class PrintVisitor(StatementVisitor):
     def __init__(self, info : pd.DataFrame):
         self.info = info

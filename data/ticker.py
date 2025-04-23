@@ -8,6 +8,7 @@ import pandas as pd
 from client.duckdb_client import DuckDBClient
 from client.duckdb_conf import Configuration
 from client.hugging_face_client import HuggingFaceClient
+from data import statement
 from data.balance_sheet import BalanceSheet
 from data.finance_item import FinanceItem
 from data.finance_value import FinanceValue
@@ -84,22 +85,22 @@ class Ticker:
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
         return self.duckdb_client.query(sql)
 
-    def quarterly_income_statement(self) -> str:
+    def quarterly_income_statement(self) -> statement:
         return self._statement(income_statement, quarterly)
 
-    def annual_income_statement(self) -> str:
+    def annual_income_statement(self) -> statement:
         return self._statement(income_statement, annual)
 
-    def quarterly_balance_sheet(self) -> str:
+    def quarterly_balance_sheet(self) -> statement:
         return self._statement(balance_sheet, quarterly)
 
-    def annual_balance_sheet(self) -> str:
+    def annual_balance_sheet(self) -> statement:
         return self._statement(balance_sheet, annual)
 
-    def quarterly_cash_flow(self) -> str:
+    def quarterly_cash_flow(self) -> statement:
         return self._statement(cash_flow, quarterly)
 
-    def annual_cash_flow(self) -> str:
+    def annual_cash_flow(self) -> statement:
         return self._statement(cash_flow, annual)
 
     def _statement(self, finance_type: str, period_type: str) -> Statement:
