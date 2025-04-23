@@ -183,10 +183,15 @@ class Ticker:
 
         return final_map
 
-    def download_data_performance(self) -> pd.DataFrame:
-        return self.duckdb_client.query(
+    def download_data_performance(self) -> str:
+        res = f"-------------- Download Data Performance ---------------"
+        res += f"\n"
+        res += self.duckdb_client.query(
             "SELECT * FROM cache_httpfs_cache_access_info_query()"
-        )
+        ).to_string()
+        res += f"\n"
+        res += f"--------------------------------------------------------"
+        return res
 
     def __enter__(self):
         return self
