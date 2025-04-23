@@ -5,6 +5,7 @@ import pandas as pd
 
 from data.finance_item import FinanceItem
 from data.finance_value import FinanceValue
+from data.statement import Statement
 from data.statement_visitor import StatementVisitor
 from utils.util import load_item_dictionary
 
@@ -15,12 +16,12 @@ class PrintVisitor(StatementVisitor):
         self.finance_item_describe = load_item_dictionary()
         self.table_data = []
         self.headers = []
-        self.current_row = 0
         self.parent_index = []
+        self.data = pd.DataFrame()
 
     def visit_title(self, fields: List[str]) -> None:
         self.headers = fields
-        self.current_row += 1
+        self.data = pd.DataFrame(columns=fields)
 
     def visit_row(self,
                   parent_item: Optional[FinanceItem],
@@ -58,34 +59,44 @@ class PrintVisitor(StatementVisitor):
                      "TOTAL_NON_CURRENT_LIABILITIES_NET_MINORITY_INTEREST" in self.parent_index)):
                 return
 
-        prefix = "  " * layer + ("+" if has_children else "")
+        prefix = " " * layer + ("+" if has_children else "")
         item_desc = self.finance_item_describe.get(item.get_title(), item.get_title())
 
         row_data = [prefix + item_desc]
+        frame = [item_desc]
 
         for v in values:
             if v is None:
                 row_data.append("*")
+                frame.append("*")
             else:
                 report_value = v.get_report_value()
                 if report_value is None:
                     row_data.append("*")
+                    frame.append("*")
                 else:
                     if report_value == Decimal(int(report_value)):
                         val = int(report_value)
                         if -1000 <= val <= 1000:
                             row_data.append(str(val))
+                            frame.append(str(val))
                         else:
                             row_data.append(f"{val // 1000:,}")
+                            frame.append(f"{val // 1000:,}")
                     else:
                         row_data.append(str(report_value))
+                        frame.append(str(report_value))
 
         if has_children:
             self.parent_index.append(item)
         self.table_data.append(row_data)
-        self.current_row += 1
+        self.data.loc[len(self.data)] = frame
 
-    def get_table_string(self) -> str:
+    def get_statement(self) -> Statement:
+        statement = Statement(self.data, self._get_table_string())
+        return statement
+
+    def _get_table_string(self) -> str:
         col_widths = [
             max(len(str(cell)) for cell in col)
             for col in zip(*self.table_data, self.headers)
