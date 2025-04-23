@@ -13,6 +13,7 @@ from data.finance_item import FinanceItem
 from data.finance_value import FinanceValue
 from data.income_statement import IncomeStatement
 from data.print_visitor import PrintVisitor
+from data.statement import Statement
 from data.stock_statement import StockStatement
 from utils.case_insensitive_dict import CaseInsensitiveDict
 from utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
@@ -101,7 +102,7 @@ class Ticker:
     def annual_cash_flow(self) -> str:
         return self._statement(cash_flow, annual)
 
-    def _statement(self, finance_type: str, period_type: str) -> str:
+    def _statement(self, finance_type: str, period_type: str) -> Statement:
         info = self.info()
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and finance_type = '{finance_type}' and period_type = '{period_type}'"
@@ -113,21 +114,21 @@ class Ticker:
             stmt = IncomeStatement(finance_template=template, income_finance_values=finance_values_map)
             printer = PrintVisitor(info)
             stmt.accept(printer)
-            return printer.get_table_string()
+            return printer.get_statement()
         elif finance_type == balance_sheet:
             template = load_finance_template(balance_sheet)
             finance_values_map = self._get_finance_values_map(statements=stock_statements, finance_template=template)
             stmt = BalanceSheet(finance_template=template, income_finance_values=finance_values_map)
             printer = PrintVisitor(info)
             stmt.accept(printer)
-            return printer.get_table_string()
+            return printer.get_statement()
         elif finance_type == cash_flow:
             template = load_finance_template(cash_flow)
             finance_values_map = self._get_finance_values_map(statements=stock_statements, finance_template=template)
             stmt = BalanceSheet(finance_template=template, income_finance_values=finance_values_map)
             printer = PrintVisitor(info)
             stmt.accept(printer)
-            return printer.get_table_string()
+            return printer.get_statement()
         else:
             raise ValueError(f"unknown finance type: {finance_type}")
 
