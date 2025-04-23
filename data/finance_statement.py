@@ -66,9 +66,6 @@ class FinanceStatement(ABC):
             ordered_values.append(found)
         return ordered_values
 
-    def get_columns(self) -> int:
-        return len(self.get_date()) + 1
-
     def _children_is_empty(self, item):
         for child in item.get_children():
             row = self._get_row(child)
