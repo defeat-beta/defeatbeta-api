@@ -69,24 +69,30 @@ class TestDuckDBClient(unittest.TestCase):
 
     def test_statement_1(self):
         result = self.ticker._statement(finance_type=income_statement, period_type=quarterly)
-        print(result)
+        print(result.get_table())
+        print(result.get_data().to_string())
 
     def test_statement_2(self):
         result = self.ticker._statement(finance_type=income_statement, period_type=annual)
-        print(result)
+        print(result.get_table())
+        print(result.get_data().to_string())
 
     def test_statement_3(self):
         result = self.ticker._statement(finance_type=balance_sheet, period_type=quarterly)
-        print(result)
+        print(result.get_table())
+        print(result.get_data().to_string())
 
     def test_statement_4(self):
         result = self.ticker._statement(finance_type=balance_sheet, period_type=annual)
-        print(result)
+        print(result.get_table())
+        print(result.get_data().to_string())
 
     def test_statement_5(self):
         result = self.ticker._statement(finance_type=cash_flow, period_type=quarterly)
-        print(result)
+        print(result.get_table())
+        print(result.get_data().to_string())
 
     def test_statement_6(self):
         result = self.ticker._statement(finance_type=cash_flow, period_type=annual)
-        print(result)
+        print(result.get_table())
+        print(result.get_data().to_string())

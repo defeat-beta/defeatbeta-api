@@ -44,7 +44,7 @@ class FinanceStatement(ABC):
                    items: List['FinanceItem'],
                    layer: int) -> None:
         for item in items:
-            if item.children_is_empty():
+            if self._children_is_empty(item):
                 row = self._get_row(item)
                 visitor.visit_row(parent_item, item, row, layer, False)
             else:
@@ -68,3 +68,10 @@ class FinanceStatement(ABC):
 
     def get_columns(self) -> int:
         return len(self.get_date()) + 1
+
+    def _children_is_empty(self, item):
+        for child in item.get_children():
+            row = self._get_row(child)
+            if row is not None:
+                return False
+        return True
