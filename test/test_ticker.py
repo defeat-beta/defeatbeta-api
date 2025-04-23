@@ -3,8 +3,6 @@ import unittest
 
 from data import data_update_time
 from data.ticker import Ticker
-from utils.const import income_statement, quarterly, annual, balance_sheet, cash_flow
-
 
 class TestDuckDBClient(unittest.TestCase):
     @classmethod

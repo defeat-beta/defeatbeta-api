@@ -7,6 +7,8 @@ import pandas as pd
 from contextlib import contextmanager
 from typing import Optional, Dict, Any
 from client.duckdb_conf import Configuration
+from data import data_update_time
+
 
 class DuckDBClient:
     def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
@@ -21,6 +23,7 @@ class DuckDBClient:
         )
         self.logger = logging.getLogger(self.__class__.__name__)
         self._initialize_connection()
+        self._validate_httpfs_cache()
 
     def _initialize_connection(self) -> None:
         try:
@@ -59,6 +62,21 @@ class DuckDBClient:
         except Exception as e:
             self.logger.error(f"Query failed: {str(e)}")
             raise Exception(f"Query failed: {str(e)}")
+
+
+    def _validate_httpfs_cache(self):
+        v = self._spec_version()
+        current_update_time = v['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
+        if current_update_time != data_update_time:
+            self.logger.debug(f"Current update time: {current_update_time}, Remote update time: {data_update_time}")
+            self.query(
+                "SELECT cache_httpfs_clear_cache()"
+            )
+
+    def _spec_version(self) -> pd.DataFrame:
+        return self.query(
+            "SELECT * FROM 'https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data/resolve/main/spec.json'"
+        )
 
     def close(self) -> None:
         if self.connection:
