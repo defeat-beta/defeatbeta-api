@@ -7,6 +7,7 @@ import re
 import os
 import platform
 import tempfile
+from __version__ import __version__
 
 from data.finance_item import FinanceItem
 
@@ -44,7 +45,7 @@ def validate_httpfs_cache_directory(name: str) -> str:
         temp_dir = "/tmp"
     else:
         temp_dir = tempfile.gettempdir()
-    cache_dir = os.path.join(temp_dir, name)
+    cache_dir = os.path.join(temp_dir, name, __version__)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
