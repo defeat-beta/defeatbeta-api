@@ -144,10 +144,3 @@ ticker.summary()
 ticker.ttm_eps()
 ```
 ![example_14.png](doc/img/example_14.png)
-
-
-
-
-
-
-
