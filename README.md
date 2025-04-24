@@ -46,3 +46,43 @@ ticker.info()
 ticker.officers()
 ```
 ![example_2.png](doc/img/example_2.png)
+
+**3. Get Stock Calendar**
+```python
+ticker.calendar()
+```
+![example_3.png](doc/img/example_3.png)
+
+**4. Get Stock Earnings**
+```python
+ticker.earnings()
+```
+![example_4.png](doc/img/example_4.png)
+
+**5. Get Stock Splits**
+```python
+ticker.splits()
+```
+![example_5.png](doc/img/example_5.png)
+
+**6. Get Stock Dividends**
+```python
+ticker.dividends()
+```
+![example_6.png](doc/img/example_6.png)
+
+**7. Get Stock Revenue Forecast**
+```python
+ticker.revenue_forecast()
+```
+![example_7.png](doc/img/example_7.png)
+
+**8. Get Stock Earnings Forecast**
+```python
+ticker.earnings_forecast()
+```
+![example_8.png](doc/img/example_8.png)
+
+
+
+
