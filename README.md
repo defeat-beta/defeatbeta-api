@@ -1,4 +1,4 @@
-# Defeat-Beta-API
+# Defeat Beta API
 
 An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
 
@@ -22,10 +22,10 @@ Python-native interface with full SQL support via DuckDB's optimized execution.
 
 ### Installation
 
-Install `defeat-beta-api` from PYPI using `pip`:
+Install `defeatbeta-api` from PYPI using `pip`:
 
 ``` {.sourceCode .bash}
-$ pip install defeat-beta-api
+$ pip install defeatbeta-api
 ```
 
 The list of changes can be found in the [Changelog](https://github.com/defeat-beta/defeatbeta-api/blob/main/CHANGELOG.rst)
