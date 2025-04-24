@@ -31,3 +31,18 @@ $ pip install defeat-beta-api
 The list of changes can be found in the [Changelog](https://github.com/defeat-beta/defeatbeta-api/blob/main/CHANGELOG.rst)
 
 **Usage**
+
+**1. Get Stock Info**
+
+```python
+from data.ticker import Ticker
+ticker = Ticker("TSLA")
+ticker.info()
+```
+![example_1.png](doc/img/example_1.png)
+
+**2. Get Stock Officers**
+```python
+ticker.officers()
+```
+![example_2.png](doc/img/example_2.png)
