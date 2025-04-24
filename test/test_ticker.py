@@ -4,7 +4,7 @@ import unittest
 from data import data_update_time
 from data.ticker import Ticker
 
-class TestDuckDBClient(unittest.TestCase):
+class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ticker = Ticker("BABA", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
