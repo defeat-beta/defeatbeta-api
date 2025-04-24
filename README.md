@@ -66,6 +66,7 @@ print(statement.pretty_table())
 ![example_11.png](doc/img/example_11.png)
 
 ```python
+# pandas.DataFrame
 ticker.quarterly_income_statement().df()
 ```
 ![example_12.png](doc/img/example_12.png)
