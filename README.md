@@ -6,17 +6,17 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 **Key features:**
 
-✅ **Reliable Data Source**  
-Pulls market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset - no yahoo-finance scraping.
+✅ **Reliable Data**  
+Sources market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset, bypassing Yahoo Finance scraping.
 
 ✅ **No Rate Limits**  
-Unlike Yahoo Finance's restrictive official API quotas, Hugging Face provides unfettered access.
-
-✅ **Python-First, SQL-Optimized**  
-Python API with DuckDB-backed SQL optimization for Hugging Face datasets - simple and easy to understand.
+Hugging Face's infrastructure provides guaranteed access without API throttling or quotas.
 
 ✅ **High Performance**  
-[DuckDB's OLAP engine](https://duckdb.org/) + [cache_httpfs](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extensions for low-latency analytics.
+[DuckDB's OLAP engine](https://duckdb.org/) + [cache_httpfs](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension delivers sub-second query latency.
+
+✅ **SQL-Compatible**  
+Python-native interface with full SQL support via DuckDB's optimized execution.
 
 ## Quickstart
 
