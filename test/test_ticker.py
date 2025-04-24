@@ -65,30 +65,30 @@ class TestTicker(unittest.TestCase):
 
     def test_statement_1(self):
         result = self.ticker.quarterly_income_statement()
-        print(result.get_table())
-        print(result.get_data().to_string())
+        print(result.pretty_table())
+        print(result.df().to_string())
 
     def test_statement_2(self):
         result = self.ticker.annual_income_statement()
-        print(result.get_table())
-        print(result.get_data().to_string())
+        print(result.pretty_table())
+        print(result.df().to_string())
 
     def test_statement_3(self):
         result = self.ticker.quarterly_balance_sheet()
-        print(result.get_table())
-        print(result.get_data().to_string())
+        print(result.pretty_table())
+        print(result.df().to_string())
 
     def test_statement_4(self):
         result = self.ticker.annual_balance_sheet()
-        print(result.get_table())
-        print(result.get_data().to_string())
+        print(result.pretty_table())
+        print(result.df().to_string())
 
     def test_statement_5(self):
         result = self.ticker.quarterly_cash_flow()
-        print(result.get_table())
-        print(result.get_data().to_string())
+        print(result.pretty_table())
+        print(result.df().to_string())
 
     def test_statement_6(self):
         result = self.ticker.annual_cash_flow()
-        print(result.get_table())
-        print(result.get_data().to_string())
+        print(result.pretty_table())
+        print(result.df().to_string())

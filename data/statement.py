@@ -6,8 +6,8 @@ class Statement:
         self.data = data
         self.table = content
 
-    def get_table(self):
+    def pretty_table(self):
         return self.table
 
-    def get_data(self):
+    def df(self):
         return self.data
