@@ -11,11 +11,11 @@ authors = [
 description = "An open-source alternative to Yahoo Finance's market data APIs with higher reliability."
 readme = "README.md"
 requires-python = ">=3.7"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
-]
+license = {text = "Apache-2.0"}
+packages = ["client", "data", "utils"]
+
+[tool.setuptools.package-data]
+"data" = ["*.json"]
 
 [project.urls]
 "Homepage" = "https://github.com/defeat-beta/defeatbeta-api"
