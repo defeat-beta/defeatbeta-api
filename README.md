@@ -43,20 +43,29 @@ ticker.price()
 **1. Get Stock Statement**
 
 ```python
+# get quarterly income_statement
 statement=ticker.quarterly_income_statement()
 print(statement.pretty_table())
 ```
 ![example_11.png](doc/img/example_11.png)
 
 ```python
-print(statement.df())
+ticker.quarterly_income_statement().df()
 ```
 ![example_12.png](doc/img/example_12.png)
 
 
 ```python
-ticker.annual_income_statement()
-ticker.annual_income_statement()
+# get annual income_statement
+statement=ticker.annual_income_statement()
+# get quarterly balance_sheet
+statement=ticker.quarterly_balance_sheet()
+# get annual balance_sheet
+statement=ticker.annual_balance_sheet()
+# get quarterly cash_flow
+statement=ticker.quarterly_cash_flow()
+# get annual cash_flow
+statement=ticker.annual_cash_flow()
 ```
 
 **2. Get Stock Info**
