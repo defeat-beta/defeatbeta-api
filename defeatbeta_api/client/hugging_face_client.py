@@ -2,7 +2,7 @@ import requests
 from typing import Dict, Any
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
-from utils.const import tables
+from defeatbeta_api.utils.const import tables
 
 
 class HuggingFaceClient:

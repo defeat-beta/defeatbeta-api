@@ -5,9 +5,9 @@ import logging
 import time
 import pandas as pd
 from contextlib import contextmanager
-from typing import Optional, Dict, Any
-from client.duckdb_conf import Configuration
-from data import data_update_time
+from typing import Optional
+from defeatbeta_api.client.duckdb_conf import Configuration
+from defeatbeta_api import data_update_time
 
 class DuckDBClient:
     def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):

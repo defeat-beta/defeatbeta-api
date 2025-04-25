@@ -3,11 +3,11 @@ from decimal import Decimal
 
 import pandas as pd
 
-from data.finance_item import FinanceItem
-from data.finance_value import FinanceValue
-from data.statement import Statement
-from data.statement_visitor import StatementVisitor
-from utils.util import load_item_dictionary
+from defeatbeta_api.data.finance_item import FinanceItem
+from defeatbeta_api.data.finance_value import FinanceValue
+from defeatbeta_api.data.statement import Statement
+from defeatbeta_api.data.statement_visitor import StatementVisitor
+from defeatbeta_api.utils.util import load_item_dictionary
 
 class PrintVisitor(StatementVisitor):
     def __init__(self, info : pd.DataFrame):

@@ -5,22 +5,22 @@ from typing import Optional, List, Dict
 
 import pandas as pd
 
-from client.duckdb_client import DuckDBClient
-from client.duckdb_conf import Configuration
-from client.hugging_face_client import HuggingFaceClient
-from data import statement
-from data.balance_sheet import BalanceSheet
-from data.finance_item import FinanceItem
-from data.finance_value import FinanceValue
-from data.income_statement import IncomeStatement
-from data.print_visitor import PrintVisitor
-from data.statement import Statement
-from data.stock_statement import StockStatement
-from utils.case_insensitive_dict import CaseInsensitiveDict
-from utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
+from defeatbeta_api.client.duckdb_client import DuckDBClient
+from defeatbeta_api.client.duckdb_conf import Configuration
+from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
+from defeatbeta_api.data import statement
+from defeatbeta_api.data.balance_sheet import BalanceSheet
+from defeatbeta_api.data.finance_item import FinanceItem
+from defeatbeta_api.data.finance_value import FinanceValue
+from defeatbeta_api.data.income_statement import IncomeStatement
+from defeatbeta_api.data.print_visitor import PrintVisitor
+from defeatbeta_api.data.statement import Statement
+from defeatbeta_api.data.stock_statement import StockStatement
+from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
+from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual
-from utils.util import load_finance_template, parse_all_title_keys
+from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys
 
 
 class Ticker:

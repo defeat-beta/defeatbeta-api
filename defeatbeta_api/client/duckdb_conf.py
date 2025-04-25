@@ -1,4 +1,4 @@
-from utils.util import validate_memory_limit, validate_httpfs_cache_directory
+from defeatbeta_api.utils.util import validate_memory_limit, validate_httpfs_cache_directory
 
 class Configuration:
     def __init__(

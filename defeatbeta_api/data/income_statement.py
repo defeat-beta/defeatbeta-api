@@ -1,10 +1,10 @@
 from typing import Dict, List
 
-from data.finance_item import FinanceItem
-from data.finance_statement import FinanceStatement
-from data.finance_value import FinanceValue
-from utils.case_insensitive_dict import CaseInsensitiveDict
-from utils.util import parse_all_key_titles
+from defeatbeta_api.data.finance_item import FinanceItem
+from defeatbeta_api.data.finance_statement import FinanceStatement
+from defeatbeta_api.data.finance_value import FinanceValue
+from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
+from defeatbeta_api.utils.util import parse_all_key_titles
 
 
 class IncomeStatement(FinanceStatement):
