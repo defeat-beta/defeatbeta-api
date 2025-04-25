@@ -4,7 +4,7 @@
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/v/defeatbeta-api.svg?maxAge=60%" alt="PyPi version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/status/defeatbeta-api.svg?maxAge=60" alt="PyPi status"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/dm/defeatbeta-api.svg?maxAge=2592000&label=installs&color=%23A16BF7" alt="PyPi downloads"></a>
-<a target="new" href="https://github.com/defeat-beat/defeatbeta-api"><img border=0 src="https://img.shields.io/github/stars/defeat-beta/defeatbeta-api.svg?style=social&label=Star&maxAge=60" alt="Star this repo"></a>
+<a target="new" href="https://github.com/defeat-beta/defeatbeta-api"><img border=0 src="https://img.shields.io/github/stars/defeat-beta/defeatbeta-api.svg?style=social&label=Star&maxAge=60" alt="Star this repo"></a>
 
 An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
 
