@@ -1,0 +1,15 @@
+name: Update TOC
+on: push
+jobs:
+  doctoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g doctoc
+      - run: doctoc doc/Example.md
+      - run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add doc/Example.md
+          git commit -m "docs: Update TOC [skip ci]"
+          git push
