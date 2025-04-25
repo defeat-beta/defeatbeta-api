@@ -9,8 +9,10 @@ from typing import Optional
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api import data_update_time
 
+
 class DuckDBClient:
-    def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
+    def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO,
+                 config: Optional[Configuration] = None):
         self.connection = None
         self.http_proxy = http_proxy
         self.config = config if config is not None else Configuration()
@@ -71,7 +73,8 @@ class DuckDBClient:
                 result = cursor.sql(sql).df()
                 end_time = time.perf_counter()
                 duration = end_time - start_time
-                self.logger.debug(f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
+                self.logger.debug(
+                    f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
                 return result
         except Exception as e:
             self.logger.error(f"Query failed: {str(e)}")

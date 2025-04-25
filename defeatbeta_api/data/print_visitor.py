@@ -9,8 +9,9 @@ from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.statement_visitor import StatementVisitor
 from defeatbeta_api.utils.util import load_item_dictionary
 
+
 class PrintVisitor(StatementVisitor):
-    def __init__(self, info : pd.DataFrame):
+    def __init__(self, info: pd.DataFrame):
         self.info = info
         self.finance_item_describe = load_item_dictionary()
         self.table_data = []
@@ -100,7 +101,6 @@ class PrintVisitor(StatementVisitor):
             max(len(str(cell)) for cell in col)
             for col in zip(*self.table_data, self.headers)
         ]
-
 
         separator = "|-" + "-+-".join("-" * w for w in col_widths) + "-|"
         lines = [separator]
