@@ -20,7 +20,7 @@ authors = [
 packages = ["defeatbeta_api"]
 
 [tool.setuptools.package-data]
-"defeatbeta_api/data" = ["*.json"]
+"defeatbeta_api" = ["data/*.json"]
 
 [project.urls]
 "Homepage" = "https://github.com/defeat-beta/defeatbeta-api"
