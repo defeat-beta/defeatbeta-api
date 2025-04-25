@@ -1,5 +1,3 @@
-from defeatbeta_api.client.duckdb_conf import Configuration
-
 # Advanced Usage
 
 ## Set Http Proxy
