@@ -1,5 +1,9 @@
 name: Update TOC
-on: push
+on:
+  push:
+    paths:
+      - 'doc/Example.md'
+
 jobs:
   doctoc:
     runs-on: ubuntu-latest
@@ -7,11 +11,20 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - run: npm install -g doctoc
-      - run: doctoc doc/Example.md
-      - run: |
+      - name: Install doctoc
+        run: npm install -g doctoc
+
+      - name: Update TOC
+        id: toc
+        run: |
+          doctoc doc/Example.md
+          echo "modified=$(git status --porcelain doc/Example.md | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Commit changes
+        if: steps.toc.outputs.modified == '1'
+        run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add doc/Example.md
-          git commit -m "docs: Update TOC [skip ci]"
+          git commit -m "docs: Auto-update TOC [skip ci]"
           git push
