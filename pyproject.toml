@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "defeatbeta-api"
-version = "0.0.1"
+version = {attr = "defeatbeta_api.__version__.__version__"}
 authors = [
-    {name = "bwzheng2010", email = "bwzheng2010@gmail.com"},
+    {name = {attr = "defeatbeta_api.__version__.__author__"}, email = {attr = "defeatbeta_api.__version__.__author_email__"}}
 ]
 description = "An open-source alternative to Yahoo Finance's market data APIs with higher reliability."
 readme = "README.md"
