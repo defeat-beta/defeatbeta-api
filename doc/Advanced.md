@@ -1,6 +1,9 @@
 # Advanced Usage
 
 ## Use SQL to Access Data
+
+SQL syntax reference: [DuckDB.org](https://duckdb.org/)
+
 ```python
 import defeatbeta_api
 import logging
