@@ -28,7 +28,7 @@ Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) u
 $ pip install defeatbeta-api
 ```
 
-The list of changes can be found in the [Changelog](https://github.com/defeat-beta/defeatbeta-api/blob/main/CHANGELOG.rst)
+The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ### Usage
 
