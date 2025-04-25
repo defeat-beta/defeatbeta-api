@@ -1,8 +1,8 @@
 import logging
 import unittest
 
-from client.duckdb_client import DuckDBClient
-from client.duckdb_conf import Configuration
+from defeatbeta_api.client.duckdb_client import DuckDBClient
+from defeatbeta_api.client.duckdb_client import Configuration
 
 
 class TestDuckDBClient(unittest.TestCase):

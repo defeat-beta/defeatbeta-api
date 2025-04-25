@@ -1,7 +1,7 @@
 import unittest
 
-from utils.util import load_finance_template
-from utils.const import income_statement
+from defeatbeta_api.utils.util import load_finance_template
+from defeatbeta_api.utils.const import income_statement
 
 
 class TestUtil(unittest.TestCase):

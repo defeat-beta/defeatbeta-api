@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
-from data.finance_item import FinanceItem
-from data.finance_value import FinanceValue
-from data.statement_visitor import StatementVisitor
+from defeatbeta_api.data.finance_item import FinanceItem
+from defeatbeta_api.data.finance_value import FinanceValue
+from defeatbeta_api.data.statement_visitor import StatementVisitor
 
 
 def _find_finance_value_by_date(values: List['FinanceValue'],

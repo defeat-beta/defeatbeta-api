@@ -1,4 +1,4 @@
-from importlib.resources import files, open_text
+from importlib.resources import files
 from typing import List, Dict
 import json
 
@@ -9,7 +9,7 @@ import platform
 import tempfile
 from __version__ import __version__
 
-from data.finance_item import FinanceItem
+from defeatbeta_api.data.finance_item import FinanceItem
 
 def validate_memory_limit(memory_limit: str) -> str:
     valid_units = {"KB", "MB", "GB", "TB", "KiB", "MiB", "GiB", "TiB"}
@@ -50,12 +50,12 @@ def validate_httpfs_cache_directory(name: str) -> str:
     return cache_dir
 
 def load_item_dictionary() -> Dict[str, str]:
-    text = files("data").joinpath('dictionary.json').read_text(encoding="utf-8")
+    text = files("defeatbeta_api.data").joinpath('dictionary.json').read_text(encoding="utf-8")
     data = json.loads(text)
     return {key: str(value) for key, value in data.items()}
 
 def load_finance_template(template_name: str) -> Dict[str, FinanceItem]:
-    json_data = files("data").joinpath(template_name + ".json").read_text(encoding="utf-8")
+    json_data = files("defeatbeta_api.data").joinpath(template_name + ".json").read_text(encoding="utf-8")
     return parse_finance_item_template(json_data)
 
 def parse_all_title_keys(items: List['FinanceItem'],
