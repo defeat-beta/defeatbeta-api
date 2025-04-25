@@ -1,8 +1,8 @@
 import logging
 import unittest
 
-from data import data_update_time
-from data.ticker import Ticker
+from defeatbeta_api import data_update_time
+from defeatbeta_api.data.ticker import Ticker
 
 class TestTicker(unittest.TestCase):
     @classmethod

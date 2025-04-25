@@ -1,5 +1,5 @@
 import pyfiglet
-from client.hugging_face_client import HuggingFaceClient
+from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from __version__ import __version__
 
 

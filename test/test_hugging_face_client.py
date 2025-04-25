@@ -1,6 +1,6 @@
 import unittest
 
-from client.hugging_face_client import HuggingFaceClient
+from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 
 class TestHuggingFaceClient(unittest.TestCase):
 
