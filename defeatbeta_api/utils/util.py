@@ -7,7 +7,7 @@ import re
 import os
 import platform
 import tempfile
-from __version__ import __version__
+from defeatbeta_api.__version__ import __version__
 
 from defeatbeta_api.data.finance_item import FinanceItem
 
