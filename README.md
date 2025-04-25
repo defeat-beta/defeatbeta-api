@@ -22,7 +22,7 @@ Python-native interface with full SQL support via DuckDB's optimized execution.
 
 ### Installation
 
-Install `defeatbeta-api` from PYPI using `pip`:
+Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) using `pip`:
 
 ``` {.sourceCode .bash}
 $ pip install defeatbeta-api
