@@ -29,7 +29,7 @@ version = {attr = "defeatbeta_api.__version__.__version__"}
 packages = ["defeatbeta_api"]
 
 [tool.setuptools.package-data]
-"defeatbeta_api" = ["data/*.json"]
+"defeatbeta_api" = ["**"]
 
 [project.urls]
 "Homepage" = "https://github.com/defeat-beta/defeatbeta-api"
