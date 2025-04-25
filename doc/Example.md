@@ -1,3 +1,29 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Main Usage:](#main-usage)
+  - [0. Stock Price](#0-stock-price)
+  - [1. Stock Statement](#1-stock-statement)
+    - [1.1 Quarterly Income Statement](#11-quarterly-income-statement)
+    - [1.2 Annual Income Statement](#12-annual-income-statement)
+    - [1.3 Quarterly Balance Sheet](#13-quarterly-balance-sheet)
+    - [1.4 Annual Balance Sheet](#14-annual-balance-sheet)
+    - [1.5 Quarterly Cash Flow](#15-quarterly-cash-flow)
+    - [1.6 Annual Cash Flow](#16-annual-cash-flow)
+  - [2. Stock Info](#2-stock-info)
+  - [3. Stock Officers](#3-stock-officers)
+  - [4. Stock Calendar](#4-stock-calendar)
+  - [5. Stock Earnings](#5-stock-earnings)
+  - [6. Stock Splits](#6-stock-splits)
+  - [7. Stock Dividends](#7-stock-dividends)
+  - [8. Stock Revenue Forecast](#8-stock-revenue-forecast)
+  - [9. Stock Earnings Forecast](#9-stock-earnings-forecast)
+  - [10. Stock Summary](#10-stock-summary)
+  - [11. Stock TTM EPS](#11-stock-ttm-eps)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 # Main Usage:
 ```markdown
