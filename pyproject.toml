@@ -4,23 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "defeatbeta-api"
-version = {attr = "defeatbeta_api.__version__.__version__"}
-authors = [
-    {name = {attr = "defeatbeta_api.__version__.__author__"}, email = {attr = "defeatbeta_api.__version__.__author_email__"}}
-]
+dynamic = ["version", "authors"]
 description = "An open-source alternative to Yahoo Finance's market data APIs with higher reliability."
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "Apache-2.0"}
+
+[tool.setuptools.dynamic]
+version = {attr = "defeatbeta_api.__version__.__version__"}
+authors = [
+    {name = {attr = "defeatbeta_api.__version__.__author__"}, email = {attr = "defeatbeta_api.__version__.__author_email__"}}
+]
 
 [tool.setuptools]
 packages = ["defeatbeta_api"]
 
 [tool.setuptools.package-data]
 "defeatbeta_api/data" = ["*.json"]
-
-[tool.setuptools.exclude-package-data]
-"*" = ["*.tests", "*.test", "test*", "doc*", "__pycache__*"]
 
 [project.urls]
 "Homepage" = "https://github.com/defeat-beta/defeatbeta-api"
