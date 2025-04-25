@@ -1,6 +1,7 @@
 from typing import List, Optional
 from dataclasses import dataclass
 
+
 @dataclass
 class FinanceItem:
     key: str
