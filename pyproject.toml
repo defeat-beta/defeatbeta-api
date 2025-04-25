@@ -9,12 +9,12 @@ description = "An open-source alternative to Yahoo Finance's market data APIs wi
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "Apache-2.0"}
+authors = [
+    {name = "bwzheng2010", email = "bwzheng2010@gmail.com"}
+]
 
 [tool.setuptools.dynamic]
 version = {attr = "defeatbeta_api.__version__.__version__"}
-authors = [
-    {name = {attr = "defeatbeta_api.__version__.__author__"}, email = {attr = "defeatbeta_api.__version__.__author_email__"}}
-]
 
 [tool.setuptools]
 packages = ["defeatbeta_api"]
