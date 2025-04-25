@@ -7,7 +7,7 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 **Key features:**
 
 ✅ **Reliable Data**  
-Sources market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset, bypassing Yahoo Finance scraping.
+Sources market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset, bypassing Yahoo scraping.
 
 ✅ **No Rate Limits**  
 Hugging Face's infrastructure provides guaranteed access without API throttling or quotas.
