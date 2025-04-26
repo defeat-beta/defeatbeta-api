@@ -77,10 +77,10 @@ class PrintVisitor(StatementVisitor):
                 else:
                     if -1000 <= report_value <= 1000:
                         row_data.append(str(report_value))
-                        frame.append(str(report_value))
+                        frame.append(report_value)
                     else:
                         row_data.append(f"{report_value // 1000:,}")
-                        frame.append(f"{report_value // 1000:,}")
+                        frame.append(report_value)
         if has_children:
             self.parent_index.append(item)
         self.table_data.append(row_data)
