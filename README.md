@@ -32,7 +32,7 @@ Python-native interface with full SQL support via DuckDB's optimized execution.
 
 **2. Efficient data format:** It uses the Parquet format, supporting flexible SQL queries via DuckDB.
 
-**3. High-performance caching:** Data is stored remotely on Hugging Face but leverages CACHE_HTTPFS for local disk caching, ensuring excellent performance.
+**3. High-performance caching:** Data is stored remotely on Hugging Face but leverages cache_httpfs for local disk caching, ensuring excellent performance.
 
 **Disadvantages compared to yfinance:**
 
