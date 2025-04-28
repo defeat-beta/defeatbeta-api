@@ -36,7 +36,7 @@ Python-native interface with full SQL support via DuckDB's optimized execution.
 
 **Disadvantages compared to `yfinance`:**
 
-**Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike yfinance.
+**Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike `yfinance`.
 
 ## Quickstart
 
