@@ -9,7 +9,7 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 ## Introduction
 
-#### Key features:
+### Key features:
 
 ✅ **Reliable Data**  
 Sources market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset, bypassing Yahoo scraping.
@@ -23,7 +23,7 @@ Hugging Face's infrastructure provides guaranteed access without API throttling 
 ✅ **SQL-Compatible**  
 Python-native interface with full SQL support via DuckDB's optimized execution.
 
-#### How it compares to yfinance:
+### How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
 
 **Advantages over yfinance:**
