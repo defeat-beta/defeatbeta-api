@@ -27,15 +27,15 @@ Python-native interface with full SQL support via DuckDB's optimized execution.
 
 **Advantages over yfinance:**
 
-1. No rate limits: defeat-beta avoids Yahoo Finance’s real-time rate limit by fetching data periodically (typically once a week) and uploading it to Hugging Face.
+**1. No rate limits:** defeat-beta avoids Yahoo Finance’s real-time rate limit by fetching data periodically (typically once a week) and uploading it to Hugging Face.
 
-2. Efficient data format: It uses the Parquet format, supporting flexible SQL queries via DuckDB.
+**2. Efficient data format:** It uses the Parquet format, supporting flexible SQL queries via DuckDB.
 
-3. High-performance caching: Data is stored remotely on Hugging Face but leverages CACHE_HTTPFS for local disk caching, ensuring excellent performance.
+**3. High-performance caching:** Data is stored remotely on Hugging Face but leverages CACHE_HTTPFS for local disk caching, ensuring excellent performance.
 
 **Disadvantages compared to yfinance:**
 
-Non-real-time data: defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike yfinance.
+**Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike yfinance.
 
 ## Quickstart
 
