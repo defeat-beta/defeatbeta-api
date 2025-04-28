@@ -31,59 +31,37 @@ class Ticker:
         self.huggingface_client = HuggingFaceClient()
 
     def info(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_profile)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_profile)
 
     def officers(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_officers)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_officers)
 
     def calendar(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_earning_calendar)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_earning_calendar)
 
     def earnings(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_historical_eps)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_historical_eps)
 
     def splits(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_split_events)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_split_events)
 
     def dividends(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_dividend_events)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_dividend_events)
 
     def revenue_forecast(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_revenue_estimates)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_revenue_estimates)
 
     def earnings_forecast(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_earning_estimates)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_earning_estimates)
 
     def summary(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_summary)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_summary)
 
     def ttm_eps(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_tailing_eps)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_tailing_eps)
 
     def price(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_prices)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
-        return self.duckdb_client.query(sql)
+        return self._query_data(stock_prices)
 
     def quarterly_income_statement(self) -> statement:
         return self._statement(income_statement, quarterly)
@@ -102,6 +80,11 @@ class Ticker:
 
     def annual_cash_flow(self) -> statement:
         return self._statement(cash_flow, annual)
+
+    def _query_data(self, table_name: str) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(table_name)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
+        return self.duckdb_client.query(sql)
 
     def _statement(self, finance_type: str, period_type: str) -> Statement:
         info = self.info()
