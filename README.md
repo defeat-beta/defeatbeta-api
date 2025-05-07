@@ -44,12 +44,12 @@ Python-native interface with full SQL support via DuckDB's optimized execution.
 
 Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) using `pip`:
 
-#### MacOS / Linux
+**MacOS / Linux**
 ``` {.sourceCode .bash}
 $ pip install defeatbeta-api
 ```
 
-#### Windows
+**Windows**
 > ⚠️ Windows support requires WSL/Docker Due to dependencies on cache_httpfs (unsupported natively on Windows):
 
 Option 1: WSL (Recommended)
