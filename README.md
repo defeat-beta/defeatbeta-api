@@ -1,6 +1,6 @@
 # Defeat Beta API
 
-<a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/badge/python-3.7+-blue.svg?style=flat" alt="Python version"></a>
+<a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/badge/python-3.9+-blue.svg?style=flat" alt="Python version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/v/defeatbeta-api.svg?maxAge=60%" alt="PyPi version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/dm/defeatbeta-api.svg?maxAge=2592000&label=installs" alt="PyPi downloads"></a>
 <a target="new" href="https://github.com/defeat-beta/defeatbeta-api"><img border=0 src="https://img.shields.io/github/stars/defeat-beta/defeatbeta-api.svg?style=social&label=Star&maxAge=60" alt="Star this repo"></a>
@@ -44,8 +44,26 @@ Python-native interface with full SQL support via DuckDB's optimized execution.
 
 Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) using `pip`:
 
+#### MacOS / Linux
 ``` {.sourceCode .bash}
 $ pip install defeatbeta-api
+```
+
+#### Windows
+> ⚠️ Windows support requires WSL/Docker Due to dependencies on cache_httpfs (unsupported natively on Windows):
+
+Option 1: WSL (Recommended)
+1. Install [WSL](https://ubuntu.com/desktop/wsl)
+2. In WSL terminal:
+``` {.sourceCode .bash}
+$ pip install defeatbeta-api
+```
+
+Option 2: Docker
+1. Install [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+2. Run in Linux container:
+``` {.sourceCode .bash}
+docker run -it python:latest pip install defeatbeta-api
 ```
 
 The list of changes can be found in the [Changelog](CHANGELOG.rst)
