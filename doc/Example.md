@@ -26,20 +26,6 @@
 
 
 # Main Usage:
-```markdown
-0. Stock Price
-1. Stock Statement
-2. Stock Info 
-3. Stock Officers 
-4. Stock Calendar 
-5. Stock Earnings 
-6. Stock Splits 
-7. Stock Dividends 
-8. Stock Revenue Forecast 
-9. Stock Earnings Forecast 
-10. Stock Summary 
-11. Stock TTM EPS
-```
 
 ## 0. Stock Price
 
