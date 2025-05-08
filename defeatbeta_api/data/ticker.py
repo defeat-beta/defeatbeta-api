@@ -104,7 +104,6 @@ class Ticker:
         pe_data['ttm_pe'] = round(pe_data['close'] / pe_data['tailing_eps'], 2)
         pe_data = pe_data[pe_data['ttm_pe'].notna() & np.isfinite(pe_data['ttm_pe'])]
         pe_data = pe_data.sort_values('report_date', ascending=False)
-        result_df = pd.DataFrame(columns=['report_date', 'ttm_pe', 'price', 'ttm_eps'])
         latest_eps = pe_data.iloc[0]['tailing_eps']
         current_pe = round(latest_price_data['close'] / latest_eps, 2)
         result_data = {
