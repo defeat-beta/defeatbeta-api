@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import Optional, List, Dict
 
 import pandas as pd
+import numpy as np
 
 from defeatbeta_api.client.duckdb_client import DuckDBClient
 from defeatbeta_api.client.duckdb_conf import Configuration
@@ -80,6 +81,43 @@ class Ticker:
 
     def annual_cash_flow(self) -> statement:
         return self._statement(cash_flow, annual)
+
+    def ttm_pe(self) -> pd.DataFrame:
+        price_url = self.huggingface_client.get_url_path(stock_prices)
+        price_sql = f"SELECT * FROM '{price_url}' WHERE symbol = '{self.ticker}'"
+        price_df = self.duckdb_client.query(price_sql)
+        eps_url = self.huggingface_client.get_url_path(stock_tailing_eps)
+        eps_sql = f"SELECT * FROM '{eps_url}' WHERE symbol = '{self.ticker}'"
+        eps_df = self.duckdb_client.query(eps_sql)
+
+        price_df['report_date'] = pd.to_datetime(price_df['report_date'])
+        eps_df['report_date'] = pd.to_datetime(eps_df['report_date'])
+        latest_trade_date = price_df['report_date'].max()
+        latest_price_data = price_df[price_df['report_date'] == latest_trade_date].iloc[0]
+        pe_data = pd.merge_asof(
+            eps_df.sort_values('report_date'),
+            price_df.sort_values('report_date'),
+            left_on='report_date',
+            right_on='report_date',
+            direction='forward'
+        )
+        pe_data['ttm_pe'] = round(pe_data['close'] / pe_data['tailing_eps'], 2)
+        pe_data = pe_data[pe_data['ttm_pe'].notna() & np.isfinite(pe_data['ttm_pe'])]
+        pe_data = pe_data.sort_values('report_date', ascending=False)
+        result_df = pd.DataFrame(columns=['report_date', 'ttm_pe', 'price', 'ttm_eps'])
+        latest_eps = pe_data.iloc[0]['tailing_eps']
+        current_pe = round(latest_price_data['close'] / latest_eps, 2)
+        result_df = pd.concat([
+            result_df,
+            pd.DataFrame({'report_date': [latest_price_data['report_date'].strftime('%Y-%m-%d')], 'ttm_pe': [current_pe], 'price': [latest_price_data['close']], 'ttm_eps': [latest_eps]}),
+        ], ignore_index=True)
+        for i, row in enumerate(pe_data.iloc[:].itertuples(), 1):
+            date_str = row.report_date.strftime('%Y-%m-%d')
+            result_df = pd.concat([
+                result_df,
+                pd.DataFrame({'report_date': date_str, 'ttm_pe': [row.ttm_pe], 'price': [row.close], 'ttm_eps': [row.tailing_eps]}),
+            ], ignore_index=True)
+        return result_df
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)

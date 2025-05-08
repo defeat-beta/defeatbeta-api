@@ -92,3 +92,7 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.annual_cash_flow()
         print(result.pretty_table())
         print(result.df().to_string())
+
+    def test_ttm_pe(self):
+        result = self.ticker.ttm_pe()
+        print(result.to_string())
