@@ -107,17 +107,24 @@ class Ticker:
         result_df = pd.DataFrame(columns=['report_date', 'ttm_pe', 'price', 'ttm_eps'])
         latest_eps = pe_data.iloc[0]['tailing_eps']
         current_pe = round(latest_price_data['close'] / latest_eps, 2)
-        result_df = pd.concat([
-            result_df,
-            pd.DataFrame({'report_date': [latest_price_data['report_date'].strftime('%Y-%m-%d')], 'ttm_pe': [current_pe], 'price': [latest_price_data['close']], 'ttm_eps': [latest_eps]}),
-        ], ignore_index=True)
-        for i, row in enumerate(pe_data.iloc[:].itertuples(), 1):
-            date_str = row.report_date.strftime('%Y-%m-%d')
-            result_df = pd.concat([
-                result_df,
-                pd.DataFrame({'report_date': date_str, 'ttm_pe': [row.ttm_pe], 'price': [row.close], 'ttm_eps': [row.tailing_eps]}),
-            ], ignore_index=True)
-        return result_df
+        result_data = {
+            'report_date': [],
+            'ttm_pe': [],
+            'price': [],
+            'ttm_eps': []
+        }
+
+        result_data['report_date'].append(latest_price_data['report_date'].strftime('%Y-%m-%d'))
+        result_data['ttm_pe'].append(current_pe)
+        result_data['price'].append(latest_price_data['close'])
+        result_data['ttm_eps'].append(latest_eps)
+        for row in pe_data.itertuples():
+            result_data['report_date'].append(row.report_date.strftime('%Y-%m-%d'))
+            result_data['ttm_pe'].append(row.ttm_pe)
+            result_data['price'].append(row.close)
+            result_data['ttm_eps'].append(row.tailing_eps)
+
+        return pd.DataFrame(result_data)
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
