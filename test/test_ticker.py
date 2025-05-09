@@ -13,7 +13,6 @@ class TestTicker(unittest.TestCase):
     def tearDownClass(cls):
         result = cls.ticker.download_data_performance()
         print(result)
-        cls.ticker.__del__()
 
     def test_data_time(self):
         result = data_update_time
