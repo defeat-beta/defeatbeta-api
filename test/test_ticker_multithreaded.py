@@ -13,7 +13,6 @@ class TestTickerMultithreaded(unittest.TestCase):
             print(f"Thread {threading.current_thread().name} result:\n{result.to_string()}")
             result = ticker.download_data_performance()
             print(result)
-            ticker.__del__()
 
         threads = []
         for i in range(10):
