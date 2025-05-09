@@ -9,6 +9,18 @@ from typing import Optional
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api import data_update_time
 
+from threading import Lock
+
+_instance = None
+_lock = Lock()
+
+def get_duckdb_client(http_proxy=None, log_level=None, config=None):
+    global _instance
+    if _instance is None:
+        with _lock:
+            if _instance is None:
+                _instance = DuckDBClient(http_proxy, log_level, config)
+    return _instance
 
 class DuckDBClient:
     def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO,
