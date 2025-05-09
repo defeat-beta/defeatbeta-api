@@ -219,12 +219,3 @@ class Ticker:
         res += f"\n"
         res += f"--------------------------------------------------------"
         return res
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.duckdb_client.close()
-
-    def __del__(self):
-        self.duckdb_client.close()
