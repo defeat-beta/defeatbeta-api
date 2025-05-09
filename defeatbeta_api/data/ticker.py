@@ -6,7 +6,7 @@ from typing import Optional, List, Dict
 import pandas as pd
 import numpy as np
 
-from defeatbeta_api.client.duckdb_client import DuckDBClient
+from defeatbeta_api.client.duckdb_client import get_duckdb_client
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.data import statement
@@ -28,7 +28,7 @@ class Ticker:
     def __init__(self, ticker, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
         self.ticker = ticker.upper()
         self.http_proxy = http_proxy
-        self.duckdb_client = DuckDBClient(http_proxy=self.http_proxy, log_level=log_level, config=config)
+        self.duckdb_client = get_duckdb_client(http_proxy=self.http_proxy, log_level=log_level, config=config)
         self.huggingface_client = HuggingFaceClient()
 
     def info(self) -> pd.DataFrame:
