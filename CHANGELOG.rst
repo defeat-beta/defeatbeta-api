@@ -9,3 +9,7 @@ Change Log
 -------
 - Support Historical TTM PE
 - Fix Bugs
+
+0.0.6
+-------
+- Support Multi-Thread Mode
