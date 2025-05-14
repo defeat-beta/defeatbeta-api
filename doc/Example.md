@@ -22,6 +22,7 @@
   - [10. Stock Summary](#10-stock-summary)
   - [11. Stock TTM EPS](#11-stock-ttm-eps)
   - [12. Stock TTM PE](#12-stock-ttm-pe)
+  - [12. Stock Quarterly Gross Margin](#12-stock-quarterly-gross-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
