@@ -1,15 +1,18 @@
 Change Log
 ===========
-
-0.0.4
+0.0.7
 -------
-- Initial release (alpha)
+- Support Quarterly Gross Margin %
+
+0.0.6
+-------
+- Support Multi-Thread Mode
 
 0.0.5
 -------
 - Support Historical TTM PE
 - Fix Bugs
 
-0.0.6
+0.0.4
 -------
-- Support Multi-Thread Mode
+- Initial release (alpha)

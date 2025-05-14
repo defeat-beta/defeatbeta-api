@@ -125,6 +125,28 @@ class Ticker:
 
         return pd.DataFrame(result_data)
 
+    def quarterly_gross_margin(self) -> pd.DataFrame:
+        quarterly_gross_margin_sql = f"""
+            SELECT symbol,
+                   report_date,
+                   gross_profit,
+                   total_revenue,
+                   round(gross_profit/total_revenue, 2) as gross_margin
+            from (
+                SELECT
+                     symbol,
+                     report_date,
+                     MAX(CASE WHEN t1.item_name = 'gross_profit' THEN t1.item_value END)                   AS gross_profit,
+                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
+                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
+                  WHERE symbol = '{self.ticker}'
+                    AND report_date != 'TTM'
+                    AND item_name IN ('gross_profit', 'total_revenue')
+                    AND period_type = 'quarterly'
+                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
+            """
+        return self.duckdb_client.query(quarterly_gross_margin_sql)
+
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
