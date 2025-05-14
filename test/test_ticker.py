@@ -95,3 +95,7 @@ class TestTicker(unittest.TestCase):
     def test_ttm_pe(self):
         result = self.ticker.ttm_pe()
         print(result.to_string())
+
+    def test_quarterly_gross_margin(self):
+        result = self.ticker.quarterly_gross_margin()
+        print(result.to_string())

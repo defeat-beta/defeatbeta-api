@@ -903,3 +903,24 @@ ticker.ttm_pe()
 
 [64 rows x 4 columns]
 ```
+
+## 12. Stock Quarterly Gross Margin
+```python
+ticker.quarterly_gross_margin()
+```
+```text
+>>> ticker.quarterly_gross_margin()
+   symbol report_date  gross_profit  total_revenue  gross_margin
+0    TSLA  2022-06-30  4.234000e+09   1.693400e+10          0.25
+1    TSLA  2022-09-30           NaN            NaN           NaN
+2    TSLA  2022-12-31           NaN            NaN           NaN
+3    TSLA  2023-03-31           NaN            NaN           NaN
+4    TSLA  2023-06-30  4.533000e+09   2.492700e+10          0.18
+5    TSLA  2023-09-30  4.178000e+09   2.335000e+10          0.18
+6    TSLA  2023-12-31  4.438000e+09   2.516700e+10          0.18
+7    TSLA  2024-03-31  3.696000e+09   2.130100e+10          0.17
+8    TSLA  2024-06-30  4.578000e+09   2.550000e+10          0.18
+9    TSLA  2024-09-30  4.997000e+09   2.518200e+10          0.20
+10   TSLA  2024-12-31  4.179000e+09   2.570700e+10          0.16
+11   TSLA  2025-03-31  3.153000e+09   1.933500e+10          0.16
+```
