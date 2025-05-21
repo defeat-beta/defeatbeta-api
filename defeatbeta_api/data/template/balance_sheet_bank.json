@@ -1,0 +1,896 @@
+{
+  "FinancialTemplateStore": {
+    "template": [
+      {
+        "key": "TotalAssets",
+        "title": "TOTAL_ASSETS",
+        "spec": "Total assets is calculated as the sum of all short-term, long-term, and other assets. ",
+        "ref": "https://www.investopedia.com/terms/b/balancesheet.asp",
+        "children": [
+          {
+            "key": "CashCashEquivalentsAndFederalFundsSold",
+            "title": "CASH_CASH_EQUIVALENTS_AND_FEDERAL_FUNDS_SOLD",
+            "spec": "This item includes: Cash, Cash Equivalents, Federal Funds Sold",
+            "children": [
+              {
+                "key": "CashAndCashEquivalents",
+                "title": "CASH_AND_CASH_EQUIVALENTS",
+                "spec": "Cash and cash equivalents refers to the line item on the balance sheet that reports the value of a company's assets that are cash or can be converted into cash immediately. Cash equivalents include bank accounts and marketable securities, which are debt securities with maturities of less than 90 days. However, oftentimes cash equivalents do not include equity or stock holdings because they can fluctuate in value.",
+                "ref": "https://www.investopedia.com/terms/c/cashandcashequivalents.asp",
+                "children": [
+                  {
+                    "key": "CashFinancial",
+                    "title": "CASH",
+                    "spec": "Cash is money in the form of currency, which includes all bills, coins, and currency notes. A demand deposit is a type of account from which funds may be withdrawn at any time without having to notify the institution. Examples of demand deposit accounts include checking accounts and savings accounts. All demand account balances as of the date of the financial statements are included in cash totals.",
+                    "ref": "https://www.investopedia.com/terms/c/cashandcashequivalents.asp"
+                  },
+                  {
+                    "key": "CashEquivalents",
+                    "title": "CASH_EQUIVALENTS",
+                    "spec": "Cash equivalents are investments that can readily be converted into cash. The investment must be short-term, usually with a maximum investment duration of three months or less. If an investment matures in more than three months, it should be classified in the account named \"other investments.\" Cash equivalents should be highly liquid and easily sold on the market. The buyers of these investments should be easily accessible.",
+                    "ref": "https://www.investopedia.com/terms/c/cashequivalents.asp"
+                  },
+                  {
+                    "key": "CashAndDueFromBanks",
+                    "title": "CASH_AND_DUE_FROM_BANKS",
+                    "spec": "Cash And Due from Banks refers to the cash held by a company and deposits held in banks on behalf of the company. This asset includes cash balances in the company's bank accounts as well as deposits that have not been cleared or credited to the account yet. Cash And Due from Banks are typically the most liquid assets of a company and can be used for daily operations and emergency fund needs."
+                  },
+                  {
+                    "key": "InterestBearingDepositsAssets",
+                    "title": "INTEREST_BEARING_DEPOSITS_ASSETS",
+                    "spec": "Interest Bearing Deposits represents deposits that bear interest, such as savings accounts or time deposits. It includes: Savings accounts ,NOW accounts, Money market accounts, Passbook deposits, Time deposits, certificates of deposit."
+                  }
+                ]
+              },
+              {
+                "key": "RestrictedCashAndInvestments",
+                "title": "RESTRICTED_CASH_AND_INVESTMENTS",
+                "spec": "This item includes: Restricted Cash, Restricted Cash Equivalents and Restricted Investments",
+                "children": [
+                  {
+                    "key": "RestrictedCashAndCashEquivalents",
+                    "title": "RESTRICTED_CASH_AND_CASH_EQUIVALENTS",
+                    "spec": "Restricted cash, in contrast to unrestricted cash, is not freely available for a company to spend or invest. Restricted cash refers to money that is held for a specific purpose and thus not available to the company for immediate or general business use.<br><br>Restricted cash appears as a separate item from the cash and cash equivalents listing on a company's balance sheet. The reason for the cash being restricted is usually disclosed in the accompanying notes to the financial statements. Cash can be restricted for a number of reasons, including debt reduction and capital investments.",
+                    "ref": "https://www.investopedia.com/terms/r/restricted-cash.asp"
+                  },
+                  {
+                    "key": "RestrictedInvestments",
+                    "title": "RESTRICTED_INVESTMENTS",
+                    "spec": "\"Restricted Investments\" refer to investments held by the bank that are subject to certain restrictions or limitations, preventing them from being freely disposed of or converted into cash like other general investments. These restrictions may stem from legal regulations, regulatory requirements, contractual agreements, trust arrangements, or other compliance measures.<br><br>Restricted Investments may include restricted bonds, government securities, municipal bonds, debt securities with specific restrictions, securities from special purpose entities (SPVs), and so on. These investments are typically listed on the balance sheet, and the company will provide detailed explanations in its financial reports regarding the nature of these investments, the restrictions imposed, and their impact on the company's financial position."
+                  }
+                ]
+              },
+              {
+                "key": "MoneyMarketInvestments",
+                "title": "MONEY_MARKET_INVESTMENTS",
+                "spec": "Money Market Investments on the balance sheet refer to short-term, highly liquid investment instruments held by the bank. These instruments typically include short-term Treasury bills, commercial paper, short-term bonds, and other money market instruments. These instruments help the bank manage its short-term liquidity and investment needs while also generating interest income for the bank.",
+                "children": [
+                  {
+                    "key": "FederalFundsSoldAndSecuritiesPurchaseUnderAgreementsToResell",
+                    "title": "FEDERAL_FUNDS_SOLD_AND_SECURITIES_PURCHASE_UNDER_AGREEMENTS_TO_RESELL",
+                    "spec": "This item includes: Federal Funds Sold and Securities Purchase Under Agreements To Resell",
+                    "children": [
+                      {
+                        "key": "FederalFundsSold",
+                        "title": "FEDERAL_FUNDS_SOLD",
+                        "spec": "Federal Funds Sold refers to the federal funds that a commercial bank sells to other financial institutions. These funds are excess cash or reserves held by the commercial bank beyond the Federal Reserve requirements. This sale is done to earn interest income or manage liquidity.In the balance sheet, Federal Funds Sold is typically classified as an asset. This is because when a commercial bank sells federal funds to other financial institutions, it receives funds in return, making it an asset for the bank.",
+                        "ref": "https://www.investopedia.com/terms/f/federalfunds.asp"
+                      },
+                      {
+                        "key": "SecurityAgreeToBeResell",
+                        "title": "SECURITY_AGREE_TO_BE_RESELL",
+                        "spec": "\"Securities Purchase Under Agreements To Resell\" refers to securities that a company has purchased based on agreements specifying that these securities will be resold to the seller at a specified time in the future. This arrangement is typically categorized as part of investment assets and falls under financial derivative transactions. It is disclosed and explained in the relevant notes or disclosures in the financial statements, including details about the type of securities purchased, the agreed-upon resale time and price, and the impact on the company's financial position.",
+                        "ref": "https://www.investopedia.com/terms/p/pra.asp"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "FederalHomeLoanBankStock",
+            "title": "FEDERAL_HOME_LOAN_BANK_STOCK",
+            "spec": "Federal Home Loan Bank Stock is an investment listed on the balance sheet, representing the shares held by a company in a Federal Home Loan Bank. These shares are typically classified as investment assets because they represent ownership interests in the Federal Home Loan Bank.",
+            "ref": "https://www.investopedia.com/terms/f/fhlb.asp"
+          },
+          {
+            "key": "CustomerAcceptances",
+            "title": "CUSTOMER_ACCEPTANCES",
+            "spec": "Customer Acceptances refer to bills of exchange or promissory notes accepted by a bank on behalf of customers for the payment of goods or services. These bills or notes are typically issued by customers, and the bank's acceptance indicates its willingness to pay the corresponding amount in the future. Such acceptances are usually listed in the assets section of the bank's balance sheet."
+          },
+          {
+            "key": "ForeclosedAssets",
+            "title": "FORECLOSED_ASSETS",
+            "spec": "In a bank's balance sheet in financial statements, Foreclosed Assets refer to assets acquired by the bank through foreclosure of collateral or loan security interests. These assets typically result from borrowers' failure to repay loans or fulfill obligations as per contractual agreements, leading to the bank foreclosing and taking possession. Foreclosed assets may include real estate properties, vehicles, equipment, or other items. The bank lists these assets on the balance sheet and records them based on their actual value after evaluation."
+          },
+          {
+            "key": "BankOwnedLifeInsurance",
+            "title": "BANK_OWNED_LIFE_INSURANCE",
+            "spec": "Bank Owned Life Insurance (BOLI) refers to life insurance policies that banks purchase as the beneficiary or owner. These insurance policies are typically acquired to fund retirement benefit plans for senior executives or employees. BOLI serves as an investment and risk management tool for banks, providing cash flow and asset appreciation while helping to fulfill retirement benefit obligations.",
+            "ref": "https://www.investopedia.com/terms/b/boli.asp"
+          },
+          {
+            "key": "SecurityBorrowed",
+            "title": "SECURITY_BORROWED",
+            "spec": "Security Borrowed refers to securities that a bank has borrowed from other institutions or individuals, as reflected in the balance sheet of the bank's financial statements. These securities are typically used as collateral or temporary financing for financial transactions. Banks may borrow securities for financing, short-selling transactions, arbitrage, or market liquidity management activities. These borrowed securities need to be returned within a specified period or interest payments need to be made.",
+            "ref": "https://www.investopedia.com/terms/s/securitieslending.asp"
+          },
+          {
+            "key": "SecuritiesAndInvestments",
+            "title": "SECURITIES_AND_INVESTMENTS",
+            "spec": "This item includes: held-for-trading security, available-for-sale security (AFS), held-to-maturity securities and Other Short Term Investments",
+            "children": [
+              {
+                "key": "TradingSecurities",
+                "title": "TRADING_SECURITIES",
+                "spec": "A held-for-trading security is a debt or equity investment that investors purchase with the intent of selling within a short period of time, usually less than one year. Within that time frame, the investor hopes to see appreciation in the value of the security and sell it for a profit.",
+                "ref": "https://www.investopedia.com/terms/h/held-for-trading-security.asp"
+              },
+              {
+                "key": "AvailableForSaleSecurities",
+                "title": "AVAILABLE_FOR_SALE_SECURITIES",
+                "spec": "An available-for-sale security (AFS) is a debt or equity security purchased with the intent of selling before it reaches maturity or holding it for a long period should it not have a maturity date. Accounting standards necessitate that companies classify any investments in debt or equity securities when they are purchased as held-to-maturity, held-for-trading, or available-for-sale. Available-for-sale securities are reported at fair value; changes in value between accounting periods are included in accumulated other comprehensive income in the equity section of the balance sheet.",
+                "ref": "https://www.investopedia.com/terms/a/available-for-sale-security.asp"
+              },
+              {
+                "key": "HeldToMaturitySecurities",
+                "title": "HELD_TO_MATURITY_SECURITIES",
+                "spec": "Held To Maturity Securities refers to a category of investment securities that a company intends to hold until they mature. These securities are typically bonds or other debt instruments with fixed maturity dates.<br><br>When a company designates a security as held to maturity, it means they have the intention and ability to hold onto these investments until their maturity dates and collect the principal amount at maturity, along with any interest payments. Held to maturity securities are typically classified as long-term investments and are reported as non-current assets on the balance sheet.",
+                "ref": "https://www.investopedia.com/terms/h/held-to-maturity-security.asp"
+              },
+              {
+                "key": "OtherShortTermInvestments",
+                "title": "OTHER_SHORT_TERM_INVESTMENTS",
+                "spec": "Short-term investments, also known as marketable securities or temporary investments, are financial investments that can easily be converted to cash, typically within five years. Many short-term investments are sold or converted to cash after a period of only 3 - 12 months. Some common examples of short-term investments include CDs, money market accounts, high-yield savings accounts, government bonds, and Treasury bills. Usually, these investments are high-quality and highly liquid assets or investment vehicles.",
+                "ref": "https://www.investopedia.com/terms/s/shorterminvestments.asp"
+              }
+            ]
+          },
+          {
+            "key": "LongTermEquityInvestment",
+            "title": "LONG_TERM_EQUITY_INVESTMENT",
+            "spec": "This refers to the company's long-term equity investments in other entities, often in the form of ownership stakes in other companies' stocks.",
+            "children": [
+              {
+                "key": "InvestmentsinSubsidiariesatCost",
+                "title": "INVESTMENTSIN_SUBSIDIARIESAT_COST",
+                "spec": "\"Investments in Subsidiaries at Cost\" refers to the amount of money that a company has invested in acquiring subsidiary companies, recorded on the balance sheet at their historical cost.<br><br>When a company purchases a controlling interest (more than 50% ownership) in another company, it becomes a subsidiary. The amount initially paid by the parent company to acquire the subsidiary is recorded as an investment on the parent company's balance sheet under this category. They are classified as non-current assets because they are expected to be held for the long term."
+              },
+              {
+                "key": "InvestmentsinAssociatesatCost",
+                "title": "INVESTMENTSIN_ASSOCIATESAT_COST",
+                "spec": "\"Investments in Associates at Cost\" refers to an accounting term used to describe the value of investments made by a company in its associated companies. An associate company is one in which the investing company has significant influence, but not control, over the financial and operating policies. Significant influence is generally considered to exist when the investing company holds between 20% to 50% of the voting rights in the associate.<br><br>When a company invests in an associate, it typically records the investment as non-current assets on its balance sheet at the initial cost incurred to acquire the investment. This initial cost includes not only the purchase price but also any directly attributable costs such as legal fees, brokerage fees, etc."
+              },
+              {
+                "key": "InvestmentsInOtherVenturesUnderEquityMethod",
+                "title": "INVESTMENTS_IN_OTHER_VENTURES_UNDER_EQUITY_METHOD",
+                "spec": "\"Investments in Other Ventures Under Equity Method\" refers to the item representing the investment in equity of other ventures held by the investing company. Typically, this item is listed under non-current assets because these investments are considered long-term. This implies that the investing company intends to hold these investments for an extended period rather than selling or converting them into cash in the short term.<br><br>The value of this item usually reflects the investing company's proportionate ownership in the ventures, recognized through the equity method. In other words, the investing company reports its share of the profits or losses of the ventures it invests in. Therefore, on the balance sheet, 'Investments in Other Ventures Under Equity Method' reflects the value of the investing company's investments in other ventures, as well as the related profits or losses recognized under the equity method."
+              },
+              {
+                "key": "InvestmentsinJointVenturesatCost",
+                "title": "INVESTMENTSIN_JOINT_VENTURESAT_COST",
+                "spec": "\"Investments in Joint Ventures at Cost\" refers to the value of investments made by a company in joint ventures, which are partnerships where two or more entities collaborate to undertake a specific business project or activity.<br><br>Typically, 'Investments in Joint Ventures at Cost' is categorized as a non-current asset on the balance sheet since these investments are expected to be held for the long term. However, it's important to note that the value of these investments may change over time due to factors such as changes in the joint ventures' performance or adjustments for impairment if the value of the investment declines below its carrying amount."
+              }
+            ]
+          },
+          {
+            "key": "DerivativeAssets",
+            "title": "DERIVATIVE_ASSETS",
+            "spec": "Derivative Assets represent the value of derivative financial instruments held by a bank, as reflected in the balance sheet of the bank's financial statements. Derivative financial instruments are contracts whose value is based on the price movements of an underlying asset (such as stocks, bonds, currencies, etc.). Derivative assets can include options, futures contracts, swaps, and other similar instruments.",
+            "ref": "https://www.investopedia.com/terms/u/underlying-asset.asp"
+          },
+          {
+            "key": "NetLoan",
+            "title": "NET_LOAN",
+            "spec": "Net Loan represents the net loan balance held by a bank, as reflected in the balance sheet of the bank's financial statements. Net loan refers to the balance of loans disbursed to customers by the bank minus the loans repaid by customers and the loans that are overdue and unpaid. Net loans reflect the net amount of credit assets that the bank has extended to customers and are an important indicator in banking operations.Net Loan is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Net Loan</mtext><mo>=</mo><mtext>Gross Loan</mtext><mo>−</mo><mtext>Allowance for Loans And Lease Losses</mtext><mo>+</mo><mtext>Unearned Income</mtext></math>",
+            "children": [
+              {
+                "key": "GrossLoan",
+                "title": "GROSS_LOAN",
+                "spec": "Gross Loan refers to the total amount of loans disbursed by a bank or financial institution to customers, without any deductions or subtracting any losses from the loan amount. It includes: Loans Held for Sale, Commercial Loan, Consumer Loan, Mortgage Loan, Other Loan Assets",
+                "children": [
+                  {
+                    "key": "LoansHeldForSale",
+                    "title": "LOANS_HELD_FOR_SALE",
+                    "spec": "These are loans that the bank has originated but intends to sell to investors in the secondary market."
+                  },
+                  {
+                    "key": "CommercialLoan",
+                    "title": "COMMERCIAL_LOAN",
+                    "spec": "Loans extended to businesses for various purposes such as working capital, expansion, equipment purchase, etc."
+                  },
+                  {
+                    "key": "ConsumerLoan",
+                    "title": "CONSUMER_LOAN",
+                    "spec": "Loans provided to individuals for personal expenses like education, vehicles, home renovations, etc."
+                  },
+                  {
+                    "key": "MortgageLoan",
+                    "title": "MORTGAGE_LOAN",
+                    "spec": "Loans given to individuals or businesses for purchasing real estate, with the property serving as collateral."
+                  },
+                  {
+                    "key": "OtherLoanAssets",
+                    "title": "OTHER_LOAN_ASSETS",
+                    "spec": "This category may include other types of loans not specifically mentioned, such as agricultural loans, small business loans, etc."
+                  }
+                ]
+              },
+              {
+                "key": "AllowanceForLoansAndLeaseLosses",
+                "title": "ALLOWANCE_FOR_LOANS_AND_LEASE_LOSSES",
+                "spec": "This is the provision set aside by a bank to cover potential defaults and losses on loans and leases. Banks determine the appropriate level of this provision based on risk assessments, historical loss experiences, and the composition of their loan portfolios."
+              },
+              {
+                "key": "UnearnedIncome",
+                "title": "UNEARNED_INCOME",
+                "spec": "This refers to interest income that a bank has already received but has not yet recognized as earned. When a bank collects interest on a loan but it hasn't matured yet, this income is classified as unearned until the interest matures and is actually earned by the bank."
+              }
+            ]
+          },
+          {
+            "key": "Receivables",
+            "title": "RECEIVABLES",
+            "spec": "\"Receivables\" typically refer to the amounts owed to a company by its customers or clients for goods or services provided on credit. Receivables are considered assets because they represent future cash inflows to the company. They are categorized as current assets if they are expected to be collected within one year, and as non-current assets if they are expected to be collected over a longer period. This Receivables include: Accounts receivable, Loans Receivable, Notes Receivable, Accrued Interest Receivable, Taxes Receivable, Due from Related Parties Current, Other Receivables, Receivables Adjustments Allowances",
+            "children": [
+              {
+                "key": "AccountsReceivable",
+                "title": "ACCOUNTS_RECEIVABLE",
+                "spec": "Accounts receivable (AR) is the balance of money due to a firm for goods or services delivered or used but not yet paid for by customers. Accounts receivable is listed on the balance sheet as a current asset. Any amount of money owed by customers for purchases made on credit is AR.<br><br> <math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>Accounts receivable</mi><mo>=</mo><mi>Gross Accounts Receivable</mi><mo>+</mo><mi>Allowance For Doubtful Accounts Receivable</mi></mrow></math>",
+                "ref": "https://www.investopedia.com/terms/a/accountsreceivable.asp",
+                "children": [
+                  {
+                    "key": "GrossAccountsReceivable",
+                    "title": "GROSS_ACCOUNTS_RECEIVABLE",
+                    "spec": "\"Gross Accounts Receivable\" refers to the total amount of money owed to a company by its customers for goods or services sold on credit, without deducting any allowances for doubtful accounts or bad debts. It represents the aggregate amount of outstanding invoices or bills that the company expects to collect in the future."
+                  },
+                  {
+                    "key": "AllowanceForDoubtfulAccountsReceivable",
+                    "title": "ALLOWANCE_FOR_DOUBTFUL_ACCOUNTS_RECEIVABLE",
+                    "spec": "The \"Allowance for Doubtful Accounts Receivable\" is a reserve that a company establishes on its financial statements to cover anticipated losses from accounts that are unlikely to be collected. It is a prudent financial practice aimed at reflecting a portion of the customer receivables that the company expects will not be recovered. The company determines the amount of the allowance based on historical experience, industry trends, and other reliable information.",
+                    "ref": "https://www.investopedia.com/terms/a/allowancefordoubtfulaccounts.asp"
+                  }
+                ]
+              },
+              {
+                "key": "LoansReceivable",
+                "title": "LOANS_RECEIVABLE",
+                "spec": "Loans Receivable are the funds that a company has lent that have not yet been repaid.<br><br>Since they fall under current assets, the expectation is that they will be repaid in less than one year.",
+                "ref": "https://ycharts.com/glossary/terms/loans_receivable"
+              },
+              {
+                "key": "NotesReceivable",
+                "title": "NOTES_RECEIVABLE",
+                "spec": "Notes Receivable represents written obligations the creditors receive from the debtors in exchange for funds. Notes Receivable is part of a company’s assets.<br><br>If a company loans out $1,000 and receives a promissory note saying they will be repaid that amount, the company enters $1,000 into the notes receivable account in its assets.<br><br>The notes receivable that the company receives within a year are current assets of the balance sheet. Notes receivable that are greater than a year are in the noncurrent assets under their investments section of the balance sheet.",
+                "ref": "https://ycharts.com/glossary/terms/notes_receivable"
+              },
+              {
+                "key": "AccruedInterestReceivable",
+                "title": "ACCRUED_INTEREST_RECEIVABLE",
+                "spec": "\"Accrued Interest Receivable\" refers to an item on the balance sheet that represents interest income that a company has earned but has not yet received. This interest income arises from loans, investments, or other interest-generating assets but has not been paid as of the date of the financial statements.<br><br>Specifically, Accrued Interest Receivable typically refers to assets held by the company such as bonds, loans, or other interest-bearing assets that have accrued interest but have not been received by the company as of the balance sheet date. Companies usually list these accrued interest receivables as assets on the balance sheet because they represent cash inflows expected to be received in the future over a certain period.",
+                "ref": "https://www.investopedia.com/terms/a/accruedinterest.asp"
+              },
+              {
+                "key": "TaxesReceivable",
+                "title": "TAXES_RECEIVABLE",
+                "spec": "\"Taxes Receivable\" on a balance sheet refers to the amount of taxes owed to a company by governmental entities but not yet collected. These taxes could be various types, such as income taxes, sales taxes, property taxes, or other taxes payable to the company.<br><br>When a company has overpaid its taxes or is owed refunds from governmental authorities, it records Taxes Receivable as an asset on its balance sheet. This indicates the amount of money the company expects to receive from tax authorities in the future. It's important to note that Taxes Receivable may also include taxes that are currently due but have not yet been collected by the company.<br><br>Taxes Receivable is usually categorized as a current asset if it is expected to be collected within one year. However, if the collection period extends beyond one year, it may be classified as a long-term asset."
+              },
+              {
+                "key": "DuefromRelatedPartiesCurrent",
+                "title": "DUEFROM_RELATED_PARTIES_CURRENT",
+                "spec": "\"Due from Related Parties Current\" on a balance sheet refers to the amount of money owed to a company by other entities or individuals that have a close relationship with the company. These related parties could include subsidiaries, affiliates, parent companies, or other entities with significant influence over the company's operations or decisions.<br><br>When a company transacts with related parties, it may lend money, provide goods or services, or engage in other financial transactions. The amount owed by these related parties to the company is recorded as \"Due from Related Parties Current\" if it is expected to be collected within one year.<br><br>This account is typically listed under current assets on the balance sheet because the company expects to receive the funds within a relatively short period. However, if the repayment period extends beyond one year, it may be classified as a long-term asset.<br><br>It's important for companies to disclose transactions with related parties in their financial statements to ensure transparency and to prevent conflicts of interest or potential abuse of resources. Therefore, \"Due from Related Parties Current\" provides insight into the company's financial relationships with related entities."
+              },
+              {
+                "key": "OtherReceivables",
+                "title": "OTHER_RECEIVABLES",
+                "spec": "\"Other Receivables\" on a balance sheet refer to amounts owed to a company that do not fit into specific categories such as accounts receivable, notes receivable, or taxes receivable. These receivables represent various miscellaneous amounts that are due to the company and are expected to be collected in the future.<br><br>\"Other Receivables\" represent amounts owed to the company outside of the main receivable categories and serve as a catch-all category for miscellaneous receivables."
+              },
+              {
+                "key": "ReceivablesAdjustmentsAllowances",
+                "title": "RECEIVABLES_ADJUSTMENTS_ALLOWANCES",
+                "spec": "\"Receivables Adjustments Allowances\" on a balance sheet refers to an account used to adjust the reported amount of accounts receivable to reflect the portion that is expected to be uncollectible. This allowance is established to account for potential losses due to customers' inability to pay their debts.<br><br>\"Receivables Adjustments Allowances\" represents the estimated portion of accounts receivable that the company does not expect to collect and serves to ensure that the reported accounts receivable amount accurately reflects the expected cash inflows."
+              }
+            ]
+          },
+          {
+            "key": "PrepaidAssets",
+            "title": "PREPAID_ASSETS",
+            "spec": "A prepaid expense is an expense that has been paid for in advance but not yet incurred. In business, a prepaid expense is recorded as an asset on the balance sheet that results from a business making advance payments for goods or services to be received in the future.",
+            "ref": "https://www.investopedia.com/terms/p/prepaidexpense.asp"
+          },
+          {
+            "key": "NetPPE",
+            "title": "NET_PPE",
+            "spec": "Property, plant, and equipment (PP&E) are long-term assets vital to business operations. Property, plant, and equipment are tangible assets, meaning they are physical in nature or can be touched; as a result, they are not easily converted into cash. The overall value of a company's PP&E can range from very low to extremely high compared to its total assets. \"Net PPE\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>Net PPE</mi><mo>=</mo><mi>Gross PPE</mi><mo>+</mo><mi>Accumulated Depreciation</mi></mrow></math>",
+            "ref": "https://www.investopedia.com/terms/p/ppe.asp",
+            "children": [
+              {
+                "key": "GrossPPE",
+                "title": "GROSS_PPE",
+                "spec": "\"Gross PPE\" in the balance sheet refers to the total value of various categories of tangible assets before considering any depreciation or impairment. These categories typically include: \"Properties\", \"Land And Improvements\", \"Buildings And Improvements\", \"Machinery Furniture Equipment\", \"Other Properties\", \"Construction in Progress\"",
+                "ref": "https://www.investopedia.com/terms/p/ppe.asp",
+                "children": [
+                  {
+                    "key": "Properties",
+                    "title": "PROPERTIES",
+                    "spec": "Real estate assets owned by the company, such as land and buildings.",
+                    "ref": "https://www.investopedia.com/terms/p/ppe.asp"
+                  },
+                  {
+                    "key": "LandAndImprovements",
+                    "title": "LAND_AND_IMPROVEMENTS",
+                    "spec": "The value of land owned by the company and any improvements made to it, such as landscaping or infrastructure.",
+                    "ref": "https://www.investopedia.com/terms/p/ppe.asp"
+                  },
+                  {
+                    "key": "BuildingsAndImprovements",
+                    "title": "BUILDINGS_AND_IMPROVEMENTS",
+                    "spec": "The value of buildings owned by the company and any improvements or renovations made to them.",
+                    "ref": "https://www.investopedia.com/terms/p/ppe.asp"
+                  },
+                  {
+                    "key": "MachineryFurnitureEquipment",
+                    "title": "MACHINERY_FURNITURE_EQUIPMENT",
+                    "spec": "The value of machinery, furniture, and equipment used in the company's operations.",
+                    "ref": "https://www.investopedia.com/terms/p/ppe.asp"
+                  },
+                  {
+                    "key": "ConstructionInProgress",
+                    "title": "CONSTRUCTION_IN_PROGRESS",
+                    "spec": "The value of assets that are under construction or development and not yet completed for use.",
+                    "ref": "https://www.investopedia.com/terms/p/ppe.asp"
+                  },
+                  {
+                    "key": "Leases",
+                    "title": "LEASES",
+                    "spec": "The value of leased assets, such as leased property or equipment, that are accounted for as part of the company's fixed assets.",
+                    "ref": "https://www.investopedia.com/terms/p/ppe.asp"
+                  },
+                  {
+                    "key": "OtherProperties",
+                    "title": "OTHER_PROPERTIES",
+                    "spec": "Other tangible assets owned by the company that do not fall into the above categories.",
+                    "ref": "https://www.investopedia.com/terms/p/ppe.asp"
+                  }
+                ]
+              },
+              {
+                "key": "AccumulatedDepreciation",
+                "title": "ACCUMULATED_DEPRECIATION",
+                "spec": "Accumulated depreciation is a method of accounting for the annual reduction of an asset's value to a single point in its usable life. This type of depreciation can be calculated using the straight line, declining balance, double-declining balance, sum of years digits, units of production, and half-year recognition methods.",
+                "ref": "https://www.investopedia.com/terms/a/accumulated-depreciation.asp"
+              }
+            ]
+          },
+          {
+            "key": "GoodwillAndOtherIntangibleAssets",
+            "title": "GOODWILL_AND_OTHER_INTANGIBLE_ASSETS",
+            "spec": "Goodwill And Other Intangible Assets refers to the total amount of Goodwill and Other Intangible Assets",
+            "ref": "https://www.investopedia.com/articles/investing/100614/goodwill-vs-other-intangible-assets-whats-difference.asp",
+            "children": [
+              {
+                "key": "Goodwill",
+                "title": "GOODWILL",
+                "spec": "Goodwill is an intangible asset that is associated with the purchase of one company by another. It represents the value that can give the acquiring company a competitive advantage. Specifically, a goodwill definition is the portion of the purchase price that is higher than the sum of the net fair value of all of the assets purchased in the acquisition and the liabilities assumed in the process.",
+                "ref": "https://www.investopedia.com/terms/g/goodwill.asp"
+              },
+              {
+                "key": "OtherIntangibleAssets",
+                "title": "OTHER_INTANGIBLE_ASSETS",
+                "spec": "Intangible assets are those that are non-physical but identifiable. Think of a company's proprietary technology (computer software, etc.), copyrights, patents, licensing agreements, and website domain names. These aren't things that one can touch, exactly, but it is possible to estimate their value to the enterprise. Intangible assets can be bought and sold independently of the business itself.",
+                "ref": "https://www.investopedia.com/terms/g/goodwill.asp"
+              }
+            ]
+          },
+          {
+            "key": "DeferredAssets",
+            "title": "DEFERRED_ASSETS",
+            "spec": "Deferred Assets are assets on a bank's balance sheet that have been temporarily postponed or deferred in recognition or allocation. These assets may arise when the timing of income or expenses does not align with the actual cash flow.",
+            "ref": "https://www.investopedia.com/terms/d/deferredtaxasset.asp",
+            "children": [
+              {
+                "key": "DeferredTaxAssets",
+                "title": "DEFERRED_TAX_ASSETS",
+                "spec": "A deferred tax asset is an item on a company's balance sheet that reduces its taxable income in the future.",
+                "ref": "https://www.investopedia.com/terms/d/deferredtaxasset.asp"
+              }
+            ]
+          },
+          {
+            "key": "DefinedPensionBenefit",
+            "title": "DEFINED_PENSION_BENEFIT",
+            "spec": "Defined Pension Benefit is a retirement benefit plan provided by a company to its employees, where employees are entitled to receive a specific pension or other benefits upon retirement. This type of pension plan is typically determined based on factors such as employees' length of service, salary levels, and other criteria. The company establishes a fixed pension plan based on these factors to ensure that employees receive a certain level of financial support after retirement."
+          },
+          {
+            "key": "AssetsHeldForSale",
+            "title": "ASSETS_HELD_FOR_SALE",
+            "spec": "Assets Held for Sale refer to assets held by a bank or financial institution that are intended for sale. These assets are typically held because the bank plans to sell them or is in the process of converting them into cash or cash equivalents. Assets Held for Sale are expected to be liquidated within a short period of time."
+          },
+          {
+            "key": "OtherAssets",
+            "title": "OTHER_ASSETS",
+            "spec": "Other Assets refer to assets that are not specifically categorized under cash, deposits, loans, investments, or other common items. These assets may include a wide range of miscellaneous items that are still significant to the bank's operations."
+          }
+        ]
+      },
+      {
+        "key": "TotalLiabilitiesNetMinorityInterest",
+        "title": "TOTAL_LIABILITIES_NET_MINORITY_INTEREST",
+        "spec": "Total liabilities are the combined debts and obligations that an individual or company owes to outside parties. Everything the company owns is classified as an asset and all amounts the company owes for future obligations are recorded as liabilities. On the balance sheet, total assets minus total liabilities equals equity.",
+        "ref": "https://www.investopedia.com/terms/t/total-liabilities.asp",
+        "children": [
+          {
+            "key": "TotalDeposits",
+            "title": "TOTAL_DEPOSITS",
+            "spec": "Bank deposits consist of money placed into banking institutions for safekeeping. These deposits are made to deposit accounts such as savings accounts, checking accounts, and money market accounts at financial institutions. The account holder has the right to withdraw deposited funds, as set forth in the terms and conditions governing the account agreement.",
+            "ref": "https://www.investopedia.com/terms/b/bank-deposits.asp",
+            "children": [
+              {
+                "key": "InterestBearingDepositsLiabilities",
+                "title": "INTEREST_BEARING_DEPOSITS_LIABILITIES",
+                "spec": "Interest Bearing Deposits Liabilities are a type of financial obligation that banks have to their customers. These liabilities represent the funds that customers deposit into their accounts with the bank, and in return, the bank pays interest on these deposits.",
+                "children": [
+                  {
+                    "key": "DepositsbyBank",
+                    "title": "DEPOSITSBY_BANK",
+                    "spec": "Deposits by Bank refer to the funds that banks hold in their own accounts with other financial institutions or central banks. These deposits are categorized as assets on the bank's balance sheet. Banks may hold deposits with other banks for various purposes, such as meeting liquidity requirements, earning interest on excess reserves, or conducting interbank transactions."
+                  },
+                  {
+                    "key": "CustomerAccounts",
+                    "title": "CUSTOMER_ACCOUNTS",
+                    "spec": "Customer Accounts refer to the funds held by a bank on behalf of its customers. These accounts represent the money deposited by customers into various types of bank accounts, such as savings accounts, checking accounts, money market accounts, and certificates of deposit (CDs). Customer accounts are categorized as liabilities on the bank's balance sheet because the bank owes these funds to its customers and must be able to return them upon request."
+                  }
+                ]
+              },
+              {
+                "key": "NonInterestBearingDeposits",
+                "title": "NON_INTEREST_BEARING_DEPOSITS",
+                "spec": "Non-Interest Bearing Deposits are funds that customers deposit into their bank accounts without earning any interest on those deposits. Unlike interest-bearing accounts such as savings accounts or certificates of deposit (CDs), non-interest bearing deposits do not generate any interest income for the account holder. These deposits are primarily used for transactional purposes, such as checking accounts, where customers can easily access their funds for payments and withdrawals.",
+                "ref": "https://www.investopedia.com/terms/n/nibcl.asp"
+              }
+            ]
+          },
+          {
+            "key": "FederalFundsPurchasedAndSecuritiesSoldUnderAgreementToRepurchase",
+            "title": "FEDERAL_FUNDS_PURCHASED_AND_SECURITIES_SOLD_UNDER_AGREEMENT_TO_REPURCHASE",
+            "spec": "Federal Funds Purchased and Securities Sold Under Agreement to Repurchase are two types of short-term borrowing arrangements used by banks and financial institutions. It includes: Federal Funds Purchased (FFP) and Securities Sold Under Agreement to Repurchase (Repos). <br><br>Both Federal Funds Purchased and Securities Sold Under Agreement to Repurchase are commonly used by banks to manage their short-term liquidity needs, adjust their balance sheet composition, and engage in temporary funding arrangements. These transactions are crucial for banks to maintain adequate liquidity and manage their cash flow effectively.",
+            "children": [
+              {
+                "key": "FederalFundsPurchased",
+                "title": "FEDERAL_FUNDS_PURCHASED",
+                "spec": "Definition: Federal Funds Purchased (FFP) refers to funds that a bank borrows from another bank or financial institution typically on an overnight basis. These funds are borrowed to meet short-term liquidity needs, such as covering reserve requirements or funding short-term obligations.<br><br>How it works: The borrowing bank obtains federal funds by entering into an agreement with another bank, where it agrees to repay the borrowed amount plus interest at an agreed-upon rate on the following business day.<br><br>Treatment on the balance sheet: Federal funds purchased are recorded as liabilities on the borrowing bank's balance sheet until they are repaid."
+              },
+              {
+                "key": "FinancialInstrumentsSoldUnderAgreementsToRepurchase",
+                "title": "FINANCIAL_INSTRUMENTS_SOLD_UNDER_AGREEMENTS_TO_REPURCHASE",
+                "spec": "Definition: Securities Sold Under Agreement to Repurchase (Repos) refers to securities that a bank sells to another party (such as another bank, institutional investor, or central bank) with an agreement to repurchase them at a specified future date and price.<br><br>How it works: The selling bank sells securities (such as government bonds or other highly liquid securities) to raise short-term funds. The agreement includes the terms of repurchase, including the repurchase price and maturity date.<br><br>Treatment on the balance sheet: Securities sold under agreement to repurchase are recorded as liabilities on the selling bank's balance sheet since the bank has an obligation to repurchase the securities at the agreed-upon terms."
+              }
+            ]
+          },
+          {
+            "key": "SecuritiesLoaned",
+            "title": "SECURITIES_LOANED",
+            "spec": "Securities Borrowed refers to the practice where a company or institution borrows securities from another party, typically for short-term liquidity management or specific investment strategies.<br><br>For banks or other financial institutions, \"Securities Borrowed\" can serve as a form of financing to meet funding needs or engage in investment transactions. By borrowing securities, banks can access additional liquidity and have the opportunity to generate returns from these borrowed securities, such as interest income or capital gains.<br><br>In financial statements, \"Securities Borrowed\" is usually categorized as a liability because borrowing securities implies the obligation to return them in the future, along with paying corresponding interest or fees. This reflects the company's debt obligations and requires appropriate disclosure in the balance sheet."
+          },
+          {
+            "key": "PayablesAndAccruedExpenses",
+            "title": "PAYABLES_AND_ACCRUED_EXPENSES",
+            "spec": "This item includes: Payables and Current Accrued Expenses",
+            "children": [
+              {
+                "key": "Payables",
+                "title": "PAYABLES",
+                "spec": "Payables refer to debts or obligations that a company or organization needs to pay within a short period. These amounts typically include amounts owed to suppliers, contractors, employees, or other creditors for goods purchased, services rendered, wages, taxes, etc. Payables are a component of short-term liabilities for a company and are expected to be repaid within one year or the operating cycle.",
+                "children": [
+                  {
+                    "key": "AccountsPayable",
+                    "title": "ACCOUNTS_PAYABLE",
+                    "spec": "Accounts payable (AP)  refer to a company's short-term obligations owed to its creditors or suppliers, which have not yet been paid. Payables appear on a company's balance sheet as a current liability.",
+                    "ref": "https://www.investopedia.com/terms/a/accountspayable.asp"
+                  },
+                  {
+                    "key": "TotalTaxPayable",
+                    "title": "TOTAL_TAX_PAYABLE",
+                    "spec": "The tax payable is the actual amount owed in taxes based on the rules of the tax code. The payable amount is recognized on the balance sheet as a liability until the company settles the tax bill.",
+                    "ref": "https://www.investopedia.com/terms/i/incometaxpayable.asp",
+                    "children": [
+                      {
+                        "key": "IncomeTaxPayable",
+                        "title": "INCOME_TAX_PAYABLE",
+                        "spec": "The tax payable is the actual amount owed in taxes based on the rules of the tax code. The payable amount is recognized on the balance sheet as a liability until the company settles the tax bill.",
+                        "ref": "https://www.investopedia.com/terms/i/incometaxpayable.asp"
+                      }
+                    ]
+                  },
+                  {
+                    "key": "DividendsPayable",
+                    "title": "DIVIDENDS_PAYABLE",
+                    "spec": "Dividends Payable is the amount of the after tax profit a company has formally authorized to distribute to its shareholders, but has not yet paid in cash. In accounting, dividends payable is a liability on the company's balance sheet.<br><br>Let's say a company has 1,000 outstanding shares. The company declares a $1 dividend to stockholders to be paid in exactly one month from now. The company records a credit of $1,000 to its dividends payable account of liabilities until the dividend payment date.",
+                    "ref": "https://ycharts.com/glossary/terms/dividends_payable"
+                  },
+                  {
+                    "key": "DuetoRelatedParties",
+                    "title": "DUETO_RELATED_PARTIES",
+                    "spec": "Due to Related Parties refers to amounts or liabilities that a company or organization owes to related parties within a short or long period. These related parties may include entities or individuals associated with the company, such as affiliated companies, shareholders, executives, or other related parties."
+                  },
+                  {
+                    "key": "OtherPayable",
+                    "title": "OTHER_PAYABLE",
+                    "spec": "Other Payable refers to other short-term liabilities that are not specifically categorized under the listed payables. These amounts typically include various payments that a company needs to make to suppliers, contractors, creditors, or other related parties within a short period but are not classified under specific categories."
+                  }
+                ]
+              },
+              {
+                "key": "CurrentAccruedExpenses",
+                "title": "CURRENT_ACCRUED_EXPENSES",
+                "spec": "Current Accrued Expenses refer to expenses that a company has incurred but not yet paid as of the financial statement date. These expenses are typically related to various costs and expenditures associated with operating activities, including but not limited to wages and salaries, interest, taxes, rent, accounts payable to suppliers, unpaid bills, and other expenses.",
+                "ref": "https://www.investopedia.com/terms/a/accruedexpense.asp",
+                "children": [
+                  {
+                    "key": "InterestPayable",
+                    "title": "INTEREST_PAYABLE",
+                    "spec": "Interest Payable refers to the amount of interest that a company or individual owes but has not yet paid on borrowed funds. These interest payments are typically calculated based on the agreed-upon interest rate and the amount borrowed in the loan agreement. Interest payable is usually classified as a current liability in financial statements because it represents debts that are due within one year."
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "CurrentDebtAndCapitalLeaseObligation",
+            "title": "CURRENT_DEBT_AND_CAPITAL_LEASE_OBLIGATION",
+            "spec": "Current Debt and Capital Lease Obligations is a liability on the company's balance sheet. It is the sum of all the debts having a maturity of less than one year from balance sheet date and the capital lease payments due within one year of the balance sheet date. It includes: Current Debt and Current Capital Lease Obligations",
+            "ref": "https://ycharts.com/glossary/terms/curr_debt_and_cap_lease_obl",
+            "children": [
+              {
+                "key": "CurrentDebt",
+                "title": "CURRENT_DEBT",
+                "spec": "Current Debt refers to the total amount of debt that a company is obligated to repay within the short term, typically within one year. This category of debt includes Current Notes Payable, Commercial Paper, Line of Credit, Other Current Borrowings",
+                "children": [
+                  {
+                    "key": "CurrentNotesPayable",
+                    "title": "CURRENT_NOTES_PAYABLE",
+                    "spec": "Current Notes Payable refers to short-term notes or loans that a company is obligated to repay within the short term, typically within one year. These notes or loans often have specific maturity dates and are due for repayment within the next year."
+                  },
+                  {
+                    "key": "CommercialPaper",
+                    "title": "COMMERCIAL_PAPER",
+                    "spec": "Commercial paper is an unsecured, short-term debt instrument issued by corporations. It's typically used to finance short-term liabilities such as payroll, accounts payable, and inventories. Commercial paper is usually issued at a discount from face value. It reflects prevailing market interest rates.",
+                    "ref": "https://www.investopedia.com/terms/c/commercialpaper.asp"
+                  },
+                  {
+                    "key": "LineOfCredit",
+                    "title": "LINE_OF_CREDIT",
+                    "spec": "A line of credit (LOC) is a preset borrowing limit that can be tapped into at any time. The borrower can take money out as needed until the limit is reached. As money is repaid, it can be borrowed again in the case of an open line of credit.",
+                    "ref": "https://www.investopedia.com/terms/l/lineofcredit.asp"
+                  },
+                  {
+                    "key": "OtherCurrentBorrowings",
+                    "title": "OTHER_CURRENT_BORROWINGS",
+                    "spec": "Any other short-term borrowings or debt obligations that are due within the next year."
+                  }
+                ]
+              },
+              {
+                "key": "CurrentCapitalLeaseObligation",
+                "title": "CURRENT_CAPITAL_LEASE_OBLIGATION",
+                "spec": "Current Capital Lease Obligation is the amount due within a year of balance sheet date for long-term asset lease agreements that look economically similar to asset purchases. These are listed in the liabilities section of a balance sheet.",
+                "ref": "https://ycharts.com/glossary/terms/current_capital_lease_obligation"
+              }
+            ]
+          },
+          {
+            "key": "TradingLiabilities",
+            "title": "TRADING_LIABILITIES",
+            "spec": "Trading liabilities refer to obligations that arise from trading activities conducted by a company. These liabilities are associated with financial instruments or securities that the company has bought or sold for short-term trading purposes rather than for long-term investment. <br><br>For example, in the context of a financial institution like a bank, trading liabilities can include amounts owed to counterparties for securities or derivatives transactions that are part of the bank's trading portfolio. These liabilities arise from trades where the bank acts as a dealer or market maker, buying and selling financial instruments with the intention of profiting from short-term price movements or market fluctuations.<br><br>In financial statements, trading liabilities are typically categorized under current liabilities since they are expected to be settled within a relatively short period, usually within one year. These liabilities are reported on the balance sheet along with other current liabilities such as accounts payable, accrued expenses, and short-term borrowings. It's important for companies to accurately disclose their trading liabilities to provide transparency about their financial obligations related to trading activities."
+          },
+          {
+            "key": "DerivativeProductLiabilities",
+            "title": "DERIVATIVE_PRODUCT_LIABILITIES"
+          },
+          {
+            "key": "LongTermDebtAndCapitalLeaseObligation",
+            "title": "LONG_TERM_DEBT_AND_CAPITAL_LEASE_OBLIGATION",
+            "spec": "Long Term Debt And Capital Lease Obligation includes: Long Term Debt and Long Term Capital Lease Obligation",
+            "children": [
+              {
+                "key": "LongTermDebt",
+                "title": "LONG_TERM_DEBT",
+                "spec": "Long-term debt is debt that matures in more than one year. Long-term debt can be viewed from two perspectives: financial statement reporting by the issuer and financial investing. In financial statement reporting, companies must record long-term debt issuance and all of its associated payment obligations on its financial statements. On the flip side, investing in long-term debt includes putting money into debt investments with maturities of more than one year.",
+                "ref": "https://www.investopedia.com/terms/l/longtermdebt.asp",
+                "children": [
+                  {
+                    "key": "AdvanceFromFederalHomeLoanBanks",
+                    "title": "ADVANCE_FROM_FEDERAL_HOME_LOAN_BANKS",
+                    "spec": "Advance From Federal Home Loan Banks refers to borrowings by financial institutions from Federal Home Loan Banks (FHLBs). These borrowings are typically used to support financial institutions' real estate mortgage lending business or other specific lending activities."
+                  }
+                ]
+              },
+              {
+                "key": "LongTermCapitalLeaseObligation",
+                "title": "LONG_TERM_CAPITAL_LEASE_OBLIGATION",
+                "spec": "Long Term Capital Lease Obligation is the amount due for asset lease agreements that are due in more than one year from balance sheet date. These are liabilities in the balance sheet.",
+                "ref": "https://ycharts.com/glossary/terms/long_term_capital_lease_obligation"
+              }
+            ]
+          },
+          {
+            "key": "LongTermProvisions",
+            "title": "LONG_TERM_PROVISIONS",
+            "spec": "Long Term Provisions refer to reserves or impairment amounts that a company sets aside in advance for potential long-term liabilities that may arise in the future. These anticipated liabilities are typically estimated based on risk assessments, historical experience, and other reliable information, and are expected to be settled or fulfilled over a period exceeding one year.",
+            "ref": "https://www.investopedia.com/terms/g/generalprovisions.asp"
+          },
+          {
+            "key": "EmployeeBenefits",
+            "title": "EMPLOYEE_BENEFITS",
+            "spec": "Employee Benefits refer to the various benefits and compensations provided by a company to its employees, including salaries, benefit plans, retirement funds, health insurance, training, and education. These benefits are designed to enhance employee job satisfaction, quality of life, and productivity, and are also a critical tool for companies to attract and retain talented individuals.",
+            "children": [
+              {
+                "key": "NonCurrentPensionAndOtherPostretirementBenefitPlans",
+                "title": "NON_CURRENT_PENSION_AND_OTHER_POSTRETIREMENT_BENEFIT_PLANS",
+                "spec": "Non-Current Pension And Other Post-Retirement Benefit Plans refer to the long-term obligations that a company undertakes, including pension plans, medical insurance, and other life benefits provided to employees or retirees after retirement. These benefit plans require the company to provide benefits to employees or retired employees over a period exceeding one year.",
+                "ref": "https://www.investopedia.com/terms/o/otherbenefits.asp"
+              }
+            ]
+          },
+          {
+            "key": "CurrentDeferredLiabilities",
+            "title": "CURRENT_DEFERRED_LIABILITIES",
+            "spec": "Current Deferred Liabilities in the balance sheet refer to liabilities that have already been incurred but are not yet due for payment or settlement within the current fiscal year. These liabilities arise from expenses or obligations that have occurred but are deferred due to specific conditions or agreements. This includes Current Deferred Taxes Liabilities, Current Deferred Revenue.",
+            "children": [
+              {
+                "key": "CurrentDeferredTaxesLiabilities",
+                "title": "CURRENT_DEFERRED_TAXES_LIABILITIES",
+                "spec": "A deferred tax liability is a listing on a company's balance sheet that records taxes that are owed but are not due to be paid until a future date.",
+                "ref": "https://www.investopedia.com/terms/d/deferredtaxliability.asp"
+              },
+              {
+                "key": "CurrentDeferredRevenue",
+                "title": "CURRENT_DEFERRED_REVENUE",
+                "spec": "Deferred revenue, also known as unearned revenue, refers to advance payments a company receives for products or services that are to be delivered or performed in the future. The company that receives the prepayment records the amount as deferred revenue, a liability, on its balance sheet.",
+                "ref": "https://www.investopedia.com/terms/d/deferredrevenue.asp"
+              }
+            ]
+          },
+          {
+            "key": "NonCurrentDeferredLiabilities",
+            "title": "NON_CURRENT_DEFERRED_LIABILITIES",
+            "spec": "Non Current Deferred Liabilities includes: Non Current Deferred Taxes Liabilities and Non Current Deferred Revenue",
+            "children": [
+              {
+                "key": "NonCurrentDeferredTaxesLiabilities",
+                "title": "NON_CURRENT_DEFERRED_TAXES_LIABILITIES",
+                "spec": "Non-Current Deferred Taxes Liabilities refer to the long-term tax obligations that a company will need to pay in the future. These liabilities arise due to temporary differences between tax and accounting profits, resulting from different measurement methods adopted by the company according to tax regulations and accounting standards.",
+                "ref": "https://www.investopedia.com/terms/d/deferredtaxliability.asp"
+              },
+              {
+                "key": "NonCurrentDeferredRevenue",
+                "title": "NON_CURRENT_DEFERRED_REVENUE",
+                "spec": "Non-Current Deferred Revenue refers to funds that a company has received but has not yet recognized as revenue because the related services or obligations are expected to be fulfilled in the future, typically beyond one year. These funds represent advance payments from customers for future services or obligations, and are therefore recorded as liabilities.",
+                "ref": "https://www.investopedia.com/terms/d/deferredrevenue.asp"
+              }
+            ]
+          },
+          {
+            "key": "PreferredSecuritiesOutsideStockEquity",
+            "title": "PREFERRED_SECURITIES_OUTSIDE_STOCK_EQUITY",
+            "spec": "Preferred Securities Outside Stock Equity refer to securities issued by a company that have a preference over common equity. These securities are considered a form of debt because they represent a fixed obligation to pay dividends or interest to investors. However, they also have characteristics of equity as they may have no fixed maturity date and may not require repayment of the principal amount."
+          },
+          {
+            "key": "LiabilitiesOfDiscontinuedOperations",
+            "title": "LIABILITIES_OF_DISCONTINUED_OPERATIONS",
+            "spec": "Liabilities of Discontinued Operations in Total Liabilities refer to the liabilities associated with business segments or assets that a company has discontinued or sold. These liabilities arise from specific segments or assets that the company has ceased to operate and are no longer part of the ongoing operations of the company.",
+            "ref": "https://www.investopedia.com/terms/d/discontinued-operations.asp"
+          },
+          {
+            "key": "OtherLiabilities",
+            "title": "OTHER_LIABILITIES",
+            "spec": "Other Liabilities refer to various liabilities listed on the balance sheet that do not fall into specific liability categories. These liabilities may arise due to special circumstances or business activities that do not fit into other clearly defined liability items."
+          }
+        ]
+      },
+      {
+        "key": "TotalEquityGrossMinorityInterest",
+        "title": "TOTAL_EQUITY_GROSS_MINORITY_INTEREST",
+        "spec": "Total Equity, typically referred to as shareholders' equity (or owners' equity for privately held companies), represents the amount of money that would be returned to a company's shareholders if all of the assets were liquidated and all of the company's debt was paid off in the case of liquidation. In the case of acquisition, it is the value of company sales minus any liabilities owed by the company not transferred with the sale.",
+        "ref": "https://www.investopedia.com/terms/e/equity.asp",
+        "children": [
+          {
+            "key": "TotalPartnershipCapital",
+            "title": "TOTAL_PARTNERSHIP_CAPITAL",
+            "spec": "Total Partnership Capital in Total Equity refers to the total amount of capital invested by all partners in a partnership business. It includes contributions from partners, retained earnings, and other equity. This amount represents the ownership interest of partners in the partnership business. Total Partnership Capital is calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Total Partnership Capital</mtext><mo>=</mo><mtext>Limited Partnership Capital</mtext><mo>+</mo><mtext>General Partnership Capital</mtext></math>",
+            "children": [
+              {
+                "key": "LimitedPartnershipCapital",
+                "title": "LIMITED_PARTNERSHIP_CAPITAL",
+                "spec": "Limited Partnership Capital refers to the total amount of capital contributed by limited partners in a limited partnership. In a limited partnership structure, the liability and obligations of limited partners are typically limited, and their liability is restricted to the amount of capital they have invested.",
+                "ref": "https://www.investopedia.com/terms/l/limitedpartnership.asp"
+              },
+              {
+                "key": "GeneralPartnershipCapital",
+                "title": "GENERAL_PARTNERSHIP_CAPITAL",
+                "spec": "General Partnership Capital refers to the total amount of capital contributed by general partners in a general partnership. In a general partnership structure, all partners have unlimited liability and share equal responsibility for the partnership's debts and obligations.",
+                "ref": "https://www.investopedia.com/terms/g/generalpartnership.asp"
+              }
+            ]
+          },
+          {
+            "key": "StockholdersEquity",
+            "title": "STOCKHOLDERS_EQUITY",
+            "spec": "Stockholders' equity is the remaining assets available to shareholders after all liabilities are paid. It is calculated either as a firm's total assets less its total liabilities or alternatively as the sum of share capital and retained earnings less treasury shares. Stockholders' equity might include common stock, paid-in capital, retained earnings, and treasury stock.",
+            "ref": "https://www.investopedia.com/terms/s/stockholdersequity.asp",
+            "children": [
+              {
+                "key": "CapitalStock",
+                "title": "CAPITAL_STOCK",
+                "spec": "Capital stock is the amount of common and preferred shares that a company is authorized to issue, according to its corporate charter. Capital stock can only be issued by the company and is the maximum number of shares that can ever be outstanding. The amount is listed on the balance sheet in the company's shareholders' equity section.",
+                "ref": "https://www.investopedia.com/terms/c/capitalstock.asp",
+                "children": [
+                  {
+                    "key": "PreferredStock",
+                    "title": "PREFERRED_STOCK",
+                    "spec": "Preferred stockholders have a higher claim to dividends or asset distribution than common stockholders. The details of each preferred stock depend on the issue.",
+                    "ref": "https://www.investopedia.com/terms/p/preferredstock.asp"
+                  },
+                  {
+                    "key": "CommonStock",
+                    "title": "COMMON_STOCK",
+                    "spec": "Common stock is not just a piece of paper—or, these days, a digital entry—but a ticket to ownership in a company. When you hold common stock, you get to weigh in on corporate decisions by voting for the board of directors and corporate policies. Over the long term, this type of equity can offer attractive returns. But remember, this comes with a catch: if a company has to liquidate its assets, common stockholders are at the back of the line, getting paid only after bondholders, preferred shareholders, and other creditors have gotten their share.",
+                    "ref": "https://www.investopedia.com/terms/c/commonstock.asp"
+                  },
+                  {
+                    "key": "OtherCapitalStock",
+                    "title": "OTHER_CAPITAL_STOCK",
+                    "spec": "Other Capital Stock in Capital Stock refers to types of stock other than common stock and preferred stock. This category may include non-common shares and non-preferred shares, such as special classes of stock or other forms of equity ownership.<br><br>Other Capital Stock typically encompasses the following:<br><br>1. Special Stock Categories: Examples include Class A shares, Class B shares, etc., which may have special voting rights or dividend rights.<br>2. Non-Preferred Stock: Shares that do not fall under the category of preferred stock.<br>3. Other Forms of Equity Ownership: Examples include convertible bonds, warrants, etc., which can be converted into shares or have rights similar to shares."
+                  }
+                ]
+              },
+              {
+                "key": "RetainedEarnings",
+                "title": "RETAINED_EARNINGS",
+                "spec": "Retained earnings are the cumulative net earnings or profits of a company after accounting for dividend payments. As an important concept in accounting, the word “retained” captures the fact that because those earnings were not paid out to shareholders as dividends, they were instead retained by the company.",
+                "ref": "https://www.investopedia.com/terms/r/retainedearnings.asp"
+              },
+              {
+                "key": "AdditionalPaidInCapital",
+                "title": "ADDITIONAL_PAID_IN_CAPITAL",
+                "spec": "Additional paid-in capital (APIC) is an accounting term referring to money an investor pays above and beyond the par value price of a stock.<br><br>Often referred to as \"contributed capital in excess of par,” APIC occurs when an investor buys newly-issued shares directly from a company during its initial public offering (IPO) stage. APIC, which is itemized under the shareholder equity (SE) section of a balance sheet, is viewed as a profit opportunity for companies as it results in them receiving excess cash from stockholders.",
+                "ref": "https://www.investopedia.com/terms/a/additionalpaidincapital.asp"
+              },
+              {
+                "key": "TreasuryStock",
+                "title": "TREASURY_STOCK",
+                "spec": "Treasury stock, also known as treasury shares or reacquired stock, refers to previously outstanding stock that has been bought back from stockholders by the issuing company.<br><br> The result is that the total number of outstanding shares on the open market decreases. Treasury stock remains issued but is not included in the distribution of dividends or the calculation of earnings per share (EPS).",
+                "ref": "https://www.investopedia.com/terms/t/treasurystock.asp"
+              },
+              {
+                "key": "GainsLossesNotAffectingRetainedEarnings",
+                "title": "GAINS_LOSSES_NOT_AFFECTING_RETAINED_EARNINGS",
+                "spec": "Gains Losses Not Affecting Retained Earnings in Stockholders Equity refers to the gains or losses that occur during the company's operations but do not directly impact the retained earnings account. These gains or losses are reflected in other forms within shareholders' equity. It Contains Unrealized Gain Loss, Minimum Pension Liabilities, Foreign Currency Translation Adjustments, Fixed Assets Revaluation Reserve, Other Equity Adjustments.",
+                "children": [
+                  {
+                    "key": "UnrealizedGainLoss",
+                    "title": "UNREALIZED_GAIN_LOSS",
+                    "spec": "Unrealized Gain Loss refers to gains or losses on financial assets or liabilities held by a company that result from market fluctuations but have not been realized or settled."
+                  },
+                  {
+                    "key": "MinimumPensionLiabilities",
+                    "title": "MINIMUM_PENSION_LIABILITIES",
+                    "spec": "Minimum Pension Liabilities refer to the company's minimum funding obligations for its pension plans. When pension plan assets are insufficient to meet promised pension payments, the company needs to cover the minimum pension liability."
+                  },
+                  {
+                    "key": "ForeignCurrencyTranslationAdjustments",
+                    "title": "FOREIGN_CURRENCY_TRANSLATION_ADJUSTMENTS",
+                    "spec": "Foreign Currency Translation Adjustments refer to adjustments made to assets and liabilities due to changes in exchange rates when conducting cross-border transactions. These adjustments reflect the impact of foreign currencies on the company's financial position."
+                  },
+                  {
+                    "key": "FixedAssetsRevaluationReserve",
+                    "title": "FIXED_ASSETS_REVALUATION_RESERVE",
+                    "spec": "Fixed Assets Revaluation Reserve refers to the temporary recording of gains or losses from revaluing fixed assets. These reserves reflect changes in the value of fixed assets that have not been realized."
+                  },
+                  {
+                    "key": "OtherEquityAdjustments",
+                    "title": "OTHER_EQUITY_ADJUSTMENTS",
+                    "spec": "Other Equity Adjustments refer to adjustments in equity from various sources such as equity incentive plans, mergers and acquisitions, etc. These adjustments may be temporary and do not directly impact retained earnings but affect the overall equity position of shareholders."
+                  }
+                ]
+              },
+              {
+                "key": "OtherEquityInterest",
+                "title": "OTHER_EQUITY_INTEREST",
+                "spec": "Other Equity Interest represents the portion of shareholders' equity that is not explicitly classified."
+              }
+            ]
+          },
+          {
+            "key": "MinorityInterest",
+            "title": "MINORITY_INTEREST",
+            "spec": "Minority interest, also referred to as non-controlling interest (NCI), is the share of equity ownership in a subsidiary’s equity that is not owned or controlled by the parent corporation. The parent company has a controlling interest when it owns 50% to less than 100% in the subsidiary and reports the financial results of the subsidiary consolidated with its own financial statements. ",
+            "ref": "https://www.investopedia.com/articles/investing/082715/how-calculate-minority-interest.asp"
+          }
+        ]
+      },
+      {
+        "key": "TotalCapitalization",
+        "title": "TOTAL_CAPITALIZATION",
+        "spec": "Total Capitalization is the sum of long-term debt and all other types of equity, such as common stock and preferred stock. Total capitalization forms a company's capital structure and is sometimes computed as total assets minus total liabilities. Total capitalization calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Total capitalization</mtext><mo>=</mo><mtext>Long Term Debt</mtext><mo>+</mo><mtext>Stockholders' Equity</mtext></math>"
+      },
+      {
+        "key": "PreferredStockEquity",
+        "title": "PREFERRED_STOCK_EQUITY",
+        "spec": "Preferred Stock Equity refers to Preferred Stock in Stockholders' Equity",
+        "ref": "https://www.investopedia.com/terms/p/preferredstock.asp"
+      },
+      {
+        "key": "CommonStockEquity",
+        "title": "COMMON_STOCK_EQUITY",
+        "spec": "Common Stock Equity calculated as follows: <math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Common Stock Equity</mtext><mo>=</mo><mtext>Stockholders' Equity</mtext><mo>-</mo><mtext>Preferred Stock Equity</mtext></math>",
+        "ref": "https://www.investopedia.com/terms/c/commonstock.asp"
+      },
+      {
+        "key": "CapitalLeaseObligations",
+        "title": "CAPITAL_LEASE_OBLIGATIONS",
+        "spec": "Capital Lease Obligation refers to the total obligation that a lessee has under a capital lease contract. It comprises both Current Capital Lease Obligation, which is the obligation due within one year, and Long-Term Capital Lease Obligation, which is the obligation due beyond one year. Capital Lease Obligation calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Capital Lease Obligation</mtext><mo>=</mo><mtext>Current Capital Lease Obligation</mtext><mo>+</mo><mtext>Long Term Capital Lease Obligation</mtext></math>"
+      },
+      {
+        "key": "NetTangibleAssets",
+        "title": "NET_TANGIBLE_ASSETS",
+        "spec": "The term net tangible assets refers to the total physical assets of a company minus all intangible assets and liabilities. In other words, net tangible assets focus on physical assets such as property, plant, and equipment (PP&E), as well as inventories and cash instruments. Physical assets are anything that is listed on a company's balance sheet while intangible assets are those without a physical form. A company's net tangible assets can help it secure financing and determine how much risk it carries. Net Tangible Assets calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Net Tangible Assets</mtext><mo>=</mo><mtext>Total Assets</mtext><mo>-</mo><mtext>Goodwill And Other Intangible Assets</mtext><mo>-</mo><mtext>Total Liabilities</mtext></math>",
+        "ref": "https://www.investopedia.com/terms/n/nettangibleassets.asp"
+      },
+      {
+        "key": "WorkingCapital",
+        "title": "WORKING_CAPITAL",
+        "spec": "Working capital, also known as net working capital (NWC), is the difference between a company’s current assets—such as cash, accounts receivable/customers’ unpaid bills, and inventories of raw materials and finished goods—and its current liabilities, such as accounts payable and debts. It's a commonly used measurement to gauge the short-term health of an organization. Working capital calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Working Capital</mtext><mo>=</mo><mtext>Total Current Assets</mtext><mo>-</mo><mtext>Total Current Liabilities</mtext></math>",
+        "ref": "https://www.investopedia.com/terms/w/workingcapital.asp"
+      },
+      {
+        "key": "InvestedCapital",
+        "title": "INVESTED_CAPITAL",
+        "spec": "Invested Capital refers to the total capital amount invested in a company's operations, including both debt and equity components. It represents the overall funding structure of the company, including investments from both debt and equity providers.. The formula for Invested Capital can be expressed as:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Invested Capital</mtext><mo>=</mo><mtext>Stockholders' Equity</mtext><mo>+</mo><mtext>Current Debt</mtext><mo>+</mo><mtext>Long Term Debt</mtext></math>",
+        "ref": "https://www.investopedia.com/terms/i/invested-capital.asp"
+      },
+      {
+        "key": "TangibleBookValue",
+        "title": "TANGIBLE_BOOK_VALUE",
+        "spec": "Tangible book value (TBV) of a company is what common shareholders can expect to receive if a firm goes bankrupt—thereby forcing the liquidation of its assets at the book value price. Intangible assets, such as goodwill, are not included in tangible book value because they cannot be sold during liquidation. However, companies with high tangible book values tend to offer shareholders more downside protection in the case of bankruptcy. In general, Tangible book value (TBV) is equals  Net Tangible Assets",
+        "ref": "https://www.investopedia.com/terms/t/tbvps.asp"
+      },
+      {
+        "key": "TotalDebt",
+        "title": "TOTAL_DEBT",
+        "spec": "Total Debt refers to the total amount of debt that a company owes at a specific point in time, including both current liabilities and long-term liabilities. It represents the company's total obligations to external creditors. Total Debt calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Total Debt</mtext><mo>=</mo><mtext>Current Debt And Capital Lease Obligation</mtext><mo>+</mo><mtext>Long Term Debt And Capital Lease Obligation</mtext></math>"
+      },
+      {
+        "key": "NetDebt",
+        "title": "NET_DEBT",
+        "spec": "Net Debt refers to the total debt an entity owes minus its cash and cash equivalents. It's a measure of an entity's overall debt situation, accounting for its available cash reserves to repay debts. This metric is important for assessing financial health and liquidity, helping stakeholders understand how reliant an entity is on borrowed funds. Net Debt calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Net Debt</mtext><mo>=</mo><mtext>Total Debt</mtext><mo>-</mo><mtext>Cash And Cash Equivalents</mtext><mo>-</mo><mtext>Capital Lease Obligations</mtext></math>",
+        "ref": "https://www.investopedia.com/terms/n/netdebt.asp"
+      },
+      {
+        "key": "ShareIssued",
+        "title": "SHARE_ISSUED",
+        "spec": "Share Issued refers to the total number of shares that a company has offered and sold to investors. This figure includes both common shares and preferred shares, if applicable. Share issued is an important metric for understanding the ownership structure of a company and how much equity has been raised through the issuance of shares.",
+        "ref": "https://www.investopedia.com/terms/i/issuedshares.asp"
+      },
+      {
+        "key": "OrdinarySharesNumber",
+        "title": "ORDINARY_SHARES_NUMBER",
+        "spec": "Ordinary Shares Number refers to the total number of common shares issued by a company. These shares represent ownership in the company and typically carry voting rights at shareholder meetings. The number of ordinary shares issued is an essential metric for understanding the ownership structure and equity capitalization of a company.",
+        "ref": "https://www.investopedia.com/terms/o/ordinaryshares.asp"
+      },
+      {
+        "key": "PreferredSharesNumber",
+        "title": "PREFERRED_SHARES_NUMBER",
+        "spec": "Preferred Shares Number refers to the total number of preferred shares issued by a company. Preferred shares are a type of equity security that usually entitles shareholders to fixed dividends and priority over common shareholders in the event of liquidation. The number of preferred shares issued is an important metric for understanding the capital structure and ownership rights within a company.",
+        "ref": "https://www.investopedia.com/terms/p/preference-shares.asp"
+      },
+      {
+        "key": "TreasurySharesNumber",
+        "title": "TREASURY_SHARES_NUMBER",
+        "spec": "Treasury Shares Number refers to the total number of a company's own shares that it has repurchased and holds in its treasury. These shares are not outstanding and are not included in the calculation of earnings per share (EPS) or voting rights. Treasury shares may be reissued at a later date or canceled. They are often used for employee stock options, acquisitions, or to support the company's stock price.",
+        "ref": "https://www.investopedia.com/terms/t/treasurystock.asp"
+      }
+    ]
+  }
+}

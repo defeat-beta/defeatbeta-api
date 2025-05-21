@@ -2,11 +2,15 @@ from importlib.resources import files
 from typing import List, Dict
 import json
 
+import pandas as pd
 import psutil
 import re
 import os
 import platform
 import tempfile
+
+from pandas import DataFrame
+
 from defeatbeta_api.__version__ import __version__
 
 from defeatbeta_api.data.finance_item import FinanceItem
@@ -50,12 +54,35 @@ def validate_httpfs_cache_directory(name: str) -> str:
     return cache_dir
 
 def load_item_dictionary() -> Dict[str, str]:
-    text = files("defeatbeta_api.data").joinpath('dictionary.json').read_text(encoding="utf-8")
+    text = files("defeatbeta_api.data.template").joinpath('dictionary.json').read_text(encoding="utf-8")
     data = json.loads(text)
     return {key: str(value) for key, value in data.items()}
 
-def load_finance_template(template_name: str) -> Dict[str, FinanceItem]:
-    json_data = files("defeatbeta_api.data").joinpath(template_name + ".json").read_text(encoding="utf-8")
+
+def income_statement_template_type(df: DataFrame) -> str:
+    if not df.query("item_name == 'non_interest_income'").empty:
+        return "bank"
+    elif not df.query("item_name == 'total_premiums_earned'").empty:
+        return "insurance"
+    else:
+        return "default"
+
+def balance_sheet_template_type(df: DataFrame) -> str:
+    if not df.query("item_name == 'cash_cash_equivalents_and_federal_funds_sold'").empty:
+        return "bank"
+    elif not df.query("item_name == 'current_assets'").empty:
+        return "default"
+    else:
+        return "insurance"
+
+def cash_flow_template_type(df: DataFrame) -> str:
+    if not df.query("item_name == 'depreciation_amortization_depletion'").empty:
+        return "default"
+    else:
+        return "insurance"
+
+def load_finance_template(template_name: str, template_type: str) -> Dict[str, FinanceItem]:
+    json_data = files("defeatbeta_api.data.template").joinpath(template_name + "_" + template_type + ".json").read_text(encoding="utf-8")
     return parse_finance_item_template(json_data)
 
 def parse_all_title_keys(items: List['FinanceItem'],
