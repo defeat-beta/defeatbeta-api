@@ -21,7 +21,8 @@ from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
 from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual
-from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys
+from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
+    balance_sheet_template_type, cash_flow_template_type
 
 
 class Ticker:
@@ -153,30 +154,32 @@ class Ticker:
         return self.duckdb_client.query(sql)
 
     def _statement(self, finance_type: str, period_type: str) -> Statement:
-        info = self.info()
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and finance_type = '{finance_type}' and period_type = '{period_type}'"
         df = self.duckdb_client.query(sql)
         stock_statements = self._dataframe_to_stock_statements(df=df)
         if finance_type == income_statement:
-            template = load_finance_template(income_statement)
+            template_type = income_statement_template_type(df)
+            template = load_finance_template(income_statement, template_type)
             finance_values_map = self._get_finance_values_map(statements=stock_statements, finance_template=template)
             stmt = IncomeStatement(finance_template=template, income_finance_values=finance_values_map)
-            printer = PrintVisitor(info)
+            printer = PrintVisitor()
             stmt.accept(printer)
             return printer.get_statement()
         elif finance_type == balance_sheet:
-            template = load_finance_template(balance_sheet)
+            template_type = balance_sheet_template_type(df)
+            template = load_finance_template(balance_sheet, template_type)
             finance_values_map = self._get_finance_values_map(statements=stock_statements, finance_template=template)
             stmt = BalanceSheet(finance_template=template, income_finance_values=finance_values_map)
-            printer = PrintVisitor(info)
+            printer = PrintVisitor()
             stmt.accept(printer)
             return printer.get_statement()
         elif finance_type == cash_flow:
-            template = load_finance_template(cash_flow)
+            template_type = cash_flow_template_type(df)
+            template = load_finance_template(cash_flow, template_type)
             finance_values_map = self._get_finance_values_map(statements=stock_statements, finance_template=template)
             stmt = BalanceSheet(finance_template=template, income_finance_values=finance_values_map)
-            printer = PrintVisitor(info)
+            printer = PrintVisitor()
             stmt.accept(printer)
             return printer.get_statement()
         else:

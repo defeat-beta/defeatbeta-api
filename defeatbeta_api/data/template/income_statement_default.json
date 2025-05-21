@@ -18,158 +18,6 @@
             "title": "EXCISE_TAXES",
             "spec": "An excise tax is a legislated tax on specific goods or services at the time they are purchased. They're intranational taxes imposed within a government infrastructure rather than international taxes imposed across country borders.",
             "ref": "https://www.investopedia.com/terms/e/excisetax.asp"
-          },
-          {
-            "key": "NetInterestIncome",
-            "title": "NET_INTEREST_INCOME",
-            "industry": "bank",
-            "spec": "'Net Interest Income' equals to 'Net Non-Operating Interest Income Expense'",
-            "children": [
-              {
-                "key": "InterestIncome",
-                "title": "INTEREST_INCOME",
-                "industry": "bank",
-                "spec": "'Interest Income' equals to 'Non-Operating Interest Income'",
-                "children": [
-                  {
-                    "key": "InterestIncomeFromLoansAndLease",
-                    "title": "INTEREST_INCOME_FROM_LOANS_AND_LEASE",
-                    "children": [
-                      {
-                        "key": "InterestIncomeFromLoans",
-                        "title": "INTEREST_INCOME_FROM_LOANS"
-                      },
-                      {
-                        "key": "InterestIncomeFromLeases",
-                        "title": "INTEREST_INCOME_FROM_LEASE"
-                      }
-                    ]
-                  },
-                  {
-                    "key": "InterestIncomeFromSecurities",
-                    "title": "INTEREST_INCOME_FROM_SECURITIES"
-                  },
-                  {
-                    "key": "InterestIncomeFromDeposits",
-                    "title": "INTEREST_INCOME_FROM_DEPOSITS"
-                  },
-                  {
-                    "key": "InterestIncomeFromFederalFundsSoldAndSecuritiesPurchaseUnderAgreementsToResell",
-                    "title": "INTEREST_INCOME_FROM_FEDERAL_FUNDS_SOLD_AND_SECURITIES_PURCHASE_UNDER_AGREEMENTS_TO_RESELL"
-                  },
-                  {
-                    "key": "OtherInterestIncome",
-                    "title": "OTHER_INTEREST_INCOME"
-                  }
-                ]
-              },
-              {
-                "key": "InterestExpense",
-                "title": "INTEREST_EXPENSE",
-                "industry": "bank",
-                "spec": "'Interest Expense' equals to 'Non-Operating Interest Expense'",
-                "children": [
-                  {
-                    "key": "InterestExpenseForDeposit",
-                    "title":"INTEREST_EXPENSE_FOR_DEPOSIT"
-                  },
-                  {
-                    "key": "InterestExpenseForShortTermDebt",
-                    "title":"INTEREST_EXPENSE_FOR_SHORT_TERM_DEBT"
-                  },
-                  {
-                    "key": "InterestExpenseForLongTermDebtAndCapitalSecurities",
-                    "title":"INTEREST_EXPENSE_FOR_LONG_TERM_DEBT_AND_CAPITAL_SECURITIES"
-                  },
-                  {
-                    "key": "InterestExpenseForFederalFundsSoldAndSecuritiesPurchaseUnderAgreementsToResell",
-                    "title":"INTEREST_EXPENSE_FOR_FEDERAL_FUNDS_SOLD_AND_SECURITIES_PURCHASE_UNDER_AGREEMENTS_TO_RESELL"
-                  },
-                  {
-                    "key": "OtherInterestExpense",
-                    "title":"OTHER_INTEREST_EXPENSE"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "key": "NonInterestIncome",
-            "title": "NON_INTEREST_INCOME",
-            "industry": "bank",
-            "spec": "\"Non-Interest Income\" refers to revenue earned through sources other than interest on loans. This income typically includes service fees, trading income, asset management fees, and other financial services.",
-            "children": [
-              {
-                "key": "TotalPremiumsEarned",
-                "title": "TOTAL_PREMIUMS_EARNED"
-              },
-              {
-                "key": "FeesAndCommissions",
-                "title": "FEES_AND_COMMISSIONS",
-                "children": [
-                  {
-                    "key": "FeesandCommissionIncome",
-                    "title": "FEESAND_COMMISSION_INCOME",
-                    "children": [
-                      {
-                        "key": "ServiceChargeOnDepositorAccounts",
-                        "title": "SERVICE_CHARGE_ON_DEPOSITOR_ACCOUNTS"
-                      },
-                      {
-                        "key": "TrustFeesbyCommissions",
-                        "title": "TRUST_FEESBY_COMMISSIONS"
-                      },
-                      {
-                        "key": "SecuritiesActivities",
-                        "title": "SECURITIES_ACTIVITIES"
-                      },
-                      {
-                        "key": "CreditCard",
-                        "title": "CREDIT_CARD"
-                      },
-                      {
-                        "key": "OtherCustomerServices",
-                        "title": "OTHER_CUSTOMER_SERVICES"
-                      }
-                    ]
-                  },
-                  {
-                    "key": "FeesandCommissionExpense",
-                    "title": "FEESAND_COMMISSION_EXPENSE"
-                  }
-                ]
-              },
-              {
-                "key": "InvestmentBankingProfit",
-                "title": "INVESTMENT_BANKING_PROFIT"
-              },
-              {
-                "key": "TradingGainLoss",
-                "title": "TRADING_GAIN_LOSS"
-              },
-              {
-                "key": "ForeignExchangeTradingGains",
-                "title": "FOREIGN_EXCHANGE_TRADING_GAINS"
-              },
-              {
-                "key": "GainLossonSaleofAssets",
-                "title": "GAIN_LOSSON_SALEOF_ASSETS",
-                "children": [
-                  {
-                    "key": "GainOnSaleOfSecurity",
-                    "title": "GAIN_ON_SALE_OF_SECURITY"
-                  },
-                  {
-                    "key": "GainonSaleofLoans",
-                    "title": "GAINON_SALEOF_LOANS"
-                  }
-                ]
-              },
-              {
-                "key": "OtherNonInterestIncome",
-                "title": "OTHER_NON_INTEREST_INCOME"
-              }
-            ]
           }
         ]
       },
@@ -492,44 +340,6 @@
         ]
       },
       {
-        "key": "SpecialIncomeCharges",
-        "title": "SPECIAL_INCOME_CHARGES",
-        "industry": "bank",
-        "spec": "\"Special Income Charges\" are unusual and uncommon income or expenses. This includes: \"Restructuring And Mergern Acquisition,\" \"Impairment Of Capital Assets,\" \"Write Off,\" \"Other Special Charges,\" \"Gain On Sale \"Of Business\", \"Gain On Sale Of PPE\"",
-        "children": [
-          {
-            "key": "RestructuringAndMergernAcquisition",
-            "title": "RESTRUCTURING_AND_MERGERN_ACQUISITION",
-            "spec": "\"Restructuring and Mergers and Acquisitions\" reflects expenses incurred by companies when making organizational changes, mergers and acquisitions or other strategic changes. This may include redundancy costs, equipment or plant relocation costs, transaction costs from mergers or acquisitions, etc."
-          },
-          {
-            "key": "ImpairmentOfCapitalAssets",
-            "title": "IMPAIRMENT_OF_CAPITAL_ASSETS",
-            "spec": "Impairment of Capital Assets Impairment of capital assets is a reduction in the value of a company's capital assets, such as equipment and real estate. This usually occurs when the recoverable amount of an asset is less than its book value."
-          },
-          {
-            "key": "WriteOff",
-            "title": "WRITE_OFF",
-            "spec": "\"Write Off\" is a situation in which a company writes off an asset or liability and no longer shows it in its financial statements. May include bad debt provisions, intangible assets impairment, etc."
-          },
-          {
-            "key": "OtherSpecialCharges",
-            "title": "OTHER_SPECIAL_CHARGES",
-            "spec": "\"Other Special Charges\" involve fees that are unusual or uncommon. This may include non-repetitive items such as legal and litigation costs, environmental liability, risk preparedness, etc."
-          },
-          {
-            "key": "GainOnSaleOfBusiness",
-            "title": "GAIN_ON_SALE_OF_BUSINESS",
-            "spec": "\"Gain on Sale of Business\" means the profit a company makes by selling part or all of its business. This is usually related to corporate strategy adjustment, asset optimization or business restructuring."
-          },
-          {
-            "key": "GainOnSaleOfPPE",
-            "title": "GAIN_ON_SALE_OF_PPE",
-            "spec": "\"Gain on Sale of Property, Plant, and Equipment\" reflects the profit a company makes when it sells fixed assets, such as equipment, land, and buildings."
-          }
-        ]
-      },
-      {
         "key": "PretaxIncome",
         "title": "PRETAX_INCOME",
         "spec": "\"Pretax Income\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Pretax Income(Non-Bank)</mtext><mo>=</mo><mtext>Operating Income</mtext><mo>+</mo><mtext>Net Non-Operating Interest Income Expense</mtext><mo>+</mo><mtext>Other Income Expense</mtext></math><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>OR</mtext><br></math><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Pretax Income(Bank)</mtext><mo>=</mo><mtext>Total Revenue</mtext><mo>+</mo><mtext>Credit Losses Provision</mtext><mo>-</mo><mtext>Non Interest Expense</mtext></math><br>Earnings before tax (EBT) is a measure of financial performance. It reveals a company's earnings before taxes are deducted, is calculated by subtracting all expenses excluding taxes from revenue, and appears as a line item in the income statement.<br><br>EBT is sometimes also called pre-tax income, profit before tax, or income before income taxes.",
@@ -773,6 +583,10 @@
         "key": "NetInterestIncome",
         "title": "NET_INTEREST_INCOME",
         "spec": "'Net Interest Income' equals to 'Net Non-Operating Interest Income Expense'"
+      },
+      {
+        "key": "NetInvestmentIncome",
+        "title": "NET_INVESTMENT_INCOME"
       },
       {
         "key": "EBIT",

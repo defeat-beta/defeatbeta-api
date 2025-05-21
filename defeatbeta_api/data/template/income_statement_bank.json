@@ -1,0 +1,740 @@
+{
+  "FinancialTemplateStore": {
+    "template": [
+      {
+        "key": "TotalRevenue",
+        "title": "TOTAL_REVENUE",
+        "spec": "Revenue is the money generated from normal business operations, calculated as the average sales price times the number of units sold. It is the top line (or gross income) figure from which costs are subtracted to determine net income. Revenue is also known as sales on the income statement.",
+        "ref": "https://www.investopedia.com/terms/r/revenue.asp",
+        "children": [
+          {
+            "key": "NetInterestIncome",
+            "title": "NET_INTEREST_INCOME",
+            "spec": "'Net Interest Income' equals to 'Net Non-Operating Interest Income Expense'",
+            "children": [
+              {
+                "key": "InterestIncome",
+                "title": "INTEREST_INCOME",
+                "spec": "'Interest Income' equals to 'Non-Operating Interest Income'",
+                "children": [
+                  {
+                    "key": "InterestIncomeFromLoansAndLease",
+                    "title": "INTEREST_INCOME_FROM_LOANS_AND_LEASE",
+                    "children": [
+                      {
+                        "key": "InterestIncomeFromLoans",
+                        "title": "INTEREST_INCOME_FROM_LOANS"
+                      },
+                      {
+                        "key": "InterestIncomeFromLeases",
+                        "title": "INTEREST_INCOME_FROM_LEASE"
+                      }
+                    ]
+                  },
+                  {
+                    "key": "InterestIncomeFromSecurities",
+                    "title": "INTEREST_INCOME_FROM_SECURITIES"
+                  },
+                  {
+                    "key": "InterestIncomeFromDeposits",
+                    "title": "INTEREST_INCOME_FROM_DEPOSITS"
+                  },
+                  {
+                    "key": "InterestIncomeFromFederalFundsSoldAndSecuritiesPurchaseUnderAgreementsToResell",
+                    "title": "INTEREST_INCOME_FROM_FEDERAL_FUNDS_SOLD_AND_SECURITIES_PURCHASE_UNDER_AGREEMENTS_TO_RESELL"
+                  },
+                  {
+                    "key": "OtherInterestIncome",
+                    "title": "OTHER_INTEREST_INCOME"
+                  }
+                ]
+              },
+              {
+                "key": "InterestExpense",
+                "title": "INTEREST_EXPENSE",
+                "spec": "'Interest Expense' equals to 'Non-Operating Interest Expense'",
+                "children": [
+                  {
+                    "key": "InterestExpenseForDeposit",
+                    "title":"INTEREST_EXPENSE_FOR_DEPOSIT"
+                  },
+                  {
+                    "key": "InterestExpenseForShortTermDebt",
+                    "title":"INTEREST_EXPENSE_FOR_SHORT_TERM_DEBT"
+                  },
+                  {
+                    "key": "InterestExpenseForLongTermDebtAndCapitalSecurities",
+                    "title":"INTEREST_EXPENSE_FOR_LONG_TERM_DEBT_AND_CAPITAL_SECURITIES"
+                  },
+                  {
+                    "key": "InterestExpenseForFederalFundsSoldAndSecuritiesPurchaseUnderAgreementsToResell",
+                    "title":"INTEREST_EXPENSE_FOR_FEDERAL_FUNDS_SOLD_AND_SECURITIES_PURCHASE_UNDER_AGREEMENTS_TO_RESELL"
+                  },
+                  {
+                    "key": "OtherInterestExpense",
+                    "title":"OTHER_INTEREST_EXPENSE"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "NonInterestIncome",
+            "title": "NON_INTEREST_INCOME",
+            "spec": "\"Non-Interest Income\" refers to revenue earned through sources other than interest on loans. This income typically includes service fees, trading income, asset management fees, and other financial services.",
+            "children": [
+              {
+                "key": "TotalPremiumsEarned",
+                "title": "TOTAL_PREMIUMS_EARNED"
+              },
+              {
+                "key": "FeesAndCommissions",
+                "title": "FEES_AND_COMMISSIONS",
+                "children": [
+                  {
+                    "key": "FeesandCommissionIncome",
+                    "title": "FEESAND_COMMISSION_INCOME",
+                    "children": [
+                      {
+                        "key": "ServiceChargeOnDepositorAccounts",
+                        "title": "SERVICE_CHARGE_ON_DEPOSITOR_ACCOUNTS"
+                      },
+                      {
+                        "key": "TrustFeesbyCommissions",
+                        "title": "TRUST_FEESBY_COMMISSIONS"
+                      },
+                      {
+                        "key": "SecuritiesActivities",
+                        "title": "SECURITIES_ACTIVITIES"
+                      },
+                      {
+                        "key": "CreditCard",
+                        "title": "CREDIT_CARD"
+                      },
+                      {
+                        "key": "OtherCustomerServices",
+                        "title": "OTHER_CUSTOMER_SERVICES"
+                      }
+                    ]
+                  },
+                  {
+                    "key": "FeesandCommissionExpense",
+                    "title": "FEESAND_COMMISSION_EXPENSE"
+                  }
+                ]
+              },
+              {
+                "key": "DividendIncome",
+                "title": "DIVIDEND_INCOME"
+              },
+              {
+                "key": "InvestmentBankingProfit",
+                "title": "INVESTMENT_BANKING_PROFIT"
+              },
+              {
+                "key": "TradingGainLoss",
+                "title": "TRADING_GAIN_LOSS"
+              },
+              {
+                "key": "ForeignExchangeTradingGains",
+                "title": "FOREIGN_EXCHANGE_TRADING_GAINS"
+              },
+              {
+                "key": "GainLossonSaleofAssets",
+                "title": "GAIN_LOSSON_SALEOF_ASSETS",
+                "children": [
+                  {
+                    "key": "GainOnSaleOfSecurity",
+                    "title": "GAIN_ON_SALE_OF_SECURITY"
+                  },
+                  {
+                    "key": "GainonSaleofLoans",
+                    "title": "GAINON_SALEOF_LOANS"
+                  },
+                  {
+                    "key": "GainonSaleofInvestmentProperty",
+                    "title": "GAINON_SALEOF_INVESTMENT_PROPERTY"
+                  }
+                ]
+              },
+              {
+                "key": "OtherNonInterestIncome",
+                "title": "OTHER_NON_INTEREST_INCOME"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "CreditLossesProvision",
+        "title": "CREDIT_LOSSES_PROVISION",
+        "spec": "The provision for credit losses (PCL) is an estimation of potential losses that a company might experience due to credit risk. The provision for credit losses is treated as an expense on the company's financial statements. They are expected losses from delinquent and bad debt or other credit that is likely to default or become unrecoverable.",
+        "ref": "https://www.investopedia.com/terms/p/provision-for-credit-losses.asp"
+      },
+      {
+        "key": "NonInterestExpense",
+        "title": "NON_INTEREST_EXPENSE",
+        "spec": "A noninterest expense is an operating expense of a bank or financial institution that is classified separately from interest expense and provision for credit losses.",
+        "ref": "https://www.investopedia.com/terms/n/noninterest-expense.asp",
+        "children": [
+          {
+            "key": "OccupancyAndEquipment",
+            "title": "OCCUPANCY_AND_EQUIPMENT",
+            "spec": "The associated costs of the physical premises and equipment used for the operations of a bank.",
+            "ref": "https://www.investopedia.com/terms/n/noninterest-expense.asp",
+            "children": [
+              {
+                "key": "NetOccupancyExpense",
+                "title": "NET_OCCUPANCY_EXPENSE",
+                "spec": "The associated costs of the physical premises used for the operations of a bank.",
+                "ref": "https://www.investopedia.com/terms/n/noninterest-expense.asp"
+              },
+              {
+                "key": "Equipment",
+                "title": "EQUIPMENT",
+                "spec": "The associated costs of the physical equipment used for the operations of a bank.",
+                "ref": "https://www.investopedia.com/terms/n/noninterest-expense.asp"
+              }
+            ]
+          },
+          {
+            "key": "ProfessionalExpenseAndContractServicesExpense",
+            "title": "PROFESSIONAL_EXPENSE_AND_CONTRACT_SERVICES_EXPENSE",
+            "spec": "The expenses incurred by a bank in its business operations for payments to professionals and contract service providers.",
+            "ref": "https://www.investopedia.com/terms/n/noninterest-expense.asp"
+          },
+          {
+            "key": "SellingGeneralAndAdministration",
+            "title": "SELLING_GEN_ADMIN",
+            "spec": "This line item includes nearly all business costs not directly attributable to making a product or performing a service. SG&A includes the costs of managing the company and the expenses of delivering its products or services.",
+            "ref": "https://www.investopedia.com/terms/s/sga.asp",
+            "children": [
+              {
+                "key": "GeneralAndAdministrativeExpense",
+                "title": "GENERAL_AND_ADMINISTRATIVE_EXPENSE",
+                "spec": "G&A expenses are the company's overhead. They are incurred in the day-to-day operations of a business and may not be directly tied to any specific function or department within the company. They are usually fixed costs that are incurred, disregarding the amount of sales or production incurred during a certain period.",
+                "ref": "https://www.investopedia.com/terms/g/general-and-administrative-expenses.asp",
+                "children": [
+                  {
+                    "key": "SalariesAndWages",
+                    "title": "SALARIES_AND_WAGES",
+                    "spec": "The item represents the total amount of money a company pays to its employees in the form of wages and salaries. This includes the compensation for employees across various departments, regardless of their specific functions in general management, administrative roles, or those related to sales and marketing. Salaries and wages are typically one of the major costs for a company, as the work and contributions of employees are crucial for the operational functioning of the company. This expense reflects the compensation paid to employees by the company to maintain regular operations.",
+                    "ref": "https://www.investopedia.com/terms/g/general-and-administrative-expenses.asp"
+                  },
+                  {
+                    "key": "RentAndLandingFees",
+                    "title": "RENT_AND_LANDING_FEES",
+                    "spec": "The item represents the total amount of money a company pays for rent and landing fees. This includes expenses related to leasing office space, equipment, or other assets, as well as fees associated with the use of certain facilities or equipment, such as landing fees. This expense reflects the costs incurred by the company in acquiring and maintaining necessary physical resources.",
+                    "ref": "https://www.investopedia.com/terms/g/general-and-administrative-expenses.asp"
+                  },
+                  {
+                    "key": "InsuranceAndClaims",
+                    "title": "INSURANCE_AND_CLAIMS",
+                    "spec": "The item represents the total amount of money a company pays for insurance premiums and the handling of potential claims. This includes the purchase of various forms of insurance to protect the company against risks in different areas, such as property insurance, liability insurance, and employer liability insurance. Additionally, this category encompasses expenses related to handling potential claims, such as legal fees and compensation payments. This expense reflects the costs incurred by the company to protect itself from potential losses and liabilities.",
+                    "ref": "https://www.investopedia.com/terms/g/general-and-administrative-expenses.asp"
+                  },
+                  {
+                    "key": "OtherGandA",
+                    "title": "OTHER_GAND_A",
+                    "spec": "The item represents additional expenses related to general and administrative costs that may not belong to explicitly listed specific categories, hence classified under \"Other\".",
+                    "ref": "https://www.investopedia.com/terms/g/general-and-administrative-expenses.asp"
+                  }
+                ]
+              },
+              {
+                "key": "SellingAndMarketingExpense",
+                "title": "SELLING_AND_MARKETING_EXPENSE",
+                "spec": "Selling expenses can be broken down into direct and indirect costs. Direct selling expenses are incurred only when the product is sold. Indirect selling expenses occur throughout the manufacturing process and after the product is finished. Don't confuse these expenses with the action of indirect selling, which happens when third parties or affiliates sell the products.",
+                "ref": "https://www.investopedia.com/terms/s/sga.asp"
+              }
+            ]
+          },
+          {
+            "key": "DepreciationAmortizationDepletionIncomeStatement",
+            "title": "DEPRECIATION_AMORTIZATION_DEPLETION",
+            "spec": "Depreciation, depletion, and amortization (DD&A) is an accounting technique that enables companies to gradually expense various different resources of economic value over time in order to match costs to revenues.<br><br>Depreciation spreads out the cost of a tangible asset over its useful life, depletion allocates the cost of extracting natural resources, such as timber, minerals, and oil from the earth, and amortization is the deduction of intangible assets over a specified time period; typically the life of an asset.",
+            "ref": "https://www.investopedia.com/terms/d/depreciation-depletion-and-amortization.asp",
+            "children": [
+              {
+                "key": "DepreciationAndAmortizationInIncomeStatement",
+                "title": "DEPRECIATION_AND_AMORTIZATION",
+                "spec": "Amortization and depreciation are the two main methods of calculating the value of these assets, with the key difference between the two methods involving the type of asset being expensed. In addition, there are differences in the methods allowed, components of the calculations, and how they are presented on financial statements.",
+                "ref": "https://www.investopedia.com/ask/answers/06/amortizationvsdepreciation.asp",
+                "children": [
+                  {
+                    "key": "DepreciationIncomeStatement",
+                    "title": "DEPRECIATION",
+                    "spec": "Depreciation is an accounting practice used to spread the cost of a tangible or physical asset over its useful life. Depreciation represents how much of the asset's value has been used up in any given time period. Companies depreciate assets for both tax and accounting purposes and have several different methods to choose from.",
+                    "ref": "https://www.investopedia.com/terms/d/depreciation.asp"
+                  },
+                  {
+                    "key": "Amortization",
+                    "title": "AMORTIZATION",
+                    "spec": "Amortization is an accounting technique used to periodically lower the book value of a loan or an intangible asset over a set period of time. Concerning a loan, amortization focuses on spreading out loan payments over time. When applied to an asset, amortization is similar to depreciation.",
+                    "ref": "https://www.investopedia.com/terms/a/amortization.asp",
+                    "children": [
+                      {
+                        "key": "AmortizationOfIntangiblesIncomeStatement",
+                        "title": "AMORTIZATION_OF_INTANGIBLES",
+                        "spec": "Amortization of intangibles, also simply known as amortization, is the process of expensing the cost of an intangible asset over the projected life of the asset for tax or accounting purposes. Intangible assets, such as patents and trademarks, are amortized into an expense account called amortization. Tangible assets are instead written off through depreciation. <br><br>The amortization process for corporate accounting purposes may differ from the amount of amortization used for tax purposes.",
+                        "ref": "https://www.investopedia.com/terms/a/amortization-of-intangibles.asp"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "DepletionIncomeStatement",
+                "title": "DEPLETION",
+                "spec": "Depletion is an accrual accounting technique used to allocate the cost of extracting natural resources such as timber, minerals, and oil from the earth. <br><br>Like depreciation and amortization, depletion is a non-cash expense that lowers the cost value of an asset incrementally through scheduled charges to income. Where depletion differs is that it refers to the gradual exhaustion of natural resource reserves, as opposed to the wearing out of depreciable assets or aging life of intangibles.",
+                "ref": "https://www.investopedia.com/terms/d/depletion.asp"
+              }
+            ]
+          },
+          {
+            "key": "OtherNonInterestExpense",
+            "title": "OTHER_NON_INTEREST_EXPENSE"
+          }
+        ]
+      },
+      {
+        "key": "IncomeFromAssociatesAndOtherParticipatingInterests",
+        "title": "INCOMEFROM_ASSOCIATESAND_OTHER_PARTICIPATING_INTERESTS"
+      },
+      {
+        "key": "NetNonOperatingInterestIncomeExpense",
+        "title": "NET_NON_OPERATING_INTEREST_INCOME_EXPENSE",
+        "spec": "\"Net Non-Operating Interest Income (Expense)\" is an item in the financial statements that reflects the net amount of interest income and interest expense generated by the company from non-operating activities. <br> <br>Specifically, this item includes the interest income earned by the company from non-operating financial activities and the interest expense paid. Non-operational financial activities usually refer to financial activities that are not within the scope of the company's main business, such as investment, financing, debt management, etc. <br> <br>Net non-operating interest income (expense) is calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Net Non-Operating Interest Income Expense</mtext><mo>=</mo><mtext>Non-Operating Interest Income</mtext><mo>−</mo><mtext>Non-Operating Interest Expense</mtext></math><br>A positive value on this item indicates that the company earned net interest income from non-operating financial activities, while a negative value indicates that the company paid net interest expense. This indicator is of great significance for the analysis of the company's financial performance and fund management.",
+        "ref": "https://www.investopedia.com/terms/i/interestexpense.asp",
+        "children": [
+          {
+            "key": "InterestIncomeNonOperating",
+            "title": "INTEREST_INCOME_NON_OPERATING",
+            "spec": "\"Non-Operating Interest Income\" means the interest income earned by the company from non-operating financial activities."
+          },
+          {
+            "key": "InterestExpenseNonOperating",
+            "title": "INTEREST_EXPENSE_NON_OPERATING",
+            "spec": "\"Non-Operating Interest Expense\" represents the interest expense paid by the company in its non-operating financial activities. "
+          },
+          {
+            "key": "TotalOtherFinanceCost",
+            "title": "TOTAL_OTHER_FINANCE_COST"
+          }
+        ]
+      },
+      {
+        "key": "OtherIncomeExpense",
+        "title": "OTHER_INCOME_EXPENSE",
+        "spec": "\"Other Income Expense\" more broadly includes the Net impact of all other Non-Operating financial activities other than \"Net non-operating Interest Income Expense\".It contains \"Gain On Sale Of Security\"、\"Earnings From Equity Interest\"、\"Securities Amortization\"、\"Special Income Charges\"、\"Other Non Operating Income Expenses\"",
+        "children": [
+          {
+            "key": "GainOnSaleOfSecurity",
+            "title": "GAIN_ON_SALE_OF_SECURITY",
+            "spec": "\"Gain On Sale Of Security\" means the profit a company makes by selling investment securities. This usually occurs when securities held by the company (e.g. stocks, bonds) appreciate in value and are sold."
+          },
+          {
+            "key": "EarningsFromEquityInterest",
+            "title": "EARNINGS_FROM_EQUITY_INTEREST",
+            "spec": "\"Earnings From Equity Interest\" reflects the income earned by a company through its equity investments in other companies. This includes interests arising from equity investments in subsidiaries, affiliates or associates."
+          },
+          {
+            "key": "SecuritiesAmortization",
+            "title": "SECURITIES_AMORTIZATION",
+            "spec": "\"Securities Amortization\" involves the process by which a company amortizes investment securities in its financial statements. Amortization is used to distribute the cost of a security over its limited useful life."
+          },
+          {
+            "key": "SpecialIncomeCharges",
+            "title": "SPECIAL_INCOME_CHARGES",
+            "spec": "\"Special Income Charges\" are unusual and uncommon income or expenses. This includes: \"Restructuring And Mergern Acquisition,\" \"Impairment Of Capital Assets,\" \"Write Off,\" \"Other Special Charges,\" \"Gain On Sale \"Of Business\", \"Gain On Sale Of PPE\"",
+            "children": [
+              {
+                "key": "RestructuringAndMergernAcquisition",
+                "title": "RESTRUCTURING_AND_MERGERN_ACQUISITION",
+                "spec": "\"Restructuring and Mergers and Acquisitions\" reflects expenses incurred by companies when making organizational changes, mergers and acquisitions or other strategic changes. This may include redundancy costs, equipment or plant relocation costs, transaction costs from mergers or acquisitions, etc."
+              },
+              {
+                "key": "ImpairmentOfCapitalAssets",
+                "title": "IMPAIRMENT_OF_CAPITAL_ASSETS",
+                "spec": "Impairment of Capital Assets Impairment of capital assets is a reduction in the value of a company's capital assets, such as equipment and real estate. This usually occurs when the recoverable amount of an asset is less than its book value."
+              },
+              {
+                "key": "WriteOff",
+                "title": "WRITE_OFF",
+                "spec": "\"Write Off\" is a situation in which a company writes off an asset or liability and no longer shows it in its financial statements. May include bad debt provisions, intangible assets impairment, etc."
+              },
+              {
+                "key": "OtherSpecialCharges",
+                "title": "OTHER_SPECIAL_CHARGES",
+                "spec": "\"Other Special Charges\" involve fees that are unusual or uncommon. This may include non-repetitive items such as legal and litigation costs, environmental liability, risk preparedness, etc."
+              },
+              {
+                "key": "GainOnSaleOfBusiness",
+                "title": "GAIN_ON_SALE_OF_BUSINESS",
+                "spec": "\"Gain on Sale of Business\" means the profit a company makes by selling part or all of its business. This is usually related to corporate strategy adjustment, asset optimization or business restructuring."
+              },
+              {
+                "key": "GainOnSaleOfPPE",
+                "title": "GAIN_ON_SALE_OF_PPE",
+                "spec": "\"Gain on Sale of Property, Plant, and Equipment\" reflects the profit a company makes when it sells fixed assets, such as equipment, land, and buildings."
+              }
+            ]
+          },
+          {
+            "key": "OtherNonOperatingIncomeExpenses",
+            "title": "OTHER_NON_OPERATING_INCOME_EXPENSES",
+            "spec": "\"Other Non-Operating Income Expenses\" covers various other income and expenses incurred by the company in its non-operating financial activities."
+          }
+        ]
+      },
+      {
+        "key": "SpecialIncomeCharges",
+        "title": "SPECIAL_INCOME_CHARGES",
+        "spec": "\"Special Income Charges\" are unusual and uncommon income or expenses. This includes: \"Restructuring And Mergern Acquisition,\" \"Impairment Of Capital Assets,\" \"Write Off,\" \"Other Special Charges,\" \"Gain On Sale \"Of Business\", \"Gain On Sale Of PPE\"",
+        "children": [
+          {
+            "key": "GainOnSaleOfBusiness",
+            "title": "GAIN_ON_SALE_OF_BUSINESS",
+            "spec": "\"Gain on Sale of Business\" means the profit a company makes by selling part or all of its business. This is usually related to corporate strategy adjustment, asset optimization or business restructuring."
+          },
+          {
+            "key": "GainOnSaleOfPPE",
+            "title": "GAIN_ON_SALE_OF_PPE",
+            "spec": "\"Gain on Sale of Property, Plant, and Equipment\" reflects the profit a company makes when it sells fixed assets, such as equipment, land, and buildings."
+          },
+          {
+            "key": "RestructuringAndMergernAcquisition",
+            "title": "RESTRUCTURING_AND_MERGERN_ACQUISITION",
+            "spec": "\"Restructuring and Mergers and Acquisitions\" reflects expenses incurred by companies when making organizational changes, mergers and acquisitions or other strategic changes. This may include redundancy costs, equipment or plant relocation costs, transaction costs from mergers or acquisitions, etc."
+          },
+          {
+            "key": "ImpairmentOfCapitalAssets",
+            "title": "IMPAIRMENT_OF_CAPITAL_ASSETS",
+            "spec": "Impairment of Capital Assets Impairment of capital assets is a reduction in the value of a company's capital assets, such as equipment and real estate. This usually occurs when the recoverable amount of an asset is less than its book value."
+          },
+          {
+            "key": "WriteOff",
+            "title": "WRITE_OFF",
+            "spec": "\"Write Off\" is a situation in which a company writes off an asset or liability and no longer shows it in its financial statements. May include bad debt provisions, intangible assets impairment, etc."
+          },
+          {
+            "key": "LossonExtinguishmentofDebt",
+            "title": "LOSSON_EXTINGUISHMENTOF_DEBT"
+          },
+          {
+            "key": "OtherSpecialCharges",
+            "title": "OTHER_SPECIAL_CHARGES",
+            "spec": "\"Other Special Charges\" involve fees that are unusual or uncommon. This may include non-repetitive items such as legal and litigation costs, environmental liability, risk preparedness, etc."
+          }
+        ]
+      },
+      {
+        "key": "PretaxIncome",
+        "title": "PRETAX_INCOME",
+        "spec": "\"Pretax Income\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Pretax Income(Non-Bank)</mtext><mo>=</mo><mtext>Operating Income</mtext><mo>+</mo><mtext>Net Non-Operating Interest Income Expense</mtext><mo>+</mo><mtext>Other Income Expense</mtext></math><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>OR</mtext><br></math><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Pretax Income(Bank)</mtext><mo>=</mo><mtext>Total Revenue</mtext><mo>+</mo><mtext>Credit Losses Provision</mtext><mo>-</mo><mtext>Non Interest Expense</mtext></math><br>Earnings before tax (EBT) is a measure of financial performance. It reveals a company's earnings before taxes are deducted, is calculated by subtracting all expenses excluding taxes from revenue, and appears as a line item in the income statement.<br><br>EBT is sometimes also called pre-tax income, profit before tax, or income before income taxes.",
+        "ref": "https://www.investopedia.com/terms/e/ebt.asp"
+      },
+      {
+        "key": "TaxProvision",
+        "title": "TAX_PROVISION",
+        "spec": "The \"Tax Provision\" refers to the amount of income tax a company expects to pay or has set aside in its financial statements for a specific period. It is a crucial element in the income statement and is part of the company's overall provision for income taxes. The provision for income taxes is an estimate made by the company to reflect its expected tax liability based on applicable tax laws and regulations.<br><br>The calculation of the tax provision involves estimating the current income tax expense or benefit and recognizing any deferred tax assets or liabilities. The provision is influenced by factors such as the company's taxable income, tax rates, tax credits, and changes in tax laws.<br><br>The tax provision is a significant item for both financial reporting and analysis, providing insights into a company's tax planning, compliance, and potential future cash outflows or savings related to income taxes. Investors and analysts often examine the tax provision to assess a company's effective tax rate and understand the impact of taxes on its financial performance.",
+        "ref": "https://www.investopedia.com/terms/i/incometax.asp"
+      },
+      {
+        "key": "EarningsFromEquityInterestNetOfTax",
+        "title": "EARNINGS_FROM_EQUITY_INTEREST_NET_OF_TAX",
+        "spec": "\"Earnings from Equity Interest Net of Tax\" refers to the net income earned by an entity from its equity interest in other companies, after accounting for applicable taxes. This item is typically found in the financial statements, particularly in the income statement or statement of comprehensive income.<br><br>This financial metric is particularly relevant for companies with significant investments in other entities. It provides insight into the financial performance derived from ownership interests and helps stakeholders understand the after-tax impact on the earnings generated from equity investments.<br><br>In financial statements, you may find this information under different line items or within a separate section, depending on the reporting entity's accounting practices and the level of detail provided in the financial disclosures.",
+        "ref": "https://csimarket.com/glossary/term_Equity_Earnings_from_Investments.html"
+      },
+      {
+        "key": "NetIncomeCommonStockholders",
+        "title": "NET_INCOME_COMMON_STOCKHOLDERS",
+        "spec": "\"Net Income Common Stockholders\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Net Income Common Stockholders</mtext><mo>=</mo><mtext>Net Income</mtext><mo>-</mo><mtext>Preferred Stock Dividend</mtext><mo>-</mo><mtext>Other under Preferred Stock Dividend</mtext></math><br>\"Net Income Common Stockholders\" refers to the portion of a company's net income that is attributable to common stockholders. It represents the profit or earnings available to the owners of common shares after accounting for all expenses, taxes, interest, and preferred stock dividends.",
+        "ref": "https://www.investopedia.com/terms/n/netincome.asp",
+        "children": [
+          {
+            "key": "NetIncome",
+            "title": "NET_INCOME",
+            "spec": "\"Net Income\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Net Income</mtext><mo>=</mo><mtext>Net Income Including Non-Controlling Interests</mtext><mo>+</mo><mtext>Minority Interests</mtext></math><br><br>\"Net Income\" refers to the portion of the overall net income in consolidated financial statements that is allocated to the parent company or controlling shareholders. This metric reflects the equity interest held by the main shareholders in the net income of the entire group, considering subsidiaries or affiliates.<br><br>This metric is significant for investors and stakeholders as it provides insights into the share of net income that belongs to the primary shareholders, usually the parent company or controlling entity.<br><br>In this statement, \"Net Income\" is equivalent to \"Net Income attributable to Parent Company Shareholders\"",
+            "ref": "https://www.investopedia.com/terms/n/netincome.asp",
+            "children": [
+              {
+                "key": "NetIncomeIncludingNoncontrollingInterests",
+                "title": "NET_INCOME_INCLUDING_NONCONTROLLING_INTERESTS",
+                "spec": "\"Net Income Including Non-Controlling Interests\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Net Income Including Non-Controlling Interests</mtext><mo>=</mo><mtext>Pretax Income</mtext><mo>-</mo><mtext>Tax Provision</mtext><mo>+</mo><mtext>Earnings from Equity Interest Net of Tax</mtext><br></math><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>OR</mtext></math><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mrow><mi>Net Income Including Non-Controlling Interests</mi><mo>=</mo><mi>Net Income Continuous Operations</mi></mrow><mo>+</mo><mrow><mi>Net Income Discontinuous Operations</mi><mo>+</mo><mi>Net Income Extraordinary</mi></mrow><mo>+</mo><mi>Net Income from Tax Loss Carryforward</mi></mrow></math><br><br>\"Net Income Including Non-Controlling Interests\" refers to the company's net income that takes into account both the controlling (majority) and non-controlling (minority) interests. This metric reflects the portion of net income attributable to the ownership interests held by the parent company as well as the interests held by minority shareholders in subsidiaries or affiliated entities.<br><br>This metric is disclosed in the income statement (or statement of comprehensive income) of the financial statements. It provides a comprehensive view of the company's overall profitability, considering the interests of both majority and minority shareholders in subsidiary or affiliated entities.<br><br>In general, \"Net Income\" is equivalent to \"Net Income attributable to Parent Company Shareholders\".",
+                "ref": "https://www.investopedia.com/terms/n/netincome.asp",
+                "children": [
+                  {
+                    "key": "NetIncomeContinuousOperations",
+                    "title": "NET_INCOME_CONTINUOUS_OPERATIONS",
+                    "spec": "This represents the net income generated from the regular ongoing business activities of a company.It includes revenues and expenses related to the core business operations, typically excluding non-recurring items, extraordinary gains or losses, and tax adjustments.",
+                    "ref": "https://www.investopedia.com/terms/n/netincome.asp"
+                  },
+                  {
+                    "key": "NetIncomeDiscontinuousOperations",
+                    "title": "NET_INCOME_DISCONTINUOUS_OPERATIONS",
+                    "spec": "This is the net income resulting from one-time or non-recurring activities that are not part of the regular business operations.It includes the impact of activities such as the sale or closure of a business segment, discontinuation of operations, or other non-recurring events.",
+                    "ref": "https://www.investopedia.com/terms/n/netincome.asp"
+                  },
+                  {
+                    "key": "NetIncomeExtraordinary",
+                    "title": "NET_INCOME_EXTRAORDINARY",
+                    "spec": "This represents net income resulting from highly unusual, infrequent, and non-recurring events unrelated to the normal course of business.It includes the impact of events such as natural disasters, legal settlements, or other extraordinary items that are not expected to occur regularly.",
+                    "ref": "https://www.investopedia.com/terms/n/netincome.asp"
+                  },
+                  {
+                    "key": "NetIncomeFromTaxLossCarryforward",
+                    "title": "NET_INCOME_FROM_TAX_LOSS_CARRYFORWARD",
+                    "spec": "This is the net income arising from utilizing tax loss carryforwards, which are previous pre-tax losses that can be used to offset future taxable income.Companies can use accumulated tax losses to reduce their tax liability in profitable periods.",
+                    "ref": "https://www.investopedia.com/terms/n/netincome.asp"
+                  }
+                ]
+              },
+              {
+                "key": "MinorityInterests",
+                "title": "MINORITY_INTERESTS",
+                "spec": "\"Minority Interests\" refers to the portion of equity in a company that does not belong to the major or controlling shareholders. It signifies that there are other shareholders, known as minority shareholders, who hold a fraction of the company's equity but have limited control over the company. This equity held by minority shareholders is termed as Minority Interests.",
+                "ref": "https://www.investopedia.com/terms/n/netincome.asp"
+              }
+            ]
+          },
+          {
+            "key": "PreferredStockDividends",
+            "title": "PREFERRED_STOCK_DIVIDENDS",
+            "spec": "\"Preferred Stock Dividends\" refers to the dividends paid to holders of preferred stock in a company. Preferred stock is a type of equity security that usually entitles its holders to receive fixed dividends before common stockholders receive any dividends. These dividends are typically set at a predetermined rate, stated as a percentage of the par value of the preferred stock."
+          },
+          {
+            "key": "OtherunderPreferredStockDividend",
+            "title": "OTHERUNDER_PREFERRED_STOCK_DIVIDEND",
+            "spec": "\"Other under Preferred Stock Dividend\" means a category in the financial statements used to record other items or expenses related to preferred stock dividends that do not fall within a clearly defined other category. This classification is often used to include items outside of preferred stock dividend payments that do not easily fit into other specific categories."
+          }
+        ]
+      },
+      {
+        "key": "AverageDilutionEarnings",
+        "title": "AVERAGE_DILUTION_EARNINGS",
+        "spec": "\"Adjustments for Dilutive Securities\" refer to the net income adjustments made when calculating earnings per share (EPS) to account for potentially dilutive securities. The purpose of these adjustments is to consider the impact of securities that could have a dilutive effect on EPS, such as stock options, convertible bonds, or other convertible securities.<br><br>Specifically, this adjustment encompasses scenarios like:<br><br>1. Stock Options: Grants of stock options to employees, allowing them to purchase company stock at a predetermined price in the future. The exercise of these stock options may increase the company's common shares and potentially dilute EPS.<br><br>2. Convertible Bonds: Issuance of convertible bonds, which bondholders can convert into common stock at a future date. If these convertible bonds are converted, it could lead to an increase in potential common shares and affect EPS.<br><br>3. Other Convertible Securities: In addition to convertible bonds, there may be other convertible securities, such as convertible preferred stock.<br><br>The calculation of this adjustment typically involves adding the impact of these potential common shares to the reported net income. This adjustment aims to reflect potential changes in the capital structure when calculating EPS, providing investors with a more comprehensive understanding of the company's earnings per share, especially in situations where there is a possibility of issuing additional common shares.",
+        "ref": "https://www.investopedia.com/terms/d/dilutedeps.asp"
+      },
+      {
+        "key": "DilutedNIAvailtoComStockholders",
+        "title": "DILUTED_NI_AVAILTO_COM_STOCKHOLDERS",
+        "spec": "\"Diluted NI Available to Common Stockholders\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>Diluted NI Available to Common Stockholders</mi><mo>=</mo><mi>Net Income Common Stockholders</mi><mo>+</mo><mi>Adjustments for Dilutive Securities</mi></mrow></math><br>\"Diluted NI Available to Common Stockholders\" refers to the adjusted net income available to common stockholders when considering the potential dilutive effects of various securities, such as stock options, convertible bonds, or other convertible securities. This adjustment is made in the calculation of diluted earnings per share (EPS).",
+        "ref": "https://www.investopedia.com/terms/d/dilutedeps.asp"
+      },
+      {
+        "key": "BasicEPS",
+        "title": "BASIC_EPS",
+        "useRaw": false,
+        "spec": "\"Basic EPS\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mtext>Basic EPS</mtext><mo>=</mo><mfrac linethickness=\"1\"><mrow><mtext>Net Income Common Stockholders</mtext></mrow><mrow><mtext>Basic Average Shares</mtext></mrow></mfrac></mrow></math><br>Basic earnings per share (EPS) tells investors how much of a firm's net income was allotted to each share of common stock. It is reported in a company's income statement and is especially informative for businesses with only common stock in their capital structures.",
+        "ref": "https://www.investopedia.com/terms/b/basic-earnings-per-share.asp",
+        "children": [
+          {
+            "key": "BasicContinuousOperations",
+            "title": "BASIC_CONTINUOUS_OPERATIONS"
+          },
+          {
+            "key": "BasicDiscontinuousOperations",
+            "title": "BASIC_DISCONTINUOUS_OPERATIONS"
+          },
+          {
+            "key": "BasicExtraordinary",
+            "title": "BASIC_EXTRAORDINARY"
+          },
+          {
+            "key": "BasicAccountingChange",
+            "title": "BASIC_ACCOUNTING_CHANGE"
+          },
+          {
+            "key": "TaxLossCarryforwardBasicEPS",
+            "title": "TAX_LOSS_CARRYFORWARD_BASIC_EPS"
+          },
+          {
+            "key": "BasicEPSOtherGainsLosses",
+            "title": "BASIC_EPS_OTHER_GAINS_LOSSES"
+          }
+        ]
+      },
+      {
+        "key": "DilutedEPS",
+        "title": "DILUTED_EPS",
+        "useRaw": false,
+        "spec": "\"Diluted EPS\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mtext>Diluted EPS</mtext><mo>=</mo><mfrac linethickness=\"1\"><mrow><mtext>Diluted NI Available to Com Stockholders</mtext></mrow><mrow><mtext>Diluted Average Shares</mtext></mrow></mfrac></mrow></math><br>Diluted EPS is a measurement used to gauge the quality of a company's earnings per share (EPS) if all convertible securities were exercised. The diluted EPS is commonly lower than the simple or basic EPS.",
+        "ref": "https://www.investopedia.com/terms/d/dilutedeps.asp",
+        "children": [
+          {
+            "key": "DilutedContinuousOperations",
+            "title": "DILUTED_CONTINUOUS_OPERATIONS"
+          },
+          {
+            "key": "DilutedDiscontinuousOperations",
+            "title": "DILUTED_DISCONTINUOUS_OPERATIONS"
+          },
+          {
+            "key": "DilutedExtraordinary",
+            "title": "DILUTED_EXTRAORDINARY"
+          },
+          {
+            "key": "DilutedAccountingChange",
+            "title": "DILUTED_ACCOUNTING_CHANGE"
+          },
+          {
+            "key": "TaxLossCarryforwardDilutedEPS",
+            "title": "TAX_LOSS_CARRYFORWARD_DILUTED_EPS"
+          },
+          {
+            "key": "DilutedEPSOtherGainsLosses",
+            "title": "DILUTED_EPS_OTHER_GAINS_LOSSES"
+          }
+        ]
+      },
+      {
+        "key": "BasicAverageShares",
+        "title": "BASIC_AVERAGE_SHARES",
+        "spec": "Represents the average number of common shares outstanding during a specific time period.Includes common shares that are currently outstanding, but does not account for the impact of potentially dilutive securities such as stock options, convertible securities, or other instruments that could potentially be converted into common shares.",
+        "ref": "https://ycharts.com/glossary/terms/average_shares_outs_basic"
+      },
+      {
+        "key": "DilutedAverageShares",
+        "title": "DILUTED_AVERAGE_SHARES",
+        "spec": "Represents the average number of common shares outstanding during a specific time period, but includes additional potentially dilutive securities.Takes into account all potential common shares that could be created through the conversion of options, convertible debt, or other securities that could be converted into common shares.",
+        "ref": "https://ycharts.com/glossary/terms/average_shares_outs_diluted"
+      },
+      {
+        "key": "DividendPerShare",
+        "title": "DIVIDEND_PER_SHARE",
+        "spec": "Dividend per share (DPS) is the sum of declared dividends issued by a company for every ordinary share outstanding. The figure is calculated by dividing the total dividends paid out by a business, including interim dividends, over a period of time, usually a year, by the number of outstanding ordinary shares issued.",
+        "ref": "https://www.investopedia.com/terms/d/dividend-per-share.asp"
+      },
+      {
+        "key": "TotalOperatingIncomeAsReported",
+        "title": "TOTAL_OPERATING_INCOME_AS_REPORTED",
+        "spec": "\"Total Operating Income as Reported\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>Total Operating Income as Reported</mi><mo>=</mo><mi>Operating Income</mi><mo>+</mo><mi>Special Income Charges</mi></mrow></math><br>\"Total Operating Income as Reported\" and \"Operating Income\" are both financial metrics used in the income statement (profit and loss statement) of a company, but they represent slightly different concepts. \"Total Operating Income as Reported\" refers to the total operating income reported by a company, and it includes all income generated from its core operating activities. It may encompass various sources of operating revenue, including special items, charges, or any other income related to the core business operations.",
+        "ref": "https://www.investopedia.com/terms/o/operatingincome.asp"
+      },
+      {
+        "key": "ReportedNormalizedBasicEPS",
+        "title": "REPORTED_NORMALIZED_BASIC_EPS"
+      },
+      {
+        "key": "ReportedNormalizedDilutedEPS",
+        "title": "REPORTED_NORMALIZED_DILUTED_EPS"
+      },
+      {
+        "key": "RentExpenseSupplemental",
+        "title": "RENT_EXPENSE_SUPPLEMENTAL",
+        "spec": "\"Rent Expense Supplemental\" typically refers to additional information or details related to rent expenses provided in financial statements or accompanying notes. In financial reporting, companies may break down their rent expenses into various categories or provide additional details to enhance transparency and understanding for stakeholders."
+      },
+      {
+        "key": "TotalExpenses",
+        "title": "TOTAL_EXPENSES",
+        "spec": "\"Total Expenses\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>Total Expenses</mi><mo>=</mo><mi>Cost of Revenue</mi><mo>+</mo><mi>Operating Expense</mi></mrow></math><br>When you sum up the cost of revenue and operating expenses, you get the total expenses incurred by the company in its normal business operations.This equation provides a comprehensive view of the overall costs associated with generating revenue and running the business. Understanding these components helps analysts and investors assess the efficiency and profitability of a company's operations. It's important to note that there might be other categories of expenses, such as interest and taxes, which are not included in this equation and are typically considered below the operating income level on the income statement.",
+        "ref": "https://www.investopedia.com/terms/o/operating-cost.asp"
+      },
+      {
+        "key": "InterestIncomeAfterProvisionForLoanLoss",
+        "title": "INTEREST_INCOME_AFTER_PROVISION_FOR_LOAN_LOSS"
+      },
+      {
+        "key": "NetIncomeFromContinuingAndDiscontinuedOperation",
+        "title": "NET_INCOME_FROM_CONTINUING_AND_DISCONTINUED_OPERATION",
+        "spec": "\"Net Income from Continuing & Discontinued Operation\" equals \"Net Income(Attributable to Parent Company Shareholders)\""
+      },
+      {
+        "key": "NormalizedIncome",
+        "title": "NORMALIZED_INCOME",
+        "spec": "Normalized earnings are adjusted to remove the effects of seasonality, revenue, and expenses that are unusual or one-time influences. Normalized earnings help business owners, financial analysts, and other stakeholders understand a company's true earnings from its normal operations. An example of this normalization would be to remove a land sale from a retail firm's financial statements in which a large capital gain was realized, as selling products—not selling land—is the company's real business.",
+        "ref": "https://www.investopedia.com/terms/n/normalizedearnings.asp"
+      },
+      {
+        "key": "TotalMoneyMarketInvestments",
+        "title": "TOTAL_MONEY_MARKET_INVESTMENTS"
+      },
+      {
+        "key": "ContinuingAndDiscontinuedBasicEPS",
+        "title": "CONTINUING_AND_DISCONTINUED_BASIC_EPS"
+      },
+      {
+        "key": "ContinuingAndDiscontinuedDilutedEPS",
+        "title": "CONTINUING_AND_DISCONTINUED_DILUTED_EPS"
+      },
+      {
+        "key": "EBIT",
+        "title": "EBIT",
+        "spec": "\"EBIT\" is calculated as follows:<br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>EBIT</mi><mo>=</mo><mi>Pretax Income</mi><mo>+</mo><mi>Interest Expense</mi></mrow></math><br>Earnings before interest and taxes (EBIT) indicate a company's profitability. EBIT is calculated as revenue minus expenses excluding tax and interest. EBIT is also called operating earnings, operating profit, and profit before interest and taxes.",
+        "ref": "https://www.investopedia.com/terms/e/ebit.asp"
+      },
+      {
+        "key": "EBITDA",
+        "title": "EBITDA",
+        "spec": "\"EBITDA\" is calculated as follows:<br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>EBITDA</mi><mo>=</mo><mi>EBIT</mi><mo>+</mo><mi>Depreciation Amortization Depletion</mi></mrow></math><br>EBITDA, or earnings before interest, taxes, depreciation, and amortization, is an alternate measure of profitability to net income. By including depreciation and amortization as well as taxes and debt payment costs, EBITDA attempts to represent the cash profit generated by the company's operations.",
+        "ref": "https://www.investopedia.com/terms/e/ebitda.asp"
+      },
+      {
+        "key": "ReconciledCostOfRevenue",
+        "title": "RECONCILED_COST_OF_REVENUE",
+        "spec": "In most cases, 'Reconciled Cost of Revenue' is equivalent to 'Cost of Revenue'."
+      },
+      {
+        "key": "ReconciledDepreciation",
+        "title": "RECONCILED_DEPRECIATION",
+        "spec": "In most cases, 'Reconciled Depreciation' is equivalent to 'Depreciation'"
+      },
+      {
+        "key": "NetIncomeFromContinuingOperationNetMinorityInterest",
+        "title": "NET_INCOME_FROM_CONTINUING_OPERATION_NET_MINORITY_INTEREST",
+        "spec": "\"Net Income from Continuing Operation Net Minority Interest\" equals \"Net Income(Attributable to Parent Company Shareholders)\""
+      },
+      {
+        "key": "TotalUnusualItemsExcludingGoodwill",
+        "title": "TOTAL_UNUSUAL_ITEMS_EXCLUDING_GOODWILL",
+        "spec": "\"Total Unusual Items Excluding Goodwill\" in an income statement refers to the sum of all exceptional items excluding goodwill. Exceptional items are typically those that are infrequent or non-recurring and can impact the financial performance of the company. Goodwill, on the other hand, represents the premium paid by a company when acquiring another company and is usually listed in the balance sheet. Therefore, \"Total Unusual Items Excluding Goodwill\" denotes the total of all other exceptional items apart from the premium paid for acquisitions. Normally, it equals \"Special Income Charges\""
+      },
+      {
+        "key": "TotalUnusualItems",
+        "title": "TOTAL_UNUSUAL_ITEMS",
+        "spec": "\"Total Unusual Items\" refers to the aggregate amount of all exceptional or extraordinary items listed in the income statement. These items are typically non-recurring or infrequent and can include things like restructuring charges, gains or losses from asset sales, legal settlements, or other one-time events that are not part of the company's regular operations. Normally, it equals \"Special Income Charges\""
+      },
+      {
+        "key": "NormalizedBasicEPS",
+        "title": "NORMALIZED_BASIC_EPS"
+      },
+      {
+        "key": "NormalizedDilutedEPS",
+        "title": "NORMALIZED_DILUTED_EPS"
+      },
+      {
+        "key": "NormalizedEBITDA",
+        "title": "NORMALIZED_EBITDA",
+        "spec": "Adjusted EBITDA (earnings before interest, taxes, depreciation, and amortization) is a measure computed for a company that takes its earnings and adds back interest expenses, taxes, and depreciation charges, plus other adjustments to the metric. Adjusted EBITDA is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>Normalized EBITDA</mi><mo>=</mo><mi>EBITDA</mi><mo>−</mo><mi>Total Unusual Items</mi></mrow></math>",
+        "ref": "https://www.investopedia.com/terms/a/adjusted-ebitda.asp"
+      },
+      {
+        "key": "TaxRateForCalcs",
+        "title": "TAX_RATE_FOR_CALCS",
+        "spec": "\"Tax Rate for Calcs\" is calculated as follows:<br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mrow><mi>Tax Rate for Calcs</mi><mo>=</mo><mfrac><mi>Tax Provision</mi><mi>Pretax Income</mi></mfrac></mrow></math><br>\"Tax Rate for Calcs\" refers to the tax rate used for calculations. This could be a specific rate applied to determine the tax provision based on the pre-tax income of a company. It's essentially the rate at which taxes are calculated for financial reporting purposes."
+      },
+      {
+        "key": "TaxEffectOfUnusualItems",
+        "title": "TAX_EFFECT_OF_UNUSUAL_ITEMS",
+        "spec": "The \"Tax Effect of Unusual Items\" refers to the impact of exceptional or extraordinary items on the tax calculation of a company. When unusual items, such as one-time gains or losses, are included in the financial statements, they may affect the company's taxable income and consequently its tax provision. The tax effect reflects how these items influence the amount of taxes the company owes or can deduct. It's important to properly account for the tax implications of unusual items to accurately assess the company's financial performance and tax obligations."
+      },
+      {
+        "key": "OperatingRevenue",
+        "title": "OPERATING_REVENUE",
+        "spec": "Operating revenue is the revenue that a company generates from its primary business activities. ",
+        "ref": "https://www.investopedia.com/terms/o/operating-revenue.asp"
+      },
+      {
+        "key": "OperatingExpense",
+        "title": "OPERATING_EXPENSE",
+        "children": [
+          {
+            "key": "OtherOperatingExpenses",
+            "title": "OTHER_OPERATING_EXPENSES"
+          }
+        ]
+      }
+    ]
+  }
+}

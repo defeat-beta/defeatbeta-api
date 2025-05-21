@@ -1,0 +1,723 @@
+{
+  "FinancialTemplateStore": {
+    "template": [
+      {
+        "key": "CashFlowsfromusedinOperatingActivitiesDirect",
+        "title": "CASH_FLOWSFROMUSEDIN_OPERATING_ACTIVITIES_DIRECT",
+        "spec": "Cash flow from operating activities (CFO) indicates the amount of money a company brings in from its ongoing, regular business activities, such as manufacturing and selling goods or providing a service to customers. It is the first section depicted on a company's cash flow statement.<br><br>Cash flow from operating activities does not include long-term capital expenditures or investment revenue and expense. CFO focuses only on the core business, and is also known as operating cash flow (OCF) or net cash from operating activities.",
+        "ref": "https://www.investopedia.com/terms/c/cash-flow-from-operating-activities.asp",
+        "children": [
+          {
+            "key": "ClassesofCashReceiptsfromOperatingActivities",
+            "title": "CLASSESOF_CASH_RECEIPTSFROM_OPERATING_ACTIVITIES",
+            "spec": "Classes of Cash Receipts from Operating Activities refer to the different sources from which a company generates cash through its day-to-day operational activities. These sources can be categorized into various classes or categories based on the nature of the cash inflows. Some common classes of cash receipts from operating activities include: Receipts from Customers, Receipts from Government Grants, Other Cash Receipts from Operating Activities",
+            "children": [
+              {
+                "key": "ReceiptsfromCustomers",
+                "title": "RECEIPTSFROM_CUSTOMERS",
+                "spec": "Receipts from Customers refer to the cash inflows a company receives from its customers for the sale of goods or services. These receipts are a crucial component of a company's operating cash flow and are typically classified under cash receipts from operating activities in the statement of cash flows."
+              },
+              {
+                "key": "ReceiptsfromGovernmentGrants",
+                "title": "RECEIPTSFROM_GOVERNMENT_GRANTS",
+                "spec": "Receipts from government grants refer to cash inflows that a company receives from government entities as financial assistance or support for specific purposes. These grants are typically non-reciprocal, meaning the company is not required to repay them like loans. Instead, they are usually provided to support activities that align with government priorities or public policy objectives."
+              },
+              {
+                "key": "OtherCashReceiptsfromOperatingActivities",
+                "title": "OTHER_CASH_RECEIPTSFROM_OPERATING_ACTIVITIES",
+                "spec": "Other Cash Receipts from Operating Activities refer to cash inflows that a company generates from its day-to-day operational activities, excluding receipts from customers and government grants. These receipts can encompass a variety of sources and transactions that contribute to the company's operating cash flow."
+              }
+            ]
+          },
+          {
+            "key": "ClassesofCashPayments",
+            "title": "CLASSESOF_CASH_PAYMENTS",
+            "spec": "Classes of Cash Payments refer to the various categories or types of cash outflows that a company makes as part of its day-to-day operations. These payments are typically categorized based on the nature of the expenditure and are essential for analyzing a company's cash flow and financial health. Here are some common classes of cash payments: Payments to Suppliers for Goods & Services, Payments on Behalf of Employees, Other Cash Payments from Operating Activities",
+            "children": [
+              {
+                "key": "PaymentstoSuppliersforGoodsandServices",
+                "title": "PAYMENTSTO_SUPPLIERSFOR_GOODSAND_SERVICES",
+                "spec": "Payments to Suppliers for Goods & Services refer to the cash outflows made by a company to its suppliers in exchange for goods purchased or services rendered. These payments are a crucial component of a company's operating cash flow and are typically classified under cash payments from operating activities in the statement of cash flows."
+              },
+              {
+                "key": "PaymentsonBehalfofEmployees",
+                "title": "PAYMENTSON_BEHALFOF_EMPLOYEES",
+                "spec": "Payments on Behalf of Employees refer to cash outflows made by a company to cover expenses or obligations that are related to its employees but are paid directly by the company. These payments are typically categorized as operating expenses and are essential for maintaining employee satisfaction, compliance with legal requirements, and efficient business operations."
+              },
+              {
+                "key": "OtherCashPaymentsfromOperatingActivities",
+                "title": "OTHER_CASH_PAYMENTSFROM_OPERATING_ACTIVITIES",
+                "spec": "Other Cash Payments from Operating Activities refer to cash outflows that are not specifically categorized under other classes of cash payments but are related to a company's day-to-day operational activities. These payments are typically reported in the statement of cash flows under the operating activities section and contribute to assessing the company's cash flow and financial performance."
+              }
+            ]
+          },
+          {
+            "key": "DividendsPaidDirect",
+            "title": "DIVIDENDS_PAID_DIRECT",
+            "spec": "Dividends Paid Direct refers to the amount of dividends directly paid to shareholders by a company. This metric reflects the portion of cash flow generated from operating activities that is used to pay dividends. It includes cash dividends paid to common shareholders or other shareholders. In the operating activities section of the cash flow statement, Dividends Paid Direct is typically presented as a separate item, indicating the company's dividend policy and capital allocation to shareholders."
+          },
+          {
+            "key": "DividendsReceivedDirect",
+            "title": "DIVIDENDS_RECEIVED_DIRECT",
+            "spec": "Dividends Received Direct refers to the amount of dividends received directly by a company from its investments in other companies' stocks. This typically appears on the company's cash flow statement, reflecting the dividend income obtained from its investment activities."
+          },
+          {
+            "key": "InterestPaidDirect",
+            "title": "INTEREST_PAID_DIRECT",
+            "spec": "Interest Paid Direct in Operating Cash Flow refers to the amount of interest expenses directly paid by the company. This represents the interest costs incurred by the company in its operating activities and is typically reflected in the company's statement of cash flows."
+          },
+          {
+            "key": "InterestReceivedDirect",
+            "title": "INTEREST_RECEIVED_DIRECT",
+            "spec": "Interest Received Direct in Operating Cash Flow refers to the amount of interest income directly received by the company. This metric reflects the interest income obtained by the company from its investments in its operating activities."
+          },
+          {
+            "key": "TaxesRefundPaidDirect",
+            "title": "TAXES_REFUND_PAID_DIRECT",
+            "spec": "Taxes Refund Paid Direct refers to the amount of tax refunds directly paid by the company. This metric reflects the tax refund payments made by the company to tax authorities as part of its operating activities."
+          }
+        ]
+      },
+      {
+        "key": "OperatingCashFlow",
+        "title": "OPERATING_CASH_FLOW",
+        "spec": "Cash flow from operating activities (CFO) indicates the amount of money a company brings in from its ongoing, regular business activities, such as manufacturing and selling goods or providing a service to customers. It is the first section depicted on a company's cash flow statement.<br><br>Cash flow from operating activities does not include long-term capital expenditures or investment revenue and expense. CFO focuses only on the core business, and is also known as operating cash flow (OCF) or net cash from operating activities.",
+        "ref": "https://www.investopedia.com/terms/c/cash-flow-from-operating-activities.asp",
+        "children": [
+          {
+            "key": "CashFlowFromContinuingOperatingActivities",
+            "title": "CASH_FLOW_FROM_CONTINUING_OPERATING_ACTIVITIES",
+            "spec": "Cash Flow from Continuing Operating Activities refers to the cash flows generated from the ongoing operating activities of a business. It reflects the cash inflows and outflows from the company's day-to-day operations, such as sales of goods or services. This section of the cash flow statement is a crucial indicator of the company's operational performance, as it shows whether the core business activities are generating sufficient cash to sustain and grow the business.",
+            "ref": "https://www.investopedia.com/terms/c/cash-flow-from-operating-activities.asp",
+            "children": [
+              {
+                "key": "NetIncomeFromContinuingOperations",
+                "title": "NET_INCOME_FROM_CONTINUING_OPERATIONS",
+                "spec": "Net Income from Continuing Operations refers to the net profit a company generates from its ongoing business activities during a specific accounting period. It includes all revenues and expenses related to the continuing operations but excludes the impact of any discontinued or planned-to-be-discontinued business segments. This metric helps investors and management understand the profitability of the company's core operations without the effects of non-recurring items.",
+                "ref": "https://www.investopedia.com/terms/c/cash-flow-from-operating-activities.asp"
+              },
+              {
+                "key": "OperatingGainsLosses",
+                "title": "OPERATING_GAINS_LOSSES",
+                "spec": "Operating Gains Losses refers to non-recurring gains or losses that a company experiences from its regular business operations. These can include Gain Loss On Sale of Business, Gain Loss On Sale of PPE,  Net Foreign Currency Exchange Gain Loss, Gain Loss On Investment Securities, Earnings Losses from Equity Investments or Pension And Employee Benefit Expense. While these items are not the direct result of day-to-day operations, they are still related to the company's operations and can impact its net income.",
+                "ref": "https://www.investopedia.com/terms/o/operating-loss.asp",
+                "children": [
+                  {
+                    "key": "GainLossOnSaleOfBusiness",
+                    "title": "GAIN_LOSS_ON_SALE_OF_BUSINESS",
+                    "spec": "Gain Loss On Sale of Business refers to the profit or loss a company realizes when it sells a part of its business or a subsidiary. When a company decides to sell a portion of its operations, the transaction results in financial outcomes. If the sale price exceeds the book value of the business sold, a gain is realized; conversely, if the sale price is below the book value, a loss is incurred. These gains or losses are typically reported separately in financial statements as non-recurring items to provide a clearer view of the company's financial position and performance."
+                  },
+                  {
+                    "key": "GainLossOnSaleOfPPE",
+                    "title": "GAIN_LOSS_ON_SALE_OF_PPE",
+                    "spec": "Gain Loss On Sale of PPE (Property, Plant, and Equipment) refers to the profit or loss a company realizes when it sells its fixed assets, such as land, buildings, and equipment. When a company sells these fixed assets, if the sale price exceeds the book value of the asset, a gain is realized; conversely, if the sale price is below the book value, a loss is incurred. These gains or losses are reported separately in financial statements to provide a clearer picture of the company's financial condition related to the disposal of fixed assets."
+                  },
+                  {
+                    "key": "NetForeignCurrencyExchangeGainLoss",
+                    "title": "NET_FOREIGN_CURRENCY_EXCHANGE_GAIN_LOSS",
+                    "spec": "Net Foreign Currency Exchange Gain Loss refers to the net profit or loss a company realizes due to fluctuations in exchange rates during foreign currency transactions. When a company engages in international trade, investment, or other activities involving foreign currencies, exchange rate fluctuations can lead to gains or losses during currency conversion. These foreign exchange gains or losses are reported separately in financial statements to reflect the impact of currency market volatility on the company's financial condition."
+                  },
+                  {
+                    "key": "GainLossOnInvestmentSecurities",
+                    "title": "GAIN_LOSS_ON_INVESTMENT_SECURITIES",
+                    "spec": "Gain Loss On Investment Securities refers to the profit or loss a company realizes from the sale or revaluation of its investment securities, such as stocks, bonds, and other financial instruments. When a company sells its held investment securities, if the sale price exceeds the book value of the securities, a gain is realized; conversely, if the sale price is below the book value, a loss is incurred. Additionally, changes in the fair value of investment securities can lead to unrealized gains or losses, which also need to be reflected in the financial statements."
+                  },
+                  {
+                    "key": "EarningsLossesFromEquityInvestments",
+                    "title": "EARNINGS_LOSSES_FROM_EQUITY_INVESTMENTS",
+                    "spec": "Earnings Losses from Equity Investments refers to the profits or losses a company derives from its equity investments in other companies. Equity investments typically involve owning shares or partnership interests in other companies. When the investee company performs well, the investing company can earn a corresponding share of the profits; conversely, if the investee company incurs losses, the investing company will also suffer a corresponding share of those losses. These earnings or losses are reported separately in financial statements to provide a clearer picture of the company's financial performance related to its equity investments."
+                  },
+                  {
+                    "key": "PensionAndEmployeeBenefitExpense",
+                    "title": "PENSION_AND_EMPLOYEE_BENEFIT_EXPENSE",
+                    "spec": "Pension and Employee Benefit Expense refers to the costs incurred by a company for providing pension plans and other employee benefits. These expenses include contributions to employee retirement plans, health insurance, paid vacation, paid sick leave, and other benefit programs. These benefit costs are part of the company's operating expenses and are typically reported separately in financial statements to clearly reflect the company's financial obligations and commitments related to employee benefits."
+                  },
+                  {
+                    "key": "RealizedGainLossOnSaleOfLoansAndLease",
+                    "title": "REALIZED_GAIN_LOSS_ON_SALE_OF_LOANS_AND_LEASE"
+                  }
+                ]
+              },
+              {
+                "key": "DepreciationAndAmortization",
+                "title": "DEPRECIATION_AND_AMORTIZATION",
+                "spec": "Depreciation & Amortization in the cash flow statement refer to non-cash expenses related to fixed assets and intangible assets. These expenses reflect the loss in value of assets over their useful lives and have significant impacts on the company's financial statements.",
+                "children": [
+                  {
+                    "key": "Depreciation",
+                    "title": "DEPRECIATION",
+                    "spec": "This refers to the allocation of the cost of tangible fixed assets (such as equipment, buildings, machinery, etc.) over their useful lives. Depreciation expense reflects the gradual consumption of these tangible assets' value during their usage. For example, the purchase cost of a machine is spread over its expected lifespan, with a portion recorded as depreciation expense each year."
+                  },
+                  {
+                    "key": "AmortizationCashFlow",
+                    "title": "AMORTIZATION",
+                    "spec": "This refers to the allocation of the cost of intangible assets (such as patents, trademarks, copyrights, software, goodwill, etc.) over their useful lives. Amortization expense is similar to depreciation but applies to intangible assets. For example, the cost of a patent is spread over its valid period, with a portion recorded as amortization expense each year.",
+                    "children": [
+                      {
+                        "key": "AmortizationOfIntangibles",
+                        "title": "AMORTIZATION_OF_INTANGIBLES",
+                        "spec": "Amortization of Intangibles refers to the process of allocating the cost of intangible assets (such as patents, trademarks, copyrights, software, goodwill, etc.) over their useful lives. Intangible assets do not have a physical form, but they hold economic value and can provide future economic benefits to the company. Amortization expense reflects the gradual consumption of the value of intangible assets over time."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "DeferredTax",
+                "title": "DEFERRED_TAX",
+                "spec": "Deferred Tax in the cash flow statement refers to taxes that are recognized due to temporary differences between accounting standards and tax regulations. These differences will result in tax expenses or benefits in future periods. Deferred tax typically includes deferred tax assets and deferred tax liabilities.",
+                "children": [
+                  {
+                    "key": "DeferredIncomeTax",
+                    "title": "DEFERRED_INCOME_TAX",
+                    "spec":"Deferred Income Taxes in the cash flow statement refers to the deferred tax expense or benefit resulting from temporary differences between accounting treatment and tax regulations. These temporary differences will result in actual tax payments or tax savings in future periods. Deferred income taxes are categorized into deferred tax assets and deferred tax liabilities in the financial statements.<br><br>In the cash flow statement, deferred income taxes are typically adjusted as non-cash items because they do not involve actual cash inflows or outflows."
+                  }
+                ]
+              },
+              {
+                "key": "OtherNonCashItems",
+                "title": "OTHER_NON_CASH_ITEMS",
+                "spec": "Other Non-Cash Items in the cash flow statement refer to accounting adjustments that affect a company's net income but do not involve actual cash inflows or outflows. These items need to be adjusted in the cash flow statement to accurately reflect the company's operating cash flow situation."
+              },
+              {
+                "key": "AmortizationOfSecurities",
+                "title": "AMORTIZATION_OF_SECURITIES",
+                "spec": "Amortization of Securities in the cash flow statement refers to the systematic allocation of the premium or discount on certain securities (typically bonds) over their remaining life. The purpose of this adjustment is to gradually adjust the book value of the security to its maturity value.<br><br>In the cash flow statement, the amortization of securities typically appears as an adjustment item in the operating activities section. This is because the amortization of premium or discount on securities is a non-cash expense or income and does not affect actual cash outflows or inflows. Therefore, an adjustment is needed to net income to accurately reflect the cash flow situation."
+              },
+              {
+                "key": "AssetImpairmentCharge",
+                "title": "ASSET_IMPAIRMENT_CHARGE",
+                "spec": "Asset Impairment Charge in the cash flow statement refers to the expense recognized when a company writes down the value of its assets due to a decline in their recoverable amount. This write-down occurs when the carrying amount of an asset (such as fixed assets, intangible assets, or goodwill) exceeds its recoverable amount, necessitating an impairment test and recognition of impairment loss. Such impairment may result from changes in market conditions, technological obsolescence, decreased demand, or other factors.<br><br>In the cash flow statement, the asset impairment charge is typically shown as a non-cash adjustment in the operating activities section. Although impairment charges reduce net income, they do not involve actual cash outflows. Therefore, these charges are added back to net income to accurately reflect the company's cash flow situation."
+              },
+              {
+                "key": "StockBasedCompensation",
+                "title": "STOCK_BASED_COMPENSATION",
+                "spec": "Stock Based Compensation in the cash flow statement refers to the expense incurred by a company when it compensates its employees with stock, options, or other equity instruments. These expenses reflect the fair value of the stock or options granted to employees for their services, and although they do not involve actual cash outflows, they do impact the company's net income.<br><br>In the cash flow statement, stock-based compensation expenses are typically shown as non-cash adjustments in the operating activities section. While these expenses reduce net income, they do not involve actual cash outflows. Therefore, these expenses are added back to net income to accurately reflect the company's operating cash flow."
+              },
+              {
+                "key": "InterestCreditedOnPolicyholderDeposits",
+                "title": "INTEREST_CREDITED_ON_POLICYHOLDER_DEPOSITS"
+              },
+              {
+                "key": "UnrealizedGainsLossesOnDerivatives",
+                "title": "UNREALIZED_GAINS_LOSSES_ON_DERIVATIVES"
+              },
+              {
+                "key": "UnrealizedGainLossOnInvestmentSecurities",
+                "title": "UNREALIZED_GAIN_LOSS_ON_INVESTMENT_SECURITIES",
+                "spec": "Unrealized Gain Loss On Investment Securities in the cash flow statement refers to the changes in the market value of a company's investment securities (such as stocks and bonds) that result in gains or losses that have not yet been realized through actual sale. These changes reflect the market value fluctuations of the securities, but because these securities have not been sold, the gains or losses are \"unrealized.\" Unrealized gains or losses are usually reported in the equity section under other comprehensive income (OCI) rather than directly impacting the company's net income.<br><br>In the cash flow statement, unrealized gains or losses are typically shown as non-cash adjustments in the operating activities section. This is because these gains or losses do not involve actual cash inflows or outflows. To accurately reflect the company's operating cash flow, these unrealized gains or losses need to be excluded from net income."
+              },
+              {
+                "key": "ProvisionandWriteOffofAssets",
+                "title": "PROVISIONAND_WRITE_OFFOF_ASSETS",
+                "spec": "Provision & Write Off of Assets in the cash flow statement refers to the provisions made for potential asset losses and the actual write-off of impaired or uncollectible assets. These items typically involve accounts receivable, inventory, fixed assets, and other assets.<br><br>In the cash flow statement, provisions and write-offs are typically shown as non-cash adjustments in the operating activities section. While these expenses reduce net income, they do not involve actual cash outflows. Therefore, adjustments are made to net income to accurately reflect the company's cash flow situation."
+              },
+              {
+                "key": "ExcessTaxBenefitFromStockBasedCompensation",
+                "title": "EXCESS_TAX_BENEFIT_FROM_STOCK_BASED_COMPENSATION",
+                "spec": "Excess Tax Benefit from Stock Based Compensation refers to the tax benefit a company receives when employees exercise stock options or other equity instruments, and this benefit exceeds the initial recorded tax expense. This tax benefit typically occurs because the market price of the stock at the time of exercise is higher than the price at the time of grant, leading to a tax deduction greater than the company's initial estimated tax expense.<br><br>In the cash flow statement, \"Excess Tax Benefit from Stock Based Compensation\" is typically reported in the financing activities section rather than the operating activities section. This is because it is related to equity financing activities rather than the result of normal operating activities. In the cash flow statement, these benefits are usually shown as a negative adjustment in the operating activities section and a positive item in the financing activities section."
+              },
+              {
+                "key": "ChangeInWorkingCapital",
+                "title": "CHANGE_IN_WORKING_CAPITAL",
+                "spec": "Change in Working Capital refers to the changes in a company's working capital over a specific period. This item reflects the changes in the company's short-term assets and liabilities and is part of the cash flow from operating activities. In the cash flow statement, the calculation of change in working capital usually includes the following key items: Change in Receivables, Change in Inventory, Change in Prepaid Assets, Change in Payables And Accrued Expense, Change in Other Current Assets, Change in Other Current Liabilities, Change in Other Working Capital.",
+                "children": [
+                  {
+                    "key": "ChangeInReceivables",
+                    "title": "CHANGE_IN_RECEIVABLES",
+                    "spec": "The increase or decrease in accounts receivable reflects the changes in the company's sales of products or services for which cash has not yet been received during the period.",
+                    "children": [
+                      {
+                        "key": "ChangesInAccountReceivables",
+                        "title": "CHANGES_IN_ACCOUNT_RECEIVABLES",
+                        "spec": "\"Changes in Accounts Receivables\" is part of \"Change in Receivables.\" Specifically, it reflects the increase or decrease in the amount of money owed to the company by its customers for goods sold or services rendered but not yet paid for within a specific period. "
+                      }
+                    ]
+                  },
+                  {
+                    "key": "ChangeInInventory",
+                    "title": "CHANGE_IN_INVENTORY",
+                    "spec": "The increase or decrease in inventory reflects the changes in the company's purchases or production of products that have not yet been sold during the period."
+                  },
+                  {
+                    "key": "ChangeInPrepaidAssets",
+                    "title": "CHANGE_IN_PREPAID_ASSETS",
+                    "spec": "The increase or decrease in prepaid assets reflects the changes in the company's prepaid expenses or assets during the period."
+                  },
+                  {
+                    "key": "ChangeInPayablesAndAccruedExpense",
+                    "title": "CHANGE_IN_PAYABLES_AND_ACCRUED_EXPENSE",
+                    "spec": "The increase or decrease in accounts payable and accrued expenses reflects the changes in the company's purchases of products or services for which payment has not yet been made during the period.",
+                    "children": [
+                      {
+                        "key": "ChangeInPayable",
+                        "title": "CHANGE_IN_PAYABLE",
+                        "spec": "\"Change in Payable\" is part of \"Change in Payables and Accrued Expenses.\" Specifically, it reflects the increase or decrease in the amount of money the company owes to its suppliers for goods purchased or services received but not yet paid for within a specific period. ",
+                        "children": [
+                          {
+                            "key": "ChangeInTaxPayable",
+                            "title": "CHANGE_IN_TAX_PAYABLE",
+                            "spec": "\"Change in Tax Payable\" is part of the \"Change in Payables\" section. Specifically, it reflects the increase or decrease in the amount of taxes the company owes to the government within a specific period. ",
+                            "children": [
+                              {
+                                "key": "ChangeInIncomeTaxPayable",
+                                "title": "CHANGE_IN_INCOME_TAX_PAYABLE",
+                                "spec": "\"Change in Income Tax Payable\" is part of the \"Change in Tax Payable\" section. Specifically, it reflects the increase or decrease in the amount of income taxes the company owes to the government within a specific period. "
+                              }
+                            ]
+                          },
+                          {
+                            "key": "ChangeInAccountPayable",
+                            "title": "CHANGE_IN_ACCOUNT_PAYABLE",
+                            "spec": "\"Change in Accounts Payable\" is part of the \"Change in Payables\" section. Specifically, it reflects the increase or decrease in the amount of money the company owes to its suppliers for goods purchased or services received but not yet paid for within a specific period. "
+                          },
+                          {
+                            "key": "ChangeInDividendPayable",
+                            "title": "CHANGE_IN_DIVIDEND_PAYABLE",
+                            "spec": "\"Change in Dividend Payable\" is part of the \"Change in Payables\" section. Specifically, it reflects the increase or decrease in the amount of dividends declared but not yet paid by the company within a specific period. "
+                          }
+                        ]
+                      },
+                      {
+                        "key": "ChangeInAccruedExpense",
+                        "title": "CHANGE_IN_ACCRUED_EXPENSE",
+                        "spec": "\"Change in Accrued Expense\" is part of the \"Change in Payables and Accrued Expenses\" section. Specifically, it reflects the increase or decrease in the amount of expenses that the company has incurred but not yet paid within a specific period.",
+                        "children": [
+                          {
+                            "key": "ChangeInInterestPayable",
+                            "title": "CHANGE_IN_INTEREST_PAYABLE",
+                            "spec": "\"Change in Interest Payable\" is part of the \"Change in Accrued Expenses\" section. Specifically, it reflects the increase or decrease in the amount of interest that the company has incurred but not yet paid within a specific period."
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "ChangeInLossAndLossAdjustmentExpenseReserves",
+                    "title": "CHANGE_IN_LOSS_AND_LOSS_ADJUSTMENT_EXPENSE_RESERVES"
+                  },
+                  {
+                    "key": "ChangeInDeferredAcquisitionCosts",
+                    "title": "CHANGE_IN_DEFERRED_ACQUISITION_COSTS"
+                  },
+                  {
+                    "key": "ChangeInAccruedInvestmentIncome",
+                    "title": "CHANGE_IN_ACCRUED_INVESTMENT_INCOME"
+                  },
+                  {
+                    "key": "ChangeInFundsWithheld",
+                    "title": "CHANGE_IN_FUNDS_WITHHELD"
+                  },
+                  {
+                    "key": "ChangeInReinsuranceRecoverableOnPaidAndUnpaidLosses",
+                    "title": "CHANGE_IN_REINSURANCE_RECOVERABLE_ON_PAID_AND_UNPAID_LOSSES"
+                  },
+                  {
+                    "key": "ChangeInOtherCurrentAssets",
+                    "title": "CHANGE_IN_OTHER_CURRENT_ASSETS",
+                    "spec": "\"Change in Other Current Assets\" is part of the \"Change in Working Capital\" section. Specifically, it reflects the increase or decrease in other current assets within a specific period. These other current assets may include prepaid expenses, interest receivables, and other receivables."
+                  },
+                  {
+                    "key": "ChangeInOtherCurrentLiabilities",
+                    "title": "CHANGE_IN_OTHER_CURRENT_LIABILITIES",
+                    "spec": "\"Change in Other Current Liabilities\" is part of the \"Change in Working Capital\" section. Specifically, it reflects the increase or decrease in other current liabilities within a specific period. These other current liabilities may include accrued expenses, deferred revenue, and other payables."
+                  },
+                  {
+                    "key": "ChangeInOtherWorkingCapital",
+                    "title": "CHANGE_IN_OTHER_WORKING_CAPITAL",
+                    "spec": "\"Change in Other Working Capital\" is part of the \"Change in Working Capital\" section. Specifically, it reflects the increase or decrease in other working capital items within a specific period that are not explicitly classified as accounts receivable, inventory, accounts payable, etc. "
+                  }
+                ]
+              },
+              {
+                "key": "DividendPaidCFO",
+                "title": "DIVIDEND_PAID_CFO",
+                "spec": "Dividends Paid under Cash Flow from Operating Activities (CFO) is typically not listed as part of operating activities. Dividends paid are usually classified as cash outflows from financing activities. However, under specific accounting policies or reporting structures, dividends paid might sometimes be considered within operating activities. In certain specific circumstances or industries, dividends paid might be classified as part of operating activities. This typically occurs under special accounting standards or reporting requirements."
+              },
+              {
+                "key": "DividendReceivedCFO",
+                "title": "DIVIDEND_RECEIVED_CFO",
+                "spec": "Dividends Received under Cash Flow from Operating Activities (CFO) is typically listed as part of operating activities. This is because dividends received are considered part of the company's normal business operations, especially for companies with significant investment income."
+              },
+              {
+                "key": "InterestPaidCFO",
+                "title": "INTEREST_PAID_CFO",
+                "spec": "Interest Paid under Cash Flow from Operating Activities (CFO) is typically listed as part of operating activities. This is because interest paid is usually considered part of the company's regular business operations, especially when the company has loans or debt."
+              },
+              {
+                "key": "InterestReceivedCFO",
+                "title": "INTEREST_RECEIVED_CFO",
+                "spec": "Interest Received under Cash Flow from Operating Activities (CFO) is typically listed as part of operating activities. This is because interest received is usually considered part of the company's regular business operations, especially when the company has investments or interest income."
+              },
+              {
+                "key": "TaxesRefundPaid",
+                "title": "TAXES_REFUND_PAID",
+                "spec": "Taxes Refund Paid is typically listed as part of the cash flow from operating activities (CFO). This is because tax-related cash flows are usually considered part of the company's regular business operations."
+              }
+            ]
+          },
+          {
+            "key": "CashFromDiscontinuedOperatingActivities",
+            "title": "CASH_FROM_DISCONTINUED_OPERATING_ACTIVITIES",
+            "spec": "Cash from Discontinued Operating Activities refers to the cash flows generated from the operating activities of a business segment or subsidiary that has been discontinued or is planned to be discontinued. This section of the cash flow statement typically relates to activities associated with a part of the business that the company has decided to cease operating. It reflects the cash inflows and outflows related to these discontinued operations during the reporting period."
+          }
+        ]
+      },
+      {
+        "key": "InvestingCashFlow",
+        "title": "INVESTING_CASH_FLOW",
+        "spec": "Investing Cash Flow reflects the cash inflows and outflows from a company's investing activities over a specific period. This section typically includes cash flows related to the purchase and sale of long-term assets, investment securities, and other investment-related cash movements. ",
+        "ref": "https://www.investopedia.com/articles/financial-theory/11/cash-flow-from-investing.asp",
+        "children": [
+          {
+            "key": "CashFlowFromContinuingInvestingActivities",
+            "title": "CASH_FLOW_FROM_CONTINUING_INVESTING_ACTIVITIES",
+            "spec": "Cash Flow from Continuing Investing Activities reflects the cash inflows and outflows from a company's continuing investing activities over a specific period. This section typically includes cash flows related to Capital Expenditure Reported, Net PPE Purchase And Sale, Net Intangibles Purchase And Sale, Net Business Purchase And Sale, Net Investment Properties Purchase And Sale, Net Investment Purchase And Sale, Dividends Received CFI, Interest Received CFI and Net Other Investing Changes. ",
+            "children": [
+              {
+                "key": "CapitalExpenditureReported",
+                "title": "CAPITAL_EXPENDITURE_REPORTED",
+                "spec": "Capital Expenditure Reported (CapEx) refers to the funds used by a company to purchase, upgrade, or maintain its long-term assets over a period. These long-term assets include buildings, machinery, equipment, vehicles, and other fixed assets critical to the company's production capacity and operations. Capital expenditures reflect the company's investment in its asset base, typically aimed at improving efficiency, expanding business, or maintaining existing operational capabilities."
+              },
+              {
+                "key": "NetInvestmentPurchaseAndSale",
+                "title": "NET_INVESTMENT_PURCHASE_AND_SALE",
+                "spec": "Net Investment Purchase and Sale reflects the net cash flow related to the purchase and sale of financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period. This section includes the cash outflows for purchasing these investments and the cash inflows from selling these investments.",
+                "children": [
+                  {
+                    "key": "PurchaseOfInvestment",
+                    "title": "PURCHASE_OF_INVESTMENT",
+                    "spec": "Purchase of Investments is an essential component of \"Net Investment Purchase and Sale.\" It reflects the cash outflows related to acquiring financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period."
+                  },
+                  {
+                    "key": "SaleOfInvestment",
+                    "title": "SALE_OF_INVESTMENT",
+                    "spec": "Sale of Investments is an essential component of \"Net Investment Purchase and Sale.\" It reflects the cash inflows generated from selling financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period. "
+                  }
+                ]
+              },
+              {
+                "key": "NetProceedsPaymentForLoan",
+                "title": "NET_PROCEEDS_PAYMENT_FOR_LOAN",
+                "children": [
+                  {
+                    "key": "ProceedsFromLoans",
+                    "title": "PROCEEDS_FROM_LOANS"
+                  },
+                  {
+                    "key": "PaymentForLoans",
+                    "title": "PAYMENT_FOR_LOANS"
+                  }
+                ]
+              },
+              {
+                "key": "NetPPEPurchaseAndSale",
+                "title": "NET_PPE_PURCHASE_AND_SALE",
+                "spec": "Net PPE Purchase and Sale reflects the net cash flow related to the purchase and sale of fixed assets (Property, Plant, and Equipment, or PPE) over a specific period. This section includes the cash outflows for purchasing fixed assets and the cash inflows from selling fixed assets.",
+                "children": [
+                  {
+                    "key": "PurchaseOfPPE",
+                    "title": "PURCHASE_OF_PPE",
+                    "spec": "Purchase of PPE is an essential component of \"Net PPE Purchase and Sale.\" It reflects the cash outflows related to acquiring fixed assets (Property, Plant, and Equipment, or PPE) during a specific period. Fixed assets include land, buildings, machinery, equipment, and other long-term assets crucial to the company's production capacity and operations. "
+                  },
+                  {
+                    "key": "SaleOfPPE",
+                    "title": "SALE_OF_PPE",
+                    "spec": "Sale of PPE is an essential component of \"Net PPE Purchase and Sale.\" It reflects the cash inflows generated from selling fixed assets (Property, Plant, and Equipment, or PPE) during a specific period. Sales of fixed assets include land, buildings, machinery, equipment, and other long-term assets."
+                  }
+                ]
+              },
+              {
+                "key": "NetIntangiblesPurchaseAndSale",
+                "title": "NET_INTANGIBLES_PURCHASE_AND_SALE",
+                "spec": "Net Intangibles Purchase and Sale reflects the net cash flow related to the purchase and sale of intangible assets (such as patents, trademarks, copyrights, etc.) over a specific period. This section includes the cash outflows for purchasing intangible assets and the cash inflows from selling intangible assets.",
+                "children": [
+                  {
+                    "key": "PurchaseOfIntangibles",
+                    "title": "PURCHASE_OF_INTANGIBLES",
+                    "spec": "Purchase of Intangibles is an essential component of \"Net Intangibles Purchase and Sale.\" It reflects the cash outflows related to acquiring intangible assets (such as patents, trademarks, copyrights, licenses, etc.) during a specific period. "
+                  },
+                  {
+                    "key": "SaleOfIntangibles",
+                    "title": "SALE_OF_INTANGIBLES",
+                    "spec": "Sale of Intangibles is an essential component of \"Net Intangibles Purchase and Sale.\" It reflects the cash inflows generated from selling intangible assets (such as patents, trademarks, copyrights, licenses, etc.) during a specific period."
+                  }
+                ]
+              },
+              {
+                "key": "NetBusinessPurchaseAndSale",
+                "title": "NET_BUSINESS_PURCHASE_AND_SALE",
+                "spec": "Net Business Purchase and Sale reflects the net cash flow related to the purchase and sale of business units or subsidiaries over a specific period. This section includes the cash outflows for acquiring business units or subsidiaries and the cash inflows from selling business units or subsidiaries.",
+                "children": [
+                  {
+                    "key": "PurchaseOfBusiness",
+                    "title": "PURCHASE_OF_BUSINESS",
+                    "spec": "Purchase of Business is an essential component of \"Net Business Purchase and Sale.\" It reflects the cash outflows related to acquiring other companies, business units, or subsidiaries during a specific period. These acquisitions are typically aimed at expanding business operations, acquiring new technologies, entering new markets, or enhancing competitiveness."
+                  },
+                  {
+                    "key": "SaleOfBusiness",
+                    "title": "SALE_OF_BUSINESS",
+                    "spec": "Sale of Business is an essential component of \"Net Business Purchase and Sale.\" It reflects the cash inflows generated from selling business units or subsidiaries during a specific period. These sales are typically aimed at divesting non-core assets, optimizing business structure, or raising funds."
+                  }
+                ]
+              },
+              {
+                "key": "NetInvestmentPropertiesPurchaseAndSale",
+                "title": "NET_INVESTMENT_PROPERTIES_PURCHASE_AND_SALE",
+                "spec": "Net Investment Properties Purchase and Sale reflects the net cash flow related to the purchase and sale of investment properties during a specific period. Investment properties typically refer to real estate held by a company for earning rental income or capital appreciation.",
+                "children": [
+                  {
+                    "key": "PurchaseOfInvestmentProperties",
+                    "title": "PURCHASE_OF_INVESTMENT_PROPERTIES",
+                    "spec": "Purchase of Investment Properties is an essential component of \"Net Investment Properties Purchase and Sale.\" It reflects the cash outflows related to acquiring investment properties (such as land, commercial real estate, residential properties, etc.) during a specific period. "
+                  },
+                  {
+                    "key": "SaleOfInvestmentProperties",
+                    "title": "SALE_OF_INVESTMENT_PROPERTIES",
+                    "spec": "Sale of Investment Properties is an essential component of \"Net Investment Properties Purchase and Sale.\" It reflects the cash inflows generated from selling investment properties (such as land, commercial real estate, residential properties, etc.) during a specific period."
+                  }
+                ]
+              },
+              {
+                "key": "DividendsReceivedCFI",
+                "title": "DIVIDENDS_RECEIVED_CFI",
+                "spec": "Dividends Received in Cash Flow from Investing Activities (CFI) reflects the dividend income a company receives from its investments during a specific period. These dividends typically come from stocks or other equity investments that the company holds and are considered part of investing activities."
+              },
+              {
+                "key": "InterestReceivedCFI",
+                "title": "INTEREST_RECEIVED_CFI",
+                "spec": "Interest Received in Cash Flow from Investing Activities (CFI) reflects the interest income a company receives from its investments during a specific period. This interest typically comes from bonds, loans, or other interest-bearing investments that the company holds and is considered part of investing activities."
+              },
+              {
+                "key": "NetOtherInvestingChanges",
+                "title": "NET_OTHER_INVESTING_CHANGES",
+                "spec": "Net Other Investing Changes reflects the net cash flows related to other investing activities of a company during a specific period."
+              }
+            ]
+          },
+          {
+            "key": "CashFromDiscontinuedInvestingActivities",
+            "title": "CASH_FROM_DISCONTINUED_INVESTING_ACTIVITIES",
+            "spec": "Cash from Discontinued Investing Activities reflects the cash inflows and outflows related to the investing activities of a company's discontinued or planned-to-be-discontinued operations during a specific period. This section of the cash flow statement typically includes cash flows related to the purchase and sale of assets or business units that the company is no longer continuing. "
+          }
+        ]
+      },
+      {
+        "key": "FinancingCashFlow",
+        "title": "FINANCING_CASH_FLOW",
+        "spec": "Financing Cash Flow reflects the cash inflows and outflows related to a company's financing activities during a specific period. This section of the cash flow statement typically involves adjustments to the company's capital structure, including issuing bonds or stocks, borrowing, repaying debt, paying dividends, etc.",
+        "ref": "https://www.investopedia.com/terms/c/cashflowfromfinancing.asp",
+        "children": [
+          {
+            "key": "CashFlowFromContinuingFinancingActivities",
+            "title": "CASH_FLOW_FROM_CONTINUING_FINANCING_ACTIVITIES",
+            "spec": "Cash Flow from Continuing Financing Activities reflects the cash inflows and outflows related to a company's ongoing financing activities during a specific period. This section of the cash flow statement typically involves the company's regular capital structure adjustments, including Net Issuance Payments of Debt, Net Common Stock Issuance, Net Preferred Stock Issuance, Cash Dividends Paid, Proceeds from Stock Option Exercised, Interest Paid CFF,Net Other Financing Charges. ",
+            "children": [
+              {
+                "key": "NetIssuancePaymentsOfDebt",
+                "title": "NET_ISSUANCE_PAYMENTS_OF_DEBT",
+                "spec": "Net Issuance Payments of Debt is an essential component of \"Cash Flow from Continuing Financing Activities.\" It reflects the net cash inflows and outflows related to the issuance and repayment of debt during a specific period. This includes funds raised by issuing new bonds or borrowing and funds used to repay existing debt.",
+                "children": [
+                  {
+                    "key": "NetLongTermDebtIssuance",
+                    "title": "NET_LONG_TERM_DEBT_ISSUANCE",
+                    "spec": "Net Long Term Debt Issuance is an essential component of \"Net Issuance Payments of Debt.\" It reflects the net cash inflows from issuing long-term debt (such as bonds, long-term loans, etc.) during a specific period, minus the cash outflows for repaying long-term debt.",
+                    "children": [
+                      {
+                        "key": "LongTermDebtIssuance",
+                        "title": "LONG_TERM_DEBT_ISSUANCE",
+                        "spec": "Long Term Debt Issuance is an essential component of \"Net Long Term Debt Issuance.\" It reflects the cash inflows from issuing long-term debt (such as bonds, long-term loans, etc.) during a specific period. "
+                      },
+                      {
+                        "key": "LongTermDebtPayments",
+                        "title": "LONG_TERM_DEBT_PAYMENTS",
+                        "spec": "Long Term Debt Payments is an essential component of \"Net Long Term Debt Issuance.\" It reflects the cash outflows used to repay long-term debt (such as bonds, long-term loans, etc.) during a specific period."
+                      }
+                    ]
+                  },
+                  {
+                    "key": "NetShortTermDebtIssuance",
+                    "title": "NET_SHORT_TERM_DEBT_ISSUANCE",
+                    "children": [
+                      {
+                        "key": "ShortTermDebtIssuance",
+                        "title": "SHORT_TERM_DEBT_ISSUANCE"
+                      },
+                      {
+                        "key": "ShortTermDebtPayments",
+                        "title": "SHORT_TERM_DEBT_PAYMENTS"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "NetCommonStockIssuance",
+                "title": "NET_COMMON_STOCK_ISSUANCE",
+                "spec": "Net Common Stock Issuance reflects the net cash inflows and outflows related to issuing and repurchasing common stock during a specific period.",
+                "children": [
+                  {
+                    "key": "CommonStockIssuance",
+                    "title": "COMMON_STOCK_ISSUANCE",
+                    "spec": "Common Stock Issuance is an essential component of \"Net Common Stock Issuance.\" It reflects the cash inflows from issuing common stock during a specific period."
+                  },
+                  {
+                    "key": "CommonStockPayments",
+                    "title": "COMMON_STOCK_PAYMENTS",
+                    "spec": "Common Stock Payments is an essential component of \"Net Common Stock Issuance.\" It reflects the cash outflows related to repurchasing common stock during a specific period."
+                  }
+                ]
+              },
+              {
+                "key": "NetPreferredStockIssuance",
+                "title": "NET_PREFERRED_STOCK_ISSUANCE",
+                "spec": "Net Preferred Stock Issuance reflects the net cash inflows and outflows related to issuing and repurchasing preferred stock during a specific period.",
+                "children": [
+                  {
+                    "key": "PreferredStockIssuance",
+                    "title": "PREFERRED_STOCK_ISSUANCE",
+                    "spec": "Preferred Stock Issuance is an essential component of \"Net Preferred Stock Issuance.\" It reflects the cash inflows from issuing preferred stock during a specific period."
+                  },
+                  {
+                    "key": "PreferredStockPayments",
+                    "title": "PREFERRED_STOCK_PAYMENTS",
+                    "spec": "Preferred Stock Payments is an essential component of \"Net Preferred Stock Issuance.\" It reflects the cash outflows related to repurchasing preferred stock during a specific period."
+                  }
+                ]
+              },
+              {
+                "key": "CashDividendsPaid",
+                "title": "CASH_DIVIDENDS_PAID",
+                "spec": "Cash Dividends Paid reflects the total amount of cash dividends a company pays to its shareholders during a specific period. Cash dividends are a portion of the company's profits distributed to its shareholders. ",
+                "children": [
+                  {
+                    "key": "CommonStockDividendPaid",
+                    "title": "COMMON_STOCK_DIVIDEND_PAID",
+                    "spec": "Common Stock Dividend Paid is an essential component of \"Cash Dividends Paid.\" It reflects the total amount of cash dividends a company pays to its common stock shareholders during a specific period."
+                  },
+                  {
+                    "key": "PreferredStockDividendPaid",
+                    "title": "PREFERRED_STOCK_DIVIDEND_PAID",
+                    "spec": "Preferred Stock Dividend Paid is an essential component of \"Cash Dividends Paid.\" It reflects the total amount of cash dividends a company pays to its preferred stock shareholders during a specific period. "
+                  }
+                ]
+              },
+              {
+                "key": "ProceedsFromStockOptionExercised",
+                "title": "PROCEEDS_FROM_STOCK_OPTION_EXERCISED",
+                "spec": "Proceeds from Stock Options Exercised reflects the cash inflows a company receives when employees or shareholders exercise their stock options and purchase company stock during a specific period."
+              },
+              {
+                "key": "InterestPaidCFF",
+                "title": "INTEREST_PAID_CFF",
+                "spec": "Interest Paid in Cash Flow from Financing Activities (CFF) reflects the interest payments a company makes on its debt during a specific period."
+              },
+              {
+                "key": "NetOtherFinancingCharges",
+                "title": "NET_OTHER_FINANCING_CHARGES",
+                "spec": "Net Other Financing Charges reflects the net cash inflows and outflows related to other financing activities during a specific period. "
+              }
+            ]
+          },
+          {
+            "key": "CashFromDiscontinuedFinancingActivities",
+            "title": "CASH_FROM_DISCONTINUED_FINANCING_ACTIVITIES",
+            "spec": "Cash from Discontinued Financing Activities reflects the cash inflows and outflows related to the financing activities of a company's discontinued or planned-to-be-discontinued operations during a specific period. This section typically includes activities such as repaying debt of discontinued operations, issuing or repurchasing stock or bonds related to discontinued operations."
+          }
+        ]
+      },
+      {
+        "key": "CashFlowFromDiscontinuedOperation",
+        "title": "CASH_FLOW_FROM_DISCONTINUED_OPERATION",
+        "spec": "Cash Flow from Discontinued Operations refers to all types of cash flows related to a company's discontinued or planned-to-be-discontinued operations, including cash flows from operating, investing, and financing activities. This section is typically listed separately in the cash flow statement to distinguish it from cash flows of continuing operations. It provides information on the company's cash movements related to discontinued operations."
+      },
+      {
+        "key": "OtherCashAdjustmentInsideChangeinCash",
+        "title": "OTHER_CASH_ADJUSTMENT_INSIDE_CHANGEIN_CASH",
+        "spec": "Other Cash Adjustment is an item in the cash flow statement that reflects adjustments in cash inflows and outflows due to various reasons during a specific period. This item typically includes cash flows that do not fall under operating, investing, or financing activities but still impact the overall cash balance of the company. "
+      },
+      {
+        "key": "EndCashPosition",
+        "title": "END_CASH_POSITION",
+        "spec": "End Cash Position refers to the total amount of cash and cash equivalents a company holds at the end of a specific accounting period. This figure indicates the company's liquidity position at the end of the period, reflecting the effectiveness of the company's financial management and cash control. \"End Cash Position\" is calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>End Cash Position</mtext><mo>=</mo><mtext>Beginning Cash Position</mtext><mo>+</mo><mtext>Changes in Cash</mtext><mo>+</mo><mtext>Effect of Exchange Rate Changes</mtext><mo>+</mo><mtext>Other Cash Adjustment Outside Change in Cash</mtext></math>",
+        "children": [
+          {
+            "key": "ChangesInCash",
+            "title": "CHANGES_IN_CASH",
+            "spec": "Changes in Cash includes net cash flows from operating, investing, and financing activities. It is calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Changes in Cash</mtext><mo>=</mo><mtext>Operating Cash Flow</mtext><mo>+</mo><mtext>Investing Cash Flow</mtext><mo>+</mo><mtext>Financing Cash Flow</mtext></math>"
+          },
+          {
+            "key": "EffectOfExchangeRateChanges",
+            "title": "EFFECT_OF_EXCHANGE_RATE_CHANGES",
+            "spec": "Effect of Exchange Rate Changes is the change in cash balance due to fluctuations in foreign exchange rates."
+          },
+          {
+            "key": "BeginningCashPosition",
+            "title": "BEGINNING_CASH_POSITION",
+            "spec": "Beginning Cash Position is the total amount of cash and cash equivalents at the start of the accounting period."
+          },
+          {
+            "key": "OtherCashAdjustmentOutsideChangeinCash",
+            "title": "OTHER_CASH_ADJUSTMENT_OUTSIDE_CHANGEIN_CASH",
+            "spec": "Other adjustments affecting the cash balance that do not fall under operating, investing, or financing activities."
+          }
+        ]
+      },
+      {
+        "key": "IncomeTaxPaidSupplementalData",
+        "title": "INCOME_TAX_PAID_SUPPLEMENTAL_DATA",
+        "spec": "Income Tax Paid in Supplemental Data refers to the additional information provided outside the main cash flow statement regarding the actual amount of income tax paid by the company during a specific accounting period. This information is typically included in the supplementary notes of the financial statements to help readers better understand the company's cash flow and tax situation."
+      },
+      {
+        "key": "InterestPaidSupplementalData",
+        "title": "INTEREST_PAID_SUPPLEMENTAL_DATA",
+        "spec": "Interest Paid in Supplemental Data refers to the additional information provided outside the main cash flow statement regarding the actual amount of interest paid by the company during a specific accounting period. This information is typically included in the supplementary notes of the financial statements to help readers better understand the company's cash flow and debt management."
+      },
+      {
+        "key": "CapitalExpenditure",
+        "title": "CAPITAL_EXPENDITURE",
+        "spec": "Capital Expenditure (CapEx) refers to the funds used by a company to purchase, upgrade, or maintain its fixed assets during a specific accounting period. These fixed assets include equipment, buildings, machinery, land, technology equipment, etc., intended to enhance the company's production capacity or extend the useful life of its assets."
+      },
+      {
+        "key": "IssuanceOfCapitalStock",
+        "title": "ISSUANCE_OF_CAPITAL_STOCK",
+        "spec": "Issuance of Capital Stock refers to the process by which a company raises funds by issuing new shares of stock. Capital stock issuance can include the issuance of common stock and preferred stock. By issuing stock, a company can obtain new capital for business expansion, investment projects, or debt repayment. It is calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Issuance of Capital Stock</mtext><mo>=</mo><mtext>Common Stock Issuance</mtext><mo>+</mo><mtext>Preferred Stock Issuance</mtext></math>"
+      },
+      {
+        "key": "IssuanceOfDebt",
+        "title": "ISSUANCE_OF_DEBT",
+        "spec": "Issuance of Debt refers to the process by which a company raises funds by issuing bonds, notes, or borrowing. Through debt issuance, a company can obtain the necessary funds for business expansion, investment projects, or repaying existing debt. Debt issuance is a financing activity that typically requires the company to pay interest and repay the principal in the future."
+      },
+      {
+        "key": "RepaymentOfDebt",
+        "title": "REPAYMENT_OF_DEBT",
+        "spec": "Repayment of Debt refers to the process by which a company pays back its borrowed funds or issued debt during a specific accounting period. This includes repaying bank loans, bond principal, commercial paper, and other forms of debt. Debt repayment is an important activity for managing the company's financial liabilities and typically involves paying interest and repaying the principal as scheduled."
+      },
+      {
+        "key": "RepurchaseOfCapitalStock",
+        "title": "REPURCHASE_OF_CAPITAL_STOCK",
+        "spec": "Repurchase of Capital Stock refers to the process by which a company buys back its issued shares from the open market or through a tender offer. By repurchasing shares, a company can reduce the number of outstanding shares, increase earnings per share (EPS), and potentially boost its stock price. Repurchased shares can either be canceled or held as treasury stock for future use."
+      },
+      {
+        "key": "FreeCashFlow",
+        "title": "FREE_CASH_FLOW",
+        "spec": "Free Cash Flow (FCF) refers to the cash that a company generates after accounting for capital expenditures (such as purchasing equipment, buildings, land, etc.). Free cash flow is an important metric for assessing a company's financial health and operational efficiency because it reflects the company's ability to generate cash that can be distributed to shareholders and creditors or reinvested in the business.<br>Importance of Free Cash Flow:<br><ul><li>1.Paying Dividends: Free cash flow provides the funds necessary for the company to pay dividends to shareholders.</li><li>2.Repaying Debt: The company can use free cash flow to repay existing debt, thereby reducing its financial burden.</li><li>3.Reinvestment: The company can reinvest free cash flow to promote business growth and expansion.</li><li>4.Financial Health: Free cash flow is a critical indicator of a company's financial health because it reflects the amount of cash remaining after meeting operational needs and capital.</li></ul>It is calculated as follows: <br><br><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mtext>Free Cash Flow</mtext><mo>=</mo><mtext>Operating Cash Flow</mtext><mo>-</mo><mtext>Capital Expenditure (CapEx)</mtext></math>"
+      },
+      {
+        "key": "AdjustedGeographySegmentData",
+        "title": "ADJUSTED_GEOGRAPHY_SEGMENT_DATA",
+        "spec": "Adjusted Geography Segment Data refers to a company's business segment data categorized by different geographic regions (such as countries, regions, continents, etc.) that has been adjusted to reflect more accurate financial conditions or operational results. These adjustments may include currency fluctuations, one-time items, changes in accounting policies, etc., to provide more transparent and comparable data."
+      },
+      {
+        "key": "DomesticSales",
+        "title": "DOMESTIC_SALES",
+        "spec": "Domestic Sales refers to the revenue generated by a company from selling its products or services within its home country market. This revenue comes from the company's business activities within its own country and excludes exports or international sales."
+      },
+      {
+        "key": "ForeignSales",
+        "title": "FOREIGN_SALES",
+        "spec": "Foreign Sales refers to the revenue generated by a company from selling its products or services in international markets outside its home country. This revenue comes from the company's business activities in other countries and regions and excludes domestic sales."
+      }
+    ]
+  }
+}
