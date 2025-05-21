@@ -131,6 +131,10 @@
                     "key": "PensionAndEmployeeBenefitExpense",
                     "title": "PENSION_AND_EMPLOYEE_BENEFIT_EXPENSE",
                     "spec": "Pension and Employee Benefit Expense refers to the costs incurred by a company for providing pension plans and other employee benefits. These expenses include contributions to employee retirement plans, health insurance, paid vacation, paid sick leave, and other benefit programs. These benefit costs are part of the company's operating expenses and are typically reported separately in financial statements to clearly reflect the company's financial obligations and commitments related to employee benefits."
+                  },
+                  {
+                    "key": "RealizedGainLossOnSaleOfLoansAndLease",
+                    "title": "REALIZED_GAIN_LOSS_ON_SALE_OF_LOANS_AND_LEASE"
                   }
                 ]
               },
@@ -184,6 +188,15 @@
                 ]
               },
               {
+                "key": "OtherNonCashItems",
+                "title": "OTHER_NON_CASH_ITEMS",
+                "spec": "Other Non-Cash Items in the cash flow statement refer to accounting adjustments that affect a company's net income but do not involve actual cash inflows or outflows. These items need to be adjusted in the cash flow statement to accurately reflect the company's operating cash flow situation."
+              },
+              {
+                "key": "AmortizationOfFinancingCostsAndDiscounts",
+                "title": "AMORTIZATION_OF_FINANCING_COSTS_AND_DISCOUNTS"
+              },
+              {
                 "key": "AmortizationOfSecurities",
                 "title": "AMORTIZATION_OF_SECURITIES",
                 "spec": "Amortization of Securities in the cash flow statement refers to the systematic allocation of the premium or discount on certain securities (typically bonds) over their remaining life. The purpose of this adjustment is to gradually adjust the book value of the security to its maturity value.<br><br>In the cash flow statement, the amortization of securities typically appears as an adjustment item in the operating activities section. This is because the amortization of premium or discount on securities is a non-cash expense or income and does not affect actual cash outflows or inflows. Therefore, an adjustment is needed to net income to accurately reflect the cash flow situation."
@@ -197,6 +210,14 @@
                 "key": "ProvisionandWriteOffofAssets",
                 "title": "PROVISIONAND_WRITE_OFFOF_ASSETS",
                 "spec": "Provision & Write Off of Assets in the cash flow statement refers to the provisions made for potential asset losses and the actual write-off of impaired or uncollectible assets. These items typically involve accounts receivable, inventory, fixed assets, and other assets.<br><br>In the cash flow statement, provisions and write-offs are typically shown as non-cash adjustments in the operating activities section. While these expenses reduce net income, they do not involve actual cash outflows. Therefore, adjustments are made to net income to accurately reflect the company's cash flow situation."
+              },
+              {
+                "key": "InterestCreditedOnPolicyholderDeposits",
+                "title": "INTEREST_CREDITED_ON_POLICYHOLDER_DEPOSITS"
+              },
+              {
+                "key": "UnrealizedGainsLossesOnDerivatives",
+                "title": "UNREALIZED_GAINS_LOSSES_ON_DERIVATIVES"
               },
               {
                 "key": "UnrealizedGainLossOnInvestmentSecurities",
@@ -214,9 +235,8 @@
                 "spec": "Excess Tax Benefit from Stock Based Compensation refers to the tax benefit a company receives when employees exercise stock options or other equity instruments, and this benefit exceeds the initial recorded tax expense. This tax benefit typically occurs because the market price of the stock at the time of exercise is higher than the price at the time of grant, leading to a tax deduction greater than the company's initial estimated tax expense.<br><br>In the cash flow statement, \"Excess Tax Benefit from Stock Based Compensation\" is typically reported in the financing activities section rather than the operating activities section. This is because it is related to equity financing activities rather than the result of normal operating activities. In the cash flow statement, these benefits are usually shown as a negative adjustment in the operating activities section and a positive item in the financing activities section."
               },
               {
-                "key": "OtherNonCashItems",
-                "title": "OTHER_NON_CASH_ITEMS",
-                "spec": "Other Non-Cash Items in the cash flow statement refer to accounting adjustments that affect a company's net income but do not involve actual cash inflows or outflows. These items need to be adjusted in the cash flow statement to accurately reflect the company's operating cash flow situation."
+                "key": "ProvisionForLoanLeaseAndOtherLosses",
+                "title": "PROVISION_FOR_LOAN_LEASE_AND_OTHER_LOSSES"
               },
               {
                 "key": "ChangeInWorkingCapital",
@@ -294,6 +314,34 @@
                     ]
                   },
                   {
+                    "key": "ChangeInLossAndLossAdjustmentExpenseReserves",
+                    "title": "CHANGE_IN_LOSS_AND_LOSS_ADJUSTMENT_EXPENSE_RESERVES"
+                  },
+                  {
+                    "key": "ChangeInDeferredAcquisitionCosts",
+                    "title": "CHANGE_IN_DEFERRED_ACQUISITION_COSTS"
+                  },
+                  {
+                    "key": "ChangeInAccruedInvestmentIncome",
+                    "title": "CHANGE_IN_ACCRUED_INVESTMENT_INCOME"
+                  },
+                  {
+                    "key": "ChangeInFundsWithheld",
+                    "title": "CHANGE_IN_FUNDS_WITHHELD"
+                  },
+                  {
+                    "key": "ChangeInReinsuranceRecoverableOnPaidAndUnpaidLosses",
+                    "title": "CHANGE_IN_REINSURANCE_RECOVERABLE_ON_PAID_AND_UNPAID_LOSSES"
+                  },
+                  {
+                    "key": "ChangeInDeferredCharges",
+                    "title": "CHANGE_IN_DEFERRED_CHARGES"
+                  },
+                  {
+                    "key": "ChangeInLoans",
+                    "title": "CHANGE_IN_LOANS"
+                  },
+                  {
                     "key": "ChangeInOtherCurrentAssets",
                     "title": "CHANGE_IN_OTHER_CURRENT_ASSETS",
                     "spec": "\"Change in Other Current Assets\" is part of the \"Change in Working Capital\" section. Specifically, it reflects the increase or decrease in other current assets within a specific period. These other current assets may include prepaid expenses, interest receivables, and other receivables."
@@ -361,6 +409,68 @@
                 "spec": "Capital Expenditure Reported (CapEx) refers to the funds used by a company to purchase, upgrade, or maintain its long-term assets over a period. These long-term assets include buildings, machinery, equipment, vehicles, and other fixed assets critical to the company's production capacity and operations. Capital expenditures reflect the company's investment in its asset base, typically aimed at improving efficiency, expanding business, or maintaining existing operational capabilities."
               },
               {
+                "key": "ProceedsPaymentInInterestBearingDepositsInBank",
+                "title": "PROCEEDS_PAYMENT_IN_INTEREST_BEARING_DEPOSITS_IN_BANK",
+                "children": [
+                  {
+                    "key": "DecreaseinInterestBearingDepositsinBank",
+                    "title": "DECREASEIN_INTEREST_BEARING_DEPOSITSIN_BANK"
+                  }
+                ]
+              },
+              {
+                "key": "ProceedsPaymentFederalFundsSoldAndSecuritiesPurchasedUnderAgreementToResell",
+                "title": "PROCEEDS_PAYMENT_FEDERAL_FUNDS_SOLD_AND_SECURITIES_PURCHASED_UNDER_AGREEMENT_TO_RESELL"
+              },
+              {
+                "key": "NetInvestmentPurchaseAndSale",
+                "title": "NET_INVESTMENT_PURCHASE_AND_SALE",
+                "spec": "Net Investment Purchase and Sale reflects the net cash flow related to the purchase and sale of financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period. This section includes the cash outflows for purchasing these investments and the cash inflows from selling these investments.",
+                "children": [
+                  {
+                    "key": "PurchaseOfInvestment",
+                    "title": "PURCHASE_OF_INVESTMENT",
+                    "spec": "Purchase of Investments is an essential component of \"Net Investment Purchase and Sale.\" It reflects the cash outflows related to acquiring financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period."
+                  },
+                  {
+                    "key": "SaleOfInvestment",
+                    "title": "SALE_OF_INVESTMENT",
+                    "spec": "Sale of Investments is an essential component of \"Net Investment Purchase and Sale.\" It reflects the cash inflows generated from selling financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period. "
+                  }
+                ]
+              },
+              {
+                "key": "NetInvestmentPropertiesPurchaseAndSale",
+                "title": "NET_INVESTMENT_PROPERTIES_PURCHASE_AND_SALE",
+                "spec": "Net Investment Properties Purchase and Sale reflects the net cash flow related to the purchase and sale of investment properties during a specific period. Investment properties typically refer to real estate held by a company for earning rental income or capital appreciation.",
+                "children": [
+                  {
+                    "key": "PurchaseOfInvestmentProperties",
+                    "title": "PURCHASE_OF_INVESTMENT_PROPERTIES",
+                    "spec": "Purchase of Investment Properties is an essential component of \"Net Investment Properties Purchase and Sale.\" It reflects the cash outflows related to acquiring investment properties (such as land, commercial real estate, residential properties, etc.) during a specific period. "
+                  },
+                  {
+                    "key": "SaleOfInvestmentProperties",
+                    "title": "SALE_OF_INVESTMENT_PROPERTIES",
+                    "spec": "Sale of Investment Properties is an essential component of \"Net Investment Properties Purchase and Sale.\" It reflects the cash inflows generated from selling investment properties (such as land, commercial real estate, residential properties, etc.) during a specific period."
+                  }
+                ]
+              },
+              {
+                "key": "NetProceedsPaymentForLoan",
+                "title": "NET_PROCEEDS_PAYMENT_FOR_LOAN",
+                "children": [
+                  {
+                    "key": "ProceedsFromLoans",
+                    "title": "PROCEEDS_FROM_LOANS"
+                  },
+                  {
+                    "key": "PaymentForLoans",
+                    "title": "PAYMENT_FOR_LOANS"
+                  }
+                ]
+              },
+              {
                 "key": "NetPPEPurchaseAndSale",
                 "title": "NET_PPE_PURCHASE_AND_SALE",
                 "spec": "Net PPE Purchase and Sale reflects the net cash flow related to the purchase and sale of fixed assets (Property, Plant, and Equipment, or PPE) over a specific period. This section includes the cash outflows for purchasing fixed assets and the cash inflows from selling fixed assets.",
@@ -412,40 +522,6 @@
                 ]
               },
               {
-                "key": "NetInvestmentPropertiesPurchaseAndSale",
-                "title": "NET_INVESTMENT_PROPERTIES_PURCHASE_AND_SALE",
-                "spec": "Net Investment Properties Purchase and Sale reflects the net cash flow related to the purchase and sale of investment properties during a specific period. Investment properties typically refer to real estate held by a company for earning rental income or capital appreciation.",
-                "children": [
-                  {
-                    "key": "PurchaseOfInvestmentProperties",
-                    "title": "PURCHASE_OF_INVESTMENT_PROPERTIES",
-                    "spec": "Purchase of Investment Properties is an essential component of \"Net Investment Properties Purchase and Sale.\" It reflects the cash outflows related to acquiring investment properties (such as land, commercial real estate, residential properties, etc.) during a specific period. "
-                  },
-                  {
-                    "key": "SaleOfInvestmentProperties",
-                    "title": "SALE_OF_INVESTMENT_PROPERTIES",
-                    "spec": "Sale of Investment Properties is an essential component of \"Net Investment Properties Purchase and Sale.\" It reflects the cash inflows generated from selling investment properties (such as land, commercial real estate, residential properties, etc.) during a specific period."
-                  }
-                ]
-              },
-              {
-                "key": "NetInvestmentPurchaseAndSale",
-                "title": "NET_INVESTMENT_PURCHASE_AND_SALE",
-                "spec": "Net Investment Purchase and Sale reflects the net cash flow related to the purchase and sale of financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period. This section includes the cash outflows for purchasing these investments and the cash inflows from selling these investments.",
-                "children": [
-                  {
-                    "key": "PurchaseOfInvestment",
-                    "title": "PURCHASE_OF_INVESTMENT",
-                    "spec": "Purchase of Investments is an essential component of \"Net Investment Purchase and Sale.\" It reflects the cash outflows related to acquiring financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period."
-                  },
-                  {
-                    "key": "SaleOfInvestment",
-                    "title": "SALE_OF_INVESTMENT",
-                    "spec": "Sale of Investments is an essential component of \"Net Investment Purchase and Sale.\" It reflects the cash inflows generated from selling financial investments (such as stocks, bonds, mutual funds, etc.) during a specific period. "
-                  }
-                ]
-              },
-              {
                 "key": "DividendsReceivedCFI",
                 "title": "DIVIDENDS_RECEIVED_CFI",
                 "spec": "Dividends Received in Cash Flow from Investing Activities (CFI) reflects the dividend income a company receives from its investments during a specific period. These dividends typically come from stocks or other equity investments that the company holds and are considered part of investing activities."
@@ -480,6 +556,10 @@
             "title": "CASH_FLOW_FROM_CONTINUING_FINANCING_ACTIVITIES",
             "spec": "Cash Flow from Continuing Financing Activities reflects the cash inflows and outflows related to a company's ongoing financing activities during a specific period. This section of the cash flow statement typically involves the company's regular capital structure adjustments, including Net Issuance Payments of Debt, Net Common Stock Issuance, Net Preferred Stock Issuance, Cash Dividends Paid, Proceeds from Stock Option Exercised, Interest Paid CFF,Net Other Financing Charges. ",
             "children": [
+              {
+                "key": "ChangeInFederalFundsAndSecuritiesSoldForRepurchase",
+                "title": "CHANGE_IN_FEDERAL_FUNDS_AND_SECURITIES_SOLD_FOR_REPURCHASE"
+              },
               {
                 "key": "NetIssuancePaymentsOfDebt",
                 "title": "NET_ISSUANCE_PAYMENTS_OF_DEBT",

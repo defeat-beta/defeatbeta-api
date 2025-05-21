@@ -1,5 +1,4 @@
 from typing import List, Optional
-from decimal import Decimal
 
 import pandas as pd
 
@@ -11,8 +10,7 @@ from defeatbeta_api.utils.util import load_item_dictionary
 
 
 class PrintVisitor(StatementVisitor):
-    def __init__(self, info: pd.DataFrame):
-        self.info = info
+    def __init__(self):
         self.finance_item_describe = load_item_dictionary()
         self.table_data = []
         self.headers = []
@@ -31,33 +29,6 @@ class PrintVisitor(StatementVisitor):
                   has_children: bool) -> None:
         if values is None or (parent_item is not None and parent_item not in self.parent_index):
             return
-
-        if (self.info['industry'].iloc[0] is not None and
-                self.info['industry'].iloc[0].startswith("Banks")):
-            if ((item.get_title() in ["OPERATING_REVENUE", "SPECIAL_INCOME_CHARGES",
-                                      "NET_INTEREST_INCOME", "INTEREST_INCOME",
-                                      "INTEREST_EXPENSE"]) and not item.is_bank()):
-                return
-            if (item.is_insurance() and
-                    item.get_title() in ["DEFERRED_ASSETS", "DEFERRED_TAX_ASSETS",
-                                         "CASH_AND_CASH_EQUIVALENTS"]):
-                return
-
-        elif (self.info['industry'].iloc[0] is not None and
-              self.info['industry'].iloc[0].startswith("Insurance")):
-            if (item.is_bank() and
-                    item.get_title() in ["DEFERRED_ASSETS", "DEFERRED_TAX_ASSETS"]):
-                return
-        else:
-            if item.is_bank() or item.is_insurance():
-                return
-
-        if item.is_bank() or item.is_insurance():
-            if (("CURRENT_ASSETS" in self.parent_index and
-                 "TOTAL_NON_CURRENT_ASSETS" in self.parent_index) or
-                    ("CURRENT_LIABILITIES" in self.parent_index and
-                     "TOTAL_NON_CURRENT_LIABILITIES_NET_MINORITY_INTEREST" in self.parent_index)):
-                return
 
         prefix = " " * layer + ("+" if has_children else "")
         item_desc = self.finance_item_describe.get(item.get_title(), item.get_title())
