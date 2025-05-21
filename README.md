@@ -46,7 +46,7 @@ $ pip install defeatbeta-api
 ```
 
 **Windows**
-> ⚠️ Windows support requires WSL/Docker Due to dependencies on cache_httpfs (unsupported natively on Windows):
+> ⚠️ Windows support requires WSL/Docker Due to dependencies on cache_httpfs (unsupported on Windows):
 
 Option 1: WSL (Recommended)
 1. Install [WSL](https://ubuntu.com/desktop/wsl)
