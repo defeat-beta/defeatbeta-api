@@ -14,12 +14,6 @@ class FinanceItem:
     def children_is_empty(self) -> bool:
         return not self.children
 
-    def is_bank(self) -> bool:
-        return self.industry and self.industry.lower() == "bank"
-
-    def is_insurance(self) -> bool:
-        return self.industry and self.industry.lower() == "insurance"
-
     def get_title(self):
         return self.title
 
