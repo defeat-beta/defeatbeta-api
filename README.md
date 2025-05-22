@@ -36,6 +36,8 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 ## Quickstart
 
+The list of changes can be found in the [Changelog](CHANGELOG.rst)
+
 ### Installation
 
 Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) using `pip`:
@@ -61,8 +63,6 @@ Option 2: Docker
 ``` {.sourceCode .bash}
 docker run -it python:latest pip install defeatbeta-api
 ```
-
-The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ### Usage
 
