@@ -931,7 +931,7 @@ ticker.quarterly_gross_margin()
 ```
 
 ## 14. Example: Accessing Earnings Call Transcripts
-### Fetching transcripts list
+### 14.1 Fetching transcripts list
 ```python
 transcripts = ticker.earning_call_transcripts()
 transcripts.get_transcripts_list()
@@ -997,7 +997,7 @@ transcripts.get_transcripts_list()
 54   TSLA         2024               4  2025-01-29  [{'paragraph_number': 1, 'speaker': 'Operator'...          486436
 ```
 
-### Fetching the Q4 2024 Earnings Call Transcript
+### 14.2 Fetching the Q4 2024 Earnings Call Transcript
 ```python
 transcripts = ticker.earning_call_transcripts()
 transcripts.get_transcript(2024, 4)
@@ -1020,7 +1020,7 @@ transcripts.get_transcript(2024, 4)
 [79 rows x 3 columns]
 ```
 
-### Print Formatted Table of 2024 Q4 Earnings Call
+### 14.3 Print Formatted Table of 2024 Q4 Earnings Call
 ```python
 transcripts = ticker.earning_call_transcripts()
 print(transcripts.print_pretty_table(2024, 4))
