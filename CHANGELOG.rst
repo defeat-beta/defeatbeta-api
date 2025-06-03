@@ -4,6 +4,7 @@ Change Log
 -------
 - Support Quarterly Gross Margin %[`#17 <https://github.com/defeat-beta/defeatbeta-api/issues/17>`_]
 - Refactor the display templates of income statement, balance sheet, and cash flow statement to accommodate presentation formats for different industries (general industries, banking, insurance).[`#22 <https://github.com/defeat-beta/defeatbeta-api/issues/22>`_, `#23 <https://github.com/defeat-beta/defeatbeta-api/issues/23>`_]
+- Support Earnings Call Transcripts Data[`#25 <https://github.com/defeat-beta/defeatbeta-api/issues/17>`_]
 
 0.0.6
 -------

@@ -7,7 +7,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("ACGL", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
+        cls.ticker = Ticker("BABA", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -99,3 +99,10 @@ class TestTicker(unittest.TestCase):
     def test_quarterly_gross_margin(self):
         result = self.ticker.quarterly_gross_margin()
         print(result.to_string())
+
+    def test_earning_call_transcripts(self):
+        transcripts = self.ticker.earning_call_transcripts()
+        print(transcripts)
+        print(transcripts.get_transcripts_list())
+        print(transcripts.get_transcript(2025, 2))
+        print(transcripts.print_pretty_table(2025, 2))
