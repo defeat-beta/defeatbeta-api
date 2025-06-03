@@ -105,4 +105,4 @@ class TestTicker(unittest.TestCase):
         print(transcripts)
         print(transcripts.get_transcripts_list())
         print(transcripts.get_transcript(2025, 2))
-        print(transcripts.print_pretty_table(2025, 2))
+        print(transcripts.pretty_table(2025, 2))
