@@ -32,6 +32,8 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 **3. High-performance caching:** Data is stored remotely on `Hugging Face` but leverages `cache_httpfs` for local disk caching, ensuring excellent performance.
 
+**4. Multi-source data:** defeat-beta supplements Yahoo Finance with external data streams, while `yfinance` is limited to Yahoo Finance exclusively.
+
 **Disadvantages compared to yfinance:**
 
 **Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike `yfinance`.
