@@ -17,10 +17,13 @@ from defeatbeta_api.data.income_statement import IncomeStatement
 from defeatbeta_api.data.print_visitor import PrintVisitor
 from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.stock_statement import StockStatement
+from defeatbeta_api.data.transcripts import Transcripts
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
-from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, stock_split_events, \
+from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, \
+    stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
-    stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual
+    stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
+    stock_earning_call_transcripts
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
     balance_sheet_template_type, cash_flow_template_type
 
@@ -147,6 +150,9 @@ class Ticker:
                   GROUP BY symbol, report_date) t ORDER BY report_date ASC
             """
         return self.duckdb_client.query(quarterly_gross_margin_sql)
+
+    def earning_call_transcripts(self) -> Transcripts:
+        return Transcripts(self._query_data(stock_earning_call_transcripts))
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
