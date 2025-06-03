@@ -21,7 +21,7 @@ class Transcripts:
         df_paragraphs = _unnest(record)
         return df_paragraphs
 
-    def print_pretty_table(self, fiscal_year: int, fiscal_quarter: int) -> str:
+    def pretty_table(self, fiscal_year: int, fiscal_quarter: int) -> str:
         record = self._find_transcripts(fiscal_quarter, fiscal_year)
         if record.empty:
             raise ValueError(f"No transcript found for FY{fiscal_year} Q{fiscal_quarter}")
