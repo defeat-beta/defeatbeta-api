@@ -22,7 +22,11 @@
   - [10. Stock Summary](#10-stock-summary)
   - [11. Stock TTM EPS](#11-stock-ttm-eps)
   - [12. Stock TTM PE](#12-stock-ttm-pe)
-  - [12. Stock Quarterly Gross Margin](#12-stock-quarterly-gross-margin)
+  - [13. Stock Quarterly Gross Margin](#13-stock-quarterly-gross-margin)
+  - [14. Example: Accessing Earnings Call Transcripts](#14-example-accessing-earnings-call-transcripts)
+    - [Fetching transcripts list](#fetching-transcripts-list)
+    - [Fetching the Q4 2024 Earnings Call Transcript](#fetching-the-q4-2024-earnings-call-transcript)
+    - [Print Formatted Table of 2024 Q4 Earnings Call](#print-formatted-table-of-2024-q4-earnings-call)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
