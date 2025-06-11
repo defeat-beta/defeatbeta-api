@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict, List
 
 from defeatbeta_api.data.finance_item import FinanceItem
@@ -6,7 +7,7 @@ from defeatbeta_api.data.finance_value import FinanceValue
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
 from defeatbeta_api.utils.util import parse_all_key_titles
 
-
+@dataclass
 class IncomeStatement(FinanceStatement):
     def __init__(self,
                  finance_template: Dict[str, 'FinanceItem'],

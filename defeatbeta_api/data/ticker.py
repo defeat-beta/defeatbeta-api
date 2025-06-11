@@ -14,6 +14,7 @@ from defeatbeta_api.data.balance_sheet import BalanceSheet
 from defeatbeta_api.data.finance_item import FinanceItem
 from defeatbeta_api.data.finance_value import FinanceValue
 from defeatbeta_api.data.income_statement import IncomeStatement
+from defeatbeta_api.data.news import News
 from defeatbeta_api.data.print_visitor import PrintVisitor
 from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.stock_statement import StockStatement
@@ -23,7 +24,7 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
-    stock_earning_call_transcripts
+    stock_earning_call_transcripts, stock_news
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
     balance_sheet_template_type, cash_flow_template_type
 
@@ -68,22 +69,22 @@ class Ticker:
     def price(self) -> pd.DataFrame:
         return self._query_data(stock_prices)
 
-    def quarterly_income_statement(self) -> statement:
+    def quarterly_income_statement(self) -> Statement:
         return self._statement(income_statement, quarterly)
 
-    def annual_income_statement(self) -> statement:
+    def annual_income_statement(self) -> Statement:
         return self._statement(income_statement, annual)
 
-    def quarterly_balance_sheet(self) -> statement:
+    def quarterly_balance_sheet(self) -> Statement:
         return self._statement(balance_sheet, quarterly)
 
-    def annual_balance_sheet(self) -> statement:
+    def annual_balance_sheet(self) -> Statement:
         return self._statement(balance_sheet, annual)
 
-    def quarterly_cash_flow(self) -> statement:
+    def quarterly_cash_flow(self) -> Statement:
         return self._statement(cash_flow, quarterly)
 
-    def annual_cash_flow(self) -> statement:
+    def annual_cash_flow(self) -> Statement:
         return self._statement(cash_flow, annual)
 
     def ttm_pe(self) -> pd.DataFrame:
@@ -153,6 +154,11 @@ class Ticker:
 
     def earning_call_transcripts(self) -> Transcripts:
         return Transcripts(self._query_data(stock_earning_call_transcripts))
+
+    def news(self) -> News:
+        url = self.huggingface_client.get_url_path(stock_news)
+        sql = f"SELECT * FROM '{url}' WHERE ARRAY_CONTAINS(related_symbols, '{self.ticker}') ORDER BY report_date ASC"
+        return News(self.duckdb_client.query(sql))
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
