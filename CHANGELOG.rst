@@ -1,5 +1,9 @@
 Change Log
 ===========
+0.0.8
+-------
+- Support Yahoo News Data for Stock[`#24 <https://github.com/defeat-beta/defeatbeta-api/issues/24>`_]
+
 0.0.7
 -------
 - Support Quarterly Gross Margin %[`#17 <https://github.com/defeat-beta/defeatbeta-api/issues/17>`_]

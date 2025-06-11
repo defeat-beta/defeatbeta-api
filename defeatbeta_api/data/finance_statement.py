@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from defeatbeta_api.data.finance_item import FinanceItem
@@ -19,7 +20,7 @@ def _find_finance_value_by_date(values: List['FinanceValue'],
             None
         )
 
-
+@dataclass
 class FinanceStatement(ABC):
     @abstractmethod
     def get_date(self) -> List[str]:

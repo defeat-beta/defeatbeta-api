@@ -64,32 +64,32 @@ class TestTicker(unittest.TestCase):
 
     def test_statement_1(self):
         result = self.ticker.quarterly_income_statement()
-        print(result.pretty_table())
+        result.print_pretty_table()
         print(result.df().to_string())
 
     def test_statement_2(self):
         result = self.ticker.annual_income_statement()
-        print(result.pretty_table())
+        result.print_pretty_table()
         print(result.df().to_string())
 
     def test_statement_3(self):
         result = self.ticker.quarterly_balance_sheet()
-        print(result.pretty_table())
+        result.print_pretty_table()
         print(result.df().to_string())
 
     def test_statement_4(self):
         result = self.ticker.annual_balance_sheet()
-        print(result.pretty_table())
+        result.print_pretty_table()
         print(result.df().to_string())
 
     def test_statement_5(self):
         result = self.ticker.quarterly_cash_flow()
-        print(result.pretty_table())
+        result.print_pretty_table()
         print(result.df().to_string())
 
     def test_statement_6(self):
         result = self.ticker.annual_cash_flow()
-        print(result.pretty_table())
+        result.print_pretty_table()
         print(result.df().to_string())
 
     def test_ttm_pe(self):
@@ -105,4 +105,11 @@ class TestTicker(unittest.TestCase):
         print(transcripts)
         print(transcripts.get_transcripts_list())
         print(transcripts.get_transcript(2025, 2))
-        print(transcripts.pretty_table(2025, 2))
+        transcripts.print_pretty_table(2025, 2)
+
+    def test_news(self):
+        news = self.ticker.news()
+        print(news)
+        print(news.get_news_list())
+        print(news.get_news("b67526eb-581a-35b2-8357-b4f282fe876f"))
+        news.print_pretty_table("4e50657c-cd70-3437-a29d-9e050dec2549")
