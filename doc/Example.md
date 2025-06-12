@@ -1095,7 +1095,7 @@ news.get_news("26157f11-598f-327a-b7ba-12b2b3093c24")
 ```
 ### 15.3 Display Formatted News Article
 ```python
-news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
+news.print_pretty_table("26157f11-598f-327a-b7ba-12b2b3093c24")
 ```
 ```text
 >>> news.print_pretty_table("26157f11-598f-327a-b7ba-12b2b3093c24")
