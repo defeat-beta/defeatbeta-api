@@ -112,4 +112,4 @@ class TestTicker(unittest.TestCase):
         print(news)
         print(news.get_news_list())
         print(news.get_news("b67526eb-581a-35b2-8357-b4f282fe876f"))
-        news.print_pretty_table("4e50657c-cd70-3437-a29d-9e050dec2549")
+        news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
