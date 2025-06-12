@@ -27,6 +27,8 @@
     - [14.1 Fetching transcripts list](#141-fetching-transcripts-list)
     - [14.2 Fetching the Q4 2024 Earnings Call Transcript](#142-fetching-the-q4-2024-earnings-call-transcript)
     - [14.3 Print Formatted Table of 2024 Q4 Earnings Call](#143-print-formatted-table-of-2024-q4-earnings-call)
+  - [14. Example: Accessing Financial News](#14-example-accessing-financial-news)
+    - [](#)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
