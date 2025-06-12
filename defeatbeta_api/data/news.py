@@ -21,13 +21,13 @@ class News:
     def get_news(self, uuid: str) -> pd.DataFrame:
         record = self._find_news(uuid)
         if record.empty:
-            raise ValueError(f"No transcript found for uuid {uuid}")
+            raise ValueError(f"No news found for uuid {uuid}")
         return record
 
     def print_pretty_table(self, uuid):
         record = self._find_news(uuid)
         if record.empty:
-            raise ValueError(f"No transcript found for uuid: {uuid}")
+            raise ValueError(f"No news found for uuid: {uuid}")
 
         data = record.iloc[0]
         title = data['title']
