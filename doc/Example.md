@@ -27,10 +27,10 @@
     - [14.1 Fetching transcripts list](#141-fetching-transcripts-list)
     - [14.2 Fetching the Q4 2024 Earnings Call Transcript](#142-fetching-the-q4-2024-earnings-call-transcript)
     - [14.3 Print Formatted Table of 2024 Q4 Earnings Call](#143-print-formatted-table-of-2024-q4-earnings-call)
-  - [14. Example: Accessing Financial News](#14-example-accessing-financial-news)
-    - [14.1 List All News Articles](#141-list-all-news-articles)
-    - [14.2 Retrieve Specific News Content](#142-retrieve-specific-news-content)
-    - [14.3 Display Formatted News Article](#143-display-formatted-news-article)
+  - [15. Example: Accessing Financial News](#15-example-accessing-financial-news)
+    - [15.1 List All News Articles](#151-list-all-news-articles)
+    - [15.2 Retrieve Specific News Content](#152-retrieve-specific-news-content)
+    - [15.3 Display Formatted News Article](#153-display-formatted-news-article)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
