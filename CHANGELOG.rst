@@ -1,5 +1,9 @@
 Change Log
 ===========
+0.0.9
+-------
+- Support Revenue by segment[`#26 <https://github.com/defeat-beta/defeatbeta-api/issues/26>`_]
+
 0.0.8
 -------
 - Support Yahoo News Data for Stock[`#24 <https://github.com/defeat-beta/defeatbeta-api/issues/24>`_]
