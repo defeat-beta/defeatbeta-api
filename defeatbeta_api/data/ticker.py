@@ -24,7 +24,7 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
-    stock_earning_call_transcripts, stock_news
+    stock_earning_call_transcripts, stock_news, stock_revenue_breakdown
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
     balance_sheet_template_type, cash_flow_template_type
 
@@ -159,6 +159,32 @@ class Ticker:
         url = self.huggingface_client.get_url_path(stock_news)
         sql = f"SELECT * FROM '{url}' WHERE ARRAY_CONTAINS(related_symbols, '{self.ticker}') ORDER BY report_date ASC"
         return News(self.duckdb_client.query(sql))
+
+    def revenue_by_segment(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and breakdown_type='segment' ORDER BY report_date ASC"
+        data = self.duckdb_client.query(sql)
+        df_wide = data.pivot(index=['report_date'],
+                           columns='item_name',
+                           values='item_value').reset_index()
+
+        df_wide.columns.name = None
+
+        df_wide = df_wide.fillna(0)
+        return df_wide
+
+    def revenue_by_geography(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and breakdown_type='geography' ORDER BY report_date ASC"
+        data = self.duckdb_client.query(sql)
+        df_wide = data.pivot(index=['report_date'],
+                           columns='item_name',
+                           values='item_value').reset_index()
+
+        df_wide.columns.name = None
+
+        df_wide = df_wide.fillna(0)
+        return df_wide
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
