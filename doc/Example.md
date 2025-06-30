@@ -31,6 +31,9 @@
     - [15.1 List All News Articles](#151-list-all-news-articles)
     - [15.2 Retrieve Specific News Content](#152-retrieve-specific-news-content)
     - [15.3 Display Formatted News Article](#153-display-formatted-news-article)
+  - [16. Example: Accessing Revenue breakdown](#16-example-accessing-revenue-breakdown)
+    - [16.1 Stock Revenue by segment](#161-stock-revenue-by-segment)
+    - [16.2 Stock Revenue by geography](#162-stock-revenue-by-geography)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
