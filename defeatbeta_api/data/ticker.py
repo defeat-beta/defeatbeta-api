@@ -3,13 +3,12 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import Optional, List, Dict
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from defeatbeta_api.client.duckdb_client import get_duckdb_client
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
-from defeatbeta_api.data import statement
 from defeatbeta_api.data.balance_sheet import BalanceSheet
 from defeatbeta_api.data.finance_item import FinanceItem
 from defeatbeta_api.data.finance_value import FinanceValue
