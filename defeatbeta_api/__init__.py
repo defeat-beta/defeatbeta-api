@@ -1,7 +1,7 @@
 import pyfiglet
-from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
-from defeatbeta_api.__version__ import __version__
 
+from defeatbeta_api.__version__ import __version__
+from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 
 _welcome_printed = False
 data_update_time = ""
