@@ -11,13 +11,13 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 ### Key features:
 
-✅ **Reliable Data**：Sources market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset, bypassing Yahoo scraping.
+✅ **Reliable Data**: Sources market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset, bypassing Yahoo scraping.
 
-✅ **No Rate Limits**：Hugging Face's infrastructure provides guaranteed access without API throttling or quotas.
+✅ **No Rate Limits**: Hugging Face's infrastructure provides guaranteed access without API throttling or quotas.
 
-✅ **High Performance**：[DuckDB's OLAP engine](https://duckdb.org/) + [cache_httpfs](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension delivers sub-second query latency.
+✅ **High Performance**: [DuckDB's OLAP engine](https://duckdb.org/) + [cache_httpfs](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension delivers sub-second query latency.
 
-✅ **SQL-Compatible**：Python-native interface with full SQL support via DuckDB's optimized execution.
+✅ **SQL-Compatible**: Python-native interface with full SQL support via DuckDB's optimized execution.
 
 ✅ **Extended Financial Data**: Includes [TTM EPS](doc/Example.md#11-stock-ttm-eps), [TTM PE](doc/Example.md#12-stock-ttm-pe), [Quarterly gross margins](doc/Example.md#13-stock-quarterly-gross-margin), [Earnings call transcripts](doc/Example.md#14-example-accessing-earnings-call-transcripts), [Stock News](doc/Example.md#15-example-accessing-financial-news), [Revenue by segment](doc/Example.md#161-stock-revenue-by-segment) and [Revenue by geography](doc/Example.md#162-stock-revenue-by-geography) (continuously expanding).
 
