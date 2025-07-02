@@ -7,6 +7,7 @@ from defeatbeta_api.data.finance_value import FinanceValue
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
 from defeatbeta_api.utils.util import parse_all_key_titles
 
+
 @dataclass
 class CashFlow(FinanceStatement):
     def __init__(self,

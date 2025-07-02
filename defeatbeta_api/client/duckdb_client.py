@@ -1,15 +1,15 @@
+import logging
 import sys
+import time
+from contextlib import contextmanager
+from threading import Lock
+from typing import Optional
 
 import duckdb
-import logging
-import time
 import pandas as pd
-from contextlib import contextmanager
-from typing import Optional
-from defeatbeta_api.client.duckdb_conf import Configuration
-from defeatbeta_api import data_update_time
 
-from threading import Lock
+from defeatbeta_api import data_update_time
+from defeatbeta_api.client.duckdb_conf import Configuration
 
 _instance = None
 _lock = Lock()

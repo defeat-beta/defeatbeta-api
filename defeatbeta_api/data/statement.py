@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+
 @dataclass
 class Statement:
     def __init__(self, data : pd.DataFrame, content : str):

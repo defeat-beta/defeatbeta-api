@@ -1,7 +1,9 @@
-import requests
 from typing import Dict, Any
-from urllib3.util.retry import Retry
+
+import requests
 from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 from defeatbeta_api.utils.const import tables
 
 
