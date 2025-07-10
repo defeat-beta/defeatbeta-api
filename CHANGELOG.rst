@@ -1,5 +1,9 @@
 Change Log
 ===========
+0.0.10
+-------
+- Support Annual Gross Margin %[`#27 <https://github.com/defeat-beta/defeatbeta-api/issues/27>`_]
+
 0.0.9
 -------
 - Support Revenue by segment[`#26 <https://github.com/defeat-beta/defeatbeta-api/issues/26>`_]
