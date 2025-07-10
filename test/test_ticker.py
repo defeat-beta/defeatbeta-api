@@ -100,6 +100,10 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.quarterly_gross_margin()
         print(result.to_string())
 
+    def test_annual_gross_margin(self):
+        result = self.ticker.annual_gross_margin()
+        print(result.to_string())
+
     def test_earning_call_transcripts(self):
         transcripts = self.ticker.earning_call_transcripts()
         print(transcripts)
