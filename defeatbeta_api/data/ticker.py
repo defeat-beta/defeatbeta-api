@@ -208,6 +208,19 @@ class Ticker:
         df_wide = df_wide.fillna(0)
         return df_wide
 
+    def revenue_by_product(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and breakdown_type='product' ORDER BY report_date ASC"
+        data = self.duckdb_client.query(sql)
+        df_wide = data.pivot(index=['report_date'],
+                           columns='item_name',
+                           values='item_value').reset_index()
+
+        df_wide.columns.name = None
+
+        df_wide = df_wide.fillna(0)
+        return df_wide
+
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
