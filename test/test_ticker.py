@@ -125,3 +125,7 @@ class TestTicker(unittest.TestCase):
     def test_revenue_by_geography(self):
         result = self.ticker.revenue_by_geography()
         print(result.to_string())
+
+    def test_revenue_by_product(self):
+        result = self.ticker.revenue_by_product()
+        print(result.to_string())
