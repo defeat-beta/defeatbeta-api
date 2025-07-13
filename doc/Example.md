@@ -41,7 +41,9 @@
   - [20. Stock Quarterly Net Margin](#20-stock-quarterly-net-margin)
   - [21. Stock Annual Net Margin](#21-stock-annual-net-margin)
   - [22. Stock Quarterly EBITDA Margin](#22-stock-quarterly-ebitda-margin)
-  - [21. Stock Annual EBITDA Margin](#21-stock-annual-ebitda-margin)
+  - [23. Stock Annual EBITDA Margin](#23-stock-annual-ebitda-margin)
+  - [24. Stock Quarterly FCF Margin](#24-stock-quarterly-fcf-margin)
+  - [25. Stock Annual FCF Margin](#25-stock-annual-fcf-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
