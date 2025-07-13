@@ -145,3 +145,11 @@ class TestTicker(unittest.TestCase):
     def test_annual_net_margin(self):
         result = self.ticker.annual_net_margin()
         print(result.to_string())
+
+    def test_quarterly_ebitda_margin(self):
+        result = self.ticker.quarterly_ebitda_margin()
+        print(result.to_string())
+
+    def test_annual_ebitda_margin(self):
+        result = self.ticker.annual_ebitda_margin()
+        print(result.to_string())
