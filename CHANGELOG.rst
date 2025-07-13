@@ -7,6 +7,7 @@ Change Log
 - Support Quarterly/Annual Operating Margin %[`#18 <https://github.com/defeat-beta/defeatbeta-api/issues/18>`_]
 - Support Quarterly/Annual Net Margin %[`#20 <https://github.com/defeat-beta/defeatbeta-api/issues/20>`_]
 - Support Quarterly/Annual EBITDA Margin %[`#19 <https://github.com/defeat-beta/defeatbeta-api/issues/19>`_]
+- Support Quarterly/Annual FCF Margin %[`#21 <https://github.com/defeat-beta/defeatbeta-api/issues/21>`_]
 
 0.0.9
 -------
