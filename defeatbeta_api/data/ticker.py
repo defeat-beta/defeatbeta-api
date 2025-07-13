@@ -129,37 +129,6 @@ class Ticker:
 
         return pd.DataFrame(result_data)
 
-    def _generate_margin_sql(self, margin_type: str, period_type: str, numerator_item: str,
-                             margin_column: str) -> pd.DataFrame:
-        ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ""
-        finance_type_filter = \
-            "AND finance_type = 'income_statement'" if margin_type in ['gross', 'operating', 'net','ebitda'] \
-            else "AND finance_type in ('income_statement', 'cash_flow')" if margin_type == 'fcf' \
-            else ""
-        sql = f"""
-            SELECT symbol,
-                   report_date,
-                   {numerator_item},
-                   total_revenue,
-                   round({numerator_item}/total_revenue, 2) as {margin_column}
-            FROM (
-                SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN t1.item_name = '{numerator_item}' THEN t1.item_value END) AS {numerator_item},
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END) AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path('stock_statement')}' t1
-                  WHERE symbol = '{self.ticker}'
-                    {finance_type_filter}
-                    {ttm_filter}
-                    AND item_name IN ('{numerator_item}', 'total_revenue')
-                    AND period_type = '{period_type}'
-                  GROUP BY symbol, report_date
-            ) t 
-            ORDER BY report_date ASC
-        """
-        return self.duckdb_client.query(sql)
-
     def quarterly_gross_margin(self) -> pd.DataFrame:
         return self._generate_margin_sql('gross', 'quarterly', 'gross_profit', 'gross_margin')
 
@@ -236,6 +205,37 @@ class Ticker:
 
         df_wide = df_wide.fillna(0)
         return df_wide
+
+    def _generate_margin_sql(self, margin_type: str, period_type: str, numerator_item: str,
+                             margin_column: str) -> pd.DataFrame:
+        ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ""
+        finance_type_filter = \
+            "AND finance_type = 'income_statement'" if margin_type in ['gross', 'operating', 'net', 'ebitda'] \
+            else "AND finance_type in ('income_statement', 'cash_flow')" if margin_type == 'fcf' \
+            else ""
+        sql = f"""
+            SELECT symbol,
+                   report_date,
+                   {numerator_item},
+                   total_revenue,
+                   round({numerator_item}/total_revenue, 2) as {margin_column}
+            FROM (
+                SELECT
+                     symbol,
+                     report_date,
+                     MAX(CASE WHEN t1.item_name = '{numerator_item}' THEN t1.item_value END) AS {numerator_item},
+                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END) AS total_revenue
+                  FROM '{self.huggingface_client.get_url_path('stock_statement')}' t1
+                  WHERE symbol = '{self.ticker}'
+                    {finance_type_filter}
+                    {ttm_filter}
+                    AND item_name IN ('{numerator_item}', 'total_revenue')
+                    AND period_type = '{period_type}'
+                  GROUP BY symbol, report_date
+            ) t 
+            ORDER BY report_date ASC
+        """
+        return self.duckdb_client.query(sql)
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
