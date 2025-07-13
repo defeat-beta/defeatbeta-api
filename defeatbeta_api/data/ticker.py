@@ -168,41 +168,20 @@ class Ticker:
         return News(self.duckdb_client.query(sql))
 
     def revenue_by_segment(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and breakdown_type='segment' ORDER BY report_date ASC"
-        data = self.duckdb_client.query(sql)
-        df_wide = data.pivot(index=['report_date'],
-                           columns='item_name',
-                           values='item_value').reset_index()
-
-        df_wide.columns.name = None
-
-        df_wide = df_wide.fillna(0)
-        return df_wide
+        return self._revenue_by_breakdown('segment')
 
     def revenue_by_geography(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and breakdown_type='geography' ORDER BY report_date ASC"
-        data = self.duckdb_client.query(sql)
-        df_wide = data.pivot(index=['report_date'],
-                           columns='item_name',
-                           values='item_value').reset_index()
-
-        df_wide.columns.name = None
-
-        df_wide = df_wide.fillna(0)
-        return df_wide
+        return self._revenue_by_breakdown('geography')
 
     def revenue_by_product(self) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and breakdown_type='product' ORDER BY report_date ASC"
+        return self._revenue_by_breakdown('product')
+
+    def _revenue_by_breakdown(self, breakdown_type: str) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path('stock_revenue_breakdown')
+        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' AND breakdown_type = '{breakdown_type}' ORDER BY report_date ASC"
         data = self.duckdb_client.query(sql)
-        df_wide = data.pivot(index=['report_date'],
-                           columns='item_name',
-                           values='item_value').reset_index()
-
+        df_wide = data.pivot(index=['report_date'], columns='item_name', values='item_value').reset_index()
         df_wide.columns.name = None
-
         df_wide = df_wide.fillna(0)
         return df_wide
 
