@@ -129,140 +129,68 @@ class Ticker:
 
         return pd.DataFrame(result_data)
 
-    def quarterly_gross_margin(self) -> pd.DataFrame:
-        quarterly_gross_margin_sql = f"""
+    def _generate_margin_sql(self, margin_type: str, period_type: str, numerator_item: str,
+                             margin_column: str) -> pd.DataFrame:
+        """
+        Generate SQL query for calculating financial margins (gross, operating, or net) for a given period type.
+
+        Args:
+            margin_type (str): Type of margin ('gross', 'operating', 'net')
+            period_type (str): Period type ('quarterly' or 'annual')
+            numerator_item (str): Item name for the numerator (e.g., 'gross_profit', 'operating_income')
+            margin_column (str): Column name for the calculated margin (e.g., 'gross_margin')
+
+        Returns:
+            pd.DataFrame: DataFrame containing the margin data
+        """
+        ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ""
+        sql = f"""
             SELECT symbol,
                    report_date,
-                   gross_profit,
+                   {numerator_item},
                    total_revenue,
-                   round(gross_profit/total_revenue, 2) as gross_margin
-            from (
+                   round({numerator_item}/total_revenue, 2) as {margin_column}
+            FROM (
                 SELECT
                      symbol,
                      report_date,
-                     MAX(CASE WHEN t1.item_name = 'gross_profit' THEN t1.item_value END)                   AS gross_profit,
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
+                     MAX(CASE WHEN t1.item_name = '{numerator_item}' THEN t1.item_value END) AS {numerator_item},
+                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END) AS total_revenue
+                  FROM '{self.huggingface_client.get_url_path('stock_statement')}' t1
                   WHERE symbol = '{self.ticker}'
                     AND finance_type = 'income_statement'
-                    AND report_date != 'TTM'
-                    AND item_name IN ('gross_profit', 'total_revenue')
-                    AND period_type = 'quarterly'
-                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
-            """
-        return self.duckdb_client.query(quarterly_gross_margin_sql)
+                    {ttm_filter}
+                    AND item_name IN ('{numerator_item}', 'total_revenue')
+                    AND period_type = '{period_type}'
+                  GROUP BY symbol, report_date
+            ) t 
+            ORDER BY report_date ASC
+        """
+        return self.duckdb_client.query(sql)
+
+    def quarterly_gross_margin(self) -> pd.DataFrame:
+        """Calculate quarterly gross margin."""
+        return self._generate_margin_sql('gross', 'quarterly', 'gross_profit', 'gross_margin')
 
     def annual_gross_margin(self) -> pd.DataFrame:
-        annual_gross_margin_sql = f"""
-            SELECT symbol,
-                   report_date,
-                   gross_profit,
-                   total_revenue,
-                   round(gross_profit/total_revenue, 2) as gross_margin
-            from (
-                SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN t1.item_name = 'gross_profit' THEN t1.item_value END)                   AS gross_profit,
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
-                  WHERE symbol = '{self.ticker}'
-                    AND finance_type = 'income_statement'
-                    AND item_name IN ('gross_profit', 'total_revenue')
-                    AND period_type = 'annual'
-                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
-            """
-        return self.duckdb_client.query(annual_gross_margin_sql)
+        """Calculate annual gross margin."""
+        return self._generate_margin_sql('gross', 'annual', 'gross_profit', 'gross_margin')
 
     def quarterly_operating_margin(self) -> pd.DataFrame:
-        quarterly_operating_margin_sql = f"""
-            SELECT symbol,
-                   report_date,
-                   operating_income,
-                   total_revenue,
-                   round(operating_income/total_revenue, 2) as operating_margin
-            from (
-                SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN t1.item_name = 'operating_income' THEN t1.item_value END)  AS operating_income,
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
-                  WHERE symbol = '{self.ticker}'
-                    AND finance_type = 'income_statement'
-                    AND report_date != 'TTM'
-                    AND item_name IN ('operating_income', 'total_revenue')
-                    AND period_type = 'quarterly'
-                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
-            """
-        return self.duckdb_client.query(quarterly_operating_margin_sql)
+        """Calculate quarterly operating margin."""
+        return self._generate_margin_sql('operating', 'quarterly', 'operating_income', 'operating_margin')
 
     def annual_operating_margin(self) -> pd.DataFrame:
-        annual_operating_margin_sql = f"""
-            SELECT symbol,
-                   report_date,
-                   operating_income,
-                   total_revenue,
-                   round(operating_income/total_revenue, 2) as operating_margin
-            from (
-                SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN t1.item_name = 'operating_income' THEN t1.item_value END)      AS operating_income,
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
-                  WHERE symbol = '{self.ticker}'
-                    AND finance_type = 'income_statement'
-                    AND item_name IN ('operating_income', 'total_revenue')
-                    AND period_type = 'annual'
-                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
-            """
-        return self.duckdb_client.query(annual_operating_margin_sql)
+        """Calculate annual operating margin."""
+        return self._generate_margin_sql('operating', 'annual', 'operating_income', 'operating_margin')
 
     def quarterly_net_margin(self) -> pd.DataFrame:
-        quarterly_net_margin_sql = f"""
-            SELECT symbol,
-                   report_date,
-                   net_income_common_stockholders,
-                   total_revenue,
-                   round(net_income_common_stockholders/total_revenue, 2) as net_margin
-            from (
-                SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN t1.item_name = 'net_income_common_stockholders' THEN t1.item_value END)  AS net_income_common_stockholders,
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
-                  WHERE symbol = '{self.ticker}'
-                    AND finance_type = 'income_statement'
-                    AND report_date != 'TTM'
-                    AND item_name IN ('net_income_common_stockholders', 'total_revenue')
-                    AND period_type = 'quarterly'
-                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
-            """
-        return self.duckdb_client.query(quarterly_net_margin_sql)
+        """Calculate quarterly net margin."""
+        return self._generate_margin_sql('net', 'quarterly', 'net_income_common_stockholders', 'net_margin')
 
     def annual_net_margin(self) -> pd.DataFrame:
-        annual_net_margin_sql = f"""
-            SELECT symbol,
-                   report_date,
-                   net_income_common_stockholders,
-                   total_revenue,
-                   round(net_income_common_stockholders/total_revenue, 2) as net_margin
-            from (
-                SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN t1.item_name = 'net_income_common_stockholders' THEN t1.item_value END)      AS net_income_common_stockholders,
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
-                  WHERE symbol = '{self.ticker}'
-                    AND finance_type = 'income_statement'
-                    AND item_name IN ('net_income_common_stockholders', 'total_revenue')
-                    AND period_type = 'annual'
-                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
-            """
-        return self.duckdb_client.query(annual_net_margin_sql)
+        """Calculate annual net margin."""
+        return self._generate_margin_sql('net', 'annual', 'net_income_common_stockholders', 'net_margin')
 
     def earning_call_transcripts(self) -> Transcripts:
         return Transcripts(self._query_data(stock_earning_call_transcripts))
