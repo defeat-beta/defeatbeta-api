@@ -40,6 +40,8 @@
   - [19. Stock Annual Operating Margin](#19-stock-annual-operating-margin)
   - [20. Stock Quarterly Net Margin](#20-stock-quarterly-net-margin)
   - [21. Stock Annual Net Margin](#21-stock-annual-net-margin)
+  - [22. Stock Quarterly EBITDA Margin](#22-stock-quarterly-ebitda-margin)
+  - [21. Stock Annual EBITDA Margin](#21-stock-annual-ebitda-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
