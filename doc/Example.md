@@ -36,6 +36,8 @@
     - [17.1 Stock Revenue by segment](#171-stock-revenue-by-segment)
     - [17.2 Stock Revenue by geography](#172-stock-revenue-by-geography)
     - [17.3 Stock Revenue by product](#173-stock-revenue-by-product)
+  - [18. Stock Quarterly Operating Margin](#18-stock-quarterly-operating-margin)
+  - [19. Stock Annual Operating Margin](#19-stock-annual-operating-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
