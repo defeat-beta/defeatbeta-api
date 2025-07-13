@@ -38,6 +38,8 @@
     - [17.3 Stock Revenue by product](#173-stock-revenue-by-product)
   - [18. Stock Quarterly Operating Margin](#18-stock-quarterly-operating-margin)
   - [19. Stock Annual Operating Margin](#19-stock-annual-operating-margin)
+  - [20. Stock Quarterly Net Margin](#20-stock-quarterly-net-margin)
+  - [21. Stock Annual Net Margin](#21-stock-annual-net-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
