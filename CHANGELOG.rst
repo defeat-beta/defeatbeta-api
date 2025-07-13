@@ -5,6 +5,7 @@ Change Log
 - Support Annual Gross Margin %[`#27 <https://github.com/defeat-beta/defeatbeta-api/issues/27>`_]
 - Support Revenue by product[`#28 <https://github.com/defeat-beta/defeatbeta-api/issues/28>`_]
 - Support Quarterly/Annual Operating Margin %[`#18 <https://github.com/defeat-beta/defeatbeta-api/issues/18>`_]
+- Support Quarterly/Annual Net Margin %[`#20 <https://github.com/defeat-beta/defeatbeta-api/issues/20>`_]
 
 0.0.9
 -------

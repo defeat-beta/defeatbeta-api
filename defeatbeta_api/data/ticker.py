@@ -219,6 +219,51 @@ class Ticker:
             """
         return self.duckdb_client.query(annual_operating_margin_sql)
 
+    def quarterly_net_margin(self) -> pd.DataFrame:
+        quarterly_net_margin_sql = f"""
+            SELECT symbol,
+                   report_date,
+                   net_income_common_stockholders,
+                   total_revenue,
+                   round(net_income_common_stockholders/total_revenue, 2) as net_margin
+            from (
+                SELECT
+                     symbol,
+                     report_date,
+                     MAX(CASE WHEN t1.item_name = 'net_income_common_stockholders' THEN t1.item_value END)  AS net_income_common_stockholders,
+                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
+                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
+                  WHERE symbol = '{self.ticker}'
+                    AND finance_type = 'income_statement'
+                    AND report_date != 'TTM'
+                    AND item_name IN ('net_income_common_stockholders', 'total_revenue')
+                    AND period_type = 'quarterly'
+                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
+            """
+        return self.duckdb_client.query(quarterly_net_margin_sql)
+
+    def annual_net_margin(self) -> pd.DataFrame:
+        annual_net_margin_sql = f"""
+            SELECT symbol,
+                   report_date,
+                   net_income_common_stockholders,
+                   total_revenue,
+                   round(net_income_common_stockholders/total_revenue, 2) as net_margin
+            from (
+                SELECT
+                     symbol,
+                     report_date,
+                     MAX(CASE WHEN t1.item_name = 'net_income_common_stockholders' THEN t1.item_value END)      AS net_income_common_stockholders,
+                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
+                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
+                  WHERE symbol = '{self.ticker}'
+                    AND finance_type = 'income_statement'
+                    AND item_name IN ('net_income_common_stockholders', 'total_revenue')
+                    AND period_type = 'annual'
+                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
+            """
+        return self.duckdb_client.query(annual_net_margin_sql)
+
     def earning_call_transcripts(self) -> Transcripts:
         return Transcripts(self._query_data(stock_earning_call_transcripts))
 
