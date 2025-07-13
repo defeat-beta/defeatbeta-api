@@ -1442,3 +1442,37 @@ ticker.annual_operating_margin()
 4   TSLA  2023-12-31      8.891000e+09   9.677300e+10              0.09
 5   TSLA  2024-12-31      7.760000e+09   9.769000e+10              0.08
 ```
+## 20. Stock Quarterly Net Margin
+```python
+ticker.quarterly_net_margin()
+```
+```text
+>>> ticker.quarterly_net_margin()
+   symbol report_date  net_income_common_stockholders  total_revenue  net_margin
+0    TSLA  2022-06-30                    2.256000e+09   1.693400e+10        0.13
+1    TSLA  2022-09-30                             NaN            NaN         NaN
+2    TSLA  2022-12-31                             NaN            NaN         NaN
+3    TSLA  2023-03-31                             NaN            NaN         NaN
+4    TSLA  2023-06-30                    2.703000e+09   2.492700e+10        0.11
+5    TSLA  2023-09-30                    1.851000e+09   2.335000e+10        0.08
+6    TSLA  2023-12-31                    7.927000e+09   2.516700e+10        0.31
+7    TSLA  2024-03-31                    1.432000e+09   2.130100e+10        0.07
+8    TSLA  2024-06-30                    1.478000e+09   2.550000e+10        0.06
+9    TSLA  2024-09-30                    2.167000e+09   2.518200e+10        0.09
+10   TSLA  2024-12-31                    2.314000e+09   2.570700e+10        0.09
+11   TSLA  2025-03-31                    4.090000e+08   1.933500e+10        0.02
+```
+## 21. Stock Annual Net Margin
+```python
+ticker.annual_net_margin()
+```
+```text
+>>> ticker.annual_net_margin()
+  symbol report_date  net_income_common_stockholders  total_revenue  net_margin
+0   TSLA  2019-12-31                             NaN            NaN         NaN
+1   TSLA  2020-12-31                    6.900000e+08   3.153600e+10        0.02
+2   TSLA  2021-12-31                    5.524000e+09   5.382300e+10        0.10
+3   TSLA  2022-12-31                    1.258300e+10   8.146200e+10        0.15
+4   TSLA  2023-12-31                    1.499900e+10   9.677300e+10        0.15
+5   TSLA  2024-12-31                    7.130000e+09   9.769000e+10        0.07
+```
