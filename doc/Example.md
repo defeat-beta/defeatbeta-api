@@ -1478,3 +1478,37 @@ ticker.annual_net_margin()
 4   TSLA  2023-12-31                    1.499900e+10   9.677300e+10        0.15
 5   TSLA  2024-12-31                    7.130000e+09   9.769000e+10        0.07
 ```
+## 22. Stock Quarterly EBITDA Margin
+```python
+ticker.quarterly_ebitda_margin()
+```
+```text
+>>> ticker.quarterly_ebitda_margin()
+   symbol report_date        ebitda  total_revenue  ebitda_margin
+0    TSLA  2022-06-30           NaN   1.693400e+10            NaN
+1    TSLA  2022-09-30           NaN            NaN            NaN
+2    TSLA  2022-12-31           NaN            NaN            NaN
+3    TSLA  2023-03-31           NaN            NaN            NaN
+4    TSLA  2023-06-30  4.119000e+09   2.492700e+10           0.17
+5    TSLA  2023-09-30  3.318000e+09   2.335000e+10           0.14
+6    TSLA  2023-12-31  3.484000e+09   2.516700e+10           0.14
+7    TSLA  2024-03-31  3.210000e+09   2.130100e+10           0.15
+8    TSLA  2024-06-30  3.251000e+09   2.550000e+10           0.13
+9    TSLA  2024-09-30  4.224000e+09   2.518200e+10           0.17
+10   TSLA  2024-12-31  4.358000e+09   2.570700e+10           0.17
+11   TSLA  2025-03-31  2.127000e+09   1.933500e+10           0.11
+```
+## 21. Stock Annual EBITDA Margin
+```python
+ticker.annual_ebitda_margin()
+```
+```text
+>>> ticker.annual_ebitda_margin()
+  symbol report_date        ebitda  total_revenue  ebitda_margin
+0   TSLA  2019-12-31           NaN            NaN            NaN
+1   TSLA  2020-12-31  4.224000e+09   3.153600e+10           0.13
+2   TSLA  2021-12-31  9.625000e+09   5.382300e+10           0.18
+3   TSLA  2022-12-31  1.765700e+10   8.146200e+10           0.22
+4   TSLA  2023-12-31  1.479600e+10   9.677300e+10           0.15
+5   TSLA  2024-12-31  1.470800e+10   9.769000e+10           0.15
+```
