@@ -134,7 +134,7 @@ class Ticker:
         ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ""
         finance_type_filter = \
             "AND finance_type = 'income_statement'" if margin_type in ['gross', 'operating', 'net','ebitda'] \
-            else "AND finance_type = 'cash_flow'" if margin_type == 'fcf' \
+            else "AND finance_type in ('income_statement', 'cash_flow')" if margin_type == 'fcf' \
             else ""
         sql = f"""
             SELECT symbol,
@@ -161,36 +161,34 @@ class Ticker:
         return self.duckdb_client.query(sql)
 
     def quarterly_gross_margin(self) -> pd.DataFrame:
-        """Calculate quarterly gross margin."""
         return self._generate_margin_sql('gross', 'quarterly', 'gross_profit', 'gross_margin')
 
     def annual_gross_margin(self) -> pd.DataFrame:
-        """Calculate annual gross margin."""
         return self._generate_margin_sql('gross', 'annual', 'gross_profit', 'gross_margin')
 
     def quarterly_operating_margin(self) -> pd.DataFrame:
-        """Calculate quarterly operating margin."""
         return self._generate_margin_sql('operating', 'quarterly', 'operating_income', 'operating_margin')
 
     def annual_operating_margin(self) -> pd.DataFrame:
-        """Calculate annual operating margin."""
         return self._generate_margin_sql('operating', 'annual', 'operating_income', 'operating_margin')
 
     def quarterly_net_margin(self) -> pd.DataFrame:
-        """Calculate quarterly net margin."""
         return self._generate_margin_sql('net', 'quarterly', 'net_income_common_stockholders', 'net_margin')
 
     def annual_net_margin(self) -> pd.DataFrame:
-        """Calculate annual net margin."""
         return self._generate_margin_sql('net', 'annual', 'net_income_common_stockholders', 'net_margin')
 
     def quarterly_ebitda_margin(self) -> pd.DataFrame:
-        """Calculate quarterly ebitda margin."""
         return self._generate_margin_sql('ebitda', 'quarterly', 'ebitda', 'ebitda_margin')
 
     def annual_ebitda_margin(self) -> pd.DataFrame:
-        """Calculate quarterly ebitda margin."""
         return self._generate_margin_sql('ebitda', 'annual', 'ebitda', 'ebitda_margin')
+
+    def quarterly_fcf_margin(self) -> pd.DataFrame:
+        return self._generate_margin_sql('fcf', 'quarterly', 'free_cash_flow', 'fcf_margin')
+
+    def annual_fcf_margin(self) -> pd.DataFrame:
+        return self._generate_margin_sql('fcf', 'annual', 'free_cash_flow', 'fcf_margin')
 
     def earning_call_transcripts(self) -> Transcripts:
         return Transcripts(self._query_data(stock_earning_call_transcripts))
