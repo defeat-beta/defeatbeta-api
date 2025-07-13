@@ -96,14 +96,6 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.ttm_pe()
         print(result.to_string())
 
-    def test_quarterly_gross_margin(self):
-        result = self.ticker.quarterly_gross_margin()
-        print(result.to_string())
-
-    def test_annual_gross_margin(self):
-        result = self.ticker.annual_gross_margin()
-        print(result.to_string())
-
     def test_earning_call_transcripts(self):
         transcripts = self.ticker.earning_call_transcripts()
         print(transcripts)
@@ -128,6 +120,14 @@ class TestTicker(unittest.TestCase):
 
     def test_revenue_by_product(self):
         result = self.ticker.revenue_by_product()
+        print(result.to_string())
+
+    def test_quarterly_gross_margin(self):
+        result = self.ticker.quarterly_gross_margin()
+        print(result.to_string())
+
+    def test_annual_gross_margin(self):
+        result = self.ticker.annual_gross_margin()
         print(result.to_string())
 
     def test_quarterly_operating_margin(self):
