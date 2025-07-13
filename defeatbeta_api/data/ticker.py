@@ -131,19 +131,11 @@ class Ticker:
 
     def _generate_margin_sql(self, margin_type: str, period_type: str, numerator_item: str,
                              margin_column: str) -> pd.DataFrame:
-        """
-        Generate SQL query for calculating financial margins (gross, operating, or net) for a given period type.
-
-        Args:
-            margin_type (str): Type of margin ('gross', 'operating', 'net')
-            period_type (str): Period type ('quarterly' or 'annual')
-            numerator_item (str): Item name for the numerator (e.g., 'gross_profit', 'operating_income')
-            margin_column (str): Column name for the calculated margin (e.g., 'gross_margin')
-
-        Returns:
-            pd.DataFrame: DataFrame containing the margin data
-        """
         ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ""
+        finance_type_filter = \
+            "AND finance_type = 'income_statement'" if margin_type in ['gross', 'operating', 'net','ebitda'] \
+            else "AND finance_type = 'cash_flow'" if margin_type == 'fcf' \
+            else ""
         sql = f"""
             SELECT symbol,
                    report_date,
@@ -158,7 +150,7 @@ class Ticker:
                      MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END) AS total_revenue
                   FROM '{self.huggingface_client.get_url_path('stock_statement')}' t1
                   WHERE symbol = '{self.ticker}'
-                    AND finance_type = 'income_statement'
+                    {finance_type_filter}
                     {ttm_filter}
                     AND item_name IN ('{numerator_item}', 'total_revenue')
                     AND period_type = '{period_type}'
