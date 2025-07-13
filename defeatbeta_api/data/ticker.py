@@ -153,7 +153,7 @@ class Ticker:
         return self.duckdb_client.query(quarterly_gross_margin_sql)
 
     def annual_gross_margin(self) -> pd.DataFrame:
-        quarterly_gross_margin_sql = f"""
+        annual_gross_margin_sql = f"""
             SELECT symbol,
                    report_date,
                    gross_profit,
@@ -172,7 +172,52 @@ class Ticker:
                     AND period_type = 'annual'
                   GROUP BY symbol, report_date) t ORDER BY report_date ASC
             """
-        return self.duckdb_client.query(quarterly_gross_margin_sql)
+        return self.duckdb_client.query(annual_gross_margin_sql)
+
+    def quarterly_operating_margin(self) -> pd.DataFrame:
+        quarterly_operating_margin_sql = f"""
+            SELECT symbol,
+                   report_date,
+                   operating_income,
+                   total_revenue,
+                   round(operating_income/total_revenue, 2) as operating_margin
+            from (
+                SELECT
+                     symbol,
+                     report_date,
+                     MAX(CASE WHEN t1.item_name = 'operating_income' THEN t1.item_value END)  AS operating_income,
+                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
+                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
+                  WHERE symbol = '{self.ticker}'
+                    AND finance_type = 'income_statement'
+                    AND report_date != 'TTM'
+                    AND item_name IN ('operating_income', 'total_revenue')
+                    AND period_type = 'quarterly'
+                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
+            """
+        return self.duckdb_client.query(quarterly_operating_margin_sql)
+
+    def annual_operating_margin(self) -> pd.DataFrame:
+        annual_operating_margin_sql = f"""
+            SELECT symbol,
+                   report_date,
+                   operating_income,
+                   total_revenue,
+                   round(operating_income/total_revenue, 2) as operating_margin
+            from (
+                SELECT
+                     symbol,
+                     report_date,
+                     MAX(CASE WHEN t1.item_name = 'operating_income' THEN t1.item_value END)      AS operating_income,
+                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END)     AS total_revenue
+                  FROM '{self.huggingface_client.get_url_path(stock_statement)}'  t1
+                  WHERE symbol = '{self.ticker}'
+                    AND finance_type = 'income_statement'
+                    AND item_name IN ('operating_income', 'total_revenue')
+                    AND period_type = 'annual'
+                  GROUP BY symbol, report_date) t ORDER BY report_date ASC
+            """
+        return self.duckdb_client.query(annual_operating_margin_sql)
 
     def earning_call_transcripts(self) -> Transcripts:
         return Transcripts(self._query_data(stock_earning_call_transcripts))
