@@ -129,3 +129,11 @@ class TestTicker(unittest.TestCase):
     def test_revenue_by_product(self):
         result = self.ticker.revenue_by_product()
         print(result.to_string())
+
+    def test_quarterly_operating_margin(self):
+        result = self.ticker.quarterly_operating_margin()
+        print(result.to_string())
+
+    def test_annual_operating_margin(self):
+        result = self.ticker.annual_operating_margin()
+        print(result.to_string())
