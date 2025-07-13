@@ -192,6 +192,14 @@ class Ticker:
         """Calculate annual net margin."""
         return self._generate_margin_sql('net', 'annual', 'net_income_common_stockholders', 'net_margin')
 
+    def quarterly_ebitda_margin(self) -> pd.DataFrame:
+        """Calculate quarterly ebitda margin."""
+        return self._generate_margin_sql('ebitda', 'quarterly', 'ebitda', 'ebitda_margin')
+
+    def annual_ebitda_margin(self) -> pd.DataFrame:
+        """Calculate quarterly ebitda margin."""
+        return self._generate_margin_sql('ebitda', 'annual', 'ebitda', 'ebitda_margin')
+
     def earning_call_transcripts(self) -> Transcripts:
         return Transcripts(self._query_data(stock_earning_call_transcripts))
 
