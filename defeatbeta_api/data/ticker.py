@@ -177,7 +177,7 @@ class Ticker:
         return self._revenue_by_breakdown('product')
 
     def _revenue_by_breakdown(self, breakdown_type: str) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path('stock_revenue_breakdown')
+        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' AND breakdown_type = '{breakdown_type}' ORDER BY report_date ASC"
         data = self.duckdb_client.query(sql)
         df_wide = data.pivot(index=['report_date'], columns='item_name', values='item_value').reset_index()
