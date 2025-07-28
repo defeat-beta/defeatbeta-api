@@ -1594,3 +1594,36 @@ ticker.annual_revenue_yoy_growth()
 3   TSLA  2023-12-31  9.677300e+10       8.146200e+10      0.1880
 4   TSLA  2024-12-31  9.769000e+10       9.677300e+10      0.0095
 ```
+
+## 28. Stock Quarterly Operating Income YoY Growth
+```python
+ticker.quarterly_operating_income_yoy_growth()
+```
+```text
+>>> ticker.quarterly_operating_income_yoy_growth()
+  symbol report_date  operating_income  prev_year_operating_income  yoy_growth
+0   TSLA  2022-06-30      2.606000e+09                         NaN         NaN
+1   TSLA  2023-06-30      2.399000e+09                2.606000e+09     -0.0794
+2   TSLA  2023-09-30      1.764000e+09                         NaN         NaN
+3   TSLA  2023-12-31      2.064000e+09                         NaN         NaN
+4   TSLA  2024-03-31      1.171000e+09                         NaN         NaN
+5   TSLA  2024-06-30      2.227000e+09                2.399000e+09     -0.0717
+6   TSLA  2024-09-30      2.772000e+09                1.764000e+09      0.5714
+7   TSLA  2024-12-31      1.590000e+09                2.064000e+09     -0.2297
+8   TSLA  2025-03-31      4.930000e+08                1.171000e+09     -0.5790
+9   TSLA  2025-06-30      9.230000e+08                2.227000e+09     -0.5855
+```
+
+## 29. Stock Annual Operating Income YoY Growth
+```python
+ticker.annual_operating_income_yoy_growth()
+```
+```text
+>>> ticker.annual_operating_income_yoy_growth()
+  symbol report_date  operating_income  prev_year_operating_income  yoy_growth
+0   TSLA  2020-12-31      1.994000e+09                         NaN         NaN
+1   TSLA  2021-12-31      6.496000e+09                1.994000e+09      2.2578
+2   TSLA  2022-12-31      1.383200e+10                6.496000e+09      1.1293
+3   TSLA  2023-12-31      8.891000e+09                1.383200e+10     -0.3572
+4   TSLA  2024-12-31      7.760000e+09                8.891000e+09     -0.1272
+```

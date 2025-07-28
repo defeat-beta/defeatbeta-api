@@ -182,6 +182,44 @@ class Ticker:
     def annual_revenue_yoy_growth(self) -> pd.DataFrame:
         return self._revenue_yoy_growth(period_type='annual')
 
+    def quarterly_operating_income_yoy_growth(self) -> pd.DataFrame:
+        return self._operating_income_yoy_growth(period_type='quarterly')
+
+    def annual_operating_income_yoy_growth(self) -> pd.DataFrame:
+        return self._operating_income_yoy_growth(period_type='annual')
+
+    def _operating_income_yoy_growth(self, period_type: str) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = f"""
+            WITH operating_income_data AS (
+                SELECT 
+                    symbol,
+                    report_date,
+                    item_value as operating_income,
+                    LAG(item_value, {4 if period_type == 'quarterly' else 1}) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_operating_income
+                FROM '{url}' 
+                WHERE symbol='{self.ticker}' 
+                    AND finance_type = 'income_statement' 
+                    AND item_name='operating_income' 
+                    AND period_type='{period_type}'
+                    {f"AND report_date != 'TTM'" if period_type == 'quarterly' else ''}
+            )
+            SELECT 
+                symbol,
+                report_date,
+                operating_income,
+                prev_year_operating_income,
+                CASE 
+                    WHEN prev_year_operating_income IS NOT NULL AND prev_year_operating_income != 0 
+                    THEN ROUND(((operating_income - prev_year_operating_income) / prev_year_operating_income), 4)
+                    ELSE NULL
+                END as yoy_growth
+            FROM operating_income_data
+            WHERE operating_income IS NOT NULL
+            ORDER BY report_date;
+        """
+        return self.duckdb_client.query(sql)
+
     def _revenue_yoy_growth(self, period_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = f"""
