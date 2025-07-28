@@ -48,6 +48,8 @@
   - [27. Stock Annual Revenue YoY Growth](#27-stock-annual-revenue-yoy-growth)
   - [28. Stock Quarterly Operating Income YoY Growth](#28-stock-quarterly-operating-income-yoy-growth)
   - [29. Stock Annual Operating Income YoY Growth](#29-stock-annual-operating-income-yoy-growth)
+  - [30. Stock Quarterly Net Income YoY Growth](#30-stock-quarterly-net-income-yoy-growth)
+  - [31. Stock Annual Net Income YoY Growth](#31-stock-annual-net-income-yoy-growth)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
