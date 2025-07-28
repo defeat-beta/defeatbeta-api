@@ -19,7 +19,7 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 ✅ **SQL-Compatible**: Python-native interface with full SQL support via DuckDB's optimized execution.
 
-✅ **Extended Financial Data**: Includes [TTM EPS](doc/Example.md#11-stock-ttm-eps), [TTM PE](doc/Example.md#12-stock-ttm-pe), [Earnings call transcripts](doc/Example.md#15-accessing-earnings-call-transcripts), [Stock News](doc/Example.md#16-accessing-financial-news), [Revenue by segment](doc/Example.md#171-stock-revenue-by-segment) and [Revenue by geography](doc/Example.md#172-stock-revenue-by-geography) etc. (continuously expanding).
+✅ **Extended Financial Data**: Includes [TTM EPS](doc/Example.md#11-stock-ttm-eps), [TTM PE](doc/Example.md#12-stock-ttm-pe), [Earnings call transcripts](doc/Example.md#13-accessing-earnings-call-transcripts), [Stock News](doc/Example.md#14-accessing-financial-news), [Revenue by segment](doc/Example.md#151-stock-revenue-by-segment) and [Revenue by geography](doc/Example.md#152-stock-revenue-by-geography) etc. (continuously expanding).
 
 ### How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
