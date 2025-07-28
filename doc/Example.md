@@ -46,6 +46,8 @@
   - [25. Stock Annual FCF Margin](#25-stock-annual-fcf-margin)
   - [26. Stock Quarterly Revenue YoY Growth](#26-stock-quarterly-revenue-yoy-growth)
   - [27. Stock Annual Revenue YoY Growth](#27-stock-annual-revenue-yoy-growth)
+  - [28. Stock Quarterly Operating Income YoY Growth](#28-stock-quarterly-operating-income-yoy-growth)
+  - [29. Stock Annual Operating Income YoY Growth](#29-stock-annual-operating-income-yoy-growth)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
