@@ -1550,3 +1550,36 @@ ticker.annual_fcf_margin()
 4   TSLA  2023-12-31    4.357000e+09   9.677300e+10        0.05
 5   TSLA  2024-12-31    3.581000e+09   9.769000e+10        0.04
 ```
+
+## 26. Stock Quarterly Revenue YoY Growth
+```python
+ticker.quarterly_revenue_yoy_growth()
+```
+```text
+>>> ticker.quarterly_revenue_yoy_growth()
+  symbol report_date       revenue  prev_year_revenue  yoy_growth
+0   TSLA  2022-06-30  1.693400e+10                NaN         NaN
+1   TSLA  2023-06-30  2.492700e+10       1.693400e+10      0.4720
+2   TSLA  2023-09-30  2.335000e+10                NaN         NaN
+3   TSLA  2023-12-31  2.516700e+10                NaN         NaN
+4   TSLA  2024-03-31  2.130100e+10                NaN         NaN
+5   TSLA  2024-06-30  2.550000e+10       2.492700e+10      0.0230
+6   TSLA  2024-09-30  2.518200e+10       2.335000e+10      0.0785
+7   TSLA  2024-12-31  2.570700e+10       2.516700e+10      0.0215
+8   TSLA  2025-03-31  1.933500e+10       2.130100e+10     -0.0923
+9   TSLA  2025-06-30  2.249600e+10       2.550000e+10     -0.1178
+```
+
+## 27. Stock Annual Revenue YoY Growth
+```python
+ticker.annual_revenue_yoy_growth()
+```
+```text
+>>> ticker.annual_revenue_yoy_growth()
+  symbol report_date       revenue  prev_year_revenue  yoy_growth
+0   TSLA  2020-12-31  3.153600e+10                NaN         NaN
+1   TSLA  2021-12-31  5.382300e+10       3.153600e+10      0.7067
+2   TSLA  2022-12-31  8.146200e+10       5.382300e+10      0.5135
+3   TSLA  2023-12-31  9.677300e+10       8.146200e+10      0.1880
+4   TSLA  2024-12-31  9.769000e+10       9.677300e+10      0.0095
+```
