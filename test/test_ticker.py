@@ -177,3 +177,11 @@ class TestTicker(unittest.TestCase):
     def test_annual_operating_income_yoy_growth(self):
         result = self.ticker.annual_operating_income_yoy_growth()
         print(result.to_string())
+
+    def test_quarterly_net_income_yoy_growth(self):
+        result = self.ticker.quarterly_net_income_yoy_growth()
+        print(result.to_string())
+
+    def test_annual_net_income_yoy_growth(self):
+        result = self.ticker.annual_net_income_yoy_growth()
+        print(result.to_string())

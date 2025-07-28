@@ -177,77 +177,55 @@ class Ticker:
         return self._revenue_by_breakdown('product')
 
     def quarterly_revenue_yoy_growth(self) -> pd.DataFrame:
-        return self._revenue_yoy_growth(period_type='quarterly')
+        return self._yoy_growth(item_name='total_revenue', period_type='quarterly')
 
     def annual_revenue_yoy_growth(self) -> pd.DataFrame:
-        return self._revenue_yoy_growth(period_type='annual')
+        return self._yoy_growth(item_name='total_revenue', period_type='annual')
 
     def quarterly_operating_income_yoy_growth(self) -> pd.DataFrame:
-        return self._operating_income_yoy_growth(period_type='quarterly')
+        return self._yoy_growth(item_name='operating_income', period_type='quarterly')
 
     def annual_operating_income_yoy_growth(self) -> pd.DataFrame:
-        return self._operating_income_yoy_growth(period_type='annual')
+        return self._yoy_growth(item_name='operating_income', period_type='annual')
 
-    def _operating_income_yoy_growth(self, period_type: str) -> pd.DataFrame:
+    def quarterly_net_income_yoy_growth(self) -> pd.DataFrame:
+        return self._yoy_growth(item_name='net_income_common_stockholders', period_type='quarterly')
+
+    def annual_net_income_yoy_growth(self) -> pd.DataFrame:
+        return self._yoy_growth(item_name='net_income_common_stockholders', period_type='annual')
+
+    def _yoy_growth(self, item_name: str, period_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
+        metric_name = item_name.replace('total_', '')  # For naming consistency in output
+        lag_period = 4 if period_type == 'quarterly' else 1
+        ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ''
+
         sql = f"""
-            WITH operating_income_data AS (
+            WITH metric_data AS (
                 SELECT 
                     symbol,
                     report_date,
-                    item_value as operating_income,
-                    LAG(item_value, {4 if period_type == 'quarterly' else 1}) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_operating_income
+                    item_value as {metric_name},
+                    LAG(item_value, {lag_period}) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_{metric_name}
                 FROM '{url}' 
                 WHERE symbol='{self.ticker}' 
                     AND finance_type = 'income_statement' 
-                    AND item_name='operating_income' 
+                    AND item_name='{item_name}' 
                     AND period_type='{period_type}'
-                    {f"AND report_date != 'TTM'" if period_type == 'quarterly' else ''}
+                    {ttm_filter}
             )
             SELECT 
                 symbol,
                 report_date,
-                operating_income,
-                prev_year_operating_income,
+                {metric_name},
+                prev_year_{metric_name},
                 CASE 
-                    WHEN prev_year_operating_income IS NOT NULL AND prev_year_operating_income != 0 
-                    THEN ROUND(((operating_income - prev_year_operating_income) / prev_year_operating_income), 4)
+                    WHEN prev_year_{metric_name} IS NOT NULL AND prev_year_{metric_name} != 0 
+                    THEN ROUND((({metric_name} - prev_year_{metric_name}) / prev_year_{metric_name}), 4)
                     ELSE NULL
                 END as yoy_growth
-            FROM operating_income_data
-            WHERE operating_income IS NOT NULL
-            ORDER BY report_date;
-        """
-        return self.duckdb_client.query(sql)
-
-    def _revenue_yoy_growth(self, period_type: str) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_statement)
-        sql = f"""
-            WITH revenue_data AS (
-                SELECT 
-                    symbol,
-                    report_date,
-                    item_value as revenue,
-                    LAG(item_value, {4 if period_type == 'quarterly' else 1}) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_revenue
-                FROM '{url}' 
-                WHERE symbol='{self.ticker}' 
-                    AND finance_type = 'income_statement' 
-                    AND item_name='total_revenue' 
-                    AND period_type='{period_type}'
-                    {f"AND report_date != 'TTM'" if period_type == 'quarterly' else ''}
-            )
-            SELECT 
-                symbol,
-                report_date,
-                revenue,
-                prev_year_revenue,
-                CASE 
-                    WHEN prev_year_revenue IS NOT NULL AND prev_year_revenue != 0 
-                    THEN ROUND(((revenue - prev_year_revenue) / prev_year_revenue), 4)
-                    ELSE NULL
-                END as yoy_growth
-            FROM revenue_data
-            WHERE revenue IS NOT NULL
+            FROM metric_data
+            WHERE {metric_name} IS NOT NULL
             ORDER BY report_date;
         """
         return self.duckdb_client.query(sql)
@@ -273,7 +251,7 @@ class Ticker:
                    report_date,
                    {numerator_item},
                    total_revenue,
-                   round({numerator_item}/total_revenue, 2) as {margin_column}
+                   round({numerator_item}/total_revenue, 4) as {margin_column}
             FROM (
                 SELECT
                      symbol,
