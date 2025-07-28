@@ -1629,3 +1629,36 @@ ticker.annual_operating_income_yoy_growth()
 3   TSLA  2023-12-31      8.891000e+09                1.383200e+10     -0.3572
 4   TSLA  2024-12-31      7.760000e+09                8.891000e+09     -0.1272
 ```
+
+## 30. Stock Quarterly Net Income YoY Growth
+```python
+ticker.quarterly_net_income_yoy_growth()
+```
+```text
+>>> ticker.quarterly_net_income_yoy_growth()
+  symbol report_date  net_income_common_stockholders  prev_year_net_income_common_stockholders  yoy_growth
+0   TSLA  2022-06-30                    2.256000e+09                                       NaN         NaN
+1   TSLA  2023-06-30                    2.703000e+09                              2.256000e+09      0.1981
+2   TSLA  2023-09-30                    1.851000e+09                                       NaN         NaN
+3   TSLA  2023-12-31                    7.927000e+09                                       NaN         NaN
+4   TSLA  2024-03-31                    1.432000e+09                                       NaN         NaN
+5   TSLA  2024-06-30                    1.400000e+09                              2.703000e+09     -0.4821
+6   TSLA  2024-09-30                    2.167000e+09                              1.851000e+09      0.1707
+7   TSLA  2024-12-31                    2.314000e+09                              7.927000e+09     -0.7081
+8   TSLA  2025-03-31                    4.090000e+08                              1.432000e+09     -0.7144
+9   TSLA  2025-06-30                    1.172000e+09                              1.400000e+09     -0.1629
+```
+
+## 31. Stock Annual Net Income YoY Growth
+```python
+ticker.annual_net_income_yoy_growth()
+```
+```text
+>>> ticker.annual_net_income_yoy_growth()
+  symbol report_date  net_income_common_stockholders  prev_year_net_income_common_stockholders  yoy_growth
+0   TSLA  2020-12-31                    6.900000e+08                                       NaN         NaN
+1   TSLA  2021-12-31                    5.524000e+09                              6.900000e+08      7.0058
+2   TSLA  2022-12-31                    1.258300e+10                              5.524000e+09      1.2779
+3   TSLA  2023-12-31                    1.499900e+10                              1.258300e+10      0.1920
+4   TSLA  2024-12-31                    7.130000e+09                              1.499900e+10     -0.5246
+```
