@@ -176,6 +176,44 @@ class Ticker:
     def revenue_by_product(self) -> pd.DataFrame:
         return self._revenue_by_breakdown('product')
 
+    def quarterly_revenue_yoy_growth(self) -> pd.DataFrame:
+        return self._revenue_yoy_growth(period_type='quarterly')
+
+    def annual_revenue_yoy_growth(self) -> pd.DataFrame:
+        return self._revenue_yoy_growth(period_type='annual')
+
+    def _revenue_yoy_growth(self, period_type: str) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = f"""
+            WITH revenue_data AS (
+                SELECT 
+                    symbol,
+                    report_date,
+                    item_value as revenue,
+                    LAG(item_value, {4 if period_type == 'quarterly' else 1}) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_revenue
+                FROM '{url}' 
+                WHERE symbol='{self.ticker}' 
+                    AND finance_type = 'income_statement' 
+                    AND item_name='total_revenue' 
+                    AND period_type='{period_type}'
+                    {f"AND report_date != 'TTM'" if period_type == 'quarterly' else ''}
+            )
+            SELECT 
+                symbol,
+                report_date,
+                revenue,
+                prev_year_revenue,
+                CASE 
+                    WHEN prev_year_revenue IS NOT NULL AND prev_year_revenue != 0 
+                    THEN ROUND(((revenue - prev_year_revenue) / prev_year_revenue), 4)
+                    ELSE NULL
+                END as yoy_growth
+            FROM revenue_data
+            WHERE revenue IS NOT NULL
+            ORDER BY report_date;
+        """
+        return self.duckdb_client.query(sql)
+
     def _revenue_by_breakdown(self, breakdown_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
         sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' AND breakdown_type = '{breakdown_type}' ORDER BY report_date ASC"
