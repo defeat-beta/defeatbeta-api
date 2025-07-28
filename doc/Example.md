@@ -44,6 +44,8 @@
   - [23. Stock Annual EBITDA Margin](#23-stock-annual-ebitda-margin)
   - [24. Stock Quarterly FCF Margin](#24-stock-quarterly-fcf-margin)
   - [25. Stock Annual FCF Margin](#25-stock-annual-fcf-margin)
+  - [26. Stock Quarterly Revenue YoY Growth](#26-stock-quarterly-revenue-yoy-growth)
+  - [27. Stock Annual Revenue YoY Growth](#27-stock-annual-revenue-yoy-growth)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
