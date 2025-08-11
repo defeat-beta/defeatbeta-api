@@ -50,6 +50,8 @@
   - [29. Stock Annual Operating Income YoY Growth](#29-stock-annual-operating-income-yoy-growth)
   - [30. Stock Quarterly Net Income YoY Growth](#30-stock-quarterly-net-income-yoy-growth)
   - [31. Stock Annual Net Income YoY Growth](#31-stock-annual-net-income-yoy-growth)
+  - [32. Stock Quarterly Free Cash Flow YoY Growth](#32-stock-quarterly-free-cash-flow-yoy-growth)
+  - [33. Stock Annual Free Cash Flow YoY Growth](#33-stock-annual-free-cash-flow-yoy-growth)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
