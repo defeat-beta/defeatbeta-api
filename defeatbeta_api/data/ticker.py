@@ -177,24 +177,30 @@ class Ticker:
         return self._revenue_by_breakdown('product')
 
     def quarterly_revenue_yoy_growth(self) -> pd.DataFrame:
-        return self._yoy_growth(item_name='total_revenue', period_type='quarterly')
+        return self._calculate_yoy_growth(item_name='total_revenue', period_type='quarterly', finance_type='income_statement')
 
     def annual_revenue_yoy_growth(self) -> pd.DataFrame:
-        return self._yoy_growth(item_name='total_revenue', period_type='annual')
+        return self._calculate_yoy_growth(item_name='total_revenue', period_type='annual', finance_type='income_statement')
 
     def quarterly_operating_income_yoy_growth(self) -> pd.DataFrame:
-        return self._yoy_growth(item_name='operating_income', period_type='quarterly')
+        return self._calculate_yoy_growth(item_name='operating_income', period_type='quarterly', finance_type='income_statement')
 
     def annual_operating_income_yoy_growth(self) -> pd.DataFrame:
-        return self._yoy_growth(item_name='operating_income', period_type='annual')
+        return self._calculate_yoy_growth(item_name='operating_income', period_type='annual', finance_type='income_statement')
 
     def quarterly_net_income_yoy_growth(self) -> pd.DataFrame:
-        return self._yoy_growth(item_name='net_income_common_stockholders', period_type='quarterly')
+        return self._calculate_yoy_growth(item_name='net_income_common_stockholders', period_type='quarterly', finance_type='income_statement')
 
     def annual_net_income_yoy_growth(self) -> pd.DataFrame:
-        return self._yoy_growth(item_name='net_income_common_stockholders', period_type='annual')
+        return self._calculate_yoy_growth(item_name='net_income_common_stockholders', period_type='annual', finance_type='income_statement')
 
-    def _yoy_growth(self, item_name: str, period_type: str) -> pd.DataFrame:
+    def quarterly_fcf_yoy_growth(self) -> pd.DataFrame:
+        return self._calculate_yoy_growth(item_name='free_cash_flow', period_type='quarterly', finance_type='cash_flow')
+
+    def annual_fcf_yoy_growth(self) -> pd.DataFrame:
+        return self._calculate_yoy_growth(item_name='free_cash_flow', period_type='annual', finance_type='cash_flow')
+
+    def _calculate_yoy_growth(self, item_name: str, period_type: str, finance_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
         metric_name = item_name.replace('total_', '')  # For naming consistency in output
         lag_period = 4 if period_type == 'quarterly' else 1
@@ -209,7 +215,7 @@ class Ticker:
                     LAG(item_value, {lag_period}) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_{metric_name}
                 FROM '{url}' 
                 WHERE symbol='{self.ticker}' 
-                    AND finance_type = 'income_statement' 
+                    AND finance_type = '{finance_type}' 
                     AND item_name='{item_name}' 
                     AND period_type='{period_type}'
                     {ttm_filter}
@@ -221,7 +227,7 @@ class Ticker:
                 prev_year_{metric_name},
                 CASE 
                     WHEN prev_year_{metric_name} IS NOT NULL AND prev_year_{metric_name} != 0 
-                    THEN ROUND((({metric_name} - prev_year_{metric_name}) / prev_year_{metric_name}), 4)
+                    THEN ROUND(({metric_name} - prev_year_{metric_name}) / ABS(prev_year_{metric_name}), 4)
                     ELSE NULL
                 END as yoy_growth
             FROM metric_data
