@@ -1664,3 +1664,36 @@ ticker.annual_net_income_yoy_growth()
 3   TSLA  2023-12-31                    1.499900e+10                              1.258300e+10      0.1920
 4   TSLA  2024-12-31                    7.130000e+09                              1.499900e+10     -0.5246
 ```
+
+## 32. Stock Quarterly Free Cash Flow YoY Growth
+```python
+ticker.quarterly_fcf_yoy_growth()
+```
+```text
+>>> ticker.quarterly_fcf_yoy_growth()
+  symbol report_date  free_cash_flow  prev_year_free_cash_flow  yoy_growth
+0   TSLA  2022-06-30    6.210000e+08                       NaN         NaN
+1   TSLA  2023-06-30    1.005000e+09              6.210000e+08      0.6184
+2   TSLA  2023-09-30    8.490000e+08                       NaN         NaN
+3   TSLA  2023-12-31    2.063000e+09                       NaN         NaN
+4   TSLA  2024-03-31   -2.535000e+09                       NaN         NaN
+5   TSLA  2024-06-30    1.340000e+09              1.005000e+09      0.3333
+6   TSLA  2024-09-30    2.742000e+09              8.490000e+08      2.2297
+7   TSLA  2024-12-31    2.034000e+09              2.063000e+09     -0.0141
+8   TSLA  2025-03-31    6.640000e+08             -2.535000e+09      1.2619
+9   TSLA  2025-06-30    1.460000e+08              1.340000e+09     -0.8910
+```
+
+## 33. Stock Annual Free Cash Flow YoY Growth
+```python
+ticker.annual_fcf_yoy_growth()
+```
+```text
+>>> ticker.annual_fcf_yoy_growth()
+  symbol report_date  free_cash_flow  prev_year_free_cash_flow  yoy_growth
+0   TSLA  2020-12-31    2.701000e+09                       NaN         NaN
+1   TSLA  2021-12-31    3.483000e+09              2.701000e+09      0.2895
+2   TSLA  2022-12-31    7.552000e+09              3.483000e+09      1.1682
+3   TSLA  2023-12-31    4.357000e+09              7.552000e+09     -0.4231
+4   TSLA  2024-12-31    3.581000e+09              4.357000e+09     -0.1781
+```
