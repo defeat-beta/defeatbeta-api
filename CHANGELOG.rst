@@ -5,6 +5,7 @@ Change Log
 - Support Quarterly/Annual Revenue YoY Growth[`#14 <https://github.com/defeat-beta/defeatbeta-api/issues/14>`_]
 - Support Quarterly/Annual Operating Income YoY Growth[`#15 <https://github.com/defeat-beta/defeatbeta-api/issues/15>`_]
 - Support Quarterly/Annual Net Income YoY Growth[`#16 <https://github.com/defeat-beta/defeatbeta-api/issues/16>`_]
+- Support Quarterly/Annual FCF YoY Growth[`#29 <https://github.com/defeat-beta/defeatbeta-api/issues/29>`_]
 
 0.0.10
 -------
