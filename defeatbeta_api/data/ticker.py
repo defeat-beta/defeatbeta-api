@@ -200,6 +200,45 @@ class Ticker:
     def annual_fcf_yoy_growth(self) -> pd.DataFrame:
         return self._calculate_yoy_growth(item_name='free_cash_flow', period_type='annual', finance_type='cash_flow')
 
+    def quarterly_eps_yoy_growth(self) -> pd.DataFrame:
+        return self._quarterly_eps_yoy_growth('eps', 'eps', 'prev_year_eps')
+
+    def quarterly_ttm_eps_yoy_growth(self) -> pd.DataFrame:
+        return self._quarterly_eps_yoy_growth('tailing_eps', 'ttm_eps', 'prev_year_ttm_eps')
+
+    def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_tailing_eps)
+        as_current = f" as {current_alias}" if current_alias != eps_column else ""
+        sql = f"""
+            WITH quarterly_eps AS (
+                SELECT 
+                    symbol,
+                    report_date,
+                    {eps_column},
+                    LAG({eps_column}, 4) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_eps
+                FROM '{url}'
+                WHERE symbol = '{self.ticker}'
+                AND {eps_column} IS NOT NULL
+            )
+            SELECT 
+                symbol,
+                report_date,
+                {eps_column}{as_current},
+                prev_year_eps as {prev_alias},
+                CASE 
+                    WHEN prev_year_eps IS NOT NULL AND prev_year_eps != 0 
+                    THEN ROUND((({eps_column} - prev_year_eps) / ABS(prev_year_eps)), 4)
+                    WHEN prev_year_eps IS NOT NULL AND prev_year_eps = 0 AND {eps_column} > 0
+                    THEN 1.00
+                    WHEN prev_year_eps IS NOT NULL AND prev_year_eps = 0 AND {eps_column} < 0
+                    THEN -1.00
+                    ELSE NULL
+                END as yoy_growth
+            FROM quarterly_eps
+            ORDER BY report_date;
+        """
+        return self.duckdb_client.query(sql)
+
     def _calculate_yoy_growth(self, item_name: str, period_type: str, finance_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
         metric_name = item_name.replace('total_', '')  # For naming consistency in output

@@ -193,3 +193,11 @@ class TestTicker(unittest.TestCase):
     def test_annual_fcf_yoy_growth(self):
         result = self.ticker.annual_fcf_yoy_growth()
         print(result.to_string())
+
+    def test_quarterly_eps_yoy_growth(self):
+        result = self.ticker.quarterly_eps_yoy_growth()
+        print(result.to_string())
+
+    def test_quarterly_ttm_eps_yoy_growth(self):
+        result = self.ticker.quarterly_ttm_eps_yoy_growth()
+        print(result.to_string())
