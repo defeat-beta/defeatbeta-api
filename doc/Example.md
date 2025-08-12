@@ -52,6 +52,8 @@
   - [31. Stock Annual Net Income YoY Growth](#31-stock-annual-net-income-yoy-growth)
   - [32. Stock Quarterly Free Cash Flow YoY Growth](#32-stock-quarterly-free-cash-flow-yoy-growth)
   - [33. Stock Annual Free Cash Flow YoY Growth](#33-stock-annual-free-cash-flow-yoy-growth)
+  - [34. Stock Quarterly EPS YoY Growth](#34-stock-quarterly-eps-yoy-growth)
+  - [35. Stock Quarterly TTM EPS YoY Growth](#35-stock-quarterly-ttm-eps-yoy-growth)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
