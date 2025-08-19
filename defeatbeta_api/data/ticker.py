@@ -90,44 +90,51 @@ class Ticker:
         price_url = self.huggingface_client.get_url_path(stock_prices)
         price_sql = f"SELECT * FROM '{price_url}' WHERE symbol = '{self.ticker}'"
         price_df = self.duckdb_client.query(price_sql)
+
         eps_url = self.huggingface_client.get_url_path(stock_tailing_eps)
         eps_sql = f"SELECT * FROM '{eps_url}' WHERE symbol = '{self.ticker}'"
         eps_df = self.duckdb_client.query(eps_sql)
 
         price_df['report_date'] = pd.to_datetime(price_df['report_date'])
         eps_df['report_date'] = pd.to_datetime(eps_df['report_date'])
-        latest_trade_date = price_df['report_date'].max()
-        latest_price_data = price_df[price_df['report_date'] == latest_trade_date].iloc[0]
-        pe_data = pd.merge_asof(
+
+        eps_df = eps_df.sort_values('report_date', ascending=False)
+
+        result_df = price_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'price_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('price_report_date'),
             eps_df.sort_values('report_date'),
-            price_df.sort_values('report_date'),
-            left_on='report_date',
+            left_on='price_report_date',
             right_on='report_date',
-            direction='forward'
+            direction='backward'
         )
-        pe_data['ttm_pe'] = round(pe_data['close'] / pe_data['tailing_eps'], 2)
-        pe_data = pe_data[pe_data['ttm_pe'].notna() & np.isfinite(pe_data['ttm_pe'])]
-        pe_data = pe_data.sort_values('report_date', ascending=False)
-        latest_eps = pe_data.iloc[0]['tailing_eps']
-        current_pe = round(latest_price_data['close'] / latest_eps, 2)
-        result_data = {
-            'report_date': [],
-            'ttm_pe': [],
-            'price': [],
-            'ttm_eps': []
-        }
 
-        result_data['report_date'].append(latest_price_data['report_date'].strftime('%Y-%m-%d'))
-        result_data['ttm_pe'].append(current_pe)
-        result_data['price'].append(latest_price_data['close'])
-        result_data['ttm_eps'].append(latest_eps)
-        for row in pe_data.itertuples():
-            result_data['report_date'].append(row.report_date.strftime('%Y-%m-%d'))
-            result_data['ttm_pe'].append(row.ttm_pe)
-            result_data['price'].append(row.close)
-            result_data['ttm_eps'].append(row.tailing_eps)
+        result_df['ttm_pe'] = round(result_df['close'] / result_df['tailing_eps'], 2)
 
-        return pd.DataFrame(result_data)
+        result_df = result_df[result_df['ttm_pe'].notna() & np.isfinite(result_df['ttm_pe'])]
+
+        result_df = result_df.sort_values('price_report_date', ascending=False)
+
+        result_df = result_df[[
+            'price_report_date',
+            'report_date',
+            'close',
+            'tailing_eps',
+            'ttm_pe'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'price_report_date': 'trade_date',
+            'close': 'close_price',
+            'tailing_eps': 'ttm_eps',
+            'report_date': 'eps_report_date',
+        })
+
+        result_df['trade_date'] = result_df['trade_date'].dt.strftime('%Y-%m-%d')
+
+        return result_df
 
     def quarterly_gross_margin(self) -> pd.DataFrame:
         return self._generate_margin_sql('gross', 'quarterly', 'gross_profit', 'gross_margin')
