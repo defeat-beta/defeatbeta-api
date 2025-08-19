@@ -1,5 +1,9 @@
 Change Log
 ===========
+0.0.12
+-------
+- Daily TTM PE Ratio (vs. Quarterly Report Date)[`#37 <https://github.com/defeat-beta/defeatbeta-api/issues/37>`_]
+
 0.0.11
 -------
 - Support Quarterly/Annual Revenue YoY Growth[`#14 <https://github.com/defeat-beta/defeatbeta-api/issues/14>`_]
