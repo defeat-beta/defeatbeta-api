@@ -23,7 +23,7 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
-    stock_earning_call_transcripts, stock_news, stock_revenue_breakdown
+    stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
     balance_sheet_template_type, cash_flow_template_type
 
@@ -98,8 +98,6 @@ class Ticker:
         price_df['report_date'] = pd.to_datetime(price_df['report_date'])
         eps_df['report_date'] = pd.to_datetime(eps_df['report_date'])
 
-        eps_df = eps_df.sort_values('report_date', ascending=False)
-
         result_df = price_df.copy()
         result_df = result_df.rename(columns={'report_date': 'price_report_date'})
 
@@ -115,8 +113,6 @@ class Ticker:
 
         result_df = result_df[result_df['ttm_pe'].notna() & np.isfinite(result_df['ttm_pe'])]
 
-        result_df = result_df.sort_values('price_report_date', ascending=False)
-
         result_df = result_df[[
             'price_report_date',
             'report_date',
@@ -129,7 +125,7 @@ class Ticker:
             'price_report_date': 'trade_date',
             'close': 'close_price',
             'tailing_eps': 'ttm_eps',
-            'report_date': 'eps_report_date',
+            'report_date': 'eps_report_date'
         })
 
         result_df['trade_date'] = result_df['trade_date'].dt.strftime('%Y-%m-%d')
@@ -212,6 +208,48 @@ class Ticker:
 
     def quarterly_ttm_eps_yoy_growth(self) -> pd.DataFrame:
         return self._quarterly_eps_yoy_growth('tailing_eps', 'ttm_eps', 'prev_year_ttm_eps')
+
+    def market_capitalization(self) -> pd.DataFrame:
+        price_url = self.huggingface_client.get_url_path(stock_prices)
+        price_sql = f"SELECT * FROM '{price_url}' WHERE symbol = '{self.ticker}'"
+        price_df = self.duckdb_client.query(price_sql)
+
+        shares_url = self.huggingface_client.get_url_path(stock_shares_outstanding)
+        shares_sql = f"SELECT * FROM '{shares_url}' WHERE symbol = '{self.ticker}'"
+        shares_df = self.duckdb_client.query(shares_sql)
+
+        price_df['report_date'] = pd.to_datetime(price_df['report_date'])
+        shares_df['report_date'] = pd.to_datetime(shares_df['report_date'])
+
+        result_df = price_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'price_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('price_report_date'),
+            shares_df.sort_values('report_date'),
+            left_on='price_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['market_cap'] = round(result_df['close'] * result_df['shares_outstanding'], 2)
+
+        result_df = result_df[[
+            'price_report_date',
+            'report_date',
+            'close',
+            'shares_outstanding',
+            'market_cap'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'price_report_date': 'trade_date',
+            'close': 'close_price',
+            'report_date': 'shares_report_date',
+            'market_cap': 'market_capitalization'
+        })
+
+        return result_df
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)

@@ -3,6 +3,7 @@ Change Log
 0.0.12
 -------
 - Daily TTM PE Ratio (vs. Quarterly Report Date)[`#37 <https://github.com/defeat-beta/defeatbeta-api/issues/37>`_]
+- Support Historical Market Cap[`#38 <https://github.com/defeat-beta/defeatbeta-api/issues/38>`_]
 
 0.0.11
 -------
