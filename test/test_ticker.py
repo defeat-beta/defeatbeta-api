@@ -201,3 +201,7 @@ class TestTicker(unittest.TestCase):
     def test_quarterly_ttm_eps_yoy_growth(self):
         result = self.ticker.quarterly_ttm_eps_yoy_growth()
         print(result.to_string())
+
+    def test_market_capitalization(self):
+        result = self.ticker.market_capitalization()
+        print(result)
