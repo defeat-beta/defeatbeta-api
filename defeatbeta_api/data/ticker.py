@@ -122,13 +122,11 @@ class Ticker:
         ]]
 
         result_df = result_df.rename(columns={
-            'price_report_date': 'trade_date',
+            'price_report_date': 'report_date',
             'close': 'close_price',
             'tailing_eps': 'ttm_eps',
             'report_date': 'eps_report_date'
         })
-
-        result_df['trade_date'] = result_df['trade_date'].dt.strftime('%Y-%m-%d')
 
         return result_df
 
@@ -243,7 +241,7 @@ class Ticker:
         ]]
 
         result_df = result_df.rename(columns={
-            'price_report_date': 'trade_date',
+            'price_report_date': 'report_date',
             'close': 'close_price',
             'report_date': 'shares_report_date',
             'market_cap': 'market_capitalization'
