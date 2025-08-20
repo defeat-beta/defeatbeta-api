@@ -1857,6 +1857,7 @@ ticker.quarterly_ttm_eps_yoy_growth()
 ticker.market_capitalization()
 ```
 ```text
+>>> ticker.market_capitalization()
      trade_date shares_report_date  ...  shares_outstanding  market_capitalization
 0    2010-06-29         2010-03-31  ...          1398800900           2.224093e+09
 1    2010-06-30         2010-06-30  ...          1423625500           2.263565e+09
