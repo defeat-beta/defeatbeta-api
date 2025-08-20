@@ -54,6 +54,7 @@
   - [33. Stock Annual Free Cash Flow YoY Growth](#33-stock-annual-free-cash-flow-yoy-growth)
   - [34. Stock Quarterly EPS YoY Growth](#34-stock-quarterly-eps-yoy-growth)
   - [35. Stock Quarterly TTM EPS YoY Growth](#35-stock-quarterly-ttm-eps-yoy-growth)
+  - [36. Stock Historical Market Cap](#36-stock-historical-market-cap)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
