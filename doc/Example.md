@@ -55,6 +55,7 @@
   - [34. Stock Quarterly EPS YoY Growth](#34-stock-quarterly-eps-yoy-growth)
   - [35. Stock Quarterly TTM EPS YoY Growth](#35-stock-quarterly-ttm-eps-yoy-growth)
   - [36. Stock Historical Market Cap](#36-stock-historical-market-cap)
+  - [37. Stock Historical PS Ratio](#37-stock-historical-ps-ratio)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
