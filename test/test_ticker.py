@@ -205,3 +205,7 @@ class TestTicker(unittest.TestCase):
     def test_market_capitalization(self):
         result = self.ticker.market_capitalization()
         print(result)
+
+    def test_ps_ratio(self):
+        result = self.ticker.ps_ratio()
+        print(result)
