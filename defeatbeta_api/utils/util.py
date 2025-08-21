@@ -56,6 +56,10 @@ def load_item_dictionary() -> Dict[str, str]:
     data = json.loads(text)
     return {key: str(value) for key, value in data.items()}
 
+def load_financial_currency() -> Dict[str, str]:
+    text = files("defeatbeta_api.data.template").joinpath('financial_currency.json').read_text(encoding="utf-8")
+    data = json.loads(text)
+    return {key: str(value) for key, value in data.items()}
 
 def income_statement_template_type(df: DataFrame) -> str:
     if not df.query("item_name == 'non_interest_income'").empty:

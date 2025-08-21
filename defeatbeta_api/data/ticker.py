@@ -23,9 +23,9 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
-    stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding
+    stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
-    balance_sheet_template_type, cash_flow_template_type
+    balance_sheet_template_type, cash_flow_template_type, load_financial_currency
 
 
 class Ticker:
@@ -245,6 +245,192 @@ class Ticker:
             'close': 'close_price',
             'report_date': 'shares_report_date',
             'market_cap': 'market_capitalization'
+        })
+
+        return result_df
+
+    def ps_ratio(self) -> pd.DataFrame:
+        market_cap_df = self.market_capitalization()
+        ttm_revenue_df = self._ttm_revenue()
+
+        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
+        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
+
+        result_df = market_cap_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'market_cap_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('market_cap_report_date'),
+            ttm_revenue_df.sort_values('report_date'),
+            left_on='market_cap_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df = result_df[result_df['report_date'].notna()]
+
+        result_df['ps_ratio'] = round(result_df['market_capitalization'] / result_df['ttm_total_revenue_usd'], 2)
+
+        result_df = result_df[[
+            'market_cap_report_date',
+            'market_capitalization',
+            'report_date',
+            'ttm_total_revenue',
+            'exchange_to_usd_rate',
+            'ttm_total_revenue_usd',
+            'ps_ratio'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'market_cap_report_date': 'report_date',
+            'report_date': 'revenue_report_date',
+            'exchange_to_usd_rate': 'ttm_total_revenue_exchange_rate'
+        })
+
+        return result_df
+
+    def _ttm_revenue(self) -> pd.DataFrame:
+        ttm_revenue_url = self.huggingface_client.get_url_path(stock_statement)
+        ttm_revenue_sql = f"""
+            WITH quarterly_data AS (
+                SELECT 
+                    symbol, 
+                    report_date, 
+                    item_name, 
+                    item_value, 
+                    finance_type, 
+                    period_type,
+                    YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
+                FROM 
+                    '{ttm_revenue_url}'  
+                WHERE 
+                    symbol = '{self.ticker}' 
+                    AND item_name = 'total_revenue' 
+                    AND period_type = 'quarterly'
+                    AND item_value IS NOT NULL
+                    AND report_date != 'TTM'
+            ),
+            quarterly_data_rn AS (
+                SELECT
+                    symbol, 
+                    report_date, 
+                    item_name, 
+                    item_value, 
+                    finance_type, 
+                    period_type,
+                    continuous_id,
+                    ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
+                FROM
+                    quarterly_data
+            ),
+            grouped_data AS (
+                SELECT
+                    *,
+                    continuous_id - rn_asc AS group_id
+                FROM
+                    quarterly_data_rn
+            ),
+            base_data_window AS (
+                SELECT
+                    symbol, 
+                    report_date, 
+                    item_name, 
+                    item_value, 
+                    finance_type, 
+                    period_type
+                FROM
+                    grouped_data t1
+                    where t1.group_id = (
+                        SELECT
+                            group_id
+                        FROM
+                            grouped_data
+                        ORDER BY
+                            continuous_id DESC
+                            LIMIT 1
+                    )
+                ORDER BY
+                    continuous_id ASC
+            ),
+            sliding_window AS (
+                SELECT
+                report_date,
+                ttm_total_revenue
+                FROM (
+                    SELECT
+                        symbol,
+                        report_date,
+                        item_name,
+                        item_value,
+                        finance_type,
+                        period_type,
+                        SUM(item_value) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS ttm_total_revenue,
+                        COUNT(*) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS quarter_count
+                    FROM base_data_window
+                ) t
+                WHERE quarter_count = 4
+            )
+            SELECT 
+                * from sliding_window
+        """
+        ttm_revenue_df = self.duckdb_client.query(ttm_revenue_sql)
+
+        currency = load_financial_currency().get(self.ticker)
+        if currency is None:
+            currency = 'USD'
+        currency_symbol = currency + '=X'
+        currency_url = self.huggingface_client.get_url_path(exchange_rate)
+        currency_sql = f"""
+            SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
+        """
+        if currency == 'USD':
+            currency_df = pd.DataFrame()
+            currency_df['report_date'] = pd.to_datetime(
+                ttm_revenue_df['report_date'])
+            currency_df['symbol'] = currency_symbol
+            currency_df['open'] = 1.0
+            currency_df['close'] = 1.0
+            currency_df['high'] = 1.0
+            currency_df['low'] = 1.0
+        else:
+            currency_df = self.duckdb_client.query(currency_sql)
+
+        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
+        currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+        result_df = ttm_revenue_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'ttm_revenue_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('ttm_revenue_report_date'),
+            currency_df.sort_values('report_date'),
+            left_on='ttm_revenue_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['ttm_total_revenue_usd'] = round(result_df['ttm_total_revenue'] / result_df['close'], 2)
+
+        result_df = result_df[[
+            'ttm_revenue_report_date',
+            'ttm_total_revenue',
+            'report_date',
+            'close',
+            'ttm_total_revenue_usd'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'ttm_revenue_report_date': 'report_date',
+            'report_date': 'exchange_report_date',
+            'close': 'exchange_to_usd_rate'
         })
 
         return result_df
