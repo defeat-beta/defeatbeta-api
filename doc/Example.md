@@ -1885,6 +1885,7 @@ ps_ratio = market_capitalization / ttm_total_revenue_usd
 ticker.ps_ratio()
 ```
 ```text
+>>> ticker.ps_ratio()
      report_date  market_capitalization  ... ttm_total_revenue_usd  ps_ratio
 3461  2024-04-01           5.587766e+11  ...          9.474500e+10      5.90
 3462  2024-04-02           5.313831e+11  ...          9.474500e+10      5.61
@@ -1897,4 +1898,6 @@ ticker.ps_ratio()
 3804  2025-08-13           1.094653e+12  ...          9.272000e+10     11.81
 3805  2025-08-14           1.082396e+12  ...          9.272000e+10     11.67
 3806  2025-08-15           1.066204e+12  ...          9.272000e+10     11.50
+
+[346 rows x 7 columns]
 ```
