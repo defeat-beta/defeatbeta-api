@@ -1873,3 +1873,27 @@ ticker.market_capitalization()
 
 [3807 rows x 5 columns]
 ```
+
+## 37. Stock Historical PS Ratio
+```markdown
+ttm_total_revenue_usd = ttm_total_revenue / ttm_total_revenue_exchange_rate
+
+ps_ratio = market_capitalization / ttm_total_revenue_usd
+```
+```python
+ticker.ps_ratio()
+```
+```text
+     report_date  market_capitalization  ... ttm_total_revenue_usd  ps_ratio
+3461  2024-04-01           5.587766e+11  ...          9.474500e+10      5.90
+3462  2024-04-02           5.313831e+11  ...          9.474500e+10      5.61
+3463  2024-04-03           5.369638e+11  ...          9.474500e+10      5.67
+3464  2024-04-04           5.456698e+11  ...          9.474500e+10      5.76
+3465  2024-04-05           5.258661e+11  ...          9.474500e+10      5.55
+...          ...                    ...  ...                   ...       ...
+3802  2025-08-11           1.093524e+12  ...          9.272000e+10     11.79
+3803  2025-08-12           1.099362e+12  ...          9.272000e+10     11.86
+3804  2025-08-13           1.094653e+12  ...          9.272000e+10     11.81
+3805  2025-08-14           1.082396e+12  ...          9.272000e+10     11.67
+3806  2025-08-15           1.066204e+12  ...          9.272000e+10     11.50
+```
