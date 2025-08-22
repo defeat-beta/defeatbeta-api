@@ -284,7 +284,9 @@ class Ticker:
         result_df = result_df.rename(columns={
             'market_cap_report_date': 'report_date',
             'report_date': 'revenue_report_date',
-            'exchange_to_usd_rate': 'ttm_total_revenue_exchange_rate'
+            'ttm_total_revenue': 'ttm_revenue',
+            'exchange_to_usd_rate': 'ttm_revenue_exchange_rate',
+            'ttm_total_revenue_usd': 'ttm_revenue_usd'
         })
 
         return result_df
