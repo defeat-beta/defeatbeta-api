@@ -285,8 +285,117 @@ class Ticker:
             'market_cap_report_date': 'report_date',
             'report_date': 'revenue_report_date',
             'ttm_total_revenue': 'ttm_revenue',
-            'exchange_to_usd_rate': 'ttm_revenue_exchange_rate',
+            'exchange_to_usd_rate': 'exchange_rate',
             'ttm_total_revenue_usd': 'ttm_revenue_usd'
+        })
+
+        return result_df
+
+    def pb_ratio(self) -> pd.DataFrame:
+        market_cap_df = self.market_capitalization()
+        bve_df = self._quarterly_book_value_of_equity()
+
+        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
+        bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
+
+        result_df = market_cap_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'market_cap_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('market_cap_report_date'),
+            bve_df.sort_values('report_date'),
+            left_on='market_cap_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df = result_df[result_df['report_date'].notna()]
+
+        result_df['pb_ratio'] = round(result_df['market_capitalization'] / result_df['book_value_of_equity_usd'], 2)
+
+        result_df = result_df[[
+            'market_cap_report_date',
+            'market_capitalization',
+            'report_date',
+            'book_value_of_equity',
+            'exchange_to_usd_rate',
+            'book_value_of_equity_usd',
+            'pb_ratio'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'market_cap_report_date': 'report_date',
+            'report_date': 'bve_report_date',
+            'ttm_total_revenue': 'book_value_of_equity',
+            'exchange_to_usd_rate': 'exchange_rate',
+            'ttm_total_revenue_usd': 'book_value_of_equity_usd'
+        })
+
+        return result_df
+
+    def _quarterly_book_value_of_equity(self) -> pd.DataFrame:
+        stockholders_equity_url = self.huggingface_client.get_url_path(stock_statement)
+        stockholders_equity_sql = f"""
+            SELECT symbol, report_date, item_value as book_value_of_equity 
+            FROM 
+                '{stockholders_equity_url}' 
+            WHERE 
+                symbol = '{self.ticker}' 
+                AND item_name = 'stockholders_equity' 
+                AND period_type = 'quarterly'
+                AND item_value IS NOT NULL
+                AND report_date != 'TTM'
+        """
+        stockholders_equity_df = self.duckdb_client.query(stockholders_equity_sql)
+
+        currency = load_financial_currency().get(self.ticker)
+        if currency is None:
+            currency = 'USD'
+        currency_symbol = currency + '=X'
+        currency_url = self.huggingface_client.get_url_path(exchange_rate)
+        currency_sql = f"""
+            SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
+        """
+        if currency == 'USD':
+            currency_df = pd.DataFrame()
+            currency_df['report_date'] = pd.to_datetime(
+                stockholders_equity_df['report_date'])
+            currency_df['symbol'] = currency_symbol
+            currency_df['open'] = 1.0
+            currency_df['close'] = 1.0
+            currency_df['high'] = 1.0
+            currency_df['low'] = 1.0
+        else:
+            currency_df = self.duckdb_client.query(currency_sql)
+
+        stockholders_equity_df['report_date'] = pd.to_datetime(stockholders_equity_df['report_date'])
+        currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+        result_df = stockholders_equity_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'book_value_of_equity_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('book_value_of_equity_report_date'),
+            currency_df.sort_values('report_date'),
+            left_on='book_value_of_equity_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['book_value_of_equity_usd'] = round(result_df['book_value_of_equity'] / result_df['close'], 2)
+
+        result_df = result_df[[
+            'book_value_of_equity_report_date',
+            'book_value_of_equity',
+            'report_date',
+            'close',
+            'book_value_of_equity_usd'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'book_value_of_equity_report_date': 'report_date',
+            'report_date': 'exchange_report_date',
+            'close': 'exchange_to_usd_rate'
         })
 
         return result_df
