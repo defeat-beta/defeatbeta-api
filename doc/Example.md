@@ -56,6 +56,7 @@
   - [35. Stock Quarterly TTM EPS YoY Growth](#35-stock-quarterly-ttm-eps-yoy-growth)
   - [36. Stock Historical Market Cap](#36-stock-historical-market-cap)
   - [37. Stock Historical PS Ratio](#37-stock-historical-ps-ratio)
+  - [38. Stock Historical PB Ratio](#38-stock-historical-pb-ratio)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
