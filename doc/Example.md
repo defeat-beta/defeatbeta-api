@@ -1931,3 +1931,29 @@ ticker.pb_ratio()
 
 [790 rows x 7 columns]
 ```
+
+## 39. Stock Historical PEG Ratio
+```markdown
+peg_ratio_by_revenue = ttm_pe / revenue_yoy_growth
+
+peg_ratio_by_eps = ttm_pe / eps_yoy_growth
+```
+```python
+ticker.peg_ratio()
+```
+```text
+    report_date  close_price  ... peg_ratio_by_revenue  peg_ratio_by_eps
+0    2023-06-30       261.77  ...                 1.57              3.71
+1    2023-08-18       215.49  ...                 1.29              3.05
+2    2023-08-21       231.28  ...                 1.39              3.28
+3    2023-08-22       233.19  ...                 1.40              3.30
+4    2023-08-23       236.86  ...                 1.42              3.35
+..          ...          ...  ...                  ...               ...
+347  2025-07-21       328.49  ...               -16.12            -10.85
+348  2025-07-22       332.11  ...               -16.30            -10.97
+349  2025-07-23       332.56  ...               -16.32            -10.98
+350  2025-07-25       316.06  ...               -15.51            -10.44
+351  2025-08-22       340.01  ...               -16.68            -11.23
+
+[352 rows x 9 columns]
+```
