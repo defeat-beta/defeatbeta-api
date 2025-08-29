@@ -283,7 +283,7 @@ class Ticker:
 
         result_df = result_df.rename(columns={
             'market_cap_report_date': 'report_date',
-            'report_date': 'revenue_report_date',
+            'report_date': 'fiscal_quarter',
             'ttm_total_revenue': 'ttm_revenue',
             'exchange_to_usd_rate': 'exchange_rate',
             'ttm_total_revenue_usd': 'ttm_revenue_usd'
@@ -325,10 +325,83 @@ class Ticker:
 
         result_df = result_df.rename(columns={
             'market_cap_report_date': 'report_date',
-            'report_date': 'bve_report_date',
+            'report_date': 'fiscal_quarter',
             'ttm_total_revenue': 'book_value_of_equity',
             'exchange_to_usd_rate': 'exchange_rate',
             'ttm_total_revenue_usd': 'book_value_of_equity_usd'
+        })
+
+        return result_df
+
+    def peg_ratio(self) -> pd.DataFrame:
+        ttm_pe_df = self.ttm_pe()
+        revenue_yoy_df = self.quarterly_revenue_yoy_growth()
+        eps_yoy_df = self.quarterly_eps_yoy_growth()
+
+        ttm_pe_df['report_date'] = pd.to_datetime(ttm_pe_df['report_date'])
+        revenue_yoy_df['report_date'] = pd.to_datetime(revenue_yoy_df['report_date'])
+        eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date'])
+
+        result_df = ttm_pe_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'ttm_pe_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('ttm_pe_report_date'),
+            revenue_yoy_df.sort_values('report_date'),
+            left_on='ttm_pe_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df = result_df[result_df['report_date'].notna()]
+        result_df = result_df[result_df['yoy_growth'].notna()]
+
+        result_df['peg_ratio_by_revenue'] = np.where(
+            (result_df['ttm_pe'] < 0) | (result_df['yoy_growth'] < 0),
+            -np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100)),
+            np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100))
+        ).round(2)
+
+        result_df = result_df[[
+            'ttm_pe_report_date',
+            'close_price',
+            'report_date',
+            'ttm_eps',
+            'ttm_pe',
+            'yoy_growth',
+            'peg_ratio_by_revenue'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'ttm_pe_report_date': 'report_date',
+            'report_date': 'fiscal_quarter',
+            'yoy_growth': 'revenue_yoy_growth'
+        })
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('fiscal_quarter'),
+            eps_yoy_df.sort_values('report_date'),
+            left_on='fiscal_quarter',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['peg_ratio_by_eps'] = round(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100), 2)
+        result_df = result_df[[
+            'report_date_x',
+            'close_price',
+            'fiscal_quarter',
+            'ttm_eps',
+            'ttm_pe',
+            'revenue_yoy_growth',
+            'yoy_growth',
+            'peg_ratio_by_revenue',
+            'peg_ratio_by_eps'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'report_date_x': 'report_date',
+            'yoy_growth': 'eps_yoy_growth'
         })
 
         return result_df
