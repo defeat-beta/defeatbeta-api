@@ -3,6 +3,7 @@ Change Log
 0.0.13
 -------
 - Support Historical PEG Ratio(PE / Growth)[`#7 <https://github.com/defeat-beta/defeatbeta-api/issues/7>`_]
+- Fix YoY calculation for discontinuous quarters[`#40 <https://github.com/defeat-beta/defeatbeta-api/issues/40>`_]
 
 0.0.12
 -------
