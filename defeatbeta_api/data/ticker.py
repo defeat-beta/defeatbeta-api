@@ -111,8 +111,6 @@ class Ticker:
 
         result_df['ttm_pe'] = round(result_df['close'] / result_df['tailing_eps'], 2)
 
-        result_df = result_df[result_df['ttm_pe'].notna() & np.isfinite(result_df['ttm_pe'])]
-
         result_df = result_df[[
             'price_report_date',
             'report_date',
@@ -338,25 +336,23 @@ class Ticker:
         revenue_yoy_df = self.quarterly_revenue_yoy_growth()
         eps_yoy_df = self.quarterly_eps_yoy_growth()
 
-        ttm_pe_df['report_date'] = pd.to_datetime(ttm_pe_df['report_date'])
-        revenue_yoy_df['report_date'] = pd.to_datetime(revenue_yoy_df['report_date'])
-        eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date'])
+        ttm_pe_df['report_date'] = pd.to_datetime(ttm_pe_df['report_date']).astype('datetime64[ns]')
+        revenue_yoy_df['report_date'] = pd.to_datetime(revenue_yoy_df['report_date']).astype('datetime64[ns]')
+        eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date']).astype('datetime64[ns]')
 
         result_df = ttm_pe_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_pe_report_date'})
+        result_df = result_df[result_df['eps_report_date'].notna()]
 
         result_df = pd.merge_asof(
-            result_df.sort_values('ttm_pe_report_date'),
-            revenue_yoy_df.sort_values('report_date'),
-            left_on='ttm_pe_report_date',
+            result_df,
+            eps_yoy_df,
+            left_on='eps_report_date',
             right_on='report_date',
             direction='backward'
         )
 
-        result_df = result_df[result_df['report_date'].notna()]
-        result_df = result_df[result_df['yoy_growth'].notna()]
-
-        result_df['peg_ratio_by_revenue'] = np.where(
+        result_df['peg_ratio_by_eps'] = np.where(
             (result_df['ttm_pe'] < 0) | (result_df['yoy_growth'] < 0),
             -np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100)),
             np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100))
@@ -369,31 +365,36 @@ class Ticker:
             'ttm_eps',
             'ttm_pe',
             'yoy_growth',
-            'peg_ratio_by_revenue'
+            'peg_ratio_by_eps'
         ]]
 
         result_df = result_df.rename(columns={
             'ttm_pe_report_date': 'report_date',
             'report_date': 'fiscal_quarter',
-            'yoy_growth': 'revenue_yoy_growth'
+            'yoy_growth': 'eps_yoy_growth'
         })
 
         result_df = pd.merge_asof(
-            result_df.sort_values('fiscal_quarter'),
-            eps_yoy_df.sort_values('report_date'),
+            result_df,
+            revenue_yoy_df,
             left_on='fiscal_quarter',
             right_on='report_date',
             direction='backward'
         )
 
-        result_df['peg_ratio_by_eps'] = round(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100), 2)
+        result_df['peg_ratio_by_revenue'] = np.where(
+            (result_df['ttm_pe'] < 0) | (result_df['yoy_growth'] < 0),
+            -np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100)),
+            np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100))
+        ).round(2)
+
         result_df = result_df[[
             'report_date_x',
             'close_price',
             'fiscal_quarter',
             'ttm_eps',
             'ttm_pe',
-            'revenue_yoy_growth',
+            'eps_yoy_growth',
             'yoy_growth',
             'peg_ratio_by_revenue',
             'peg_ratio_by_eps'
@@ -401,9 +402,10 @@ class Ticker:
 
         result_df = result_df.rename(columns={
             'report_date_x': 'report_date',
-            'yoy_growth': 'eps_yoy_growth'
+            'yoy_growth': 'revenue_yoy_growth'
         })
 
+        result_df = result_df[result_df['ttm_pe'].notna()]
         return result_df
 
     def _quarterly_book_value_of_equity(self) -> pd.DataFrame:
@@ -621,33 +623,42 @@ class Ticker:
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
-        as_current = f" as {current_alias}" if current_alias != eps_column else ""
         sql = f"""
-            WITH quarterly_eps AS (
+            WITH eps_data AS (
                 SELECT 
                     symbol,
-                    report_date,
-                    {eps_column},
-                    LAG({eps_column}, 4) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_eps
+                    CAST(report_date AS DATE) AS report_date,
+                    {eps_column}
                 FROM '{url}'
                 WHERE symbol = '{self.ticker}'
-                AND {eps_column} IS NOT NULL
+            ),
+            yoy AS (
+                SELECT 
+                    e1.symbol,
+                    e1.report_date,
+                    e1.{eps_column} AS {current_alias},
+                    e2.{eps_column} AS {prev_alias}
+                FROM eps_data e1
+                LEFT JOIN eps_data e2
+                  ON e1.symbol = e2.symbol
+                 AND strftime(e2.report_date, '%m-%d') = strftime(e1.report_date, '%m-%d')
+                 AND date_diff('year', e2.report_date, e1.report_date) = 1
             )
             SELECT 
                 symbol,
                 report_date,
-                {eps_column}{as_current},
-                prev_year_eps as {prev_alias},
+                {current_alias},
+                {prev_alias},
                 CASE 
-                    WHEN prev_year_eps IS NOT NULL AND prev_year_eps != 0 
-                    THEN ROUND((({eps_column} - prev_year_eps) / ABS(prev_year_eps)), 4)
-                    WHEN prev_year_eps IS NOT NULL AND prev_year_eps = 0 AND {eps_column} > 0
-                    THEN 1.00
-                    WHEN prev_year_eps IS NOT NULL AND prev_year_eps = 0 AND {eps_column} < 0
-                    THEN -1.00
+                    WHEN {prev_alias} IS NOT NULL AND {prev_alias} != 0 
+                        THEN ROUND(({current_alias} - {prev_alias}) / ABS({prev_alias}), 4)
+                    WHEN {prev_alias} IS NOT NULL AND {prev_alias} = 0 AND {current_alias} > 0
+                        THEN 1.00
+                    WHEN {prev_alias} IS NOT NULL AND {prev_alias} = 0 AND {current_alias} < 0
+                        THEN -1.00
                     ELSE NULL
-                END as yoy_growth
-            FROM quarterly_eps
+                END AS yoy_growth
+            FROM yoy
             ORDER BY report_date;
         """
         return self.duckdb_client.query(sql)
@@ -662,15 +673,26 @@ class Ticker:
             WITH metric_data AS (
                 SELECT 
                     symbol,
-                    report_date,
-                    item_value as {metric_name},
-                    LAG(item_value, {lag_period}) OVER (PARTITION BY symbol ORDER BY report_date) as prev_year_{metric_name}
+                    CAST(report_date AS DATE) AS report_date,
+                    item_value as {metric_name}
                 FROM '{url}' 
                 WHERE symbol='{self.ticker}' 
                     AND finance_type = '{finance_type}' 
                     AND item_name='{item_name}' 
                     AND period_type='{period_type}'
                     {ttm_filter}
+            ),
+            yoy AS (
+                SELECT 
+                    e1.symbol,
+                    e1.report_date,
+                    e1.{metric_name} AS {metric_name},
+                    e2.{metric_name} AS prev_year_{metric_name}
+                FROM metric_data e1
+                LEFT JOIN metric_data e2
+                  ON e1.symbol = e2.symbol
+                 AND strftime(e2.report_date, '%m-%d') = strftime(e1.report_date, '%m-%d')
+                 AND date_diff('year', e2.report_date, e1.report_date) = 1
             )
             SELECT 
                 symbol,
@@ -682,7 +704,7 @@ class Ticker:
                     THEN ROUND(({metric_name} - prev_year_{metric_name}) / ABS(prev_year_{metric_name}), 4)
                     ELSE NULL
                 END as yoy_growth
-            FROM metric_data
+            FROM yoy
             WHERE {metric_name} IS NOT NULL
             ORDER BY report_date;
         """
