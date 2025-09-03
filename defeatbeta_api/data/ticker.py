@@ -541,7 +541,8 @@ class Ticker:
             sliding_window AS (
                 SELECT
                 report_date,
-                ttm_total_revenue
+                ttm_total_revenue,
+                TO_JSON(MAP(window_report_dates, window_item_values)) AS report_date_2_revenue
                 FROM (
                     SELECT
                         symbol,
@@ -559,7 +560,17 @@ class Ticker:
                             PARTITION BY symbol
                             ORDER BY CAST(report_date AS DATE)
                             ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS quarter_count
+                        ) AS quarter_count,
+                        ARRAY_AGG(report_date) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS window_report_dates,
+                        ARRAY_AGG(item_value) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS window_item_values
                     FROM base_data_window
                 ) t
                 WHERE quarter_count = 4
@@ -608,6 +619,7 @@ class Ticker:
         result_df = result_df[[
             'ttm_revenue_report_date',
             'ttm_total_revenue',
+            'report_date_2_revenue',
             'report_date',
             'close',
             'ttm_total_revenue_usd'
