@@ -1,5 +1,8 @@
 Change Log
 ===========
+0.0.14
+-------
+
 0.0.13
 -------
 - Support Historical PEG Ratio(PE / Growth)[`#7 <https://github.com/defeat-beta/defeatbeta-api/issues/7>`_]
