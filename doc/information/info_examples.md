@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [1. Stock Info](#1-stock-info)
+- [2. Stock Officers](#2-stock-officers)
+- [3. Accessing Earnings Call Transcripts](#3-accessing-earnings-call-transcripts)
+  - [3.1 Fetching transcripts list](#31-fetching-transcripts-list)
+  - [3.2 Fetching the Q4 2024 Earnings Call Transcript](#32-fetching-the-q4-2024-earnings-call-transcript)
+  - [3.3 Print Formatted Table of 2024 Q4 Earnings Call](#33-print-formatted-table-of-2024-q4-earnings-call)
+- [4. Accessing Financial News](#4-accessing-financial-news)
+  - [4.1 List All News Articles](#41-list-all-news-articles)
+  - [4.2 Retrieve Specific News Content](#42-retrieve-specific-news-content)
+  - [4.3 Display Formatted News Article](#43-display-formatted-news-article)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 
 ## 1. Stock Info
