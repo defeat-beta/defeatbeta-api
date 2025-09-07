@@ -1,14 +1,11 @@
 # Main Usage Index
 
-- [Information](info_examples.md)
-- [Finance](finance_examples.md)
-- [Profitability](profitability_examples.md)
-- [Growth](growth_examples.md)
-- [Value](value_examples.md)
 
 ---
 
 > [!TIP]
+> The project evaluates stocks across several key dimensions:
+> 
 > [Information](info_examples.md) includes `profile`, `officers`, `earnings call transcripts`, `financial news` etc.
 > 
 > [Finance](finance_examples.md) includes `price`, `statement`, `earning calendar`, `earnings report`, `splits`, `dividends`, `revenue forecast`, `earnings forecast`, `summary`, `revenue breakdown`, `geography breakdown`, `product breakdown` etc.
