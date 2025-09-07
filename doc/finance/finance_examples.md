@@ -1,3 +1,39 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [0. Stock Price](#0-stock-price)
+- [1. Stock Statement](#1-stock-statement)
+  - [1.1 Quarterly Income Statement](#11-quarterly-income-statement)
+  - [1.2 Annual Income Statement](#12-annual-income-statement)
+  - [1.3 Quarterly Balance Sheet](#13-quarterly-balance-sheet)
+  - [1.4 Annual Balance Sheet](#14-annual-balance-sheet)
+  - [1.5 Quarterly Cash Flow](#15-quarterly-cash-flow)
+  - [1.6 Annual Cash Flow](#16-annual-cash-flow)
+- [2. Stock Info](#2-stock-info)
+- [3. Stock Officers](#3-stock-officers)
+- [4. Stock Calendar](#4-stock-calendar)
+- [5. Stock Earnings](#5-stock-earnings)
+- [6. Stock Splits](#6-stock-splits)
+- [7. Stock Dividends](#7-stock-dividends)
+- [8. Stock Revenue Forecast](#8-stock-revenue-forecast)
+- [9. Stock Earnings Forecast](#9-stock-earnings-forecast)
+- [10. Stock Summary](#10-stock-summary)
+- [13. Accessing Earnings Call Transcripts](#13-accessing-earnings-call-transcripts)
+  - [13.1 Fetching transcripts list](#131-fetching-transcripts-list)
+  - [13.2 Fetching the Q4 2024 Earnings Call Transcript](#132-fetching-the-q4-2024-earnings-call-transcript)
+  - [13.3 Print Formatted Table of 2024 Q4 Earnings Call](#133-print-formatted-table-of-2024-q4-earnings-call)
+- [14. Accessing Financial News](#14-accessing-financial-news)
+  - [14.1 List All News Articles](#141-list-all-news-articles)
+  - [14.2 Retrieve Specific News Content](#142-retrieve-specific-news-content)
+  - [14.3 Display Formatted News Article](#143-display-formatted-news-article)
+- [15. Accessing Revenue breakdown](#15-accessing-revenue-breakdown)
+  - [15.1 Stock Revenue by segment](#151-stock-revenue-by-segment)
+  - [15.2 Stock Revenue by geography](#152-stock-revenue-by-geography)
+  - [15.3 Stock Revenue by product](#153-stock-revenue-by-product)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 
 ## 0. Stock Price
