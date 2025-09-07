@@ -16,7 +16,7 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
-## 16. Stock Quarterly Gross Margin
+## 1. Stock Quarterly Gross Margin
 ```python
 ticker.quarterly_gross_margin()
 ```
@@ -37,7 +37,7 @@ ticker.quarterly_gross_margin()
 11   TSLA  2025-03-31  3.153000e+09   1.933500e+10          0.16
 ```
 
-## 17. Stock Annual Gross Margin
+## 2. Stock Annual Gross Margin
 ```python
 ticker.quarterly_annual_margin()
 ```
@@ -52,7 +52,7 @@ ticker.quarterly_annual_margin()
 5   TSLA  2024-12-31  1.745000e+10   9.769000e+10          0.18
 ```
 
-## 18. Stock Quarterly Operating Margin
+## 3. Stock Quarterly Operating Margin
 ```python
 ticker.quarterly_operating_margin()
 ```
@@ -73,7 +73,7 @@ ticker.quarterly_operating_margin()
 11   TSLA  2025-03-31      4.930000e+08   1.933500e+10              0.03
 ```
 
-## 19. Stock Annual Operating Margin
+## 4. Stock Annual Operating Margin
 ```python
 ticker.annual_operating_margin()
 ```
@@ -88,7 +88,7 @@ ticker.annual_operating_margin()
 5   TSLA  2024-12-31      7.760000e+09   9.769000e+10              0.08
 ```
 
-## 20. Stock Quarterly Net Margin
+## 5. Stock Quarterly Net Margin
 ```python
 ticker.quarterly_net_margin()
 ```
@@ -109,7 +109,7 @@ ticker.quarterly_net_margin()
 11   TSLA  2025-03-31                    4.090000e+08   1.933500e+10        0.02
 ```
 
-## 21. Stock Annual Net Margin
+## 6. Stock Annual Net Margin
 ```python
 ticker.annual_net_margin()
 ```
@@ -124,7 +124,7 @@ ticker.annual_net_margin()
 5   TSLA  2024-12-31                    7.130000e+09   9.769000e+10        0.07
 ```
 
-## 22. Stock Quarterly EBITDA Margin
+## 7. Stock Quarterly EBITDA Margin
 ```python
 ticker.quarterly_ebitda_margin()
 ```
@@ -145,7 +145,7 @@ ticker.quarterly_ebitda_margin()
 11   TSLA  2025-03-31  2.127000e+09   1.933500e+10           0.11
 ```
 
-## 23. Stock Annual EBITDA Margin
+## 8. Stock Annual EBITDA Margin
 ```python
 ticker.annual_ebitda_margin()
 ```
@@ -160,7 +160,7 @@ ticker.annual_ebitda_margin()
 5   TSLA  2024-12-31  1.470800e+10   9.769000e+10           0.15
 ```
 
-## 24. Stock Quarterly FCF Margin
+## 9. Stock Quarterly FCF Margin
 ```python
 ticker.quarterly_fcf_margin()
 ```
@@ -181,7 +181,7 @@ ticker.quarterly_fcf_margin()
 11   TSLA  2025-03-31    6.640000e+08   1.933500e+10        0.03
 ```
 
-## 25. Stock Annual FCF Margin
+## 10. Stock Annual FCF Margin
 ```python
 ticker.annual_fcf_margin()
 ```
