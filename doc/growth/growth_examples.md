@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [26. Stock Quarterly Revenue YoY Growth](#26-stock-quarterly-revenue-yoy-growth)
+- [27. Stock Annual Revenue YoY Growth](#27-stock-annual-revenue-yoy-growth)
+- [28. Stock Quarterly Operating Income YoY Growth](#28-stock-quarterly-operating-income-yoy-growth)
+- [29. Stock Annual Operating Income YoY Growth](#29-stock-annual-operating-income-yoy-growth)
+- [30. Stock Quarterly Net Income YoY Growth](#30-stock-quarterly-net-income-yoy-growth)
+- [31. Stock Annual Net Income YoY Growth](#31-stock-annual-net-income-yoy-growth)
+- [32. Stock Quarterly Free Cash Flow YoY Growth](#32-stock-quarterly-free-cash-flow-yoy-growth)
+- [33. Stock Annual Free Cash Flow YoY Growth](#33-stock-annual-free-cash-flow-yoy-growth)
+- [34. Stock Quarterly EPS YoY Growth](#34-stock-quarterly-eps-yoy-growth)
+- [35. Stock Quarterly TTM EPS YoY Growth](#35-stock-quarterly-ttm-eps-yoy-growth)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 ## 26. Stock Quarterly Revenue YoY Growth
 ```python
