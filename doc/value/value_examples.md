@@ -12,7 +12,7 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
-## 11. Stock TTM EPS
+## 1. Stock TTM EPS
 ```python
 ticker.ttm_eps()
 ```
@@ -34,7 +34,7 @@ ticker.ttm_eps()
 [65 rows x 5 columns]
 ```
 
-## 12. Stock TTM PE
+## 2. Stock TTM PE
 ```python
 ticker.ttm_pe()
 ```
@@ -56,11 +56,7 @@ ticker.ttm_pe()
 [3807 rows x 5 columns]
 ```
 
-
-
-
-
-## 36. Stock Historical Market Cap
+## 3. Stock Historical Market Cap
 ```python
 ticker.market_capitalization()
 ```
@@ -82,7 +78,7 @@ ticker.market_capitalization()
 [3807 rows x 5 columns]
 ```
 
-## 37. Stock Historical PS Ratio
+## 4. Stock Historical PS Ratio
 ```markdown
 ttm_total_revenue_usd = ttm_total_revenue / exchange_rate
 
@@ -109,7 +105,7 @@ ticker.ps_ratio()
 [351 rows x 7 columns]
 ```
 
-## 38. Stock Historical PB Ratio
+## 5. Stock Historical PB Ratio
 ```markdown
 book_value_of_equity = stockholders_equity
 
@@ -138,7 +134,7 @@ ticker.pb_ratio()
 [790 rows x 7 columns]
 ```
 
-## 39. Stock Historical PEG Ratio
+## 6. Stock Historical PEG Ratio
 ```markdown
 peg_ratio_by_revenue = ttm_pe / revenue_yoy_growth
 
