@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [11. Stock TTM EPS](#11-stock-ttm-eps)
+- [12. Stock TTM PE](#12-stock-ttm-pe)
+- [36. Stock Historical Market Cap](#36-stock-historical-market-cap)
+- [37. Stock Historical PS Ratio](#37-stock-historical-ps-ratio)
+- [38. Stock Historical PB Ratio](#38-stock-historical-pb-ratio)
+- [39. Stock Historical PEG Ratio](#39-stock-historical-peg-ratio)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 ## 11. Stock TTM EPS
 ```python
