@@ -2,16 +2,16 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [16. Stock Quarterly Gross Margin](#16-stock-quarterly-gross-margin)
-- [17. Stock Annual Gross Margin](#17-stock-annual-gross-margin)
-- [18. Stock Quarterly Operating Margin](#18-stock-quarterly-operating-margin)
-- [19. Stock Annual Operating Margin](#19-stock-annual-operating-margin)
-- [20. Stock Quarterly Net Margin](#20-stock-quarterly-net-margin)
-- [21. Stock Annual Net Margin](#21-stock-annual-net-margin)
-- [22. Stock Quarterly EBITDA Margin](#22-stock-quarterly-ebitda-margin)
-- [23. Stock Annual EBITDA Margin](#23-stock-annual-ebitda-margin)
-- [24. Stock Quarterly FCF Margin](#24-stock-quarterly-fcf-margin)
-- [25. Stock Annual FCF Margin](#25-stock-annual-fcf-margin)
+- [1. Stock Quarterly Gross Margin](#1-stock-quarterly-gross-margin)
+- [2. Stock Annual Gross Margin](#2-stock-annual-gross-margin)
+- [3. Stock Quarterly Operating Margin](#3-stock-quarterly-operating-margin)
+- [4. Stock Annual Operating Margin](#4-stock-annual-operating-margin)
+- [5. Stock Quarterly Net Margin](#5-stock-quarterly-net-margin)
+- [6. Stock Annual Net Margin](#6-stock-annual-net-margin)
+- [7. Stock Quarterly EBITDA Margin](#7-stock-quarterly-ebitda-margin)
+- [8. Stock Annual EBITDA Margin](#8-stock-annual-ebitda-margin)
+- [9. Stock Quarterly FCF Margin](#9-stock-quarterly-fcf-margin)
+- [10. Stock Annual FCF Margin](#10-stock-annual-fcf-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
