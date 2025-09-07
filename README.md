@@ -77,7 +77,7 @@ import defeatbeta_api
 from defeatbeta_api.data.ticker import Ticker
 ticker = Ticker('TSLA')
 ```
-The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/Example.html)):
+The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/Example.md)):
 
 #### Example: Fetching Stock Price Data
 ```python
