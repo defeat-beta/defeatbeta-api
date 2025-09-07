@@ -7,6 +7,7 @@ on:
       - 'doc/profitability/*.md'
       - 'doc/growth/*.md'
       - 'doc/value/*.md'
+      - 'doc/info/*.md'
 
 jobs:
   doctoc:
