@@ -2,12 +2,12 @@ name: Update TOC
 on:
   push:
     paths:
-      - 'doc/Example.md'
-      - 'doc/finance_examples.md'
-      - 'doc/profitability_examples.md'
-      - 'doc/growth_examples.md'
-      - 'doc/value_examples.md'
-      - 'doc/info_examples.md'
+      - '../../doc/Example_Guide.md'
+      - '../../doc/Finance_Examples.md'
+      - '../../doc/Profitability_Examples.md'
+      - '../../doc/Growth_Examples.md'
+      - '../../doc/Value_Examples.md'
+      - '../../doc/Info_Examples.md'
 
 jobs:
   doctoc:

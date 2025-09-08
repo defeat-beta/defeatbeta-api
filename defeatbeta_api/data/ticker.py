@@ -34,6 +34,7 @@ class Ticker:
         self.http_proxy = http_proxy
         self.duckdb_client = get_duckdb_client(http_proxy=self.http_proxy, log_level=log_level, config=config)
         self.huggingface_client = HuggingFaceClient()
+        self.log_level = log_level
 
     def info(self) -> pd.DataFrame:
         return self._query_data(stock_profile)
@@ -159,7 +160,7 @@ class Ticker:
         return self._generate_margin_sql('fcf', 'annual', 'free_cash_flow', 'fcf_margin')
 
     def earning_call_transcripts(self) -> Transcripts:
-        return Transcripts(self._query_data(stock_earning_call_transcripts))
+        return Transcripts(self.ticker, self._query_data(stock_earning_call_transcripts), self.log_level)
 
     def news(self) -> News:
         url = self.huggingface_client.get_url_path(stock_news)

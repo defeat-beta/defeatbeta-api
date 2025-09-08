@@ -5,3 +5,4 @@
 __pycache__/*
 **/__pycache__/*
 *yarn.lock
+test/siliconflow_api.key
