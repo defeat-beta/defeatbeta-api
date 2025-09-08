@@ -249,7 +249,7 @@ class Ticker:
 
     def ps_ratio(self) -> pd.DataFrame:
         market_cap_df = self.market_capitalization()
-        ttm_revenue_df = self._ttm_revenue()
+        ttm_revenue_df = self.ttm_revenue()
 
         market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
@@ -475,7 +475,7 @@ class Ticker:
 
         return result_df
 
-    def _ttm_revenue(self) -> pd.DataFrame:
+    def ttm_revenue(self) -> pd.DataFrame:
         ttm_revenue_url = self.huggingface_client.get_url_path(stock_statement)
         ttm_revenue_sql = f"""
             WITH quarterly_data AS (
@@ -627,6 +627,164 @@ class Ticker:
 
         result_df = result_df.rename(columns={
             'ttm_revenue_report_date': 'report_date',
+            'report_date': 'exchange_report_date',
+            'close': 'exchange_to_usd_rate'
+        })
+
+        return result_df
+
+    def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
+        ttm_net_income_url = self.huggingface_client.get_url_path(stock_statement)
+        ttm_net_income_sql = f"""
+            WITH quarterly_data AS (
+                SELECT 
+                    symbol, 
+                    report_date, 
+                    item_name, 
+                    item_value, 
+                    finance_type, 
+                    period_type,
+                    YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
+                FROM 
+                    '{ttm_net_income_url}'  
+                WHERE 
+                    symbol = '{self.ticker}' 
+                    AND item_name = 'net_income_common_stockholders' 
+                    AND period_type = 'quarterly'
+                    AND item_value IS NOT NULL
+                    AND report_date != 'TTM'
+            ),
+            quarterly_data_rn AS (
+                SELECT
+                    symbol, 
+                    report_date, 
+                    item_name, 
+                    item_value, 
+                    finance_type, 
+                    period_type,
+                    continuous_id,
+                    ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
+                FROM
+                    quarterly_data
+            ),
+            grouped_data AS (
+                SELECT
+                    *,
+                    continuous_id - rn_asc AS group_id
+                FROM
+                    quarterly_data_rn
+            ),
+            base_data_window AS (
+                SELECT
+                    symbol, 
+                    report_date, 
+                    item_name, 
+                    item_value, 
+                    finance_type, 
+                    period_type
+                FROM
+                    grouped_data t1
+                    where t1.group_id = (
+                        SELECT
+                            group_id
+                        FROM
+                            grouped_data
+                        ORDER BY
+                            continuous_id DESC
+                            LIMIT 1
+                    )
+                ORDER BY
+                    continuous_id ASC
+            ),
+            sliding_window AS (
+                SELECT
+                report_date,
+                ttm_net_income,
+                TO_JSON(MAP(window_report_dates, window_item_values)) AS report_date_2_net_income,
+                FROM (
+                    SELECT
+                        symbol,
+                        report_date,
+                        item_name,
+                        item_value,
+                        finance_type,
+                        period_type,
+                        SUM(item_value) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS ttm_net_income,
+                        COUNT(*) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS quarter_count,
+                        ARRAY_AGG(report_date) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS window_report_dates,
+                        ARRAY_AGG(item_value) OVER (
+                            PARTITION BY symbol
+                            ORDER BY CAST(report_date AS DATE)
+                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                        ) AS window_item_values
+                    FROM base_data_window
+                ) t
+                WHERE quarter_count = 4
+            )
+            SELECT 
+                * from sliding_window
+        """
+        ttm_revenue_df = self.duckdb_client.query(ttm_net_income_sql)
+
+        currency = load_financial_currency().get(self.ticker)
+        if currency is None:
+            currency = 'USD'
+        currency_symbol = currency + '=X'
+        currency_url = self.huggingface_client.get_url_path(exchange_rate)
+        currency_sql = f"""
+            SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
+        """
+        if currency == 'USD':
+            currency_df = pd.DataFrame()
+            currency_df['report_date'] = pd.to_datetime(
+                ttm_revenue_df['report_date'])
+            currency_df['symbol'] = currency_symbol
+            currency_df['open'] = 1.0
+            currency_df['close'] = 1.0
+            currency_df['high'] = 1.0
+            currency_df['low'] = 1.0
+        else:
+            currency_df = self.duckdb_client.query(currency_sql)
+
+        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
+        currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+        result_df = ttm_revenue_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'ttm_net_income_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('ttm_net_income_report_date'),
+            currency_df.sort_values('report_date'),
+            left_on='ttm_net_income_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['ttm_net_income_usd'] = round(result_df['ttm_net_income'] / result_df['close'], 2)
+
+        result_df = result_df[[
+            'ttm_net_income_report_date',
+            'ttm_net_income',
+            'report_date_2_net_income',
+            'report_date',
+            'close',
+            'ttm_net_income_usd'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'ttm_net_income_report_date': 'report_date',
             'report_date': 'exchange_report_date',
             'close': 'exchange_to_usd_rate'
         })

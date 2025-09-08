@@ -2,6 +2,7 @@ Change Log
 ===========
 0.0.14
 -------
+- Support TTM Revenue and TTM Net Income[`#46 <https://github.com/defeat-beta/defeatbeta-api/issues/46>`_]
 
 0.0.13
 -------
