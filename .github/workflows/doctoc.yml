@@ -7,7 +7,7 @@ on:
       - 'doc/profitability_examples.md'
       - 'doc/growth_examples.md'
       - 'doc/value_examples.md'
-      - 'doc/info_examples.md
+      - 'doc/info_examples.md'
 
 jobs:
   doctoc:
@@ -23,14 +23,16 @@ jobs:
       - name: Update TOC for all Markdown files
         id: toc
         run: |
-          # Update TOC for Example.md and all Markdown files in subdirectories
           find doc -type f -name "*.md" -exec doctoc {} \;
-          # Check if any Markdown files were modified
-          modified=$(git status --porcelain doc/**/*.md | wc -l)
-          echo "modified=$modified" >> $GITHUB_OUTPUT
+          
+          if git diff --quiet; then
+            echo "modified=0" >> $GITHUB_OUTPUT
+          else
+            echo "modified=1" >> $GITHUB_OUTPUT
+          fi
 
       - name: Commit changes
-        if: steps.toc.outputs.modified != '0'
+        if: steps.toc.outputs.modified == '1'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
