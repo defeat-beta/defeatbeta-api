@@ -26,7 +26,7 @@ jobs:
           # Update TOC for Example.md and all Markdown files in subdirectories
           find doc -type f -name "*.md" -exec doctoc {} \;
           # Check if any Markdown files were modified
-          modified=$(git status --porcelain doc/**/*.md | wc -l)
+          modified=$(git status --porcelain doc/*.md | wc -l)
           echo "modified=$modified" >> $GITHUB_OUTPUT
 
       - name: Commit changes
