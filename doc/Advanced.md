@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Advanced Usage](#advanced-usage)
+  - [Use SQL to Access Data](#use-sql-to-access-data)
+  - [Set Http Proxy](#set-http-proxy)
+  - [Set Logging](#set-logging)
+  - [Set Configuration](#set-configuration)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Advanced Usage
 
 ## Use SQL to Access Data
