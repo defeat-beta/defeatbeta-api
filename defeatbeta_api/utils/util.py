@@ -4,7 +4,7 @@ import platform
 import re
 import tempfile
 from importlib.resources import files
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import psutil
 from pandas import DataFrame
@@ -126,3 +126,18 @@ def _parse_finance_item_template(array: List[Dict]) -> List[FinanceItem]:
         )
         result.append(finance_item)
     return result
+
+def load_transcripts_summary_prompt_temp() -> str:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_key_fin_data_prompt.md').read_text(encoding="utf-8")
+    return text
+
+def load_transcripts_summary_tools_def() -> Dict[str, Any]:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_key_fin_data_tools.json').read_text(encoding="utf-8")
+    data = json.loads(text)
+    return data
+
+unit_map = {
+    "billion": 1e9,
+    "million": 1e6,
+    "thousand": 1e3
+}

@@ -19,7 +19,7 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 ✅ **SQL-Compatible**: Python-native interface with full SQL support via DuckDB's optimized execution.
 
-✅ **Extended Financial Data**: Includes [TTM EPS](doc/value_examples.md#1-stock-ttm-eps), [TTM PE](doc/value_examples.md#2-stock-ttm-pe), [Market Cap](doc/value_examples.md#3-stock-historical-market-cap), [PS Ratio](doc/value_examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/value_examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/value_examples.md#6-stock-historical-peg-ratio), [Earnings call transcripts](doc/info_examples.md#3-accessing-earnings-call-transcripts), [Stock News](doc/info_examples.md#4-accessing-financial-news), [Revenue by segment](doc/finance_examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/finance_examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
+✅ **Extended Financial Data**: Includes [TTM EPS](doc/Value_Examples#1-stock-ttm-eps), [TTM PE](doc/Value_Examples#2-stock-ttm-pe), [Market Cap](doc/Value_Examples#3-stock-historical-market-cap), [PS Ratio](doc/Value_Examples#4-stock-historical-ps-ratio), [PB Ratio](doc/Value_Examples#5-stock-historical-pb-ratio), [PEG Ratio](doc/Value_Examples#6-stock-historical-peg-ratio), [Earnings call transcripts](doc/Info_Examples#3-accessing-earnings-call-transcripts), [Stock News](doc/Info_Examples#4-accessing-financial-news), [Revenue by segment](doc/Finance_Examples#91-stock-revenue-by-segment) and [Revenue by geography](doc/Finance_Examples#92-stock-revenue-by-geography) etc. (continuously expanding).
 
 ### How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
@@ -77,7 +77,7 @@ import defeatbeta_api
 from defeatbeta_api.data.ticker import Ticker
 ticker = Ticker('TSLA')
 ```
-The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/Example.md)):
+The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/Example_Guide)):
 
 #### Example: Fetching Stock Price Data
 ```python
@@ -398,4 +398,4 @@ news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
 
 ### Advanced Usage
 
-See [Advanced Usage](doc/Advanced.md) for details.
+See [Advanced Usage](doc/Advanced_Guide) for details.
