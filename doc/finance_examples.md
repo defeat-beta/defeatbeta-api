@@ -21,6 +21,8 @@
   - [9.1 Stock Revenue by segment](#91-stock-revenue-by-segment)
   - [9.2 Stock Revenue by geography](#92-stock-revenue-by-geography)
   - [9.3 Stock Revenue by product](#93-stock-revenue-by-product)
+- [10. Stock TTM Revenue](#10-stock-ttm-revenue)
+- [11. Stock TTM Net Income](#11-stock-ttm-net-income)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
