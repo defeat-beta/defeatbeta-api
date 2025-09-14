@@ -22,7 +22,9 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 ✅ **Extended Financial Data**: Includes [TTM EPS](doc/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/Value_Examples.md#6-stock-historical-peg-ratio), [Earnings call transcripts](doc/Info_Examples.md#3-accessing-earnings-call-transcripts), [Stock News](doc/Info_Examples.md#4-accessing-financial-news), [Revenue by segment](doc/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
 
 ✅ **LLM-Powered Analysis**: [Financial Data Extraction](doc/Transcripts_LLM_Examples.md) — Use Large Language Models (LLMs) to analyze earnings call transcripts and extract key financial data.
- 
+
+See [this documentation](doc/Example_Guide.md) to learn how to use it.
+
 
 ### How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
@@ -40,8 +42,6 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 **Disadvantages compared to yfinance:**
 
 **Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike `yfinance`.
-
-See [this documentation](doc/Example_Guide.md) to learn how to use it.
 
 ## Quickstart
 
