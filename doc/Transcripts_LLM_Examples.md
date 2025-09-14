@@ -35,7 +35,7 @@ llm = OpenAI(
     base_url="https://api.siliconflow.cn/v1"
 )
 
-# Summarize key financial data for Q3 2025
+# Summarize key financial data for Q2 2025 with llm
 res = transcripts.summarize_key_financial_data_with_ai(2025, 2, llm, OpenAIConfiguration())
 print(res.to_string())
 ```
