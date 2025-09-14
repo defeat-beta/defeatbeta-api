@@ -17,7 +17,7 @@ In this step, output the user's question exactly as it is. For example, if the u
 
 ## Step-2 Extract Key Financial Data
 
-Extract the key financial data required for function calling tools based on the earnings call transcript
+Extract the key financial data required for function calling tools based on the earnings call transcript. If a required financial metric is mentioned in the transcript, you MUST always extract it into key_financial_data. Do not skip it.
 
 For Example：
 
@@ -71,14 +71,14 @@ For Example：
   "non_gaap_net_income_for_this_quarter": null,
   "ebitda_for_this_quarter": null,
   "adjusted_ebitda_for_this_quarter": null,
-  "gaap_diluted_earning_per_share_for_this_quarter": {
+  "gaap_diluted_earnings_per_share_for_this_quarter": {
     "value_vocabulary": 0.48,
     "unit": "per_share",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
     "paragraph_number": 4
   },
-  "non_gaap_diluted_earning_per_share_for_this_quarter": null,
+  "non_gaap_diluted_earnings_per_share_for_this_quarter": null,
   "fcf_for_this_quarter": {
     "value_vocabulary": 1200,
     "unit": "million",
@@ -124,7 +124,10 @@ For Example：
     "speaker": "Jean X. Hu",
     "paragraph_number": 4
   },
-  "gaap_earning_per_share_forecast_for_next_quarter": null,
-  "non_gaap_earning_per_share_forecast_for_next_quarter": null,
-  "capex_forecast_for_next_quarter": null
+  "gaap_earnings_per_share_forecast_for_next_quarter": null,
+  "non_gaap_earnings_per_share_forecast_for_next_quarter": null,
+  "capex_forecast_for_next_quarter": null,
+  "total_revenue_forecast_for_full_fiscal_year": null,
+  "gaap_earnings_per_share_forecast_for_full_fiscal_year": null,
+  "non_gaap_earnings_per_share_forecast_for_full_fiscal_year": null
 }

@@ -340,9 +340,9 @@
                   }
                 }
               },
-              "gaap_diluted_earning_per_share_for_this_quarter": {
+              "gaap_diluted_earnings_per_share_for_this_quarter": {
                 "type": ["object", "null"],
-                "description": "Diluted Earnings per share (EPS) for the current quarter, as disclosed in the transcript. This may appear as 'diluted earnings per share' or 'diluted earnings per ADS'. Return null if unavailable.",
+                "description": "GAAP Diluted Earnings per share (EPS) for the current quarter, as disclosed in the transcript. This may appear as 'diluted earnings per share' or 'diluted earnings per ADS'. Return null if unavailable.",
                 "properties": {
                   "value_vocabulary": {
                     "type": "number",
@@ -366,7 +366,7 @@
                   }
                 }
               },
-              "non_gaap_diluted_earning_per_share_for_this_quarter": {
+              "non_gaap_diluted_earnings_per_share_for_this_quarter": {
                 "type": ["object", "null"],
                 "description": "Non-GAAP Diluted Earnings per share (EPS) for the current quarter, as disclosed in the transcript. This may appear as 'Non-GAAP diluted earnings per share' or 'Non-GAAP diluted earnings per ADS'. Return null if unavailable.",
                 "properties": {
@@ -618,9 +618,9 @@
                   }
                 }
               },
-              "gaap_earning_per_share_forecast_for_next_quarter": {
+              "gaap_earnings_per_share_forecast_for_next_quarter": {
                 "type": ["object", "null"],
-                "description": "Earning per share forecast for the next quarter. This may appear as 'earnings per share' or 'earnings per ADS'. Return null if unavailable.",
+                "description": "GAAP Earning per share forecast for the next quarter. This may appear as 'earnings per share' or 'earnings per ADS'. Return null if unavailable.",
                 "properties": {
                   "value_vocabulary": {
                     "type": "number",
@@ -644,7 +644,7 @@
                   }
                 }
               },
-              "non_gaap_earning_per_share_forecast_for_next_quarter": {
+              "non_gaap_earnings_per_share_forecast_for_next_quarter": {
                 "type": ["object", "null"],
                 "description": "Non-GAAP earnings per share forecast for the next quarter. In transcripts, this may appear as 'non-GAAP EPS', 'non-GAAP earnings per share' 'non-GAAP earnings per share', or 'non-GAAP earnings per ADS'. Return null if unavailable.",
                 "properties": {
@@ -695,6 +695,84 @@
                     "description": "Sequential paragraph number in the transcript where this information was mentioned."
                   }
                 }
+              },
+              "total_revenue_forecast_for_full_fiscal_year": {
+                "type": ["object", "null"],
+                "description": "Total revenue forecast for the full fiscal year (FY) as a single numerical value. Return null if unavailable.",
+                "properties": {
+                  "value_vocabulary": {
+                    "type": "number",
+                    "description": "Numerical value extracted from transcript. Can be positive or negative. For example: -3.8, 1.8, 7.4.. If a range is provided (min/max), return the midpoint as the value."
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "Magnitude unit of the number, e.g., million, billion, thousand"
+                  },
+                  "currency_code": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code, e.g., USD, CNY, EUR"
+                  },
+                  "speaker": {
+                    "type": "string",
+                    "description": "Name or role of the speaker who provided this number in the transcript, e.g., 'CFO', 'CEO', or 'John Smith'."
+                  },
+                  "paragraph_number": {
+                    "type": "number",
+                    "description": "The sequential number of the paragraph in the transcript where this information was mentioned. Useful for traceability."
+                  }
+                }
+              },
+              "gaap_earnings_per_share_forecast_for_full_fiscal_year": {
+                "type": ["object", "null"],
+                "description": "GAAP Earning per share forecast for the full fiscal year (FY). Return null if unavailable.",
+                "properties": {
+                  "value_vocabulary": {
+                    "type": "number",
+                    "description": "Numerical value extracted from transcript. Can be positive or negative. For example: -3.8, 1.8, 7.4.. If a range is provided (min/max), return the midpoint as the value."
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "Always use 'per_share' to indicate EPS is measured per share."
+                  },
+                  "currency_code": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code, e.g., USD, CNY, EUR"
+                  },
+                  "speaker": {
+                    "type": "string",
+                    "description": "Name or role of the speaker who provided this number in the transcript, e.g., 'CFO', 'CEO', or 'John Smith'."
+                  },
+                  "paragraph_number": {
+                    "type": "number",
+                    "description": "The sequential number of the paragraph in the transcript where this information was mentioned. Useful for traceability."
+                  }
+                }
+              },
+              "non_gaap_earnings_per_share_forecast_for_full_fiscal_year": {
+                "type": ["object", "null"],
+                "description": "Non-GAAP earnings per share forecast for the full fiscal year (FY). Return null if unavailable.",
+                "properties": {
+                  "value_vocabulary": {
+                    "type": "number",
+                    "description": "Numerical value extracted from transcript. Can be positive or negative. For example: -3.8, 1.8, 7.4.. If a range is provided (min/max), return the midpoint as the value."
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "Always use 'per_share' to indicate EPS is measured per share."
+                  },
+                  "currency_code": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code, e.g., USD, CNY, EUR"
+                  },
+                  "speaker": {
+                    "type": "string",
+                    "description": "Name or role of the speaker who provided this number in the transcript, e.g., 'CFO', 'CEO', or 'John Smith'."
+                  },
+                  "paragraph_number": {
+                    "type": "number",
+                    "description": "The sequential number of the paragraph in the transcript where this information was mentioned. Useful for traceability."
+                  }
+                }
               }
             },
             "required": [
@@ -711,8 +789,8 @@
               "non_gaap_net_income_for_this_quarter",
               "ebitda_for_this_quarter",
               "adjusted_ebitda_for_this_quarter",
-              "gaap_diluted_earning_per_share_for_this_quarter",
-              "non_gaap_diluted_earning_per_share_for_this_quarter",
+              "gaap_diluted_earnings_per_share_for_this_quarter",
+              "non_gaap_diluted_earnings_per_share_for_this_quarter",
               "fcf_for_this_quarter",
               "total_cash_position_for_this_quarter",
               "share_repurchase_for_this_quarter",
@@ -722,9 +800,12 @@
               "non_gaap_gross_margin_forecast_for_next_quarter",
               "gaap_operating_expense_forecast_for_next_quarter",
               "non_gaap_operating_expense_forecast_for_next_quarter",
-              "gaap_earning_per_share_forecast_for_next_quarter",
-              "non_gaap_earning_per_share_forecast_for_next_quarter",
-              "capex_forecast_for_next_quarter"
+              "gaap_earnings_per_share_forecast_for_next_quarter",
+              "non_gaap_earnings_per_share_forecast_for_next_quarter",
+              "capex_forecast_for_next_quarter",
+              "total_revenue_forecast_for_full_fiscal_year",
+              "gaap_earnings_per_share_forecast_for_full_fiscal_year",
+              "non_gaap_earnings_per_share_forecast_for_full_fiscal_year"
             ]
           }
         },

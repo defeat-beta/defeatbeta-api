@@ -2,7 +2,7 @@ class OpenAIConfiguration:
     def __init__(
             self,
             model="Qwen/Qwen3-8B",
-            temperature=0.01,
+            temperature=0.02,
             top_p=0.95,
             stream=False
     ):
