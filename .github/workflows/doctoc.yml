@@ -8,6 +8,7 @@ on:
       - '../../doc/Growth_Examples.md'
       - '../../doc/Value_Examples.md'
       - '../../doc/Info_Examples.md'
+      - '../../doc/Transcripts_LLM_Examples.md'
 
 jobs:
   doctoc:
