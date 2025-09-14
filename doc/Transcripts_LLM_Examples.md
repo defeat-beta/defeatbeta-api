@@ -14,8 +14,9 @@ Below is an example demonstrating how to fetch key financial metrics from earnin
 
 ```python
 import logging
-from ticker import Ticker
 from openai import OpenAI
+from defeatbeta_api.data.ticker import Ticker
+from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 
 # Initialize the Ticker with a proxy and debug logging
 ticker = Ticker("AMD", log_level=logging.DEBUG)
