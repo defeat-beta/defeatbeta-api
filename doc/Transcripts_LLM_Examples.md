@@ -73,6 +73,8 @@ print(res.to_string())
 26    AMD         2025               2        None             None                       capex_forecast_for_next_quarter           NaN          None
 ```
 
+---
+
 > [!IMPORTANT]
 > For key financial metrics labeled as `xxx_forecast_for_next_quarter`, the original text often provides a forecast range for the next quarter. In such cases, the model will output the midpoint of that range. Note that this value may not be explicitly stated in the transcripts.
 > 
