@@ -7,7 +7,11 @@
 ## Prerequisites
 To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`). 
 
-Testing has shown that even free, small-parameter models can deliver excellent results. You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing). Larger models generally offer improved performance, and you can apply for APIs from OpenAI, DeepSeek, or Gemini based on your needs.
+Our tests show that even free, small-parameter models can deliver excellent results.
+
+> [!NOTE]
+> You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing).
+> For higher accuracy and performance, consider using larger models from [OpenAI](https://openai.com/index/openai-api/), [DeepSeek](https://api-docs.deepseek.com/), [QWen](https://qwen.ai/apiplatform), or [Gemini](https://ai.google.dev/gemini-api/docs).
 
 ## Example Code
 Below is an example demonstrating how to fetch key financial metrics from earnings call transcripts using LLM model.
