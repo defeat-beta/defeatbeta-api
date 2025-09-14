@@ -1,5 +1,5 @@
 # Example: Using LLM for Earnings Call Transcript Analysis
-> [!TIP]
+> [!NOTE]
 > Imagine reading a lengthy earnings call transcript to extract key data mentioned by the CEO, CFO, or analysts, which could take at least 10 minutes. Using an LLM, this can be done in just a few seconds.
 > 
 > This document provides an example of how to use the large language model to summarize key financial data from earnings call transcripts.
