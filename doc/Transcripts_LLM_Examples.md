@@ -40,7 +40,6 @@ res = transcripts.summarize_key_financial_data_with_ai(2025, 2, llm, OpenAIConfi
 print(res.to_string())
 ```
 
-Result:
 ---
 
 ```text
@@ -73,6 +72,9 @@ Result:
 25    AMD         2025               2        None             None  non_gaap_earning_per_share_forecast_for_next_quarter           NaN          None
 26    AMD         2025               2        None             None                       capex_forecast_for_next_quarter           NaN          None
 ```
+
+> [!IMPORTANT]
+> Please note: For key financial metrics labeled as "xxx_forecast_for_next_quarter", the original text often provides a forecast range for the next quarter. In such cases, I instruct LLMs to return the midpoint value, meaning these figures may not be explicitly stated in the original text. However, metrics labeled as "xxx_for_this_quarter" are always directly extracted from the original source. Currently, using "Qwen/Qwen3-8B" achieves 100% accuracy for this process.
 
 ## Supported LLM Models
 This feature leverages the function-calling capabilities of large language models, so it requires a model with this functionality to work successfully. Fortunately, most large language models support this feature.
