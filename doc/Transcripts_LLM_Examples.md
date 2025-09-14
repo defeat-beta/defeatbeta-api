@@ -9,7 +9,7 @@ To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`).
 
 Our tests show that even free, small-parameter models can deliver excellent results.
 
-> [!TIPS]
+> [!TIP]
 > You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing).
 > For higher accuracy and performance, consider using larger models from [OpenAI](https://openai.com/index/openai-api/), [DeepSeek](https://api-docs.deepseek.com/), [QWen](https://qwen.ai/apiplatform), or [Gemini](https://ai.google.dev/gemini-api/docs).
 
