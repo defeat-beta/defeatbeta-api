@@ -1,5 +1,8 @@
 Change Log
 ===========
+0.0.16
+-------
+
 0.0.15
 -------
 - AI-Powered Earnings Call Transcripts - Optimize summarize_key_financial_data_with_ai func[`#47 <https://github.com/defeat-beta/defeatbeta-api/issues/47>`_]
