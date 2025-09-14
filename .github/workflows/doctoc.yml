@@ -37,4 +37,5 @@ jobs:
           git config --global user.email "actions@github.com"
           git add doc/*.md
           git commit -m "docs: Auto-update TOC for Markdown files [skip ci]"
+          git checkout "${GITHUB_REF#refs/heads/}"
           git push
