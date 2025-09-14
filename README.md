@@ -41,6 +41,8 @@ An open-source alternative to Yahoo Finance's market data APIs with higher relia
 
 **Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike `yfinance`.
 
+See [this documentation](doc/Example_Guide.md) to learn how to use it.
+
 ## Quickstart
 
 The list of changes can be found in the [Changelog](CHANGELOG.rst)
