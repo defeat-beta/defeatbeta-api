@@ -1,5 +1,8 @@
 Change Log
 ===========
+0.0.17
+-------
+
 0.0.16
 -------
 - AI-Powered Earnings Call Transcripts - Optimize default llm's temperature[`#49 <https://github.com/defeat-beta/defeatbeta-api/issues/49>`_]
