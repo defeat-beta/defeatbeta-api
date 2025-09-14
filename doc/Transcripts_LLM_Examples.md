@@ -5,7 +5,7 @@
 > This document provides an example of how to use the large language model to summarize key financial data from earnings call transcripts.
 
 ## Prerequisites
-To run this example, you need: An OpenAI-compatible API key (OPEN_AI_API_KEY). 
+To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`). 
 
 Testing has shown that even free, small-parameter models can deliver excellent results. You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing). Larger models generally offer improved performance, and you can apply for APIs from OpenAI, DeepSeek, or Gemini based on your needs.
 
