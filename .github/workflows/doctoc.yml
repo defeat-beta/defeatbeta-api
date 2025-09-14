@@ -17,41 +17,24 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
 
-      - name: 切换到触发分支
-        run: git checkout ${GITHUB_REF_NAME}
-
-      - name: 安装 doctoc
+      - name: Install doctoc
         run: npm install -g doctoc
 
-      - name: 更新所有 Markdown 文件的目录
+      - name: Update TOC for all Markdown files
         id: toc
         run: |
-          # 更新 doc/ 目录下所有 Markdown 文件的目录
+          # Update TOC for Example.md and all Markdown files in subdirectories
           find doc -type f -name "*.md" -exec doctoc {} \;
-          # 统计修改的文件数
+          # Check if any Markdown files were modified
           modified=$(git status --porcelain doc/*.md | wc -l)
           echo "modified=$modified" >> $GITHUB_OUTPUT
 
-      - name: 提交变更
+      - name: Commit changes
         if: steps.toc.outputs.modified != '0'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add doc/*.md
-
-          # 如果没有待提交的变更，则跳过
-          if git diff --cached --quiet; then
-            echo "没有需要提交的变更。"
-            exit 0
-          fi
-
           git commit -m "docs: Auto-update TOC for Markdown files [skip ci]"
-
-          # 推送到触发工作流的分支
-          branch="${GITHUB_REF_NAME}"
-          echo "推送变更到分支: $branch"
-          git push origin $branch
+          git push
