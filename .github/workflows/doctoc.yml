@@ -19,6 +19,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Install doctoc
         run: npm install -g doctoc
@@ -26,7 +28,7 @@ jobs:
       - name: Update TOC for all Markdown files
         id: toc
         run: |
-          # Update TOC for Example.md and all Markdown files in subdirectories
+          # Update TOC for all Markdown files under doc/
           find doc -type f -name "*.md" -exec doctoc {} \;
           # Check if any Markdown files were modified
           modified=$(git status --porcelain doc/*.md | wc -l)
@@ -39,4 +41,4 @@ jobs:
           git config --global user.email "actions@github.com"
           git add doc/*.md
           git commit -m "docs: Auto-update TOC for Markdown files [skip ci]"
-          git push
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
