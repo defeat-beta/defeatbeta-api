@@ -73,12 +73,12 @@ This feature leverages the function-calling capabilities of large language model
 
 Currently supported models include:
 
-| Series       | Models                                                                                                                                                                                                                                            |
-|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Deepseek** | deepseek-ai/DeepSeek-R1  <br> deepseek-ai/DeepSeek-V3  <br> deepseek-ai/DeepSeek-R1-Distill-Qwen-32B  <br> deepseek-ai/DeepSeek-R1-Distill-Qwen-14B  <br> deepseek-ai/DeepSeek-R1-Distill-Qwen-7B  <br> deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B |
-| **Qwen**     | Qwen/Qwen2.5-72B-Instruct  <br> Qwen/Qwen2.5-32B-Instruct  <br> Qwen/Qwen2.5-14B-Instruct  <br> Qwen/Qwen2.5-7B-Instruct <br> Qwen/Qwen3-8B                                                                                                       |
-| **OpenAI**   | GPT-3.5 Series  <br> GPT-4 Series                                                                                                                                                                                                                 |
-| **Gemini**   | Gemini 2.5 Pro  <br> Gemini 2.5 Flash  <br> Gemini 2.5 Flash-Lite  <br> Gemini 2.0 Flash  <br> Gemini 2.0 Flash-Lite                                                                                                                              |
+| Series       | Models                                                                                                                                                                                       |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **DeepSeek** | DeepSeek-V3, DeepSeek-V3.1, DeepSeek-R1-0528, DeepSeek-R1 (partial environments)                                                                                                             |
+| **Qwen**     | Qwen-2.5 (e.g., Qwen-2.5-7B), Qwen-Plus, Qwen-Max, Qwen-Flash, Qwen-Turbo, Qwen3                                                                                                             |
+| **OpenAI**   | GPT-4 series (e.g., gpt-4, gpt-4o), o3, o3-mini, o4-mini, gpt-oss-20B, gpt-oss-120B                                                                                                          |
+| **Gemini**   | Gemini 2.5 Flash-Lite, Gemini 2.5 Flash + Live API, Gemini 2.0 Flash + Live API, Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 1.5 Pro, Gemini 1.5 Flash |
 
 ## Configuration
 Below is an example of how to set up the OpenAIConfiguration class for fine-tuned control.
