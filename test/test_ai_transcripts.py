@@ -9,7 +9,7 @@ from openai import OpenAI
 class TestAITranscripts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("AMD", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
+        cls.ticker = Ticker("NVDA", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
 
         key = Path(__file__).parent.joinpath("siliconflow_api.key").read_text(encoding="utf-8")
         cls.llm = OpenAI(
@@ -24,5 +24,9 @@ class TestAITranscripts(unittest.TestCase):
 
     def test_summarize_key_financial_data_with_ai(self):
         transcripts = self.ticker.earning_call_transcripts()
-        res = transcripts.summarize_key_financial_data_with_ai(2025, 2, self.llm, OpenAIConfiguration())
+        res = transcripts.summarize_key_financial_data_with_ai(
+            2026,
+            2,
+            self.llm,
+            OpenAIConfiguration(model='Qwen/Qwen3-8B', temperature=0))
         print(res.to_string())
