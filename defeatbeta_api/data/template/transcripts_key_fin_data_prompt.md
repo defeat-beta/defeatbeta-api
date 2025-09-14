@@ -23,28 +23,28 @@ For Example：
 
 {
   "total_revenue_for_this_quarter": {
-    "value_vocabulary": 7.7,
+    "value_vocabulary": x.x,
     "unit": "billion",
     "currency_code": "USD",
     "speaker": "Lisa T. Su",
     "paragraph_number": 3
   },
   "gaap_gross_margin_for_this_quarter": {
-    "value_vocabulary": 43,
+    "value_vocabulary": x,
     "unit": "%",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
     "paragraph_number": 4
   },
   "non_gaap_gross_margin_for_this_quarter": {
-    "value_vocabulary": 54,
+    "value_vocabulary": x,
     "unit": "%",
     "currency_code": "USD",
     "speaker": "Lisa T. Su",
     "paragraph_number": 3
   },
   "gaap_operating_expense_for_this_quarter": {
-    "value_vocabulary": 2400,
+    "value_vocabulary": x.x,
     "unit": "million",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
@@ -52,7 +52,7 @@ For Example：
   },
   "non_gaap_operating_expense_for_this_quarter": null,
   "gaap_operating_income_for_this_quarter": {
-    "value_vocabulary": 897,
+    "value_vocabulary": x,
     "unit": "million",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
@@ -60,7 +60,7 @@ For Example：
   },
   "non_gaap_operating_income_for_this_quarter": null,
   "gaap_operating_income_margin_for_this_quarter": {
-    "value_vocabulary": 12,
+    "value_vocabulary": x,
     "unit": "%",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
@@ -72,7 +72,7 @@ For Example：
   "ebitda_for_this_quarter": null,
   "adjusted_ebitda_for_this_quarter": null,
   "gaap_diluted_earnings_per_share_for_this_quarter": {
-    "value_vocabulary": 0.48,
+    "value_vocabulary": x.x,
     "unit": "per_share",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
@@ -80,21 +80,21 @@ For Example：
   },
   "non_gaap_diluted_earnings_per_share_for_this_quarter": null,
   "fcf_for_this_quarter": {
-    "value_vocabulary": 1200,
+    "value_vocabulary": x.x,
     "unit": "million",
     "currency_code": "USD",
     "speaker": "Lisa T. Su",
     "paragraph_number": 3
   },
   "total_cash_position_for_this_quarter": {
-    "value_vocabulary": 5900,
+    "value_vocabulary": x.x,
     "unit": "million",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
     "paragraph_number": 4
   },
   "share_repurchase_for_this_quarter": {
-    "value_vocabulary": 478,
+    "value_vocabulary": x,
     "unit": "million",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
@@ -102,7 +102,7 @@ For Example：
   },
   "capex_for_this_quarter": null,
   "total_revenue_forecast_for_next_quarter": {
-    "value_vocabulary": 8.7,
+    "value_vocabulary": x.x,
     "unit": "billion",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
@@ -110,7 +110,7 @@ For Example：
   },
   "gaap_gross_margin_forecast_for_next_quarter": null,
   "non_gaap_gross_margin_forecast_for_next_quarter": {
-    "value_vocabulary": 54,
+    "value_vocabulary": x,
     "unit": "%",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
@@ -118,7 +118,7 @@ For Example：
   },
   "gaap_operating_expense_forecast_for_next_quarter": null,
   "non_gaap_operating_expense_forecast_for_next_quarter": {
-    "value_vocabulary": 2550,
+    "value_vocabulary": x,
     "unit": "million",
     "currency_code": "USD",
     "speaker": "Jean X. Hu",
