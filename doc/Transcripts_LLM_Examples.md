@@ -78,7 +78,7 @@ print(res.to_string())
 > 
 > In contrast, metrics labeled as `xxx_for_this_quarter` will be extracted directly from the source without any calculation.
 > 
-> If a particular metric is not mentioned in the text, return null for that field.
+> If a metric is not mentioned in the earnings call transcripts, return null for that field.
 
 ## Supported LLM Models
 This feature leverages the function-calling capabilities of large language models, so it requires a model with this functionality to work successfully. Fortunately, most large language models support this feature.
