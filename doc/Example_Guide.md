@@ -10,6 +10,7 @@
 
 
 ---
+## 📊 Stock Evaluation Dimensions
 
 > [!TIP]
 > The project evaluates stocks across several key dimensions:
@@ -25,6 +26,8 @@
 > [Value](Value_Examples.md) includes `ttm-eps`, `ttm-pe`, `historical-market-cap`, `historical-ps-ratio`, `historical-pb-ratio`, `historical-peg-ratio` etc.
 
 ---
+
+## 🤖 LLM-Powered Analysis
 
 > [!TIP]
 > This project also offers the capability to analyze data based on Large Language Models (LLMs).
