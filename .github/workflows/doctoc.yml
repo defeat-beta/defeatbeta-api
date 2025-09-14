@@ -2,7 +2,6 @@ name: Update TOC
 on:
   push:
     paths:
-      - 'doc/Example_Guide.md'
       - 'doc/Finance_Examples.md'
       - 'doc/Profitability_Examples.md'
       - 'doc/Growth_Examples.md'
