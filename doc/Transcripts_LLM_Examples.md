@@ -43,34 +43,37 @@ print(res.to_string())
 ---
 
 ```text
-   symbol  fiscal_year  fiscal_quarter     speaker paragraph_number                                  key_financial_metric         value currency_code
-0     AMD         2025               2  Lisa T. Su                3                        total_revenue_for_this_quarter  7.700000e+09           USD
-1     AMD         2025               2  Jean X. Hu                4                    gaap_gross_margin_for_this_quarter  4.300000e-01           USD
-2     AMD         2025               2  Lisa T. Su                3                non_gaap_gross_margin_for_this_quarter  5.400000e-01           USD
-3     AMD         2025               2  Jean X. Hu                4               gaap_operating_expense_for_this_quarter  2.400000e+09           USD
-4     AMD         2025               2        None             None           non_gaap_operating_expense_for_this_quarter           NaN          None
-5     AMD         2025               2  Jean X. Hu                4                gaap_operating_income_for_this_quarter  8.970000e+08           USD
-6     AMD         2025               2        None             None            non_gaap_operating_income_for_this_quarter           NaN          None
-7     AMD         2025               2  Jean X. Hu                4         gaap_operating_income_margin_for_this_quarter  1.200000e-01           USD
-8     AMD         2025               2        None             None     non_gaap_operating_income_margin_for_this_quarter           NaN          None
-9     AMD         2025               2        None             None                      gaap_net_income_for_this_quarter           NaN          None
-10    AMD         2025               2        None             None                  non_gaap_net_income_for_this_quarter           NaN          None
-11    AMD         2025               2        None             None                               ebitda_for_this_quarter           NaN          None
-12    AMD         2025               2        None             None                      adjusted_ebitda_for_this_quarter           NaN          None
-13    AMD         2025               2  Jean X. Hu                4       gaap_diluted_earning_per_share_for_this_quarter  4.800000e-01           USD
-14    AMD         2025               2        None             None   non_gaap_diluted_earning_per_share_for_this_quarter           NaN          None
-15    AMD         2025               2  Lisa T. Su                3                                  fcf_for_this_quarter  1.200000e+09           USD
-16    AMD         2025               2  Jean X. Hu                4                  total_cash_position_for_this_quarter  5.900000e+09           USD
-17    AMD         2025               2  Jean X. Hu                4                     share_repurchase_for_this_quarter  4.780000e+08           USD
-18    AMD         2025               2        None             None                                capex_for_this_quarter           NaN          None
-19    AMD         2025               2  Jean X. Hu                4               total_revenue_forecast_for_next_quarter  8.700000e+09           USD
-20    AMD         2025               2        None             None           gaap_gross_margin_forecast_for_next_quarter           NaN          None
-21    AMD         2025               2  Jean X. Hu                4       non_gaap_gross_margin_forecast_for_next_quarter  5.400000e-01           USD
-22    AMD         2025               2        None             None      gaap_operating_expense_forecast_for_next_quarter           NaN          None
-23    AMD         2025               2  Jean X. Hu                4  non_gaap_operating_expense_forecast_for_next_quarter  2.550000e+09           USD
-24    AMD         2025               2        None             None      gaap_earning_per_share_forecast_for_next_quarter           NaN          None
-25    AMD         2025               2        None             None  non_gaap_earning_per_share_forecast_for_next_quarter           NaN          None
-26    AMD         2025               2        None             None                       capex_forecast_for_next_quarter           NaN          None
+   symbol  fiscal_year  fiscal_quarter     speaker paragraph_number                  key_financial_metric        time_scope         value currency_code
+0     AMD         2025               2  Lisa T. Su                3                         total_revenue      this_quarter  7.700000e+09           USD
+1     AMD         2025               2  Jean X. Hu                4                     gaap_gross_margin      this_quarter  4.300000e-01           USD
+2     AMD         2025               2  Lisa T. Su                3                 non_gaap_gross_margin      this_quarter  5.400000e-01           USD
+3     AMD         2025               2  Jean X. Hu                4                gaap_operating_expense      this_quarter  2.400000e+09           USD
+4     AMD         2025               2        None             None            non_gaap_operating_expense      this_quarter           NaN          None
+5     AMD         2025               2  Jean X. Hu                4                 gaap_operating_income      this_quarter  8.970000e+08           USD
+6     AMD         2025               2        None             None             non_gaap_operating_income      this_quarter           NaN          None
+7     AMD         2025               2  Jean X. Hu                4          gaap_operating_income_margin      this_quarter  1.200000e-01           USD
+8     AMD         2025               2        None             None      non_gaap_operating_income_margin      this_quarter           NaN          None
+9     AMD         2025               2        None             None                       gaap_net_income      this_quarter           NaN          None
+10    AMD         2025               2        None             None                   non_gaap_net_income      this_quarter           NaN          None
+11    AMD         2025               2        None             None                                ebitda      this_quarter           NaN          None
+12    AMD         2025               2        None             None                       adjusted_ebitda      this_quarter           NaN          None
+13    AMD         2025               2  Jean X. Hu                4       gaap_diluted_earnings_per_share      this_quarter  4.800000e-01           USD
+14    AMD         2025               2        None             None   non_gaap_diluted_earnings_per_share      this_quarter           NaN          None
+15    AMD         2025               2  Lisa T. Su                3                                   fcf      this_quarter  1.200000e+09           USD
+16    AMD         2025               2  Jean X. Hu                4                   total_cash_position      this_quarter  5.900000e+09           USD
+17    AMD         2025               2  Jean X. Hu                4                      share_repurchase      this_quarter  4.780000e+08           USD
+18    AMD         2025               2        None             None                                 capex      this_quarter           NaN          None
+19    AMD         2025               2  Jean X. Hu                4                total_revenue_forecast      next_quarter  8.700000e+09           USD
+20    AMD         2025               2        None             None            gaap_gross_margin_forecast      next_quarter           NaN          None
+21    AMD         2025               2  Jean X. Hu                4        non_gaap_gross_margin_forecast      next_quarter  5.400000e-01           USD
+22    AMD         2025               2        None             None       gaap_operating_expense_forecast      next_quarter           NaN          None
+23    AMD         2025               2  Jean X. Hu                4   non_gaap_operating_expense_forecast      next_quarter  2.550000e+09           USD
+24    AMD         2025               2        None             None      gaap_earnings_per_share_forecast      next_quarter           NaN          None
+25    AMD         2025               2        None             None  non_gaap_earnings_per_share_forecast      next_quarter           NaN          None
+26    AMD         2025               2        None             None                        capex_forecast      next_quarter           NaN          None
+27    AMD         2025               2        None             None                total_revenue_forecast  full_fiscal_year           NaN          None
+28    AMD         2025               2        None             None      gaap_earnings_per_share_forecast  full_fiscal_year           NaN          None
+29    AMD         2025               2        None             None  non_gaap_earnings_per_share_forecast  full_fiscal_year           NaN          None
 ```
 
 ---
