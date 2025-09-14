@@ -2,13 +2,13 @@ name: Update TOC
 on:
   push:
     paths:
-      - '../../doc/Example_Guide.md'
-      - '../../doc/Finance_Examples.md'
-      - '../../doc/Profitability_Examples.md'
-      - '../../doc/Growth_Examples.md'
-      - '../../doc/Value_Examples.md'
-      - '../../doc/Info_Examples.md'
-      - '../../doc/Transcripts_LLM_Examples.md'
+      - 'doc/Example_Guide.md'
+      - 'doc/Finance_Examples.md'
+      - 'doc/Profitability_Examples.md'
+      - 'doc/Growth_Examples.md'
+      - 'doc/Value_Examples.md'
+      - 'doc/Info_Examples.md'
+      - 'doc/Transcripts_LLM_Examples.md'
 
 jobs:
   doctoc:
@@ -18,7 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           persist-credentials: true
 
       - name: Install doctoc
@@ -47,8 +46,4 @@ jobs:
           fi
 
           git commit -m "docs: Auto-update TOC for Markdown files [skip ci]"
-
-          # Push back to the branch that triggered the workflow
-          branch="${GITHUB_REF_NAME}"
-          echo "Pushing changes back to branch: $branch"
-          git push origin HEAD:$branch
+          git push origin ${GITHUB_REF_NAME}
