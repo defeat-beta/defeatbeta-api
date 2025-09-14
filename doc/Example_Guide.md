@@ -3,6 +3,8 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Main Usage Index](#main-usage-index)
+  - [📊 Stock Evaluation Dimensions](#-stock-evaluation-dimensions)
+  - [🤖 LLM-Powered Analysis](#-llm-powered-analysis)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

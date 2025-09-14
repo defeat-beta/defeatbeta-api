@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Example: Using LLM for Earnings Call Transcript Analysis](#example-using-llm-for-earnings-call-transcript-analysis)
+  - [Prerequisites](#prerequisites)
+  - [Example Code](#example-code)
+  - [Supported LLM Models](#supported-llm-models)
+  - [Configuration](#configuration)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Example: Using LLM for Earnings Call Transcript Analysis
 > [!NOTE]
 > Imagine reading a lengthy earnings call transcript to extract key data mentioned by the CEO, CFO, or analysts, which could take at least 10 minutes. Using an LLM, this can be done in just a few seconds.
