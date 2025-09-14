@@ -18,7 +18,7 @@ from openai import OpenAI
 from defeatbeta_api.data.ticker import Ticker
 from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 
-# Initialize the Ticker with a proxy and debug logging
+# Initialize the Ticker with debug logging
 ticker = Ticker("AMD", log_level=logging.DEBUG)
 
 # Fetch earnings call transcripts
