@@ -74,11 +74,11 @@ print(res.to_string())
 ```
 
 > [!IMPORTANT]
-> For key financial metrics labeled as `xxx_forecast_for_next_quarter`, the original text often provides a forecast range for the next quarter. In such cases, the model will output the midpoint of that range. Note that this value may not be explicitly stated in the text.
+> For key financial metrics labeled as `xxx_forecast_for_next_quarter`, the original text often provides a forecast range for the next quarter. In such cases, the model will output the midpoint of that range. Note that this value may not be explicitly stated in the transcripts.
 > 
-> In contrast, metrics labeled as `xxx_for_this_quarter` will be extracted directly from the source without any calculation.
+> In contrast, metrics labeled as `xxx_for_this_quarter` will be extracted directly from the transcripts without any calculation.
 > 
-> If a metric is not mentioned in the earnings call transcripts, return null for that field.
+> If a metric is not mentioned in the transcripts, return null for that field.
 
 ## Supported LLM Models
 This feature leverages the function-calling capabilities of large language models, so it requires a model with this functionality to work successfully. Fortunately, most large language models support this feature.
