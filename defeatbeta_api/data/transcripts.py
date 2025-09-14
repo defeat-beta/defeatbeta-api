@@ -130,13 +130,26 @@ class Transcripts:
                     except Exception as e:
                         raise ValueError(f"Bad value in {k}: {v}, error: {e}")
 
+                metric = k
+                time_scope = "raw"
+                if k.endswith("_for_this_quarter"):
+                    metric = k[: -len("_for_this_quarter")]
+                    time_scope = "this_quarter"
+                elif k.endswith("_for_next_quarter"):
+                    metric = k[: -len("_for_next_quarter")]
+                    time_scope = "next_quarter"
+                elif k.endswith("_for_full_fiscal_year"):
+                    metric = k[: -len("_for_full_fiscal_year")]
+                    time_scope = "full_fiscal_year"
+
                 records.append({
                     "symbol": self.ticker,
                     "fiscal_year": fiscal_year,
                     "fiscal_quarter": fiscal_quarter,
                     "speaker": speaker,
                     "paragraph_number": paragraph_number,
-                    "key_financial_metric": k,
+                    "key_financial_metric": metric,
+                    "time_scope": time_scope,
                     "value": value,
                     "currency_code": currency_code
                 })
