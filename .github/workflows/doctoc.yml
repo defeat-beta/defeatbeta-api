@@ -27,7 +27,9 @@ jobs:
       - name: Update TOC for all Markdown files
         id: toc
         run: |
+          # Update TOC for all Markdown files under doc/
           find doc -type f -name "*.md" -exec doctoc {} \;
+          # Count modified files
           modified=$(git status --porcelain doc/*.md | wc -l)
           echo "modified=$modified" >> $GITHUB_OUTPUT
 
@@ -37,9 +39,16 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add doc/*.md
+
+          # Skip if no staged changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
           git commit -m "docs: Auto-update TOC for Markdown files [skip ci]"
 
+          # Push back to the branch that triggered the workflow
           branch="${GITHUB_REF_NAME}"
           echo "Pushing changes back to branch: $branch"
-
           git push origin HEAD:$branch
