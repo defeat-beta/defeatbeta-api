@@ -119,9 +119,9 @@ class Transcripts:
                 else:
                     try:
                         if v.get("unit") == '%':
-                            value = round((v["value_vocabulary"]) / 100, 4)
+                            value = round(float(v["value_vocabulary"]) / 100, 4)
                         elif v.get("unit") == 'per_share':
-                            value = round((v["value_vocabulary"]), 4)
+                            value = round(float(v["value_vocabulary"]), 4)
                         else:
                             value = float(v["value_vocabulary"]) * unit_map.get(v.get("unit"), 1)
                         currency_code = v.get("currency_code")
