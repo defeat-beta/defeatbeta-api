@@ -32,14 +32,12 @@ For Example：
   "gaap_gross_margin_for_this_quarter": {
     "value_vocabulary": x,
     "unit": "%",
-    "currency_code": "USD",
     "speaker": "Jean X. Hu",
     "paragraph_number": 4
   },
   "non_gaap_gross_margin_for_this_quarter": {
     "value_vocabulary": x,
     "unit": "%",
-    "currency_code": "USD",
     "speaker": "Lisa T. Su",
     "paragraph_number": 3
   },
@@ -62,7 +60,6 @@ For Example：
   "gaap_operating_income_margin_for_this_quarter": {
     "value_vocabulary": x,
     "unit": "%",
-    "currency_code": "USD",
     "speaker": "Jean X. Hu",
     "paragraph_number": 4
   },
@@ -124,6 +121,8 @@ For Example：
     "speaker": "Jean X. Hu",
     "paragraph_number": 4
   },
+  "ebitda_forecast_for_next_quarter": null,
+  "adjusted_ebitda_forecast_for_next_quarter": null,
   "gaap_earnings_per_share_forecast_for_next_quarter": null,
   "non_gaap_earnings_per_share_forecast_for_next_quarter": null,
   "capex_forecast_for_next_quarter": null,
