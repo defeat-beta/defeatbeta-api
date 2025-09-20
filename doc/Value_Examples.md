@@ -8,6 +8,7 @@
 - [4. Stock Historical PS Ratio](#4-stock-historical-ps-ratio)
 - [5. Stock Historical PB Ratio](#5-stock-historical-pb-ratio)
 - [6. Stock Historical PEG Ratio](#6-stock-historical-peg-ratio)
+- [7. Stock Historical ROE](#7-stock-historical-roe)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
