@@ -159,3 +159,28 @@ ticker.peg_ratio()
 
 [352 rows x 9 columns]
 ```
+
+## 7. Stock Historical ROE
+```markdown
+ending_stockholders_equity   = stockholders_equity at the end of the current quarter
+
+beginning_stockholders_equity = stockholders_equity at the beginning of the current quarter (i.e., stockholders_equity from the prior quarter)
+
+avg_equity                   = (beginning_stockholders_equity + ending_stockholders_equity) / 2
+
+roe                          = net_income_common_stockholders / avg_equity
+```
+```python
+ticker.roe()
+```
+```text
+  report_date  net_income_common_stockholders  beginning_stockholders_equity  ending_stockholders_equity    avg_equity     roe
+0  2023-09-30                    1.851000e+09                   5.113000e+10                5.346600e+10  5.229800e+10  0.0354
+1  2023-12-31                    7.927000e+09                   5.346600e+10                6.263400e+10  5.805000e+10  0.1366
+2  2024-03-31                    1.432000e+09                   6.263400e+10                6.437800e+10  6.350600e+10  0.0225
+3  2024-06-30                    1.400000e+09                   6.437800e+10                6.646800e+10  6.542300e+10  0.0214
+4  2024-09-30                    2.167000e+09                   6.646800e+10                6.993100e+10  6.819950e+10  0.0318
+5  2024-12-31                    2.314000e+09                   6.993100e+10                7.291300e+10  7.142200e+10  0.0324
+6  2025-03-31                    4.090000e+08                   7.291300e+10                7.465300e+10  7.378300e+10  0.0055
+7  2025-06-30                    1.172000e+09                   7.465300e+10                7.731400e+10  7.598350e+10  0.0154
+```
