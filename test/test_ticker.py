@@ -233,3 +233,7 @@ class TestTicker(unittest.TestCase):
     def test_roe(self):
         result = self.ticker.roe()
         print(result.to_string())
+
+    def test_roa(self):
+        result = self.ticker.roa()
+        print(result.to_string())
