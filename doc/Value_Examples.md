@@ -163,13 +163,13 @@ ticker.peg_ratio()
 
 ## 7. Stock Historical ROE
 ```markdown
-ending_stockholders_equity   = stockholders_equity at the end of the current quarter
+ending_stockholders_equity    = stockholders_equity at the end of the current quarter
 
 beginning_stockholders_equity = stockholders_equity at the beginning of the current quarter (i.e., stockholders_equity from the prior quarter)
 
-avg_equity                   = (beginning_stockholders_equity + ending_stockholders_equity) / 2
+avg_equity                    = (beginning_stockholders_equity + ending_stockholders_equity) / 2
 
-roe                          = net_income_common_stockholders / avg_equity
+roe                           = net_income_common_stockholders / avg_equity
 ```
 ```python
 ticker.roe()
@@ -184,4 +184,29 @@ ticker.roe()
 5  2024-12-31                    2.314000e+09                   6.993100e+10                7.291300e+10  7.142200e+10  0.0324
 6  2025-03-31                    4.090000e+08                   7.291300e+10                7.465300e+10  7.378300e+10  0.0055
 7  2025-06-30                    1.172000e+09                   7.465300e+10                7.731400e+10  7.598350e+10  0.0154
+```
+
+## 8. Stock Historical ROA
+```markdown
+ending_total_assets    = total_assets at the end of the current quarter
+
+beginning_total_assets = total_assets at the beginning of the current quarter (i.e., total_assets from the prior quarter)
+
+avg_assets             = (beginning_total_assets + ending_total_assets) / 2
+
+roa                    = net_income_common_stockholders / avg_assets
+```
+```python
+ticker.roa()
+```
+```text
+  report_date  net_income_common_stockholders  beginning_total_assets  ending_total_assets    avg_assets     roa
+0  2023-09-30                    1.851000e+09            9.059100e+10         9.394100e+10  9.226600e+10  0.0201
+1  2023-12-31                    7.927000e+09            9.394100e+10         1.066180e+11  1.002795e+11  0.0790
+2  2024-03-31                    1.432000e+09            1.066180e+11         1.092260e+11  1.079220e+11  0.0133
+3  2024-06-30                    1.400000e+09            1.092260e+11         1.128320e+11  1.110290e+11  0.0126
+4  2024-09-30                    2.167000e+09            1.128320e+11         1.198520e+11  1.163420e+11  0.0186
+5  2024-12-31                    2.314000e+09            1.198520e+11         1.220700e+11  1.209610e+11  0.0191
+6  2025-03-31                    4.090000e+08            1.220700e+11         1.251110e+11  1.235905e+11  0.0033
+7  2025-06-30                    1.172000e+09            1.251110e+11         1.285670e+11  1.268390e+11  0.0092
 ```
