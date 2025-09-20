@@ -402,4 +402,4 @@ news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
 
 ### Advanced Usage
 
-See [Advanced Usage](doc/Advanced_Guide) for details.
+See [Advanced Usage](doc/Advanced_Guide.md) for details.
