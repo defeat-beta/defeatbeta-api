@@ -229,3 +229,7 @@ class TestTicker(unittest.TestCase):
     def test_quarterly_book_value_of_equity(self):
         result = self.ticker._quarterly_book_value_of_equity()
         print(result.to_string())
+
+    def test_roe(self):
+        result = self.ticker.roe()
+        print(result.to_string())

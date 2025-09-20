@@ -1,5 +1,9 @@
 Change Log
 ===========
+0.0.18
+-------
+- Support ROE %[`#8 <https://github.com/defeat-beta/defeatbeta-api/issues/8>`_]
+
 0.0.17
 -------
 - AI-Powered Earnings Call Transcripts - Optimize summarize_key_financial_data_with_ai func's prompt for improvement in accuracy[`#50 <https://github.com/defeat-beta/defeatbeta-api/issues/50>`_]
