@@ -44,7 +44,7 @@ transcripts = ticker.earning_call_transcripts()
 # Configure the OpenAI client
 llm = OpenAI(
     api_key="OPEN_AI_API_KEY",  # Replace with your OPEN_AI_API_KEY
-    base_url="https://api.siliconflow.cn/v1"
+    base_url="OPEN_AI_API_END_POINT"  # Replace with your OPEN_AI_API_END_POINT
 )
 
 # Summarize key financial data for Q2 2025 with llm
