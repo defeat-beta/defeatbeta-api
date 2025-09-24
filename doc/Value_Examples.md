@@ -211,3 +211,33 @@ ticker.roa()
 6  2025-03-31                    4.090000e+08            1.220700e+11         1.251110e+11  1.235905e+11  0.0033
 7  2025-06-30                    1.172000e+09            1.251110e+11         1.285670e+11  1.268390e+11  0.0092
 ```
+
+## 9. Stock Historical ROIC
+```markdown
+[!WARN] ROIC % does not apply to banks.
+
+nopat                      = ebit * (1 - tax_rate_for_calcs) (ref net pperating profit after tax)
+
+ending_invested_capital    = invested_capital at the end of the current quarter
+
+beginning_invested_capital = invested_capital at the beginning of the current quarter (i.e., invested_capital from the prior quarter)
+
+avg_invested_capital       = (beginning_invested_capital + ending_invested_capital) / 2
+
+roic                       = ebit / avg_invested_capital
+```
+```python
+ticker.roic()
+```
+```text
+  report_date          ebit  tax_rate_for_calcs         nopat  beginning_invested_capital  ending_invested_capital  avg_invested_capital    roic
+0  2022-09-30           NaN                 NaN           NaN                3.952800e+10                      NaN                   NaN     NaN
+1  2023-09-30  2.083000e+09                0.08  1.916360e+09                5.264900e+10             5.717000e+10          5.490950e+10  0.0349
+2  2023-12-31  2.252000e+09                0.21  1.779080e+09                5.717000e+10             6.729100e+10          6.223050e+10  0.0286
+3  2024-03-31  1.964000e+09                0.26  1.453360e+09                6.729100e+10             6.925200e+10          6.827150e+10  0.0213
+4  2024-06-30  1.873000e+09                0.21  1.479670e+09                6.925200e+10             7.383000e+10          7.154100e+10  0.0207
+5  2024-09-30  2.876000e+09                0.22  2.243280e+09                7.383000e+10             7.732100e+10          7.557550e+10  0.0297
+6  2024-12-31  2.862000e+09                0.16  2.404080e+09                7.732100e+10             8.079100e+10          7.905600e+10  0.0304
+7  2025-03-31  6.800000e+08                0.29  4.828000e+08                8.079100e+10             8.189700e+10          8.134400e+10  0.0059
+8  2025-06-30  1.635000e+09                0.23  1.258950e+09                8.189700e+10             8.427000e+10          8.308350e+10  0.0152
+```
