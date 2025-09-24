@@ -10,6 +10,7 @@
 - [6. Stock Historical PEG Ratio](#6-stock-historical-peg-ratio)
 - [7. Stock Historical ROE](#7-stock-historical-roe)
 - [8. Stock Historical ROA](#8-stock-historical-roa)
+- [9. Stock Historical ROIC](#9-stock-historical-roic)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
