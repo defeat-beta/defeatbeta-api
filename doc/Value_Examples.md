@@ -251,7 +251,7 @@ ticker.roic()
 The DuPont Analysis allows us to derive that the Equity Multiplier is equal to `ROE / ROA`, based on its definitional formula.
 
 $$
-\text{Equity Multiplier} = \frac{\text{avg_assets}}{\text{avg_equity}} = \frac{\text{net_income}}{\text{avg_equity}} \times \frac{\text{avg_assets}}{\text{net_income}} = \text{ROE} \times \frac{1}{\text{ROA}} = \frac{\text{ROE}}{\text{ROA}}
+Equity\ Multiplier = \frac{avg\ assets}{avg\ equity} = \frac{net\ income}{avg\ equity} \times \frac{avg\ assets}{net\ income} = ROE \times \frac{1}{ROA} = \frac{ROE}{ROA}
 $$
 
 ```python
