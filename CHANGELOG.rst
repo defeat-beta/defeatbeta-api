@@ -5,6 +5,7 @@ Change Log
 - Support ROE %[`#8 <https://github.com/defeat-beta/defeatbeta-api/issues/8>`_]
 - Support ROA %[`#51 <https://github.com/defeat-beta/defeatbeta-api/issues/51>`_]
 - Support ROIC %[`#9 <https://github.com/defeat-beta/defeatbeta-api/issues/9>`_]
+- Support Equity Multiplier[`#55 <https://github.com/defeat-beta/defeatbeta-api/issues/55>`_]
 
 0.0.17
 -------

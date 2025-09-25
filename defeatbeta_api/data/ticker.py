@@ -1172,6 +1172,31 @@ class Ticker:
         ]]
         return result_df
 
+    def equity_multiplier(self) -> pd.DataFrame:
+        roe = self.roe()
+        roa = self.roa()
+
+        roe['report_date'] = pd.to_datetime(roe['report_date'])
+        roa['report_date'] = pd.to_datetime(roa['report_date'])
+
+        result_df = pd.merge_asof(
+            roe.sort_values('report_date'),
+            roa.sort_values('report_date'),
+            left_on='report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['equity_multiplier'] = round(result_df['roe'] / result_df['roa'], 2)
+
+        result_df = result_df[[
+            'report_date',
+            'roe',
+            'roa',
+            'equity_multiplier'
+        ]]
+        return result_df
+
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
         sql = f"""
