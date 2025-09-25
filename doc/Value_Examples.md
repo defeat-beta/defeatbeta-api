@@ -242,3 +242,28 @@ ticker.roic()
 7  2025-03-31  6.800000e+08                0.29  4.828000e+08                8.079100e+10             8.189700e+10          8.134400e+10  0.0059
 8  2025-06-30  1.635000e+09                0.23  1.258950e+09                8.189700e+10             8.427000e+10          8.308350e+10  0.0152
 ```
+
+## 10. Stock Historical Equity Multiplier
+
+[!WARN] Equity Multiplier does not apply to banks.
+
+The DuPont Analysis allows us to derive that the Equity Multiplier is equal to `ROE / ROA`, based on its definitional formula.
+
+$$
+Equity\ Multiplier = \frac{avg\_assets}{\text{avg_equity}} = \frac{net\_income}{avg\_equity} \times \frac{avg\_assets}{net\_income} = ROE \times \frac{1}{ROA} = \frac{ROE}{ROA}
+$$
+
+```python
+ticker.equity_multiplier()
+```
+```text
+  report_date     roe     roa  equity_multiplier
+0  2023-09-30  0.0354  0.0201               1.76
+1  2023-12-31  0.1366  0.0790               1.73
+2  2024-03-31  0.0225  0.0133               1.69
+3  2024-06-30  0.0214  0.0126               1.70
+4  2024-09-30  0.0318  0.0186               1.71
+5  2024-12-31  0.0324  0.0191               1.70
+6  2025-03-31  0.0055  0.0033               1.67
+7  2025-06-30  0.0154  0.0092               1.67
+```

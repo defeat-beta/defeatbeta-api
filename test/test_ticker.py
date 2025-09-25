@@ -241,3 +241,7 @@ class TestTicker(unittest.TestCase):
     def test_roic(self):
         result = self.ticker.roic()
         print(result.to_string())
+
+    def test_equity_multiplier(self):
+        result = self.ticker.equity_multiplier()
+        print(result.to_string())
