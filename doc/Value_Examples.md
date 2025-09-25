@@ -11,6 +11,7 @@
 - [7. Stock Historical ROE](#7-stock-historical-roe)
 - [8. Stock Historical ROA](#8-stock-historical-roa)
 - [9. Stock Historical ROIC](#9-stock-historical-roic)
+- [10. Stock Historical Equity Multiplier](#10-stock-historical-equity-multiplier)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
