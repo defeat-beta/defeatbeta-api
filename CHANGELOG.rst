@@ -1,5 +1,8 @@
 Change Log
 ===========
+0.0.19
+-------
+
 0.0.18
 -------
 - Support ROE %[`#8 <https://github.com/defeat-beta/defeatbeta-api/issues/8>`_]
