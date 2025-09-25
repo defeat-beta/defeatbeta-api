@@ -268,3 +268,27 @@ ticker.equity_multiplier()
 6  2025-03-31  0.0055  0.0033               1.67
 7  2025-06-30  0.0154  0.0092               1.67
 ```
+
+## 11. Stock Historical Assert Turnover
+
+The DuPont Analysis allows us to derive that the Assert Turnover is equal to `ROA / Net Margin`, based on its definitional formula.
+
+$$
+Assert\ Turnover = \frac{total\ revenue}{avg\ assert} = \frac{net\ income}{avg\ assert} \times \frac{total\ revenue}{net\ income} = ROA \times \frac{1}{Net\ Margin} = \frac{ROA}{Net\ Margin}
+$$
+
+```python
+ticker.asset_turnover()
+```
+
+```text
+  report_date     roa  net_margin  asset_turnover
+0  2023-09-30  0.0201      0.0793            0.25
+1  2023-12-31  0.0790      0.3150            0.25
+2  2024-03-31  0.0133      0.0672            0.20
+3  2024-06-30  0.0126      0.0549            0.23
+4  2024-09-30  0.0186      0.0861            0.22
+5  2024-12-31  0.0191      0.0900            0.21
+6  2025-03-31  0.0033      0.0212            0.16
+7  2025-06-30  0.0092      0.0521            0.18
+```

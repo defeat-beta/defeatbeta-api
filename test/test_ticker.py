@@ -245,3 +245,7 @@ class TestTicker(unittest.TestCase):
     def test_equity_multiplier(self):
         result = self.ticker.equity_multiplier()
         print(result.to_string())
+
+    def test_asset_turnover(self):
+        result = self.ticker.asset_turnover()
+        print(result.to_string())
