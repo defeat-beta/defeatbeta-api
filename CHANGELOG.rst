@@ -6,6 +6,7 @@ Change Log
 - Support ROA %[`#51 <https://github.com/defeat-beta/defeatbeta-api/issues/51>`_]
 - Support ROIC %[`#9 <https://github.com/defeat-beta/defeatbeta-api/issues/9>`_]
 - Support Equity Multiplier[`#55 <https://github.com/defeat-beta/defeatbeta-api/issues/55>`_]
+- Support Asset Turnover[`#57 <https://github.com/defeat-beta/defeatbeta-api/issues/57>`_]
 
 0.0.17
 -------

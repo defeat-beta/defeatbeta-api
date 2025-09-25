@@ -1197,6 +1197,32 @@ class Ticker:
         ]]
         return result_df
 
+    def asset_turnover(self) -> pd.DataFrame:
+        roa = self.roa()
+        quarterly_net_margin = self.quarterly_net_margin()
+
+        roa['report_date'] = pd.to_datetime(roa['report_date'])
+        quarterly_net_margin['report_date'] = pd.to_datetime(quarterly_net_margin['report_date'])
+
+        result_df = pd.merge_asof(
+            roa.sort_values('report_date'),
+            quarterly_net_margin.sort_values('report_date'),
+            left_on='report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['asset_turnover'] = round(result_df['roa'] / result_df['net_margin'], 2)
+
+        result_df = result_df[[
+            'report_date',
+            'roa',
+            'net_margin',
+            'asset_turnover'
+        ]]
+
+        return result_df
+
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
         sql = f"""
