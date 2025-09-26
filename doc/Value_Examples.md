@@ -297,22 +297,54 @@ ticker.asset_turnover()
 
 ## 11. Stock Historical WACC
 $$
-WACC = {weight\ of\ debt} \times {cost\ of\ debt} \times (1 - tax\ rate\ for\ calcs) + {weight\ of\ equity} \times {cost\ of\ equity}
+\text{WACC} = \text{Weight of Debt} \times \text{Cost of Debt} \times (1 - \text{Tax Rate}) + \text{Weight of Equity} \times \text{Cost of Equity}
+$$
+
+---
+
+$$
+\Downarrow
 $$
 $$
 \begin{aligned}
-WACC = &\left(\boxed{\frac{\text{total debt usd}}{{\text{total debt usd}} + {\text{market capitalization}}}} \times 
-         \boxed{\frac{\text{interest expense usd}}{\text{total debt usd}}} \times 
-         \boxed{(1 - \text{tax rate for calcs})} \right) \\
-       &+ \left(\boxed{\frac{\text{market capitalization}}{{\text{total debt usd}} + {\text{market capitalization}}}} \times
-         \left(\boxed{\text{treasure 10y yield} + \text{beta 5y} \times (\text{sp500 10y cagr} - \text{treasure 10y yield}}) \right) \right)
+& \text{Weight of Debt} = \frac{\text{Total Debt}}{{\text{Total Debt}} + {\text{Market Capitalization}}} \\
+\\
+& \text{Cost of Debt} = \frac{\text{Interest Expense}}{\text{Total Debt}} \\
+\\
+& \text{Weight of Equity} = \frac{\text{Market Capitalization}}{{\text{Total Debt}} + {\text{Market Capitalization}}} \\
+\\
+& \text{Cost of Equity} = \text{Risk-Free Rate of Return} + \text{Beta of Asset} \times (\text{Expected Return of the Market} - \text{Risk-Free Rate of Return})
 \end{aligned}
 $$
+
 $$
-\boxed{
-\begin{flalign*}
-&\text{total debt usd} = \frac{\text{total debt}}{\text{exchange rate}} & \\
-&\text{Note: $\text{exchange rate}$ is the spot rate on the financial statement date. For USD-denominated statements, $\text{exchange rate} = 1$.} &
-\end{flalign*}
-}
+\Downarrow
 $$
+
+| Variable                                         | Source                                    | Description                                                                                | Unit |
+|--------------------------------------------------|-------------------------------------------|--------------------------------------------------------------------------------------------|------|
+| Total Debt (`total_debt_usd`)                    | Financial statements (`total_debt`)       | Total debt converted to USD using exchange rate                                            | USD  |
+| Market Capitalization (`market_capitalization`)  | `market_capitalization()`                 | Aligned to report dates using `merge_as_of`, filtered for last 5 years                     | USD  |
+| Interest Expense (`interest_expense_usd`)        | Financial statements (`interest_expense`) | Converted to USD using exchange rate                                                       | USD  |
+| Risk-Free Rate of Return (`treasure_10y_yield`)  | `treasure.daily_treasure_yield()`         | 10-Year Treasury Constant Maturity Rate, aligned to report dates                           | %    |
+| Beta of the Asset (`beta_5y`)                    | `summary()`                               | Represents 5-year beta                                                                     | -    |
+| Expected Return of the Market (`sp500_10y_cagr`) | `sp500_cagr_returns_rolling(10)`          | Calculated using 10-year average compounded growth rate (CAGR) of S&P 500                  | %    |
+| Exchange Rate (`exchange_rate`)                  | Financial statements or FX data           | Spot rate on fiscal quarter ending date; for USD-denominated statements, Exchange Rate = 1 | -    |
+
+```python
+ticker.wacc()
+```
+```text
+     symbol report_date  market_capitalization  exchange_rate    total_debt  total_debt_usd  interest_expense  interest_expense_usd  pretax_income  pretax_income_usd  tax_provision  tax_provision_usd  tax_rate_for_calcs  sp500_cagr_end  sp500_10y_cagr  treasure_10y_yield  beta_5y  weight_of_debt  weight_of_equity  cost_of_debt  cost_of_equity    wacc
+0       NaN  2020-09-28           8.994173e+10            NaN           NaN             NaN               NaN                   NaN            NaN                NaN            NaN                NaN                 NaN            2019          0.1122              0.0067     0.45             NaN               NaN           NaN          0.0542     NaN
+1       NaN  2020-09-29           8.826505e+10            NaN           NaN             NaN               NaN                   NaN            NaN                NaN            NaN                NaN                 NaN            2019          0.1122              0.0066     0.45             NaN               NaN           NaN          0.0541     NaN
+2       NaN  2020-09-30           8.880399e+10            NaN           NaN             NaN               NaN                   NaN            NaN                NaN            NaN                NaN                 NaN            2019          0.1122              0.0069     0.45             NaN               NaN           NaN          0.0543     NaN
+...     ...         ...                    ...            ...           ...             ...               ...                   ...            ...                ...            ...                ...                 ...             ...             ...                ...      ...              ...               ...           ...             ...     ...
+1246    PDD  2025-09-15           1.808488e+11           7.30  1.060714e+10    1.453033e+09               0.0                   0.0   3.241271e+10       4.440097e+09   5.082796e+09        696273425.0                0.16            2024          0.1107              0.0405     0.45          0.0080            0.9920        0.0000          0.0721  0.0715
+1247    PDD  2025-09-16           1.832196e+11           7.30  1.060714e+10    1.453033e+09               0.0                   0.0   3.241271e+10       4.440097e+09   5.082796e+09        696273425.0                0.16            2024          0.1107              0.0404     0.45          0.0079            0.9921        0.0000          0.0720  0.0714
+1248    PDD  2025-09-17           1.914535e+11           7.30  1.060714e+10    1.453033e+09               0.0                   0.0   3.241271e+10       4.440097e+09   5.082796e+09        696273425.0                0.16            2024          0.1107              0.0406     0.45          0.0075            0.9925        0.0000          0.0721  0.0716
+...     ...         ...                    ...            ...           ...             ...               ...                   ...            ...                ...            ...                ...                 ...             ...             ...                ...      ...              ...               ...           ...             ...     ...
+1250    PDD  2025-09-19           1.838016e+11           7.30  1.060714e+10    1.453033e+09               0.0                   0.0   3.241271e+10       4.440097e+09   5.082796e+09        696273425.0                0.16            2024          0.1107              0.0414     0.45          0.0078            0.9922        0.0000          0.0726  0.0720
+
+```
+---
