@@ -5,6 +5,7 @@
 - [Main Usage Index](#main-usage-index)
   - [📊 Stock Evaluation Dimensions](#-stock-evaluation-dimensions)
   - [🤖 LLM-Powered Analysis](#-llm-powered-analysis)
+  - [🏦 Economy Analysis](#-economy-analysis)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

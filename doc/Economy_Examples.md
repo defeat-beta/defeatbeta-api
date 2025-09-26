@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [1. SP500 Historical Annual Returns](#1-sp500-historical-annual-returns)
+- [2. SP500 CAGR Returns](#2-sp500-cagr-returns)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## 1. SP500 Historical Annual Returns
 
 ```python
