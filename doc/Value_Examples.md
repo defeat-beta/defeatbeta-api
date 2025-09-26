@@ -293,3 +293,25 @@ ticker.asset_turnover()
 6  2025-03-31  0.0033      0.0212            0.16
 7  2025-06-30  0.0092      0.0521            0.18
 ```
+
+## 11. Stock Historical WACC
+$$
+WACC = {weight\ of\ debt} \times {cost\ of\ debt} \times (1 - tax\ rate\ for\ calcs) + {weight\ of\ equity} \times {cost\ of\ equity}
+$$
+$$
+\begin{aligned}
+WACC = &\left(\boxed{\frac{\text{total debt usd}}{{\text{total debt usd}} + {\text{market capitalization}}}} \times 
+         \boxed{\frac{\text{interest expense usd}}{\text{total debt usd}}} \times 
+         \boxed{(1 - \text{tax rate for calcs})} \right) \\
+       &+ \left(\boxed{\frac{\text{market capitalization}}{{\text{total debt usd}} + {\text{market capitalization}}}} \times
+         \left(\boxed{\text{treasure 10y yield} + \text{beta 5y} \times (\text{sp500 10y cagr} - \text{treasure 10y yield}}) \right) \right)
+\end{aligned}
+$$
+$$
+\boxed{
+\begin{flalign*}
+&\text{total debt usd} = \frac{\text{total debt}}{\text{exchange rate}} & \\
+&\text{Note: $\text{exchange rate}$ is the spot rate on the financial statement date. For USD-denominated statements, $\text{exchange rate} = 1$.} &
+\end{flalign*}
+}
+$$

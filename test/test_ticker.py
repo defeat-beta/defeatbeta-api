@@ -7,7 +7,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("TSLA", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
+        cls.ticker = Ticker("PDD", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -248,4 +248,8 @@ class TestTicker(unittest.TestCase):
 
     def test_asset_turnover(self):
         result = self.ticker.asset_turnover()
+        print(result.to_string())
+
+    def test_wacc(self):
+        result = self.ticker.wacc()
         print(result.to_string())

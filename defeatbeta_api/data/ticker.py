@@ -18,6 +18,7 @@ from defeatbeta_api.data.print_visitor import PrintVisitor
 from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.stock_statement import StockStatement
 from defeatbeta_api.data.transcripts import Transcripts
+from defeatbeta_api.data.treasure import Treasure
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
 from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, \
     stock_split_events, \
@@ -25,7 +26,7 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
     stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
-    balance_sheet_template_type, cash_flow_template_type, load_financial_currency
+    balance_sheet_template_type, cash_flow_template_type, load_financial_currency, sp500_cagr_returns_rolling
 
 
 class Ticker:
@@ -35,6 +36,11 @@ class Ticker:
         self.duckdb_client = get_duckdb_client(http_proxy=self.http_proxy, log_level=log_level, config=config)
         self.huggingface_client = HuggingFaceClient()
         self.log_level = log_level
+        self.treasure = Treasure(
+            http_proxy=self.http_proxy,
+            log_level=self.log_level,
+            config=config
+        )
 
     def info(self) -> pd.DataFrame:
         return self._query_data(stock_profile)
@@ -1221,6 +1227,270 @@ class Ticker:
             'asset_turnover'
         ]]
 
+        return result_df
+
+    def wacc(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = f"""
+                WITH wacc_table AS (
+                    SELECT
+                        symbol,
+                        report_date,
+                        MAX(CASE WHEN item_name = 'total_debt' THEN item_value END) AS total_debt,
+                        MAX(CASE WHEN item_name = 'interest_expense' THEN item_value END) AS interest_expense,
+                        MAX(CASE WHEN item_name = 'pretax_income' THEN item_value END) AS pretax_income,
+                        MAX(CASE WHEN item_name = 'tax_provision' THEN item_value END) AS tax_provision,
+                        MAX(CASE WHEN item_name = 'tax_rate_for_calcs' THEN item_value END) AS tax_rate_for_calcs
+                    FROM
+                        '{url}'
+                    WHERE
+                        symbol = '{self.ticker}'
+                        AND item_name IN ('total_debt', 'interest_expense', 'pretax_income', 'tax_provision', 'tax_rate_for_calcs')
+                        AND report_date != 'TTM'
+                        AND period_type = 'quarterly'
+                        AND finance_type in ('income_statement', 'balance_sheet')
+                    GROUP BY symbol, report_date
+                ),
+                                
+                base_data AS (
+                    SELECT
+                        symbol,
+                        report_date,
+                        total_debt,
+                        interest_expense,
+                        pretax_income,
+                        tax_provision,
+                        tax_rate_for_calcs,
+                        YEAR(report_date::DATE) AS report_year,
+                        QUARTER(report_date::DATE) AS report_quarter,
+                        YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
+                    FROM
+                        wacc_table
+                    WHERE
+                        total_debt IS NOT NULL AND interest_expense IS NOT NULL AND pretax_income IS NOT NULL AND tax_provision IS NOT NULL AND tax_rate_for_calcs IS NOT NULL
+                ),
+                                
+                base_data_rn AS (
+                    SELECT
+                        symbol,
+                        report_date,
+                        total_debt,
+                        interest_expense,
+                        pretax_income,
+                        tax_provision,
+                        tax_rate_for_calcs,
+                        report_year,
+                        report_quarter,
+                        continuous_id,
+                        ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
+                    FROM
+                        base_data
+                ),
+                                
+                grouped_data AS (
+                    SELECT
+                        *,
+                        continuous_id - rn_asc AS group_id
+                    FROM
+                        base_data_rn
+                ),
+                                
+                base_data_window AS (
+                    SELECT
+                        symbol,
+                        report_date,
+                        total_debt,
+                        interest_expense,
+                        pretax_income,
+                        tax_provision,
+                        tax_rate_for_calcs,
+                        ROW_NUMBER() OVER (ORDER BY report_date ASC) AS rn
+                    FROM
+                        grouped_data t1
+                        JOIN (
+                            SELECT
+                                group_id
+                            FROM
+                                grouped_data
+                            ORDER BY
+                                continuous_id DESC
+                                LIMIT 1
+                        ) t2
+                    ON t1.group_id = t2.group_id
+                    ORDER BY
+                        continuous_id ASC
+                )
+                
+                select 
+                    symbol,
+                    report_date,
+                    total_debt,
+                    interest_expense,
+                    pretax_income,
+                    tax_provision,
+                    tax_rate_for_calcs
+                from base_data_window
+        """
+        wacc_df = self.duckdb_client.query(sql)
+        currency = load_financial_currency().get(self.ticker)
+        if currency is None:
+            currency = 'USD'
+        currency_symbol = currency + '=X'
+        currency_url = self.huggingface_client.get_url_path(exchange_rate)
+        currency_sql = f"""
+                    SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
+                """
+        if currency == 'USD':
+            currency_df = pd.DataFrame()
+            currency_df['report_date'] = pd.to_datetime(
+                wacc_df['report_date'])
+            currency_df['symbol'] = currency_symbol
+            currency_df['open'] = 1.0
+            currency_df['close'] = 1.0
+            currency_df['high'] = 1.0
+            currency_df['low'] = 1.0
+        else:
+            currency_df = self.duckdb_client.query(currency_sql)
+
+        currency_df = currency_df[[
+            'report_date',
+            'close'
+        ]]
+        currency_df = currency_df.rename(columns={
+            'close': 'exchange_rate',
+        })
+
+        wacc_df['report_date'] = pd.to_datetime(wacc_df['report_date'])
+        currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+        wacc_df = pd.merge_asof(
+            wacc_df.sort_values('report_date'),
+            currency_df.sort_values('report_date'),
+            left_on='report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+        wacc_df['total_debt_usd'] = round(wacc_df['total_debt'] / wacc_df['exchange_rate'], 0)
+        wacc_df['interest_expense_usd'] = round(wacc_df['interest_expense'] / wacc_df['exchange_rate'], 0)
+        wacc_df['pretax_income_usd'] = round(wacc_df['pretax_income'] / wacc_df['exchange_rate'], 0)
+        wacc_df['tax_provision_usd'] = round(wacc_df['tax_provision'] / wacc_df['exchange_rate'], 0)
+
+        market_cap_df = self.market_capitalization()
+        market_cap_df = (
+            market_cap_df.assign(report_date=lambda df: pd.to_datetime(df['report_date']))
+            .loc[lambda df: df['report_date'] >= pd.Timestamp.today() - pd.DateOffset(years=5)]
+        )
+
+        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
+
+        result_df = pd.merge_asof(
+            market_cap_df.sort_values('report_date'),
+            wacc_df.sort_values('report_date'),
+            left_on='report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+        result_df = result_df[[
+            'symbol',
+            'report_date',
+            'market_capitalization',
+            'exchange_rate',
+            'total_debt',
+            'total_debt_usd',
+            'interest_expense',
+            'interest_expense_usd',
+            'pretax_income',
+            'pretax_income_usd',
+            'tax_provision',
+            'tax_provision_usd',
+            'tax_rate_for_calcs'
+        ]]
+        ten_year_returns = sp500_cagr_returns_rolling(10)
+        ten_year_returns['end_date'] = pd.to_datetime(ten_year_returns['end_date'])
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('report_date'),
+            ten_year_returns.sort_values('end_date'),
+            left_on='report_date',
+            right_on='end_date',
+            direction='backward'
+        )
+
+        result_df = result_df[[
+            'symbol',
+            'report_date',
+            'market_capitalization',
+            'exchange_rate',
+            'total_debt',
+            'total_debt_usd',
+            'interest_expense',
+            'interest_expense_usd',
+            'pretax_income',
+            'pretax_income_usd',
+            'tax_provision',
+            'tax_provision_usd',
+            'tax_rate_for_calcs',
+            'end_year',
+            'cagr_returns'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'cagr_returns': 'sp500_10y_cagr',
+            'end_year': 'sp500_cagr_end'
+        })
+
+        treasure = self.treasure.daily_treasure_yield()
+        treasure['report_date'] = pd.to_datetime(treasure['report_date'])
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('report_date'),
+            treasure.sort_values('report_date'),
+            left_on='report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df = result_df[[
+            'symbol',
+            'report_date',
+            'market_capitalization',
+            'exchange_rate',
+            'total_debt',
+            'total_debt_usd',
+            'interest_expense',
+            'interest_expense_usd',
+            'pretax_income',
+            'pretax_income_usd',
+            'tax_provision',
+            'tax_provision_usd',
+            'tax_rate_for_calcs',
+            'sp500_cagr_end',
+            'sp500_10y_cagr',
+            'bc10_year'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'bc10_year': 'treasure_10y_yield',
+        })
+
+        summary = self.summary()
+        result_df['beta_5y'] = summary.at[0, "beta"]
+
+        result_df['tax_rate_for_calcs'] = np.where(
+            result_df['tax_rate_for_calcs'].notna(),
+            result_df['tax_rate_for_calcs'],
+            result_df['tax_provision_usd'] / result_df['pretax_income_usd']
+        )
+
+        result_df['weight_of_debt'] = round(result_df['total_debt_usd'] / (result_df['total_debt_usd'] + result_df['market_capitalization']), 4)
+        result_df['weight_of_equity'] = round(result_df['market_capitalization'] / (result_df['total_debt_usd'] + result_df['market_capitalization']), 4)
+        result_df['cost_of_debt'] = round(result_df['interest_expense_usd'] / result_df['total_debt_usd'], 4)
+        result_df['cost_of_equity'] = round(result_df['treasure_10y_yield'] + result_df['beta_5y'] * (result_df['sp500_10y_cagr'] - result_df['treasure_10y_yield']), 4)
+        result_df['wacc'] = round(
+            result_df['weight_of_debt'] * result_df['cost_of_debt'] * (1 - result_df['tax_rate_for_calcs']) +
+            result_df['weight_of_equity'] * result_df['cost_of_equity'],
+            4
+        )
         return result_df
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
