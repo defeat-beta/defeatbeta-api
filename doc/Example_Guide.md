@@ -37,3 +37,7 @@
 
 
 ---
+## 🏦 Economy Analysis
+> [!TIP]
+> This project also supports some economic and market data. see[Economy Examples](Economy_Examples.md)
+> It includes `sp500-historical-annual-returns`, `sp500-cagr-returns`
