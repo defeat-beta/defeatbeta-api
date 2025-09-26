@@ -13,6 +13,7 @@
 - [9. Stock Historical ROIC](#9-stock-historical-roic)
 - [10. Stock Historical Equity Multiplier](#10-stock-historical-equity-multiplier)
 - [11. Stock Historical Assert Turnover](#11-stock-historical-assert-turnover)
+- [11. Stock Historical WACC](#11-stock-historical-wacc)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
