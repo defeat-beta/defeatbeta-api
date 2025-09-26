@@ -6,6 +6,8 @@ import tempfile
 from importlib.resources import files
 from typing import List, Dict, Any
 
+import numpy as np
+import pandas as pd
 import psutil
 from pandas import DataFrame
 
@@ -135,6 +137,28 @@ def load_transcripts_summary_tools_def() -> Dict[str, Any]:
     text = files("defeatbeta_api.data.template").joinpath('transcripts_key_fin_data_tools.json').read_text(encoding="utf-8")
     data = json.loads(text)
     return data
+
+def load_sp500_historical_annual_returns() -> pd.DataFrame:
+    text = files("defeatbeta_api.data.template").joinpath('sp500_historical_annual_returns.json').read_text(encoding="utf-8")
+    data = json.loads(text)
+
+    df = pd.DataFrame(list(data.items()), columns=["report_date", "annual_returns"])
+
+    df["report_date"] = pd.to_datetime(df["report_date"])
+
+    df = df.sort_values("report_date").reset_index(drop=True)
+
+    return df
+
+def sp500_cagr_returns(years: int) -> pd.DataFrame:
+    annual_returns = load_sp500_historical_annual_returns()
+    recent = annual_returns.tail(years).copy()
+
+    end_value = np.prod(1 + recent["annual_returns"].values)
+
+    cagr = end_value ** (1 / years) - 1
+
+    return pd.DataFrame([{"years": years, "cagr_returns": round(cagr, 4)}])
 
 unit_map = {
     "billion": 1e9,

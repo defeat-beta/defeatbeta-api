@@ -8,6 +8,7 @@ on:
       - 'doc/Value_Examples.md'
       - 'doc/Info_Examples.md'
       - 'doc/Transcripts_LLM_Examples.md'
+      - 'doc/Economy_Examples.md'
 
 jobs:
   doctoc:
