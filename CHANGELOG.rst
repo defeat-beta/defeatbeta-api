@@ -4,6 +4,7 @@ Change Log
 -------
 - Support S&P 500 Historical Annual Returns[`#68 <https://github.com/defeat-beta/defeatbeta-api/issues/68>`_]
 - Support S&P 500 Year CAGR Returns[`#69 <https://github.com/defeat-beta/defeatbeta-api/issues/69>`_]
+- Support S&P 500 Year CAGR Returns Rolling[`#70 <https://github.com/defeat-beta/defeatbeta-api/issues/70>`_]
 
 0.0.18
 -------

@@ -160,6 +160,43 @@ def sp500_cagr_returns(years: int) -> pd.DataFrame:
 
     return pd.DataFrame([{"years": years, "cagr_returns": round(cagr, 4)}])
 
+def sp500_cagr_returns_rolling(years: int) -> pd.DataFrame:
+    if years <= 0:
+        raise ValueError("years must be a positive integer")
+
+    df = load_sp500_historical_annual_returns().copy()
+    df = df.sort_values("report_date").reset_index(drop=True)
+
+    n = len(df)
+    if n < years:
+        return pd.DataFrame(columns=[
+            "start_date", "end_date", "start_year", "end_year", "cagr_returns"
+        ])
+
+    returns_series = df["annual_returns"]
+    rolling_prod = (1 + returns_series).rolling(window=years, min_periods=years).apply(np.prod, raw=True)
+
+    results = []
+    for end_idx in range(years - 1, n):
+        prod_value = rolling_prod.iloc[end_idx]
+        if pd.isna(prod_value):
+            continue
+        cagr = prod_value ** (1 / years) - 1
+
+        start_idx = end_idx - years + 1
+        start_date = df.loc[start_idx, "report_date"]
+        end_date = df.loc[end_idx, "report_date"]
+
+        results.append({
+            "start_date": start_date,
+            "end_date": end_date,
+            "start_year": int(start_date.year),
+            "end_year": int(end_date.year),
+            "cagr_returns": round(float(cagr), 4)
+        })
+
+    return pd.DataFrame(results).sort_values("end_date").reset_index(drop=True)
+
 unit_map = {
     "billion": 1e9,
     "million": 1e6,
