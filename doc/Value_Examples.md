@@ -295,7 +295,7 @@ ticker.asset_turnover()
 7  2025-06-30  0.0092      0.0521            0.18
 ```
 
-## 11. Stock Historical WACC
+## 12. Stock Historical WACC
 $$
 \text{WACC} = \text{Weight of Debt} \times \text{Cost of Debt} \times (1 - \text{Tax Rate}) + \text{Weight of Equity} \times \text{Cost of Equity}
 $$
