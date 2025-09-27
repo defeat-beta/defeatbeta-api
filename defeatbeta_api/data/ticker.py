@@ -1376,20 +1376,33 @@ class Ticker:
         wacc_df['tax_provision_usd'] = round(wacc_df['tax_provision'] / wacc_df['exchange_rate'], 0)
 
         market_cap_df = self.market_capitalization()
-        market_cap_df = (
-            market_cap_df.assign(report_date=lambda df: pd.to_datetime(df['report_date']))
-            .loc[lambda df: df['report_date'] >= pd.Timestamp.today() - pd.DateOffset(years=5)]
-        )
 
         market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
 
-        result_df = pd.merge_asof(
+        result_df1 = pd.merge_asof(
+            wacc_df.sort_values('report_date'),
             market_cap_df.sort_values('report_date'),
+            left_on='report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        max_date = wacc_df['report_date'].max()
+
+        market_cap_after = market_cap_df.loc[
+            (market_cap_df['report_date'] >= pd.Timestamp.today() - pd.DateOffset(years=5)) &
+            (market_cap_df['report_date'] >= max_date)
+        ]
+
+        result_df2 = pd.merge_asof(
+            market_cap_after.sort_values('report_date'),
             wacc_df.sort_values('report_date'),
             left_on='report_date',
             right_on='report_date',
             direction='backward'
         )
+        result_df = pd.concat([result_df1, result_df2], ignore_index=True).drop_duplicates().sort_values('report_date').reset_index(drop=True)
+
         result_df = result_df[[
             'symbol',
             'report_date',
