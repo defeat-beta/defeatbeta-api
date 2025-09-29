@@ -1444,11 +1444,11 @@ class Ticker:
             'tax_provision_usd',
             'tax_rate_for_calcs',
             'end_year',
-            'cagr_returns'
+            'cagr_returns_10_years'
         ]]
 
         result_df = result_df.rename(columns={
-            'cagr_returns': 'sp500_10y_cagr',
+            'cagr_returns_10_years': 'sp500_10y_cagr',
             'end_year': 'sp500_cagr_end'
         })
 

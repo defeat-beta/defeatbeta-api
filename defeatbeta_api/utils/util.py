@@ -170,7 +170,7 @@ def sp500_cagr_returns_rolling(years: int) -> pd.DataFrame:
     n = len(df)
     if n < years:
         return pd.DataFrame(columns=[
-            "start_date", "end_date", "start_year", "end_year", "cagr_returns"
+            "start_date", "end_date", "start_year", "end_year", f"cagr_returns_{years}_years"
         ])
 
     returns_series = df["annual_returns"]
@@ -192,7 +192,7 @@ def sp500_cagr_returns_rolling(years: int) -> pd.DataFrame:
             "end_date": end_date,
             "start_year": int(start_date.year),
             "end_year": int(end_date.year),
-            "cagr_returns": round(float(cagr), 4)
+            f"cagr_returns_{years}_years": round(float(cagr), 4)
         })
 
     return pd.DataFrame(results).sort_values("end_date").reset_index(drop=True)
