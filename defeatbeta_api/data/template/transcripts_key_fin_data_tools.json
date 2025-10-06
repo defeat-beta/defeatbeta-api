@@ -28,7 +28,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -98,7 +98,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -124,7 +124,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -150,7 +150,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -176,7 +176,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -246,7 +246,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -272,7 +272,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -298,7 +298,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -324,7 +324,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -402,7 +402,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -428,7 +428,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -454,7 +454,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -480,7 +480,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -506,7 +506,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -566,6 +566,50 @@
                   }
                 }
               },
+              "gaap_operating_income_margin_forecast_for_next_quarter": {
+                "type": ["object", "null"],
+                "description": "Forecasted GAAP operating income margin for the next quarter, as reported in the transcript. Return null if unavailable.",
+                "properties": {
+                  "value_vocabulary": {
+                    "type": "number",
+                    "description": "Numerical percentage value extracted from the transcript, e.g., 72.5 for 72.5%. If a range is provided (min/max), return the midpoint as the value."
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "Always use '%' to indicate margin is expressed as a percentage."
+                  },
+                  "speaker": {
+                    "type": "string",
+                    "description": "Name or role of the speaker who provided this number in the transcript, e.g., 'CFO', 'CEO', or 'John Smith'."
+                  },
+                  "paragraph_number": {
+                    "type": "number",
+                    "description": "The sequential number of the paragraph in the transcript where this information was mentioned. Useful for traceability."
+                  }
+                }
+              },
+              "non_gaap_operating_income_margin_forecast_for_next_quarter": {
+                "type": ["object", "null"],
+                "description": "Forecasted non-GAAP operating income margin for the next quarter, as reported in the transcript. Return null if unavailable.",
+                "properties": {
+                  "value_vocabulary": {
+                    "type": "number",
+                    "description": "Numerical percentage value extracted from the transcript, e.g., 72.5 for 72.5%. If a range is provided (min/max), return the midpoint as the value."
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "Always use '%' to indicate margin is expressed as a percentage."
+                  },
+                  "speaker": {
+                    "type": "string",
+                    "description": "Name or role of the speaker who provided this number in the transcript, e.g., 'CFO', 'CEO', or 'John Smith'."
+                  },
+                  "paragraph_number": {
+                    "type": "number",
+                    "description": "The sequential number of the paragraph in the transcript where this information was mentioned. Useful for traceability."
+                  }
+                }
+              },
               "gaap_operating_expense_forecast_for_next_quarter": {
                 "type": ["object", "null"],
                 "description": "Forecasted GAAP operating expenses(OpEx) for the next quarter, as reported in the transcript. Return null if unavailable.",
@@ -576,7 +620,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -602,7 +646,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -628,7 +672,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -654,7 +698,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -732,7 +776,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Magnitude unit of the number, e.g., million, billion, thousand."
+                    "description": "Magnitude unit of the number, e.g., trillion, million, billion, thousand."
                   },
                   "currency_code": {
                     "type": "string",
@@ -758,7 +802,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
+                    "description": "Unit of magnitude exactly as reported in the transcript (e.g., trillion, million, billion, thousand). Must correspond directly to value_vocabulary. Example: if transcript says 'a billion', return value_vocabulary='a' and unit='billion'."
                   },
                   "currency_code": {
                     "type": "string",
@@ -850,6 +894,8 @@
               "total_revenue_forecast_for_next_quarter",
               "gaap_gross_margin_forecast_for_next_quarter",
               "non_gaap_gross_margin_forecast_for_next_quarter",
+              "gaap_operating_income_margin_forecast_for_next_quarter",
+              "non_gaap_operating_income_margin_forecast_for_next_quarter",
               "gaap_operating_expense_forecast_for_next_quarter",
               "non_gaap_operating_expense_forecast_for_next_quarter",
               "ebitda_forecast_for_next_quarter",

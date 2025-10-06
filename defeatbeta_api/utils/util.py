@@ -198,6 +198,7 @@ def sp500_cagr_returns_rolling(years: int) -> pd.DataFrame:
     return pd.DataFrame(results).sort_values("end_date").reset_index(drop=True)
 
 unit_map = {
+    "trillion": 1e12,
     "billion": 1e9,
     "million": 1e6,
     "thousand": 1e3
