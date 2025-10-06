@@ -88,7 +88,16 @@ class Transcripts:
             try:
                 raw_args = tool_call.function.arguments.strip()
                 clean_args = raw_args.split("</tool_call>")[0].strip()
-                func_args = json.loads(clean_args)
+                if isinstance(clean_args, str):
+                    open_braces = clean_args.count('{')
+                    close_braces = clean_args.count('}')
+                    if open_braces > close_braces:
+                        clean_args += '}' * (open_braces - close_braces)
+                    elif close_braces > open_braces:
+                        clean_args = clean_args.rstrip('}' * (close_braces - open_braces))
+                    func_args = json.loads(clean_args)
+                else:
+                    func_args = raw_args
             except Exception as e:
                 raise ValueError(
                     f"Failed to parse tool_call arguments: {tool_call.function.arguments}, error: {e}"

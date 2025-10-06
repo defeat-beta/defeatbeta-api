@@ -19,7 +19,7 @@
 ## Prerequisites
 To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`). 
 
-Our tests show that even free, small-parameter models can deliver excellent results.
+Our tests show that even free, small-parameter models(e.g. `Qwen/Qwen3-8B`) can deliver excellent results.
 
 > [!TIP]
 > You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing).
