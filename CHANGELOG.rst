@@ -1,5 +1,8 @@
 Change Log
 ===========
+0.0.20
+-------
+
 0.0.19
 -------
 - Support S&P 500 Historical Annual Returns[`#68 <https://github.com/defeat-beta/defeatbeta-api/issues/68>`_]
