@@ -13,6 +13,7 @@ from pandas import DataFrame
 
 from defeatbeta_api.__version__ import __version__
 from defeatbeta_api.data.finance_item import FinanceItem
+from defeatbeta_api.data.template.transcripts_key_fin_data_tools import FUNCTION_SCHEMA
 
 
 def validate_memory_limit(memory_limit: str) -> str:
@@ -134,7 +135,7 @@ def load_transcripts_summary_prompt_temp() -> str:
     return text
 
 def load_transcripts_summary_tools_def() -> Dict[str, Any]:
-    text = files("defeatbeta_api.data.template").joinpath('transcripts_key_fin_data_tools.json').read_text(encoding="utf-8")
+    text = json.dumps([FUNCTION_SCHEMA], indent=2)
     data = json.loads(text)
     return data
 
