@@ -48,7 +48,11 @@ llm = OpenAI(
 )
 
 # Summarize key financial data for Q2 2025 with llm
-res = transcripts.summarize_key_financial_data_with_ai(2025, 2, llm, OpenAIConfiguration())
+res = transcripts.summarize_key_financial_data_with_ai(
+  2025, 
+  2, 
+  llm, 
+  OpenAIConfiguration(model='Qwen/Qwen3-8B'))
 print(res.to_string())
 ```
 
@@ -116,7 +120,7 @@ class OpenAIConfiguration:
     def __init__(
         self,
         model="Qwen/Qwen3-8B",
-        temperature=0.01,
+        temperature=0,
         top_p=0.95,
         stream=False
     ):
@@ -127,6 +131,6 @@ class OpenAIConfiguration:
 ```
 
 - model: Specifies the language model to use (e.g., Qwen/Qwen3-8B). See Supported Models for more details.
-- temperature: Controls the randomness of the output (default: 0.01 for deterministic responses).
+- temperature: Controls the randomness of the output (default: 0 for deterministic responses).
 - top_p: Controls the diversity via nucleus sampling (default: 0.95).
 - stream: Enables streaming responses if set to True (default: False).
