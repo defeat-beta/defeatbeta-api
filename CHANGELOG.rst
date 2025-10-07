@@ -2,6 +2,7 @@ Change Log
 ===========
 0.0.20
 -------
+- Refactor function call tools template[`#73 <https://github.com/defeat-beta/defeatbeta-api/issues/73>`_]
 
 0.0.19
 -------
