@@ -10,7 +10,7 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Example: Using LLM for Earnings Call Transcript Analysis
+# Example: Using LLMs to Extract Key Financial Data for Earnings Call Transcript Analysis
 > [!NOTE]
 > Imagine reading a lengthy earnings call transcript to extract key data mentioned by the CEO, CFO, or analysts, which could take at least 10 minutes. Using an LLM, this can be done in just a few seconds.
 > 
@@ -30,13 +30,12 @@ Our tests show that even free, small-parameter models(e.g. `Qwen/Qwen3-8B`) can 
 Below is an example demonstrating how to fetch key financial metrics from earnings call transcripts using LLM model.
 
 ```python
-import logging
 from openai import OpenAI
 from defeatbeta_api.data.ticker import Ticker
 from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 
-# Initialize the Ticker with debug logging
-ticker = Ticker("AMD", log_level=logging.DEBUG)
+# Initialize the Ticker
+ticker = Ticker("AMD")
 
 # Fetch earnings call transcripts
 transcripts = ticker.earning_call_transcripts()
@@ -116,25 +115,3 @@ Currently supported models include:
 | **Qwen**     | Qwen-2.5 (e.g., Qwen-2.5-7B), Qwen-Plus, Qwen-Max, Qwen-Flash, Qwen-Turbo, Qwen3                                                                                                             |
 | **OpenAI**   | GPT-4 series (e.g., gpt-4, gpt-4o), o3, o3-mini, o4-mini, gpt-oss-20B, gpt-oss-120B                                                                                                          |
 | **Gemini**   | Gemini 2.5 Flash-Lite, Gemini 2.5 Flash + Live API, Gemini 2.0 Flash + Live API, Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 1.5 Pro, Gemini 1.5 Flash |
-
-## Configuration
-Below is an example of how to set up the OpenAIConfiguration class for fine-tuned control.
-```python
-class OpenAIConfiguration:
-    def __init__(
-        self,
-        model="Qwen/Qwen3-8B",
-        temperature=0,
-        top_p=0.95,
-        stream=False
-    ):
-        self.model = model
-        self.temperature = temperature
-        self.top_p = top_p
-        self.stream = stream
-```
-
-- model: Specifies the language model to use (e.g., Qwen/Qwen3-8B). See Supported Models for more details.
-- temperature: Controls the randomness of the output (default: 0 for deterministic responses).
-- top_p: Controls the diversity via nucleus sampling (default: 0.95).
-- stream: Enables streaming responses if set to True (default: False).
