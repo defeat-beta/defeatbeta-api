@@ -25,7 +25,9 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ✅ **Extended Financial Data**: Includes [TTM EPS](doc/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/Value_Examples.md#6-stock-historical-peg-ratio), [ROE](doc/Value_Examples.md#7-stock-historical-roe), [ROIC](doc/Value_Examples.md#9-stock-historical-roic), [WACC](doc/Value_Examples.md#12-stock-historical-wacc), [ROA](doc/Value_Examples.md#8-stock-historical-roa), [Equity Multiplier](doc/Value_Examples.md#10-stock-historical-equity-multiplier), [Assert Turnover](doc/Value_Examples.md#11-stock-historical-assert-turnover), [Earnings call transcripts](doc/Info_Examples.md#3-accessing-earnings-call-transcripts), [Stock News](doc/Info_Examples.md#4-accessing-financial-news), [Revenue by segment](doc/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
 
-✅ **LLM-Powered Analysis**: [Financial Data Extraction](doc/Transcripts_LLM_Examples.md) — Use Large Language Models (LLMs) to analyze earnings call transcripts and extract key financial data.
+✅ **LLM-Powered Analysis**: 
+- [Key Financial Data Extraction](doc/LLM_KeyData_Example.md) — Use Large Language Models (LLMs) to analyze earnings call transcripts and extract key financial data.
+- [Financial Metrics Changes Analysis](doc/LLM_ChangeData_Example.md) — Use Large Language Models (LLMs) to analyze key quarterly financial changes and their causes.
 
 ### How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.

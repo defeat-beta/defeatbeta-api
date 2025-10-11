@@ -1,5 +1,3 @@
-import json
-
 # Define the two core schemas
 AMOUNT_SCHEMA = {
     "type": ["object", "null"],

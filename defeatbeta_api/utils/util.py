@@ -134,8 +134,17 @@ def load_transcripts_summary_prompt_temp() -> str:
     text = files("defeatbeta_api.data.template").joinpath('transcripts_key_fin_data_prompt.md').read_text(encoding="utf-8")
     return text
 
+def load_transcripts_analyze_up_and_down_prompt() -> str:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_financial_metrics_change_tools.md').read_text(encoding="utf-8")
+    return text
+
 def load_transcripts_summary_tools_def() -> Dict[str, Any]:
     text = json.dumps([FUNCTION_SCHEMA], indent=2)
+    data = json.loads(text)
+    return data
+
+def load_transcripts_analyze_up_and_down_tools() -> Dict[str, Any]:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_financial_metrics_change_tools.json').read_text(encoding="utf-8")
     data = json.loads(text)
     return data
 

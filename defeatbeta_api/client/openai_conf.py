@@ -4,7 +4,7 @@ class OpenAIConfiguration:
             model="Qwen/Qwen3-8B",
             temperature=0,
             top_p=0.95,
-            stream=False
+            tool_choice="auto"
     ):
         configs = locals()
         configs.pop('self')
@@ -21,5 +21,5 @@ class OpenAIConfiguration:
     def get_top_p(self):
         return self.top_p
 
-    def get_stream(self):
-        return self.stream
+    def get_tool_choice(self):
+        return self.tool_choice
