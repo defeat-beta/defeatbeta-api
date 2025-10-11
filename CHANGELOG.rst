@@ -1,8 +1,10 @@
 Change Log
 ===========
+
 0.0.20
 -------
 - Refactor function call tools template[`#73 <https://github.com/defeat-beta/defeatbeta-api/issues/73>`_]
+- Analyze earnings call transcripts for key metric changes and their drivers[`#74 <https://github.com/defeat-beta/defeatbeta-api/issues/74>`_]
 
 0.0.19
 -------
