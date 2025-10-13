@@ -17,7 +17,7 @@ Our tests show that even free, small-parameter models(e.g. `Qwen/Qwen3-8B`) can 
 > For higher accuracy and performance, consider using larger models from [OpenAI](https://openai.com/index/openai-api/), [DeepSeek](https://api-docs.deepseek.com/), [QWen](https://qwen.ai/apiplatform), or [Gemini](https://ai.google.dev/gemini-api/docs).
 
 ## Example Code
-Below is an example that analyzes key quarterly financial changes and their causes, using an LLM on earnings call transcripts.
+**Below is an example that analyzes key quarterly financial changes and their causes, using an LLM on earnings call transcripts.**
 
 ```python
 from openai import OpenAI
