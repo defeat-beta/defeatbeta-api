@@ -2,11 +2,10 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Example: Using LLM for Earnings Call Transcript Analysis](#example-using-llm-for-earnings-call-transcript-analysis)
+- [Example: Using LLMs to Extract Key Financial Data for Earnings Call Transcript Analysis](#example-using-llms-to-extract-key-financial-data-for-earnings-call-transcript-analysis)
   - [Prerequisites](#prerequisites)
   - [Example Code](#example-code)
   - [Supported LLM Models](#supported-llm-models)
-  - [Configuration](#configuration)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
