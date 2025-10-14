@@ -17,7 +17,7 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Metric name"
+                  "description": "Financial Metric name (e.g., Revenue,  Revenue by segment, Revenue by geography, Revenue by product, Income etc.)."
                 },
                 "outlook": {
                   "type": "string",
