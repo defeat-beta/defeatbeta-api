@@ -7,7 +7,8 @@ on:
       - 'doc/Growth_Examples.md'
       - 'doc/Value_Examples.md'
       - 'doc/Info_Examples.md'
-      - '../../doc/LLM_KeyData_Example.md'
+      - 'doc/LLM_KeyData_Example.md'
+      - 'doc/LLM_ChangeData_Example.md'
       - 'doc/Economy_Examples.md'
 
 jobs:

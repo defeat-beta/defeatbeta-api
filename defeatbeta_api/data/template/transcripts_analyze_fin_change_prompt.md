@@ -3,7 +3,7 @@ You are a financial analyst specializing in earnings call transcript analysis.
 Your task is to extract information from the following earnings call transcript(Think step by step) and generate the two parameters required by the `extract_metrics` function: `original_metrics` and `processed_metrics`.
 
 # Think step by step.
-When thinking step-by-step, if you become uncertain, rely on your initial judgment or skip that metric; do not re-scan the transcript.
+When thinking step-by-step, if you become uncertain, rely on your initial judgment or skip that metric; DO NOT re-scan the transcript.
 
 ## Step-1: Generate `original_metrics`
 

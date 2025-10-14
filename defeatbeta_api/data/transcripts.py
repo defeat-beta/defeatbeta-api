@@ -8,16 +8,15 @@ from typing import Optional
 
 import pandas as pd
 from openai import OpenAI
-from time import sleep
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
-from textwrap import wrap
 from tabulate import tabulate
 
 from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 from defeatbeta_api.utils.util import load_transcripts_summary_prompt_temp, load_transcripts_summary_tools_def, \
-    unit_map, load_transcripts_analyze_up_and_down_prompt, load_transcripts_analyze_up_and_down_tools
+    unit_map, load_transcripts_analyze_change_prompt, load_transcripts_analyze_change_tools, \
+    load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools
 
 
 def _unnest(record: pd.DataFrame) -> pd.DataFrame:
@@ -48,9 +47,149 @@ class Transcripts:
         df_paragraphs = _unnest(record)
         return df_paragraphs
 
+    def analyze_financial_metrics_forecast_for_future_with_ai(self, fiscal_year: int, fiscal_quarter: int, llm: OpenAI, config: Optional[OpenAIConfiguration] = None) -> pd.DataFrame:
+        conf = config if config is not None else OpenAIConfiguration()
+        template = load_transcripts_analyze_forecast_prompt()
+        pattern_transcripts = r"\{earnings_call_transcripts\}"
+        transcript = self.get_transcript(fiscal_year, fiscal_quarter)
+        transcript_json = transcript.to_dict(orient="records")
+        transcript_str = json.dumps(transcript_json, ensure_ascii=False, indent=2)
+        prompt = re.sub(pattern_transcripts, transcript_str, template)
+
+        messages = [{
+            "role": "system",
+            "content": "You are a precise financial analyst. Return only valid JSON as function arguments when requested."
+        },
+            {
+                'role': 'user',
+                'content': prompt
+            }]
+        tools = load_transcripts_analyze_forecast_tools()
+
+        start = time.perf_counter()
+        response = llm.chat.completions.create(
+            model=conf.get_model(),
+            messages=messages,
+            temperature=conf.get_temperature(),
+            top_p=conf.get_top_p(),
+            stream=True,
+            tools=tools,
+            tool_choice=conf.get_tool_choice()
+        )
+
+        if not response:
+            raise ValueError(f"Invalid response from LLM: {response}")
+
+        raw_args = ""
+        prompt_tokens = 0
+        completion_tokens = 0
+        cursor_char = "▌"
+        panel_title = "[bold green]🧠 Thinking Step by Step[/]"
+        max_lines = 8
+        reasoning_text = ""
+        console = Console()
+        is_tty = sys.stdout.isatty()
+        with Live(console=console, refresh_per_second=20) as live:
+            for chunk in response:
+                prompt_tokens += chunk.usage.prompt_tokens
+                completion_tokens += chunk.usage.completion_tokens
+                delta = chunk.choices[0].delta
+                if delta.reasoning_content:
+                    if is_tty:
+                        reasoning_text += delta.reasoning_content
+                        lines = reasoning_text.splitlines()
+                        visible_text = "\n".join(lines[-max_lines:])
+                        live.update(Panel(visible_text + " " + cursor_char, title=panel_title, border_style="green",
+                                          padding=(1, 2)))
+                    else:
+                        print(delta.reasoning_content, end="", flush=True)
+
+                if delta.tool_calls:
+                    raw_args += f"{delta.tool_calls[0].function.arguments}"
+            if is_tty:
+                live.update(Panel(reasoning_text, title="[bold white]🧠 Finish Think[/]", border_style="white",
+                                  padding=(1, 2)))
+
+        end = time.perf_counter()
+        elapsed = (end - start)
+
+        if raw_args == "":
+            raise ValueError(f"No tool call was made by the model. Raw message: {raw_args}")
+
+        try:
+            clean_args = raw_args.split("</tool_call>")[0].strip()
+            if isinstance(clean_args, str):
+                open_braces = clean_args.count('{')
+                close_braces = clean_args.count('}')
+                if open_braces > close_braces:
+                    clean_args += '}' * (open_braces - close_braces)
+                elif close_braces > open_braces:
+                    clean_args = clean_args.rstrip('}' * (close_braces - open_braces))
+                func_args = json.loads(clean_args)
+            else:
+                func_args = raw_args
+        except Exception as e:
+            raise ValueError(
+                f"Failed to parse tool_call arguments: {raw_args}, error: {e}"
+            )
+
+        original_metrics = func_args.get("original_metrics")
+        processed_metrics = func_args.get("processed_metrics")
+        if not original_metrics or not processed_metrics:
+            raise ValueError(
+                f"'metrics' missing in func_args: {func_args}"
+            )
+
+        self.logger.debug(
+            f"metrics data: {func_args}, "
+            f"prompt tokens: {prompt_tokens}, "
+            f"completion tokens: {completion_tokens}, "
+            f"infer elapsed(s): {round(elapsed, 2)}"
+        )
+        original_metrics_df = pd.DataFrame(original_metrics)
+        processed_metrics_df = pd.DataFrame(processed_metrics)
+        if 'name' not in original_metrics_df.columns or 'name' not in processed_metrics_df.columns:
+            raise ValueError("'name' column missing in one or both DataFrames")
+
+        if len(original_metrics_df) != len(processed_metrics_df):
+            raise ValueError(
+                f"Length mismatch: original_metrics_df has {len(original_metrics_df)} rows, processed_metrics_df has {len(processed_metrics_df)} rows")
+
+        name_check = (original_metrics_df['name'] == processed_metrics_df['name']).all()
+        if not name_check:
+            mismatch_mask = original_metrics_df['name'] != processed_metrics_df['name']
+            mismatches = original_metrics_df[mismatch_mask].join(
+                processed_metrics_df[mismatch_mask]['name'],
+                rsuffix='_processed'
+            )
+            raise ValueError(
+                f"Name mismatch at positions: {mismatch_mask[mismatch_mask].index.tolist()}\n"
+                f"Details:\n{mismatches[['name', 'name_processed']]}"
+            )
+
+        df = pd.concat(
+            [original_metrics_df, processed_metrics_df.drop(columns=['name'])],
+            axis=1
+        )
+
+        records = []
+        for index, row in df.iterrows():
+            records.append({
+                "symbol": self.ticker,
+                "fiscal_year": fiscal_year,
+                "fiscal_quarter": fiscal_quarter,
+                "speaker": row['speaker'],
+                "paragraph_number": row['paragraph_number'],
+                "key_financial_metric": row['name'],
+                "attitude": row['attitude'],
+                "outlook": row['outlook'],
+                "reason": row['reason']
+            })
+        return pd.DataFrame(records)
+
     def analyze_financial_metrics_change_for_this_quarter_with_ai(self, fiscal_year: int, fiscal_quarter: int, llm: OpenAI, config: Optional[OpenAIConfiguration] = None) -> pd.DataFrame:
         conf = config if config is not None else OpenAIConfiguration()
-        template = load_transcripts_analyze_up_and_down_prompt()
+        template = load_transcripts_analyze_change_prompt()
         pattern_transcripts = r"\{earnings_call_transcripts\}"
         transcript = self.get_transcript(fiscal_year, fiscal_quarter)
         transcript_json = transcript.to_dict(orient="records")
@@ -65,7 +204,7 @@ class Transcripts:
                         'role': 'user',
                         'content': prompt
                     }]
-        tools = load_transcripts_analyze_up_and_down_tools()
+        tools = load_transcripts_analyze_change_tools()
 
         start = time.perf_counter()
         response = llm.chat.completions.create(

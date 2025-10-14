@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from defeatbeta_api.__version__ import __version__
 from defeatbeta_api.data.finance_item import FinanceItem
-from defeatbeta_api.data.template.transcripts_key_fin_data_tools import FUNCTION_SCHEMA
+from defeatbeta_api.data.template.transcripts_extract_fin_data_tools import FUNCTION_SCHEMA
 
 
 def validate_memory_limit(memory_limit: str) -> str:
@@ -131,11 +131,15 @@ def _parse_finance_item_template(array: List[Dict]) -> List[FinanceItem]:
     return result
 
 def load_transcripts_summary_prompt_temp() -> str:
-    text = files("defeatbeta_api.data.template").joinpath('transcripts_key_fin_data_prompt.md').read_text(encoding="utf-8")
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_extract_fin_data_prompt.md').read_text(encoding="utf-8")
     return text
 
-def load_transcripts_analyze_up_and_down_prompt() -> str:
-    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_financial_metrics_change_prompt.md').read_text(encoding="utf-8")
+def load_transcripts_analyze_change_prompt() -> str:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_fin_change_prompt.md').read_text(encoding="utf-8")
+    return text
+
+def load_transcripts_analyze_forecast_prompt() -> str:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_fin_forecast_prompt.md').read_text(encoding="utf-8")
     return text
 
 def load_transcripts_summary_tools_def() -> Dict[str, Any]:
@@ -143,8 +147,13 @@ def load_transcripts_summary_tools_def() -> Dict[str, Any]:
     data = json.loads(text)
     return data
 
-def load_transcripts_analyze_up_and_down_tools() -> Dict[str, Any]:
-    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_financial_metrics_change_tools.json').read_text(encoding="utf-8")
+def load_transcripts_analyze_change_tools() -> Dict[str, Any]:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_fin_change_tools.json').read_text(encoding="utf-8")
+    data = json.loads(text)
+    return data
+
+def load_transcripts_analyze_forecast_tools() -> Dict[str, Any]:
+    text = files("defeatbeta_api.data.template").joinpath('transcripts_analyze_fin_forecast_tools.json').read_text(encoding="utf-8")
     data = json.loads(text)
     return data
 
