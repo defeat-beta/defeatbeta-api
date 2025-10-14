@@ -17,11 +17,11 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Financial Metric name (e.g., Revenue,  Revenue by segment, Revenue by geography, Revenue by product, Income etc.)."
+                  "description": "Metric name"
                 },
-                "change": {
+                "outlook": {
                   "type": "string",
-                  "description": "The change field should reflect the wording from management’s statement, along with the numerical figures (e.g., percentages, basis points, or monetary amounts) describing how the current quarter differs from the previous period, while excluding any projections, guidance, or forecasts."
+                  "description": "The outlook field should reflect the wording from management’s statement, along with the specific numerical figures (e.g., percentages, basis points, or monetary amounts) describing future projections, guidance, outlook or forecasts."
                 },
                 "speaker": {
                   "type": "string",
@@ -32,13 +32,13 @@
                   "description": "Paragraph number in the transcript where the metric is discussed."
                 }
               },
-              "required": ["name", "change", "speaker", "paragraph_number"]
+              "required": ["name", "outlook", "speaker", "paragraph_number"]
             }
           },
           "processed_metrics": {
             "type": "array",
             "additionalProperties": false,
-            "description": "Infer the `direction`, and `reasons` based on the `original_metrics`. `processed_metrics` array **must ensure a strict one-to-one correspondence** with the `original_metrics` array",
+            "description": "Infer the `attitude`, and `reason` based on the `original_metrics`. `processed_metrics` array **must ensure a strict one-to-one correspondence** with the `original_metrics` array",
             "items": {
               "type": "object",
               "properties": {
@@ -46,17 +46,17 @@
                   "type": "string",
                   "description": "Copy the `name` field from the corresponding `original_metrics` item exactly (this ensures matching)."
                 },
-                "direction": {
+                "attitude": {
                   "type": "string",
-                  "enum": ["up", "down", "unchanged"],
-                  "description": "Based on the extracted `change` from the `original_metrics`, infer the `direction` of this change (\"up\", \"down\", or \"unchanged\")."
+                  "enum": ["optimistic", "pessimistic", "neutral"],
+                  "description": "Based on the extracted `outlook` from the `original_metrics`, infer the management’s `attitude` of this forecast (\"optimistic\", \"pessimistic\", or \"neutral\")."
                 },
                 "reason": {
                   "type": "string",
-                  "description": "Based on the extracted `change` from the `original_metrics`, infer the `reason` behind this change. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
+                  "description": "Based on the extracted `outlook` from the `original_metrics`, infer the `reason` behind this outlook. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
                 }
               },
-              "required": ["name", "direction", "reason"]
+              "required": ["name", "attitude", "reason"]
             }
           }
         },

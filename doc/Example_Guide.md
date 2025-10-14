@@ -36,6 +36,7 @@
 > This project also offers the capability to analyze data based on Large Language Models (LLMs).
 > 1. [Key Financial Data Extraction](LLM_KeyData_Example.md) : Analyze earnings call transcripts based on Large Language Models (LLMs) to extract the key financial data mentioned within.
 > 2. [Financial Metrics Changes Analysis](LLM_ChangeData_Example.md): Analyze earnings call transcripts based on Large Language Models (LLMs) to analyze key quarterly financial changes and their causes.
+> 3. [Financial Metrics Forecast Analysis](LLM_ForecastData_Example.md): Analyze earnings call transcripts based on Large Language Models (LLMs) to analyze key quarterly financial forecast and their causes.
 
 ---
 

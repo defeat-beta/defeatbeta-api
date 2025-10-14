@@ -28,6 +28,7 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 ✅ **LLM-Powered Analysis**: 
 - [Key Financial Data Extraction](doc/LLM_KeyData_Example.md) — Use Large Language Models (LLMs) to analyze earnings call transcripts and extract key financial data.
 - [Financial Metrics Changes Analysis](doc/LLM_ChangeData_Example.md) — Use Large Language Models (LLMs) to analyze key quarterly financial changes and their causes.
+- [Financial Metrics Forecast Analysis](doc/LLM_ForecastData_Example.md) — Use Large Language Models (LLMs) to analyze key quarterly financial forecast and their causes.
 
 ### How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.

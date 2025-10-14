@@ -49,7 +49,7 @@ print(res.to_string())
 
 **The following figure illustrates the thought process of the large model:**
 
-![llm_thinking.gif](llm_thinking.gif)
+![llm_change_thinking.gif](llm_change_thinking.gif)
 
 ---
 

@@ -5,6 +5,7 @@ Change Log
 -------
 - Refactor function call tools template[`#73 <https://github.com/defeat-beta/defeatbeta-api/issues/73>`_]
 - Analyze earnings call transcripts for key metric changes and their drivers[`#74 <https://github.com/defeat-beta/defeatbeta-api/issues/74>`_]
+- Analyze earnings call transcripts for key metric mentioned as a projection[`#76 <https://github.com/defeat-beta/defeatbeta-api/issues/76>`_]
 
 0.0.19
 -------
