@@ -37,14 +37,14 @@ class TestAITranscripts(unittest.TestCase):
             2025,
             2,
             self.llm,
-            OpenAIConfiguration(model='Qwen/Qwen3-8B', temperature=0, top_p=0.99, tool_choice="auto"))
+            OpenAIConfiguration(model='Qwen/Qwen3-Omni-30B-A3B-Thinking', temperature=0, top_p=0.99, tool_choice="auto"))
         print(res.to_string())
 
     def test_analyze_financial_metrics_forecast_for_future_with_ai(self):
         transcripts = self.ticker.earning_call_transcripts()
         res = transcripts.analyze_financial_metrics_forecast_for_future_with_ai(
-            2025,
-            2,
+            2026,
+            1,
             self.llm,
             OpenAIConfiguration(model='Qwen/Qwen3-8B', temperature=0, top_p=0.99, tool_choice="auto"))
         print(res.to_string())

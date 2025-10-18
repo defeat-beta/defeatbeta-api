@@ -3,7 +3,6 @@
     "type": "function",
     "function": {
       "name": "extract_metrics",
-      "description": "Return a JSON object containing an array of extracted financial metrics and their qualitative change descriptions.",
       "parameters": {
         "type": "object",
         "additionalProperties": false,
@@ -11,52 +10,60 @@
           "original_metrics": {
             "type": "array",
             "additionalProperties": false,
-            "description": "Based on the transcript of this earnings call, perform an extraction of the original metrics.",
+            "description": "Read through the entire text, analyze it line by line, and extract sentences",
             "items": {
               "type": "object",
               "properties": {
-                "name": {
+                "sentence": {
                   "type": "string",
-                  "description": "Financial Metric name (e.g., Revenue,  Revenue by segment, Revenue by geography, Revenue by product, Income etc.)."
-                },
-                "change": {
-                  "type": "string",
-                  "description": "The change field should reflect the wording from management’s statement, along with the numerical figures (e.g., percentages, basis points, or monetary amounts) describing how the current quarter differs from the previous period, while excluding any projections, guidance, or forecasts."
+                  "description": "The sentence MUST contain business or financial percentage changes (including descriptions such as “growth, decline, YoY, quarter-over-quarter, %, two-digit, double-digit, three-digit, triple-digit” etc.)."
                 },
                 "speaker": {
                   "type": "string",
-                  "description": "Name of the speaker who mentioned the metric."
+                  "description": "Name of the speaker who mentioned the sentence."
                 },
                 "paragraph_number": {
-                  "type": ["integer"],
-                  "description": "Paragraph number in the transcript where the metric is discussed."
+                  "type": "integer",
+                  "description": "Paragraph number in the transcript where the sentence is mentioned."
                 }
               },
-              "required": ["name", "change", "speaker", "paragraph_number"]
+              "required": ["sentence", "speaker", "paragraph_number"]
             }
           },
           "processed_metrics": {
             "type": "array",
             "additionalProperties": false,
-            "description": "Infer the `direction`, and `reason` based on the `original_metrics`. `processed_metrics` array **must ensure a strict one-to-one correspondence** with the `original_metrics` array",
+            "description": "Infer the `name`, `direction`, and `reason` based on the `original_metrics`. `processed_metrics` array **must ensure a strict one-to-one correspondence** with the `original_metrics` array",
             "items": {
               "type": "object",
               "properties": {
+                "sentence": {
+                  "type": "string",
+                  "description": "Copy the `sentence` field from the corresponding `original_metrics` item exactly (this ensures matching)."
+                },
+                "speaker": {
+                  "type": "string",
+                  "description": "Copy the `speaker` field from the corresponding `original_metrics` item exactly (this ensures matching)."
+                },
+                "paragraph_number": {
+                  "type": "integer",
+                  "description": "Copy the `paragraph_number` field from the corresponding `original_metrics` item exactly (this ensures matching)."
+                },
                 "name": {
                   "type": "string",
-                  "description": "Copy the `name` field from the corresponding `original_metrics` item exactly (this ensures matching)."
+                  "description": "Based on the extracted `sentence` from the `original_metrics`, summarize the metric name."
                 },
                 "direction": {
                   "type": "string",
                   "enum": ["up", "down", "unchanged"],
-                  "description": "Based on the extracted `change` from the `original_metrics`, infer the `direction` of this change (\"up\", \"down\", or \"unchanged\")."
+                  "description": "Based on the extracted `sentence` from the `original_metrics`, infer the `direction` of this change (\"up\", \"down\", or \"unchanged\")."
                 },
                 "reason": {
                   "type": "string",
-                  "description": "Based on the extracted `change` from the `original_metrics`, infer the `reason` behind this change. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
+                  "description": "Based on the extracted `sentence` from the `original_metrics`, infer the `reason` behind this change. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
                 }
               },
-              "required": ["name", "direction", "reason"]
+              "required": ["sentence", "speaker", "paragraph_number", "name", "direction", "reason"]
             }
           }
         },
