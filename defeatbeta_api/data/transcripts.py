@@ -227,6 +227,7 @@ class Transcripts:
 
         raw_args = ""
         prompt_tokens = 0
+        reasoning_tokens = 0
         completion_tokens = 0
         cursor_char = "▌"
         panel_title = "[bold green]🧠 Thinking Step by Step[/]"
@@ -237,9 +238,13 @@ class Transcripts:
         with Live(console=console, refresh_per_second=20) as live:
             for chunk in response:
                 delta = chunk.choices[0].delta
+
+                if hasattr(chunk, "usage") and chunk.usage and chunk.choices[0].finish_reason:
+                    prompt_tokens = chunk.usage.prompt_tokens
+                    completion_tokens = chunk.usage.completion_tokens
+                    reasoning_tokens = chunk.usage.completion_tokens_details.reasoning_tokens
+
                 if delta.reasoning_content:
-                    prompt_tokens += chunk.usage.prompt_tokens
-                    completion_tokens += chunk.usage.completion_tokens
                     if is_tty:
                         reasoning_text += delta.reasoning_content
                         lines = reasoning_text.splitlines()
@@ -283,9 +288,11 @@ class Transcripts:
         self.logger.debug(
             f"metrics data: {func_args}, "
             f"prompt tokens: {prompt_tokens}, "
+            f"reasoning tokens: {reasoning_tokens}, "
             f"completion tokens: {completion_tokens}, "
             f"infer elapsed(s): {round(elapsed, 2)}"
         )
+
         df = pd.DataFrame(processed_metrics)
 
         records = []
