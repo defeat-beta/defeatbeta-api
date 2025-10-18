@@ -18,7 +18,9 @@
 
 
 ## Prerequisites
-To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`), A LLM model with a thinking capability.
+To run this example, you need: 
+1. An OpenAI-compatible API key (`OPEN_AI_API_KEY`)
+2. A LLM model with a thinking capability.
 
 > [!TIP]
 > Our tests were conducted using the `Qwen/Qwen3-Omni-30B-A3B-Thinking` model, achieving over 99% recall and 100% accuracy.
