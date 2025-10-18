@@ -20,14 +20,10 @@
 ## Prerequisites
 To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`), A LLM model with a thinking capability.
 
-Our tests were conducted using the `Qwen/Qwen3-Omni-30B-A3B-Thinking` model, achieving over 99% recall and 100% accuracy. 
-
-For optimal results, it is recommended to use large language models with large parameters.
-
 > [!TIP]
-> You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing).
+> Our tests were conducted using the `Qwen/Qwen3-Omni-30B-A3B-Thinking` model, achieving over 99% recall and 100% accuracy.
 > 
-> For higher accuracy and performance, consider using larger models from [OpenAI](https://openai.com/index/openai-api/), [DeepSeek](https://api-docs.deepseek.com/), [QWen](https://qwen.ai/apiplatform), or [Gemini](https://ai.google.dev/gemini-api/docs).
+> For optimal results, it is recommended to use large language models with large parameters.
 
 ## Example Code
 **Below is an example that analyzes key quarterly financial changes and their causes, using an LLM on earnings call transcripts.**
