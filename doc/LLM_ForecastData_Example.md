@@ -17,14 +17,14 @@
 > This document explains how to use large language models (LLMs) to analyze management’s future outlook. Compared to manual analysis, LLMs can complete the same task in just seconds, providing a clear and traceable reasoning process for review.
 
 ## Prerequisites
-To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`), A LLM model with a thinking capability.
-
-Our tests show that even free, small-parameter models(e.g. `Qwen/Qwen3-8B`) can deliver excellent results.
+To run this example, you need: 
+1. An OpenAI-compatible API key (`OPEN_AI_API_KEY`)
+2. A LLM model with a thinking capability.
 
 > [!TIP]
-> You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing).
+> Our tests were conducted using the `Qwen/Qwen3-Omni-30B-A3B-Thinking` model, achieving over 99% recall and 100% accuracy.
 > 
-> For higher accuracy and performance, consider using larger models from [OpenAI](https://openai.com/index/openai-api/), [DeepSeek](https://api-docs.deepseek.com/), [QWen](https://qwen.ai/apiplatform), or [Gemini](https://ai.google.dev/gemini-api/docs).
+> For optimal results, it is recommended to use large language models with large parameters.
 
 ## Example Code
 **Below is an example that analyzes key quarterly financial forecast and their causes, using an LLM on earnings call transcripts.**

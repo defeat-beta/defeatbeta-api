@@ -2,49 +2,35 @@
   {
     "type": "function",
     "function": {
-      "name": "extract_metrics",
-      "description": "Return a JSON object containing an array of extracted financial metrics and their qualitative change descriptions.",
+      "name": "extract_sentences",
+      "description": "Read and analyze the `earnings_call_transcripts` sentence by sentence, extract key sentences.",
+      "strict": true,
       "parameters": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "original_metrics": {
+          "key_sentences": {
             "type": "array",
+            "description": "Sentences that include the projections of future.",
             "additionalProperties": false,
-            "description": "Based on the transcript of this earnings call, perform an extraction of the original metrics.",
             "items": {
               "type": "object",
               "properties": {
-                "name": {
+                "sentence": {
                   "type": "string",
-                  "description": "Financial Metric name (e.g., Revenue,  Revenue by segment, Revenue by geography, Revenue by product, Income etc.)."
-                },
-                "outlook": {
-                  "type": "string",
-                  "description": "The outlook field should reflect the wording from management’s statement, along with the specific numerical figures (e.g., percentages, basis points, or monetary amounts) describing future projections, guidance, outlook or forecasts."
+                  "description": "The sentence must explicitly include specific numerical figures (e.g., percentages, basis points, or monetary amounts) that describe projections, guidance, outlooks, expectations, or forecasts for the future."
                 },
                 "speaker": {
                   "type": "string",
-                  "description": "Name of the speaker who mentioned the metric."
+                  "description": "Name of the speaker who mentioned the `sentence`."
                 },
                 "paragraph_number": {
-                  "type": ["integer"],
-                  "description": "Paragraph number in the transcript where the metric is discussed."
-                }
-              },
-              "required": ["name", "outlook", "speaker", "paragraph_number"]
-            }
-          },
-          "processed_metrics": {
-            "type": "array",
-            "additionalProperties": false,
-            "description": "Infer the `attitude`, and `reason` based on the `original_metrics`. `processed_metrics` array **must ensure a strict one-to-one correspondence** with the `original_metrics` array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
+                  "type": "integer",
+                  "description": "Paragraph number in the transcript where the `sentence` is mentioned."
+                },
+                "short_summary": {
                   "type": "string",
-                  "description": "Copy the `name` field from the corresponding `original_metrics` item exactly (this ensures matching)."
+                  "description": "The short summary of the `sentence`."
                 },
                 "attitude": {
                   "type": "string",
@@ -53,14 +39,14 @@
                 },
                 "reason": {
                   "type": "string",
-                  "description": "Based on the extracted `outlook` from the `original_metrics`, infer the `reason` behind this outlook. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
+                  "description": "Based on the `sentence`, infer the `reason` behind this outlook. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
                 }
               },
-              "required": ["name", "attitude", "reason"]
+              "required": ["sentence", "speaker", "paragraph_number", "short_summary", "attitude", "reason"]
             }
           }
         },
-        "required": ["original_metrics", "processed_metrics"]
+        "required": ["key_sentences"]
       }
     }
   }

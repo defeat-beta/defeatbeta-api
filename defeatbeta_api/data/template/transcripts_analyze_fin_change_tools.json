@@ -2,72 +2,56 @@
   {
     "type": "function",
     "function": {
-      "name": "extract_metrics",
+      "name": "extract_sentences",
+      "description": "Read and analyze the `earnings_call_transcripts` sentence by sentence, extract key sentences.",
+      "strict": true,
       "parameters": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "original_metrics": {
+          "key_sentences": {
             "type": "array",
+            "description": "Sentences that include figures changes in business or financial aspects.",
             "additionalProperties": false,
-            "description": "Read through the entire text, analyze it line by line, and extract sentences",
             "items": {
               "type": "object",
               "properties": {
                 "sentence": {
                   "type": "string",
-                  "description": "The sentence MUST contain business or financial percentage changes (including descriptions such as “growth, decline, YoY, quarter-over-quarter, %, two-digit, double-digit, three-digit, triple-digit” etc.)."
+                  "description": "The sentence MUST explicitly describes a financial metric that changed in the current quarter compared to either:\n  - The previous quarter (QoQ / sequential), or\n  - The same quarter last year (YoY)."
                 },
                 "speaker": {
                   "type": "string",
-                  "description": "Name of the speaker who mentioned the sentence."
+                  "description": "Name of the speaker who mentioned the `sentence`."
                 },
                 "paragraph_number": {
                   "type": "integer",
-                  "description": "Paragraph number in the transcript where the sentence is mentioned."
-                }
-              },
-              "required": ["sentence", "speaker", "paragraph_number"]
-            }
-          },
-          "processed_metrics": {
-            "type": "array",
-            "additionalProperties": false,
-            "description": "Infer the `name`, `direction`, and `reason` based on the `original_metrics`. `processed_metrics` array **must ensure a strict one-to-one correspondence** with the `original_metrics` array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "sentence": {
-                  "type": "string",
-                  "description": "Copy the `sentence` field from the corresponding `original_metrics` item exactly (this ensures matching)."
+                  "description": "Paragraph number in the transcript where the `sentence` is mentioned."
                 },
-                "speaker": {
+                "is_factual": {
                   "type": "string",
-                  "description": "Copy the `speaker` field from the corresponding `original_metrics` item exactly (this ensures matching)."
+                  "enum": ["Y", "N"],
+                  "description": "Return \"Y\" if the content of `sentence` is factual (already occurred), and \"N\" otherwise (for projections, guidance, expectation or forecasts)."
                 },
-                "paragraph_number": {
-                  "type": "integer",
-                  "description": "Copy the `paragraph_number` field from the corresponding `original_metrics` item exactly (this ensures matching)."
-                },
-                "name": {
+                "short_summary": {
                   "type": "string",
-                  "description": "Based on the extracted `sentence` from the `original_metrics`, summarize the metric name."
+                  "description": "The short summary of the `sentence`."
                 },
                 "direction": {
                   "type": "string",
                   "enum": ["up", "down", "unchanged"],
-                  "description": "Based on the extracted `sentence` from the `original_metrics`, infer the `direction` of this change (\"up\", \"down\", or \"unchanged\")."
+                  "description": "Based on the `sentence`, infer the `direction` of this figure change (\"up\", \"down\", or \"unchanged\")."
                 },
                 "reason": {
                   "type": "string",
-                  "description": "Based on the extracted `sentence` from the `original_metrics`, infer the `reason` behind this change. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
+                  "description": "Based on the `sentence`, infer the `reason` behind this figure change. The reason should be derived from the full transcript and use management’s own wording. If management does not mention any reason, return an empty string."
                 }
               },
-              "required": ["sentence", "speaker", "paragraph_number", "name", "direction", "reason"]
+              "required": ["sentence", "speaker", "paragraph_number", "is_actual", "short_summary", "direction", "reason"]
             }
           }
         },
-        "required": ["original_metrics", "processed_metrics"]
+        "required": ["key_sentences"]
       }
     }
   }
