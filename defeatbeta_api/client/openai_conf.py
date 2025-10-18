@@ -3,7 +3,8 @@ class OpenAIConfiguration:
             self,
             model="Qwen/Qwen3-8B",
             temperature=0,
-            top_p=0.95,
+            top_p=0,
+            top_k=5,
             tool_choice="auto"
     ):
         configs = locals()
@@ -20,6 +21,9 @@ class OpenAIConfiguration:
 
     def get_top_p(self):
         return self.top_p
+
+    def get_top_k(self):
+        return self.top_k
 
     def get_tool_choice(self):
         return self.tool_choice
