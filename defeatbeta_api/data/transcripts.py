@@ -4,8 +4,9 @@ import re
 import sys
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, Any
 
+import nltk
 import pandas as pd
 from openai import OpenAI
 from rich.console import Console
@@ -193,12 +194,16 @@ class Transcripts:
         pattern_transcripts = r"\{earnings_call_transcripts\}"
         transcript = self.get_transcript(fiscal_year, fiscal_quarter)
         transcript_json = transcript.to_dict(orient="records")
+        for paragraph in transcript_json:
+            content = paragraph.pop("content")
+            sentences = nltk.sent_tokenize(content)
+            paragraph["sentences"] = sentences
         transcript_str = json.dumps(transcript_json, ensure_ascii=False, indent=2)
         prompt = re.sub(pattern_transcripts, transcript_str, template)
 
         messages = [{
                         "role": "system",
-                        "content": "You are a precise financial analyst. Return only valid JSON as function arguments when requested."
+                        "content": "You are a precise financial analyst. Your task is to analyze each sentence in the provided JSON array of paragraphs one by one, where each paragraph includes a \"sentences\" array containing individual sentences."
                     },
                     {
                         'role': 'user',
@@ -231,10 +236,10 @@ class Transcripts:
         is_tty = sys.stdout.isatty()
         with Live(console=console, refresh_per_second=20) as live:
             for chunk in response:
-                prompt_tokens += chunk.usage.prompt_tokens
-                completion_tokens += chunk.usage.completion_tokens
                 delta = chunk.choices[0].delta
                 if delta.reasoning_content:
+                    prompt_tokens += chunk.usage.prompt_tokens
+                    completion_tokens += chunk.usage.completion_tokens
                     if is_tty:
                         reasoning_text += delta.reasoning_content
                         lines = reasoning_text.splitlines()
@@ -243,9 +248,9 @@ class Transcripts:
                                           padding=(1, 2)))
                     else:
                         print(delta.reasoning_content, end="", flush=True)
-
                 if delta.tool_calls:
                     raw_args += f"{delta.tool_calls[0].function.arguments}"
+
             if is_tty:
                 live.update(Panel(reasoning_text, title="[bold white]🧠 Finish Think[/]", border_style="white",
                                   padding=(1, 2)))
@@ -273,12 +278,7 @@ class Transcripts:
                 f"Failed to parse tool_call arguments: {raw_args}, error: {e}"
             )
 
-        original_metrics = func_args.get("original_metrics")
         processed_metrics = func_args.get("processed_metrics")
-        if not original_metrics or not processed_metrics:
-            raise ValueError(
-                f"'metrics' missing in func_args: {func_args}"
-            )
 
         self.logger.debug(
             f"metrics data: {func_args}, "
@@ -286,31 +286,7 @@ class Transcripts:
             f"completion tokens: {completion_tokens}, "
             f"infer elapsed(s): {round(elapsed, 2)}"
         )
-        original_metrics_df = pd.DataFrame(original_metrics)
-        processed_metrics_df = pd.DataFrame(processed_metrics)
-        if 'name' not in original_metrics_df.columns or 'name' not in processed_metrics_df.columns:
-            raise ValueError("'name' column missing in one or both DataFrames")
-
-        if len(original_metrics_df) != len(processed_metrics_df):
-            raise ValueError(
-                f"Length mismatch: original_metrics_df has {len(original_metrics_df)} rows, processed_metrics_df has {len(processed_metrics_df)} rows")
-
-        name_check = (original_metrics_df['name'] == processed_metrics_df['name']).all()
-        if not name_check:
-            mismatch_mask = original_metrics_df['name'] != processed_metrics_df['name']
-            mismatches = original_metrics_df[mismatch_mask].join(
-                processed_metrics_df[mismatch_mask]['name'],
-                rsuffix='_processed'
-            )
-            raise ValueError(
-                f"Name mismatch at positions: {mismatch_mask[mismatch_mask].index.tolist()}\n"
-                f"Details:\n{mismatches[['name', 'name_processed']]}"
-            )
-
-        df = pd.concat(
-            [original_metrics_df, processed_metrics_df.drop(columns=['name'])],
-            axis=1
-        )
+        df = pd.DataFrame(processed_metrics)
 
         records = []
         for index, row in df.iterrows():
@@ -322,7 +298,7 @@ class Transcripts:
                 "paragraph_number": row['paragraph_number'],
                 "key_financial_metric": row['name'],
                 "direction": row['direction'],
-                "change": row['change'],
+                "change": row['sentence'],
                 "reason": row['reason']
             })
         return pd.DataFrame(records)

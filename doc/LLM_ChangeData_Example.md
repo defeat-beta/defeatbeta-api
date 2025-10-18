@@ -20,7 +20,9 @@
 ## Prerequisites
 To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`), A LLM model with a thinking capability.
 
-Our tests show that even free, small-parameter models(e.g. `Qwen/Qwen3-8B`) can deliver excellent results.
+Our tests were conducted using the `Qwen/Qwen3-Omni-30B-A3B-Thinking` model, achieving over 99% recall and 100% accuracy. 
+
+For optimal results, it is recommended to use large language models with large parameters.
 
 > [!TIP]
 > You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing).
@@ -52,7 +54,7 @@ res = transcripts.analyze_financial_metrics_change_for_this_quarter_with_ai(
   2025, 
   2, 
   llm, 
-  OpenAIConfiguration(model='Qwen/Qwen3-8B'))
+  OpenAIConfiguration(model='Qwen/Qwen3-Omni-30B-A3B-Thinking'))
 print(res.to_string())
 ```
 
