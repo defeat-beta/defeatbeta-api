@@ -22,7 +22,7 @@ To run this example, you need:
 2. A LLM model with a thinking capability.
 
 > [!TIP]
-> Our tests were conducted using the `Qwen/Qwen3-Omni-30B-A3B-Thinking` model, achieving over 99% recall and 100% accuracy.
+> Our tests were conducted using the [Qwen/Qwen3-Omni-30B-A3B-Thinking](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Thinking) model, achieving over 99% recall and 100% accuracy.
 > 
 > For optimal results, it is recommended to use large language models with large parameters.
 
