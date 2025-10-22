@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.22
+-------
+- Fix missing nltk package[`#80 <https://github.com/defeat-beta/defeatbeta-api/issues/80>`_]
+
 0.0.21
 -------
 - Improve LLMs' response stability[`#77 <https://github.com/defeat-beta/defeatbeta-api/issues/77>`_]
