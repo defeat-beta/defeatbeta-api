@@ -15,6 +15,7 @@ from defeatbeta_api.data.finance_value import FinanceValue
 from defeatbeta_api.data.income_statement import IncomeStatement
 from defeatbeta_api.data.news import News
 from defeatbeta_api.data.print_visitor import PrintVisitor
+from defeatbeta_api.data.sql.sql_loader import load_sql_query
 from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.stock_statement import StockStatement
 from defeatbeta_api.data.transcripts import Transcripts
@@ -75,6 +76,12 @@ class Ticker:
     def price(self) -> pd.DataFrame:
         return self._query_data(stock_prices)
 
+    def currency(self, symbol: str) -> pd.DataFrame:
+        return self._query_data2(exchange_rate, symbol)
+
+    def shares(self) -> pd.DataFrame:
+        return self._query_data(stock_shares_outstanding)
+
     def quarterly_income_statement(self) -> Statement:
         return self._statement(income_statement, quarterly)
 
@@ -94,13 +101,9 @@ class Ticker:
         return self._statement(cash_flow, annual)
 
     def ttm_pe(self) -> pd.DataFrame:
-        price_url = self.huggingface_client.get_url_path(stock_prices)
-        price_sql = f"SELECT * FROM '{price_url}' WHERE symbol = '{self.ticker}'"
-        price_df = self.duckdb_client.query(price_sql)
+        price_df = self.price()
 
-        eps_url = self.huggingface_client.get_url_path(stock_tailing_eps)
-        eps_sql = f"SELECT * FROM '{eps_url}' WHERE symbol = '{self.ticker}'"
-        eps_df = self.duckdb_client.query(eps_sql)
+        eps_df = self.ttm_eps()
 
         price_df['report_date'] = pd.to_datetime(price_df['report_date'])
         eps_df['report_date'] = pd.to_datetime(eps_df['report_date'])
@@ -136,41 +139,41 @@ class Ticker:
         return result_df
 
     def quarterly_gross_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('gross', 'quarterly', 'gross_profit', 'gross_margin')
+        return self._generate_margin('gross', 'quarterly', 'gross_profit', 'gross_margin')
 
     def annual_gross_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('gross', 'annual', 'gross_profit', 'gross_margin')
+        return self._generate_margin('gross', 'annual', 'gross_profit', 'gross_margin')
 
     def quarterly_operating_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('operating', 'quarterly', 'operating_income', 'operating_margin')
+        return self._generate_margin('operating', 'quarterly', 'operating_income', 'operating_margin')
 
     def annual_operating_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('operating', 'annual', 'operating_income', 'operating_margin')
+        return self._generate_margin('operating', 'annual', 'operating_income', 'operating_margin')
 
     def quarterly_net_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('net', 'quarterly', 'net_income_common_stockholders', 'net_margin')
+        return self._generate_margin('net', 'quarterly', 'net_income_common_stockholders', 'net_margin')
 
     def annual_net_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('net', 'annual', 'net_income_common_stockholders', 'net_margin')
+        return self._generate_margin('net', 'annual', 'net_income_common_stockholders', 'net_margin')
 
     def quarterly_ebitda_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('ebitda', 'quarterly', 'ebitda', 'ebitda_margin')
+        return self._generate_margin('ebitda', 'quarterly', 'ebitda', 'ebitda_margin')
 
     def annual_ebitda_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('ebitda', 'annual', 'ebitda', 'ebitda_margin')
+        return self._generate_margin('ebitda', 'annual', 'ebitda', 'ebitda_margin')
 
     def quarterly_fcf_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('fcf', 'quarterly', 'free_cash_flow', 'fcf_margin')
+        return self._generate_margin('fcf', 'quarterly', 'free_cash_flow', 'fcf_margin')
 
     def annual_fcf_margin(self) -> pd.DataFrame:
-        return self._generate_margin_sql('fcf', 'annual', 'free_cash_flow', 'fcf_margin')
+        return self._generate_margin('fcf', 'annual', 'free_cash_flow', 'fcf_margin')
 
     def earning_call_transcripts(self) -> Transcripts:
         return Transcripts(self.ticker, self._query_data(stock_earning_call_transcripts), self.log_level)
 
     def news(self) -> News:
         url = self.huggingface_client.get_url_path(stock_news)
-        sql = f"SELECT * FROM '{url}' WHERE ARRAY_CONTAINS(related_symbols, '{self.ticker}') ORDER BY report_date ASC"
+        sql = load_sql_query("news_by_symbol", ticker = self.ticker, url = url)
         return News(self.duckdb_client.query(sql))
 
     def revenue_by_segment(self) -> pd.DataFrame:
@@ -213,13 +216,9 @@ class Ticker:
         return self._quarterly_eps_yoy_growth('tailing_eps', 'ttm_eps', 'prev_year_ttm_eps')
 
     def market_capitalization(self) -> pd.DataFrame:
-        price_url = self.huggingface_client.get_url_path(stock_prices)
-        price_sql = f"SELECT * FROM '{price_url}' WHERE symbol = '{self.ticker}'"
-        price_df = self.duckdb_client.query(price_sql)
+        price_df = self.price()
 
-        shares_url = self.huggingface_client.get_url_path(stock_shares_outstanding)
-        shares_sql = f"SELECT * FROM '{shares_url}' WHERE symbol = '{self.ticker}'"
-        shares_df = self.duckdb_client.query(shares_sql)
+        shares_df = self.shares()
 
         price_df['report_date'] = pd.to_datetime(price_df['report_date'])
         shares_df['report_date'] = pd.to_datetime(shares_df['report_date'])
@@ -417,38 +416,26 @@ class Ticker:
 
     def _quarterly_book_value_of_equity(self) -> pd.DataFrame:
         stockholders_equity_url = self.huggingface_client.get_url_path(stock_statement)
-        stockholders_equity_sql = f"""
-            SELECT symbol, report_date, item_value as book_value_of_equity 
-            FROM 
-                '{stockholders_equity_url}' 
-            WHERE 
-                symbol = '{self.ticker}' 
-                AND item_name = 'stockholders_equity' 
-                AND period_type = 'quarterly'
-                AND item_value IS NOT NULL
-                AND report_date != 'TTM'
-        """
+        stockholders_equity_sql = load_sql_query("_quarterly_book_value_of_equity",
+                                                 ticker = self.ticker,
+                                                 stockholders_equity_url = stockholders_equity_url)
         stockholders_equity_df = self.duckdb_client.query(stockholders_equity_sql)
 
         currency = load_financial_currency().get(self.ticker)
         if currency is None:
             currency = 'USD'
-        currency_symbol = currency + '=X'
-        currency_url = self.huggingface_client.get_url_path(exchange_rate)
-        currency_sql = f"""
-            SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
-        """
+
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
                 stockholders_equity_df['report_date'])
-            currency_df['symbol'] = currency_symbol
+            currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
             currency_df['high'] = 1.0
             currency_df['low'] = 1.0
         else:
-            currency_df = self.duckdb_client.query(currency_sql)
+            currency_df = self.currency(currency + '=X')
 
         stockholders_equity_df['report_date'] = pd.to_datetime(stockholders_equity_df['report_date'])
         currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
@@ -484,128 +471,25 @@ class Ticker:
 
     def ttm_revenue(self) -> pd.DataFrame:
         ttm_revenue_url = self.huggingface_client.get_url_path(stock_statement)
-        ttm_revenue_sql = f"""
-            WITH quarterly_data AS (
-                SELECT 
-                    symbol, 
-                    report_date, 
-                    item_name, 
-                    item_value, 
-                    finance_type, 
-                    period_type,
-                    YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
-                FROM 
-                    '{ttm_revenue_url}'  
-                WHERE 
-                    symbol = '{self.ticker}' 
-                    AND item_name = 'total_revenue' 
-                    AND period_type = 'quarterly'
-                    AND item_value IS NOT NULL
-                    AND report_date != 'TTM'
-            ),
-            quarterly_data_rn AS (
-                SELECT
-                    symbol, 
-                    report_date, 
-                    item_name, 
-                    item_value, 
-                    finance_type, 
-                    period_type,
-                    continuous_id,
-                    ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
-                FROM
-                    quarterly_data
-            ),
-            grouped_data AS (
-                SELECT
-                    *,
-                    continuous_id - rn_asc AS group_id
-                FROM
-                    quarterly_data_rn
-            ),
-            base_data_window AS (
-                SELECT
-                    symbol, 
-                    report_date, 
-                    item_name, 
-                    item_value, 
-                    finance_type, 
-                    period_type
-                FROM
-                    grouped_data t1
-                    where t1.group_id = (
-                        SELECT
-                            group_id
-                        FROM
-                            grouped_data
-                        ORDER BY
-                            continuous_id DESC
-                            LIMIT 1
-                    )
-                ORDER BY
-                    continuous_id ASC
-            ),
-            sliding_window AS (
-                SELECT
-                report_date,
-                ttm_total_revenue,
-                TO_JSON(MAP(window_report_dates, window_item_values)) AS report_date_2_revenue
-                FROM (
-                    SELECT
-                        symbol,
-                        report_date,
-                        item_name,
-                        item_value,
-                        finance_type,
-                        period_type,
-                        SUM(item_value) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS ttm_total_revenue,
-                        COUNT(*) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS quarter_count,
-                        ARRAY_AGG(report_date) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS window_report_dates,
-                        ARRAY_AGG(item_value) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS window_item_values
-                    FROM base_data_window
-                ) t
-                WHERE quarter_count = 4
-            )
-            SELECT 
-                * from sliding_window
-        """
+        ttm_revenue_sql = load_sql_query("ttm_revenue",
+                                         ticker = self.ticker,
+                                         ttm_revenue_url = ttm_revenue_url)
         ttm_revenue_df = self.duckdb_client.query(ttm_revenue_sql)
 
         currency = load_financial_currency().get(self.ticker)
         if currency is None:
             currency = 'USD'
-        currency_symbol = currency + '=X'
-        currency_url = self.huggingface_client.get_url_path(exchange_rate)
-        currency_sql = f"""
-            SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
-        """
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
                 ttm_revenue_df['report_date'])
-            currency_df['symbol'] = currency_symbol
+            currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
             currency_df['high'] = 1.0
             currency_df['low'] = 1.0
         else:
-            currency_df = self.duckdb_client.query(currency_sql)
+            currency_df = self.currency(symbol = currency + '=X')
 
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
         currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
@@ -642,128 +526,26 @@ class Ticker:
 
     def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
         ttm_net_income_url = self.huggingface_client.get_url_path(stock_statement)
-        ttm_net_income_sql = f"""
-            WITH quarterly_data AS (
-                SELECT 
-                    symbol, 
-                    report_date, 
-                    item_name, 
-                    item_value, 
-                    finance_type, 
-                    period_type,
-                    YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
-                FROM 
-                    '{ttm_net_income_url}'  
-                WHERE 
-                    symbol = '{self.ticker}' 
-                    AND item_name = 'net_income_common_stockholders' 
-                    AND period_type = 'quarterly'
-                    AND item_value IS NOT NULL
-                    AND report_date != 'TTM'
-            ),
-            quarterly_data_rn AS (
-                SELECT
-                    symbol, 
-                    report_date, 
-                    item_name, 
-                    item_value, 
-                    finance_type, 
-                    period_type,
-                    continuous_id,
-                    ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
-                FROM
-                    quarterly_data
-            ),
-            grouped_data AS (
-                SELECT
-                    *,
-                    continuous_id - rn_asc AS group_id
-                FROM
-                    quarterly_data_rn
-            ),
-            base_data_window AS (
-                SELECT
-                    symbol, 
-                    report_date, 
-                    item_name, 
-                    item_value, 
-                    finance_type, 
-                    period_type
-                FROM
-                    grouped_data t1
-                    where t1.group_id = (
-                        SELECT
-                            group_id
-                        FROM
-                            grouped_data
-                        ORDER BY
-                            continuous_id DESC
-                            LIMIT 1
-                    )
-                ORDER BY
-                    continuous_id ASC
-            ),
-            sliding_window AS (
-                SELECT
-                report_date,
-                ttm_net_income,
-                TO_JSON(MAP(window_report_dates, window_item_values)) AS report_date_2_net_income,
-                FROM (
-                    SELECT
-                        symbol,
-                        report_date,
-                        item_name,
-                        item_value,
-                        finance_type,
-                        period_type,
-                        SUM(item_value) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS ttm_net_income,
-                        COUNT(*) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS quarter_count,
-                        ARRAY_AGG(report_date) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS window_report_dates,
-                        ARRAY_AGG(item_value) OVER (
-                            PARTITION BY symbol
-                            ORDER BY CAST(report_date AS DATE)
-                            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
-                        ) AS window_item_values
-                    FROM base_data_window
-                ) t
-                WHERE quarter_count = 4
-            )
-            SELECT 
-                * from sliding_window
-        """
+        ttm_net_income_sql = load_sql_query("ttm_net_income_common_stockholders",
+                                ticker=self.ticker,
+                                ttm_net_income_url=ttm_net_income_url)
         ttm_revenue_df = self.duckdb_client.query(ttm_net_income_sql)
 
         currency = load_financial_currency().get(self.ticker)
         if currency is None:
             currency = 'USD'
-        currency_symbol = currency + '=X'
-        currency_url = self.huggingface_client.get_url_path(exchange_rate)
-        currency_sql = f"""
-            SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
-        """
+
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
                 ttm_revenue_df['report_date'])
-            currency_df['symbol'] = currency_symbol
+            currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
             currency_df['high'] = 1.0
             currency_df['low'] = 1.0
         else:
-            currency_df = self.duckdb_client.query(currency_sql)
+            currency_df = self.currency(symbol = currency + '=X')
 
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
         currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
@@ -800,115 +582,7 @@ class Ticker:
 
     def roe(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = f"""
-                WITH roe_table AS (
-                            SELECT
-                                symbol,
-                                report_date,
-                                MAX(CASE WHEN item_name = 'net_income_common_stockholders' THEN item_value END) AS net_income_common_stockholders,
-                                MAX(CASE WHEN item_name = 'stockholders_equity' THEN item_value END) AS stockholders_equity
-                            FROM
-                                '{url}'
-                            WHERE
-                                symbol = '{self.ticker}'
-                                AND item_name IN ('net_income_common_stockholders', 'stockholders_equity')
-                                AND report_date != 'TTM'
-                                AND period_type = 'quarterly'
-                                AND finance_type in ('income_statement', 'balance_sheet')
-                            GROUP BY symbol, report_date
-                ),
-                
-                base_data AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        stockholders_equity,
-                        YEAR(report_date::DATE) AS report_year,
-                        QUARTER(report_date::DATE) AS report_quarter,
-                        YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
-                    FROM
-                        roe_table
-                    WHERE
-                        net_income_common_stockholders IS NOT NULL AND stockholders_equity IS NOT NULL
-                ),
-                
-                base_data_rn AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        stockholders_equity,
-                        report_year,
-                        report_quarter,
-                        continuous_id,
-                        ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
-                    FROM
-                        base_data
-                ),
-                
-                grouped_data AS (
-                    SELECT
-                        *,
-                        continuous_id - rn_asc AS group_id
-                    FROM
-                        base_data_rn
-                ),
-                
-                base_data_window AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        stockholders_equity,
-                        ROW_NUMBER() OVER (ORDER BY report_date ASC) AS rn
-                    FROM
-                        grouped_data t1
-                        JOIN (
-                            SELECT
-                                group_id
-                            FROM
-                                grouped_data
-                            ORDER BY
-                                continuous_id DESC
-                                LIMIT 1
-                        ) t2
-                    ON t1.group_id = t2.group_id
-                    ORDER BY
-                        continuous_id ASC
-                ),
-                
-                equity_with_lag AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        stockholders_equity as ending_stockholders_equity,
-                        LAG(stockholders_equity, 1) OVER (PARTITION BY symbol ORDER BY report_date) AS beginning_stockholders_equity
-                    FROM base_data_window
-                ),
-                
-                equity_avg AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        ending_stockholders_equity,
-                        beginning_stockholders_equity,
-                        (beginning_stockholders_equity + ending_stockholders_equity) / 2.0 AS avg_equity
-                    FROM equity_with_lag
-                    WHERE beginning_stockholders_equity IS NOT NULL
-                )
-                
-                select symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        beginning_stockholders_equity,
-                        ending_stockholders_equity,
-                        avg_equity,
-                        round(net_income_common_stockholders / avg_equity, 4) AS roe
-                    from equity_avg order by report_date;
-        """
+        sql = load_sql_query("roe", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
             'report_date',
@@ -922,115 +596,7 @@ class Ticker:
 
     def roa(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = f"""
-                WITH roe_table AS (
-                            SELECT
-                                symbol,
-                                report_date,
-                                MAX(CASE WHEN item_name = 'net_income_common_stockholders' THEN item_value END) AS net_income_common_stockholders,
-                                MAX(CASE WHEN item_name = 'total_assets' THEN item_value END) AS total_assets
-                            FROM
-                                '{url}'
-                            WHERE
-                                symbol = '{self.ticker}'
-                                AND item_name IN ('net_income_common_stockholders', 'total_assets')
-                                AND report_date != 'TTM'
-                                AND period_type = 'quarterly'
-                                AND finance_type in ('income_statement', 'balance_sheet')
-                            GROUP BY symbol, report_date
-                ),
-                
-                base_data AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        total_assets,
-                        YEAR(report_date::DATE) AS report_year,
-                        QUARTER(report_date::DATE) AS report_quarter,
-                        YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
-                    FROM
-                        roe_table
-                    WHERE
-                        net_income_common_stockholders IS NOT NULL AND total_assets IS NOT NULL
-                ),
-                
-                base_data_rn AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        total_assets,
-                        report_year,
-                        report_quarter,
-                        continuous_id,
-                        ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
-                    FROM
-                        base_data
-                ),
-                
-                grouped_data AS (
-                    SELECT
-                        *,
-                        continuous_id - rn_asc AS group_id
-                    FROM
-                        base_data_rn
-                ),
-                
-                base_data_window AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        total_assets,
-                        ROW_NUMBER() OVER (ORDER BY report_date ASC) AS rn
-                    FROM
-                        grouped_data t1
-                        JOIN (
-                            SELECT
-                                group_id
-                            FROM
-                                grouped_data
-                            ORDER BY
-                                continuous_id DESC
-                                LIMIT 1
-                        ) t2
-                    ON t1.group_id = t2.group_id
-                    ORDER BY
-                        continuous_id ASC
-                ),
-                
-                assets_with_lag AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        total_assets as ending_total_assets,
-                        LAG(total_assets, 1) OVER (PARTITION BY symbol ORDER BY report_date) AS beginning_total_assets
-                    FROM base_data_window
-                ),
-                
-                asserts_avg AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        ending_total_assets,
-                        beginning_total_assets,
-                        (beginning_total_assets + ending_total_assets) / 2.0 AS avg_assets
-                    FROM assets_with_lag
-                    WHERE beginning_total_assets IS NOT NULL
-                )
-                
-                select symbol,
-                        report_date,
-                        net_income_common_stockholders,
-                        beginning_total_assets,
-                        ending_total_assets,
-                        avg_assets,
-                        round(net_income_common_stockholders / avg_assets, 4) AS roa
-                    from asserts_avg order by report_date;
-            """
+        sql = load_sql_query("roa", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
             'report_date',
@@ -1044,127 +610,7 @@ class Ticker:
 
     def roic(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = f"""
-                WITH roic_table AS (
-                 SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN item_name = 'ebit' THEN item_value END) AS ebit,
-                     MAX(CASE WHEN item_name = 'tax_rate_for_calcs' THEN item_value END) AS tax_rate_for_calcs,
-                     MAX(CASE WHEN item_name = 'invested_capital' THEN item_value END) AS invested_capital
-                 FROM
-                     '{url}'
-                 WHERE
-                     symbol = '{self.ticker}'
-                     AND item_name IN ('ebit', 'tax_rate_for_calcs', 'net_income_common_stockholders', 'invested_capital')
-                     AND report_date != 'TTM'
-                     AND period_type = 'quarterly'
-                     AND finance_type in ('income_statement', 'balance_sheet')
-                 GROUP BY symbol, report_date
-                ),
-
-                base_data AS (
-                  SELECT
-                      symbol,
-                      report_date,
-                      ebit,
-                      tax_rate_for_calcs,
-                      ebit * (1 - tax_rate_for_calcs) as nopat,
-                      invested_capital,
-                      YEAR(report_date::DATE) AS report_year,
-                      QUARTER(report_date::DATE) AS report_quarter,
-                      YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
-                  FROM
-                      roic_table
-                ),
-
-                base_data_rn AS (
-                  SELECT
-                      symbol,
-                      report_date,
-                      ebit,
-                      tax_rate_for_calcs,
-                      nopat,
-                      invested_capital,
-                      report_year,
-                      report_quarter,
-                      continuous_id,
-                      ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
-                  FROM
-                      base_data
-                ),
-
-                grouped_data AS (
-                  SELECT
-                      *,
-                      continuous_id - rn_asc AS group_id
-                  FROM
-                      base_data_rn
-                ),
-
-                base_data_window AS (
-                  SELECT
-                      symbol,
-                      report_date,
-                      ebit,
-                      tax_rate_for_calcs,
-                      nopat,
-                      invested_capital,
-                      ROW_NUMBER() OVER (ORDER BY report_date ASC) AS rn
-                  FROM
-                      grouped_data t1
-                      JOIN (
-                          SELECT
-                              group_id
-                          FROM
-                              grouped_data
-                          ORDER BY
-                              continuous_id DESC
-                              LIMIT 1
-                      ) t2
-                  ON t1.group_id = t2.group_id
-                  ORDER BY
-                      continuous_id ASC
-                ),
-
-                invested_capital_with_lag AS (
-                  SELECT
-                      symbol,
-                      report_date,
-                      ebit,
-                      tax_rate_for_calcs,
-                      nopat,
-                      invested_capital as ending_invested_capital,
-                      LAG(invested_capital, 1) OVER (PARTITION BY symbol ORDER BY report_date) AS beginning_invested_capital
-                  FROM base_data_window
-                ),
-
-                invested_capital_avg AS (
-                  SELECT
-                      symbol,
-                      report_date,
-                      ebit,
-                      tax_rate_for_calcs,
-                      nopat,
-                      ending_invested_capital,
-                      beginning_invested_capital,
-                      (beginning_invested_capital + ending_invested_capital) / 2.0 AS avg_invested_capital
-                  FROM invested_capital_with_lag
-                  WHERE beginning_invested_capital IS NOT NULL
-                )
-
-
-                select symbol,
-                      report_date,
-                      ebit,
-                      tax_rate_for_calcs,
-                      nopat,
-                      beginning_invested_capital,
-                      ending_invested_capital,
-                      avg_invested_capital,
-                      round(nopat / avg_invested_capital, 4) AS roic
-                  from invested_capital_avg order by report_date; 
-            """
+        sql = load_sql_query("roic", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
             'report_date',
@@ -1231,126 +677,23 @@ class Ticker:
 
     def wacc(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = f"""
-                WITH wacc_table AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        MAX(CASE WHEN item_name = 'total_debt' THEN item_value END) AS total_debt,
-                        MAX(CASE WHEN item_name = 'interest_expense' THEN item_value END) AS interest_expense,
-                        MAX(CASE WHEN item_name = 'pretax_income' THEN item_value END) AS pretax_income,
-                        MAX(CASE WHEN item_name = 'tax_provision' THEN item_value END) AS tax_provision,
-                        MAX(CASE WHEN item_name = 'tax_rate_for_calcs' THEN item_value END) AS tax_rate_for_calcs
-                    FROM
-                        '{url}'
-                    WHERE
-                        symbol = '{self.ticker}'
-                        AND item_name IN ('total_debt', 'interest_expense', 'pretax_income', 'tax_provision', 'tax_rate_for_calcs')
-                        AND report_date != 'TTM'
-                        AND period_type = 'quarterly'
-                        AND finance_type in ('income_statement', 'balance_sheet')
-                    GROUP BY symbol, report_date
-                ),
-                                
-                base_data AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        total_debt,
-                        interest_expense,
-                        pretax_income,
-                        tax_provision,
-                        tax_rate_for_calcs,
-                        YEAR(report_date::DATE) AS report_year,
-                        QUARTER(report_date::DATE) AS report_quarter,
-                        YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
-                    FROM
-                        wacc_table
-                    WHERE
-                        total_debt IS NOT NULL AND interest_expense IS NOT NULL AND pretax_income IS NOT NULL AND tax_provision IS NOT NULL AND tax_rate_for_calcs IS NOT NULL
-                ),
-                                
-                base_data_rn AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        total_debt,
-                        interest_expense,
-                        pretax_income,
-                        tax_provision,
-                        tax_rate_for_calcs,
-                        report_year,
-                        report_quarter,
-                        continuous_id,
-                        ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
-                    FROM
-                        base_data
-                ),
-                                
-                grouped_data AS (
-                    SELECT
-                        *,
-                        continuous_id - rn_asc AS group_id
-                    FROM
-                        base_data_rn
-                ),
-                                
-                base_data_window AS (
-                    SELECT
-                        symbol,
-                        report_date,
-                        total_debt,
-                        interest_expense,
-                        pretax_income,
-                        tax_provision,
-                        tax_rate_for_calcs,
-                        ROW_NUMBER() OVER (ORDER BY report_date ASC) AS rn
-                    FROM
-                        grouped_data t1
-                        JOIN (
-                            SELECT
-                                group_id
-                            FROM
-                                grouped_data
-                            ORDER BY
-                                continuous_id DESC
-                                LIMIT 1
-                        ) t2
-                    ON t1.group_id = t2.group_id
-                    ORDER BY
-                        continuous_id ASC
-                )
-                
-                select 
-                    symbol,
-                    report_date,
-                    total_debt,
-                    interest_expense,
-                    pretax_income,
-                    tax_provision,
-                    tax_rate_for_calcs
-                from base_data_window
-        """
+        sql = load_sql_query("wacc", ticker = self.ticker, url = url)
         wacc_df = self.duckdb_client.query(sql)
         currency = load_financial_currency().get(self.ticker)
         if currency is None:
             currency = 'USD'
-        currency_symbol = currency + '=X'
-        currency_url = self.huggingface_client.get_url_path(exchange_rate)
-        currency_sql = f"""
-                    SELECT * FROM '{currency_url}' WHERE symbol = '{currency_symbol}'
-                """
+
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
                 wacc_df['report_date'])
-            currency_df['symbol'] = currency_symbol
+            currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
             currency_df['high'] = 1.0
             currency_df['low'] = 1.0
         else:
-            currency_df = self.duckdb_client.query(currency_sql)
+            currency_df = self.currency(symbol = currency + '=X')
 
         currency_df = currency_df[[
             'report_date',
@@ -1508,141 +851,78 @@ class Ticker:
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
-        sql = f"""
-            WITH eps_data AS (
-                SELECT 
-                    symbol,
-                    CAST(report_date AS DATE) AS report_date,
-                    {eps_column}
-                FROM '{url}'
-                WHERE symbol = '{self.ticker}'
-            ),
-            yoy AS (
-                SELECT 
-                    e1.symbol,
-                    e1.report_date,
-                    e1.{eps_column} AS {current_alias},
-                    e2.{eps_column} AS {prev_alias}
-                FROM eps_data e1
-                LEFT JOIN eps_data e2
-                  ON e1.symbol = e2.symbol
-                 AND strftime(e2.report_date, '%m-%d') = strftime(e1.report_date, '%m-%d')
-                 AND date_diff('year', e2.report_date, e1.report_date) = 1
-            )
-            SELECT 
-                symbol,
-                report_date,
-                {current_alias},
-                {prev_alias},
-                CASE 
-                    WHEN {prev_alias} IS NOT NULL AND {prev_alias} != 0 
-                        THEN ROUND(({current_alias} - {prev_alias}) / ABS({prev_alias}), 4)
-                    WHEN {prev_alias} IS NOT NULL AND {prev_alias} = 0 AND {current_alias} > 0
-                        THEN 1.00
-                    WHEN {prev_alias} IS NOT NULL AND {prev_alias} = 0 AND {current_alias} < 0
-                        THEN -1.00
-                    ELSE NULL
-                END AS yoy_growth
-            FROM yoy
-            ORDER BY report_date;
-        """
+        sql = load_sql_query("_quarterly_eps_yoy_growth",
+                             ticker = self.ticker,
+                             url = url,
+                             eps_column = eps_column,
+                             current_alias = current_alias,
+                             prev_alias = prev_alias)
         return self.duckdb_client.query(sql)
 
     def _calculate_yoy_growth(self, item_name: str, period_type: str, finance_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
         metric_name = item_name.replace('total_', '')  # For naming consistency in output
-        lag_period = 4 if period_type == 'quarterly' else 1
         ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ''
 
-        sql = f"""
-            WITH metric_data AS (
-                SELECT 
-                    symbol,
-                    CAST(report_date AS DATE) AS report_date,
-                    item_value as {metric_name}
-                FROM '{url}' 
-                WHERE symbol='{self.ticker}' 
-                    AND finance_type = '{finance_type}' 
-                    AND item_name='{item_name}' 
-                    AND period_type='{period_type}'
-                    {ttm_filter}
-            ),
-            yoy AS (
-                SELECT 
-                    e1.symbol,
-                    e1.report_date,
-                    e1.{metric_name} AS {metric_name},
-                    e2.{metric_name} AS prev_year_{metric_name}
-                FROM metric_data e1
-                LEFT JOIN metric_data e2
-                  ON e1.symbol = e2.symbol
-                 AND strftime(e2.report_date, '%m-%d') = strftime(e1.report_date, '%m-%d')
-                 AND date_diff('year', e2.report_date, e1.report_date) = 1
-            )
-            SELECT 
-                symbol,
-                report_date,
-                {metric_name},
-                prev_year_{metric_name},
-                CASE 
-                    WHEN prev_year_{metric_name} IS NOT NULL AND prev_year_{metric_name} != 0 
-                    THEN ROUND(({metric_name} - prev_year_{metric_name}) / ABS(prev_year_{metric_name}), 4)
-                    ELSE NULL
-                END as yoy_growth
-            FROM yoy
-            WHERE {metric_name} IS NOT NULL
-            ORDER BY report_date;
-        """
+        sql = load_sql_query("_calculate_yoy_growth",
+                             ticker = self.ticker,
+                             url = url,
+                             metric_name = metric_name,
+                             item_name = item_name,
+                             period_type = period_type,
+                             finance_type = finance_type,
+                             ttm_filter = ttm_filter)
         return self.duckdb_client.query(sql)
 
     def _revenue_by_breakdown(self, breakdown_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' AND breakdown_type = '{breakdown_type}' ORDER BY report_date ASC"
+        sql = load_sql_query(
+            "_revenue_by_breakdown",
+            ticker = self.ticker,
+            url = url,
+            breakdown_type = breakdown_type)
         data = self.duckdb_client.query(sql)
         df_wide = data.pivot(index=['report_date'], columns='item_name', values='item_value').reset_index()
         df_wide.columns.name = None
         df_wide = df_wide.fillna(0)
         return df_wide
 
-    def _generate_margin_sql(self, margin_type: str, period_type: str, numerator_item: str,
-                             margin_column: str) -> pd.DataFrame:
+    def _generate_margin(self, margin_type: str, period_type: str, numerator_item: str,
+                         margin_column: str) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path('stock_statement')
         ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ""
         finance_type_filter = \
             "AND finance_type = 'income_statement'" if margin_type in ['gross', 'operating', 'net', 'ebitda'] \
             else "AND finance_type in ('income_statement', 'cash_flow')" if margin_type == 'fcf' \
             else ""
-        sql = f"""
-            SELECT symbol,
-                   report_date,
-                   {numerator_item},
-                   total_revenue,
-                   round({numerator_item}/total_revenue, 4) as {margin_column}
-            FROM (
-                SELECT
-                     symbol,
-                     report_date,
-                     MAX(CASE WHEN t1.item_name = '{numerator_item}' THEN t1.item_value END) AS {numerator_item},
-                     MAX(CASE WHEN t1.item_name = 'total_revenue' THEN t1.item_value END) AS total_revenue
-                  FROM '{self.huggingface_client.get_url_path('stock_statement')}' t1
-                  WHERE symbol = '{self.ticker}'
-                    {finance_type_filter}
-                    {ttm_filter}
-                    AND item_name IN ('{numerator_item}', 'total_revenue')
-                    AND period_type = '{period_type}'
-                  GROUP BY symbol, report_date
-            ) t 
-            ORDER BY report_date ASC
-        """
+        sql = load_sql_query("_generate_margin",
+                             ticker = self.ticker,
+                             url = url,
+                             numerator_item = numerator_item,
+                             margin_column = margin_column,
+                             period_type = period_type,
+                             ttm_filter = ttm_filter,
+                             finance_type_filter = finance_type_filter)
         return self.duckdb_client.query(sql)
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
+        return self._query_data2(table_name, self.ticker)
+
+    def _query_data2(self, table_name: str, ticker: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}'"
+        sql = load_sql_query(
+            "_query_data",
+                        ticker = ticker,
+                        url = url)
         return self.duckdb_client.query(sql)
 
     def _statement(self, finance_type: str, period_type: str) -> Statement:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = f"SELECT * FROM '{url}' WHERE symbol = '{self.ticker}' and finance_type = '{finance_type}' and period_type = '{period_type}'"
+        sql = load_sql_query("_statement",
+                             url=url,
+                             ticker=self.ticker,
+                             finance_type=finance_type,
+                             period_type=period_type)
         df = self.duckdb_client.query(sql)
         stock_statements = self._dataframe_to_stock_statements(df=df)
         if finance_type == income_statement:
