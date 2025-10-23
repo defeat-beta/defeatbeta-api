@@ -16,7 +16,10 @@
 > This document provides an example of how to use the large language model to summarize key financial data from earnings call transcripts.
 
 ## Prerequisites
-To run this example, you need: An OpenAI-compatible API key (`OPEN_AI_API_KEY`). 
+To run this example, you need: 
+1. An OpenAI-compatible API key (`OPEN_AI_API_KEY`)
+2. A LLM model with a function call tools capability.
+3. A LLM model with a thinking capability.
 
 Our tests show that even free, small-parameter models(e.g. [Qwen/Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B)) can deliver excellent results.
 
@@ -102,15 +105,3 @@ print(res.to_string())
 > In contrast, metrics not labeled as `xxx_forecast` will be extracted directly from the transcripts without any calculation.
 > 
 > If a metric is not mentioned in the transcripts, return null for that field.
-
-## Supported LLM Models
-This feature leverages the function-calling capabilities of large language models, so it requires a model with this functionality to work successfully. Fortunately, most large language models support this feature.
-
-Currently supported models include:
-
-| Series       | Models                                                                                                                                                                                       |
-|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **DeepSeek** | DeepSeek-V3, DeepSeek-V3.1, DeepSeek-R1-0528, DeepSeek-R1 (partial environments)                                                                                                             |
-| **Qwen**     | Qwen-2.5 (e.g., Qwen-2.5-7B), Qwen-Plus, Qwen-Max, Qwen-Flash, Qwen-Turbo, Qwen3                                                                                                             |
-| **OpenAI**   | GPT-4 series (e.g., gpt-4, gpt-4o), o3, o3-mini, o4-mini, gpt-oss-20B, gpt-oss-120B                                                                                                          |
-| **Gemini**   | Gemini 2.5 Flash-Lite, Gemini 2.5 Flash + Live API, Gemini 2.0 Flash + Live API, Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 1.5 Pro, Gemini 1.5 Flash |
