@@ -4,7 +4,11 @@
 
 - [Example: Using LLMs to Analyze Key Metric Forecasts and Their Drivers in Earnings Call Transcripts](#example-using-llms-to-analyze-key-metric-forecasts-and-their-drivers-in-earnings-call-transcripts)
   - [Prerequisites](#prerequisites)
-  - [Example Code](#example-code)
+  - [Example](#example)
+    - [Code](#code)
+    - [The Large Model’s Thought Process](#the-large-models-thought-process)
+    - [The Large Model’s Reasoning](#the-large-models-reasoning)
+    - [Output Result](#output-result)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
