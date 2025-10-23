@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.24
+-------
+
 0.0.23
 -------
 - Opt forecast prompt to improve LLMs' response reliability[`#81 <https://github.com/defeat-beta/defeatbeta-api/issues/81>`_]
