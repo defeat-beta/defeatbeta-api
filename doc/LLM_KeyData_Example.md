@@ -5,7 +5,6 @@
 - [Example: Using LLMs to Extract Key Financial Data for Earnings Call Transcript Analysis](#example-using-llms-to-extract-key-financial-data-for-earnings-call-transcript-analysis)
   - [Prerequisites](#prerequisites)
   - [Example Code](#example-code)
-  - [Supported LLM Models](#supported-llm-models)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
