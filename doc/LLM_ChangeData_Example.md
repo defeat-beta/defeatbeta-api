@@ -28,7 +28,7 @@ To run this example, you need:
 > For optimal results, it is recommended to use large language models with large parameters.
 
 ## Example Code
-**Below is an example that analyzes key quarterly financial changes and their causes, using an LLM on earnings call transcripts.**
+### Code
 
 ```python
 from openai import OpenAI
@@ -58,13 +58,13 @@ print(res.to_string())
 
 ---
 
-**The following figure illustrates the thought process of the large model:**
+### The Large Model’s Thought Process
 
 ![llm_change_thinking.gif](llm_change_thinking.gif)
 
 ---
 
-**The following is the result of the large model’s reasoning:**
+### The Large Model’s Reasoning
 
 ```text
 ╭───────────────────────────────────────────────────────────────────────────────────────────────── 🧠 Finish Think ──────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -550,7 +550,7 @@ print(res.to_string())
 
 -----
 
-**The following shows the key data changes and their reasons identified by the large model:**
+### Output Result
 
 ```text
    symbol  fiscal_year  fiscal_quarter     speaker  paragraph_number                                        key_financial_metric direction                                                                                                                                                                                                                                                change                                                                                                                                                                                                                         reason

@@ -26,8 +26,8 @@ To run this example, you need:
 > 
 > For optimal results, it is recommended to use large language models with large parameters.
 
-## Example Code
-**Below is an example that analyzes key quarterly financial forecast and their causes, using an LLM on earnings call transcripts.**
+## Example
+### Code
 
 ```python
 from openai import OpenAI
@@ -57,14 +57,14 @@ print(res.to_string())
 ```
 ---
 
-**The following figure illustrates the thought process of the large model:**
+### The Large Model’s Thought Process
 
 ![llm_forecast_thinking.gif](llm_forecast_thinking.gif)
 
 
 ---
 
-**The following is the result of the large model’s reasoning:**
+### The Large Model’s Reasoning
 ```text
 ╭───────────────────────────────────────────────────────────────────────────────────────────────── 🧠 Finish Think ──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                                                                                                                                    │
@@ -199,7 +199,8 @@ print(res.to_string())
 
 -----
 
-**The following shows the key data forecast and their reasons identified by the large model:**
+### Output Result
+
 ```text
    symbol  fiscal_year  fiscal_quarter     speaker  paragraph_number                                                                                  key_financial_metric     attitude                                                                                                                                                                                                                                                                                                                                                                 outlook                                                                                                                                                                                                                                                                                                                                                                                                                                                         reason
 0     AMD         2025               2  Jean X. Hu                 4                              Projected Q3 revenue guidance of $8.7 billion with $300 million variance   optimistic                                                                                                                                                                                                                                                          For the third quarter of 2025, we expect revenue to be approximately $8.7 billion, plus or minus $300 million.                                                                                                                                                                                                                                                                                                                                                                        driven by strong double-digit growth in our Client and Gaming, and Data Center segments
