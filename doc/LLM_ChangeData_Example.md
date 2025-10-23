@@ -5,7 +5,6 @@
 - [Example: Using LLMs to Analyze Key Metric Changes and Their Drivers in Earnings Call Transcripts](#example-using-llms-to-analyze-key-metric-changes-and-their-drivers-in-earnings-call-transcripts)
   - [Prerequisites](#prerequisites)
   - [Example Code](#example-code)
-  - [Supported LLM Models](#supported-llm-models)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
