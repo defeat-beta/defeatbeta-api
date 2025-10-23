@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.23
+-------
+- Opt forecast prompt to improve LLMs' response reliability[`#81 <https://github.com/defeat-beta/defeatbeta-api/issues/81>`_]
+
 0.0.22
 -------
 - Fix missing nltk package[`#80 <https://github.com/defeat-beta/defeatbeta-api/issues/80>`_]

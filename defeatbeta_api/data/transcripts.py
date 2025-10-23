@@ -54,6 +54,10 @@ class Transcripts:
         pattern_transcripts = r"\{earnings_call_transcripts\}"
         transcript = self.get_transcript(fiscal_year, fiscal_quarter)
         transcript_json = transcript.to_dict(orient="records")
+        for paragraph in transcript_json:
+            content = paragraph.pop("content")
+            sentences = nltk.sent_tokenize(content)
+            paragraph["sentences"] = sentences
         transcript_str = json.dumps(transcript_json, ensure_ascii=False, indent=2)
         prompt = re.sub(pattern_transcripts, transcript_str, template)
 
