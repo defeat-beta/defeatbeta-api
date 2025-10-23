@@ -20,7 +20,8 @@
 ## Prerequisites
 To run this example, you need: 
 1. An OpenAI-compatible API key (`OPEN_AI_API_KEY`)
-2. A LLM model with a thinking capability.
+2. A LLM model with a function call tools capability.
+3. A LLM model with a thinking capability.
 
 > [!TIP]
 > Our tests were conducted using the [Qwen/Qwen3-Omni-30B-A3B-Thinking](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Thinking) model, achieving over 99% recall and 100% accuracy.
@@ -399,16 +400,3 @@ print(res.to_string())
 10    AMD         2025               2  Jean X. Hu                 4         Diluted earnings per share      down                                                                         $0.48 compared to $0.69 a year ago                                                                                                                                                                                                  inventory and related charges
 11    AMD         2025               2  Jean X. Hu                 4                     Free cash flow        up                                                                                     record of $1.2 billion                                                                                                                                                          strong momentum across the business and sustained demand for products
 ```
-
-
-## Supported LLM Models
-This feature leverages the function-calling capabilities of large language models, so it requires a model with this functionality to work successfully. Fortunately, most large language models support this feature.
-
-Currently supported models include:
-
-| Series       | Models                                                                                                                                                                                       |
-|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **DeepSeek** | DeepSeek-V3, DeepSeek-V3.1, DeepSeek-R1-0528, DeepSeek-R1 (partial environments)                                                                                                             |
-| **Qwen**     | Qwen-2.5 (e.g., Qwen-2.5-7B), Qwen-Plus, Qwen-Max, Qwen-Flash, Qwen-Turbo, Qwen3                                                                                                             |
-| **OpenAI**   | GPT-4 series (e.g., gpt-4, gpt-4o), o3, o3-mini, o4-mini, gpt-oss-20B, gpt-oss-120B                                                                                                          |
-| **Gemini**   | Gemini 2.5 Flash-Lite, Gemini 2.5 Flash + Live API, Gemini 2.0 Flash + Live API, Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 1.5 Pro, Gemini 1.5 Flash |
