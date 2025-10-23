@@ -1,0 +1,1 @@
+SELECT * FROM '{url}' WHERE ARRAY_CONTAINS(related_symbols, '{ticker}') ORDER BY report_date ASC
