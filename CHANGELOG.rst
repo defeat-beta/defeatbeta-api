@@ -4,6 +4,7 @@ Change Log
 0.0.24
 -------
 - Refactor ticker.py: Decouple SQL logic from code[`#82 <https://github.com/defeat-beta/defeatbeta-api/issues/82>`_]
+- refine the return of LLM[`#83 <https://github.com/defeat-beta/defeatbeta-api/issues/83>`_]
 
 0.0.23
 -------
