@@ -165,9 +165,9 @@ class Transcripts:
                 "fiscal_quarter": fiscal_quarter,
                 "speaker": row['speaker'],
                 "paragraph_number": row['paragraph_number'],
-                "key_financial_metric": row['short_summary'],
-                "attitude": row['attitude'],
+                "summary": row['short_summary'],
                 "outlook": row['sentence'],
+                "attitude": row['attitude'],
                 "reason": row['reason']
             })
         return pd.DataFrame(records)
@@ -292,9 +292,9 @@ class Transcripts:
                 "fiscal_quarter": fiscal_quarter,
                 "speaker": row['speaker'],
                 "paragraph_number": row['paragraph_number'],
-                "key_financial_metric": row['short_summary'],
+                "summary": row['short_summary'],
+                "sentence": row['sentence'],
                 "direction": row['direction'],
-                "change": row['sentence'],
                 "reason": row['reason']
             })
         return pd.DataFrame(records)
