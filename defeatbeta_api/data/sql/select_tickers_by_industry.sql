@@ -1,0 +1,1 @@
+SELECT * FROM '{url}' WHERE industry='{industry}' and industry is not NULL and industry != ''

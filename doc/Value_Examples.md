@@ -406,4 +406,31 @@ ticker.wacc()
 64   TSLA  2025-09-18           1.344528e+12            1.0  1.313400e+10    1.313400e+10        86000000.0            86000000.0   1.549000e+09       1.549000e+09   3.590000e+08       3.590000e+08                0.23            2024          0.1107              0.0411     2.07          0.0097            0.9903        0.0065          0.1852  0.1835
 65   TSLA  2025-09-19           1.374267e+12            1.0  1.313400e+10    1.313400e+10        86000000.0            86000000.0   1.549000e+09       1.549000e+09   3.590000e+08       3.590000e+08                0.23            2024          0.1107              0.0414     2.07          0.0095            0.9905        0.0065          0.1849  0.1832
 ```
----
+
+## 13. Industry Historical TTM PE
+```markdown
+total_market_cap          = sum of the market cap of all stocks in the industry  
+
+total_ttm_net_income      = sum of the trailing twelve months (TTM) net income of all stocks in the industry
+
+industry_pe               = total_market_cap / total_ttm_net_income
+```
+
+```python
+ticker.industry_ttm_pe()
+```
+```text
+     report_date        industry  ...  total_ttm_net_income  industry_pe
+0     1994-11-30  Semiconductors  ...          0.000000e+00          NaN
+1     1994-12-01  Semiconductors  ...          0.000000e+00          NaN
+2     1994-12-02  Semiconductors  ...          0.000000e+00          NaN
+3     1994-12-05  Semiconductors  ...          0.000000e+00          NaN
+4     1994-12-06  Semiconductors  ...          0.000000e+00          NaN
+...          ...             ...  ...                   ...          ...
+7773  2025-10-20  Semiconductors  ...          1.691450e+11        56.76
+7774  2025-10-21  Semiconductors  ...          1.691450e+11        56.20
+7775  2025-10-22  Semiconductors  ...          1.691450e+11        55.51
+7776  2025-10-23  Semiconductors  ...          1.691450e+11        56.19
+7777  2025-10-24  Semiconductors  ...          1.691450e+11        57.43
+
+```

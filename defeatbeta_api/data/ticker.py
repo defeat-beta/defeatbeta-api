@@ -34,6 +34,7 @@ class Ticker:
     def __init__(self, ticker, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
         self.ticker = ticker.upper()
         self.http_proxy = http_proxy
+        self.config = config
         self.duckdb_client = get_duckdb_client(http_proxy=self.http_proxy, log_level=log_level, config=config)
         self.huggingface_client = HuggingFaceClient()
         self.log_level = log_level
@@ -848,6 +849,62 @@ class Ticker:
             4
         )
         return result_df
+
+    def industry_ttm_pe(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+
+        if not industry or pd.isna(industry):
+            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = load_sql_query("select_tickers_by_industry", url = url, industry=industry)
+        symbols = self.duckdb_client.query(sql)['symbol']
+        symbols = symbols[symbols != self.ticker]
+        symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
+
+        total_market_cap = None
+        for symbol in symbols:
+            ticker = Ticker(symbol, http_proxy=self.http_proxy, log_level=self.log_level, config=self.config)
+            market_cap = ticker.market_capitalization()
+
+            market_cap = market_cap[['report_date', 'market_capitalization']].copy()
+            market_cap = market_cap.rename(columns={'market_capitalization': f'market_cap({symbol})'})
+
+            if total_market_cap is None:
+                total_market_cap = market_cap
+            else:
+                total_market_cap = pd.merge(total_market_cap, market_cap, on='report_date', how='outer')
+
+        market_cap_cols = [col for col in total_market_cap.columns if col.startswith('market_cap(')]
+
+        total_market_cap['total_market_cap'] = total_market_cap[market_cap_cols].sum(axis=1, skipna=True)
+        total_market_cap['industry'] = industry
+        df = total_market_cap[['report_date', 'industry', 'total_market_cap']]
+
+        for symbol in symbols:
+            ticker = Ticker(symbol, http_proxy=self.http_proxy, log_level=self.log_level, config=self.config)
+            ttm_net_income = ticker.ttm_net_income_common_stockholders()
+            ttm_net_income = ttm_net_income[['report_date', 'ttm_net_income_usd']].copy()
+            ttm_net_income = ttm_net_income.rename(columns={
+                'ttm_net_income_usd': f'ttm_net_income_usd({symbol})'
+            })
+
+            df = pd.merge_asof(
+                df,
+                ttm_net_income,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+
+        ttm_net_income_usd_cols = [col for col in df.columns if col.startswith('ttm_net_income_usd(')]
+        df['total_ttm_net_income'] = df[ttm_net_income_usd_cols].sum(axis=1, skipna=True)
+        df = df[['report_date', 'industry', 'total_market_cap', 'total_ttm_net_income']]
+        df['industry_pe'] = (df['total_market_cap'] / df['total_ttm_net_income']).replace([np.inf, -np.inf], np.nan).round(2)
+        return df
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
