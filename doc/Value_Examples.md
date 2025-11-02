@@ -434,4 +434,6 @@ ticker.industry_ttm_pe()
 7776  2025-10-23  Semiconductors  ...          1.691450e+11        56.19
 7777  2025-10-24  Semiconductors  ...          1.691450e+11        57.43
 
+[7778 rows x 5 columns]
+
 ```
