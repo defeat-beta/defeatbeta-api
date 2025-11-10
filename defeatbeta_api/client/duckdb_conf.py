@@ -4,7 +4,7 @@ from defeatbeta_api.utils.util import validate_memory_limit, validate_httpfs_cac
 class Configuration:
     def __init__(
             self,
-            http_keep_alive=True,
+            http_keep_alive=False,
             http_timeout=120,
             http_retries=5,
             http_retry_backoff=2.0,
@@ -24,7 +24,7 @@ class Configuration:
             cache_httpfs_file_handle_cache_entry_size=1024,
             cache_httpfs_file_handle_cache_entry_timeout_millisec=8 * 3600 * 1000,
             cache_httpfs_max_in_mem_cache_block_count=64,
-            cache_httpfs_in_mem_cache_block_timeout_millisec=1800 * 1000,
+            cache_httpfs_in_mem_cache_block_timeout_millisec=1800 * 1000
     ):
         configs = locals()
         configs.pop('self')

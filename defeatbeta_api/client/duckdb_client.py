@@ -28,9 +28,10 @@ class DuckDBClient:
         self.connection = None
         self.http_proxy = http_proxy
         self.config = config if config is not None else Configuration()
+        self.log_level = log_level
         logging.basicConfig(
             level=log_level,
-            format='%(asctime)s %(levelname)s %(name)s - %(message)s',
+            format='%(asctime)s %(levelname)s %(name)s %(threadName)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S',
             stream=sys.stdout
         )
@@ -46,6 +47,9 @@ class DuckDBClient:
             duckdb_settings = self.config.get_duckdb_settings()
             if self.http_proxy:
                 duckdb_settings.append(f"SET GLOBAL http_proxy = '{self.http_proxy}';")
+
+            if self.log_level and self.log_level == logging.DEBUG:
+                duckdb_settings.append("CALL enable_logging('HTTP', level = 'DEBUG', storage = 'stdout')")
 
             for query in duckdb_settings:
                 self.logger.debug(f"DuckDB settings: {query}")
