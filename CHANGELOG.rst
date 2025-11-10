@@ -6,6 +6,7 @@ Change Log
 - Refactor ticker.py: Decouple SQL logic from code[`#82 <https://github.com/defeat-beta/defeatbeta-api/issues/82>`_]
 - Refine the return of LLM[`#83 <https://github.com/defeat-beta/defeatbeta-api/issues/83>`_]
 - Support Industry PE[`#67 <https://github.com/defeat-beta/defeatbeta-api/issues/67>`_]
+- IO Error: SSL connection failed error for HTTP HEAD to xxxx[`#87 <https://github.com/defeat-beta/defeatbeta-api/issues/87>`_]
 
 0.0.23
 -------
