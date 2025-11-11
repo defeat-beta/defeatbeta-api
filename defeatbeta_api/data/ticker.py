@@ -530,7 +530,7 @@ class Ticker:
         ttm_net_income_sql = load_sql_query("ttm_net_income_common_stockholders",
                                 ticker=self.ticker,
                                 ttm_net_income_url=ttm_net_income_url)
-        ttm_revenue_df = self.duckdb_client.query(ttm_net_income_sql)
+        ttm_net_income_df = self.duckdb_client.query(ttm_net_income_sql)
 
         currency = load_financial_currency().get(self.ticker)
         if currency is None:
@@ -539,7 +539,7 @@ class Ticker:
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
-                ttm_revenue_df['report_date'])
+                ttm_net_income_df['report_date'])
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -548,10 +548,10 @@ class Ticker:
         else:
             currency_df = self.currency(symbol = currency + '=X')
 
-        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
+        ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date'])
         currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
 
-        result_df = ttm_revenue_df.copy()
+        result_df = ttm_net_income_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_net_income_report_date'})
 
         result_df = pd.merge_asof(
@@ -865,44 +865,65 @@ class Ticker:
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
-        total_market_cap = None
-        for symbol in symbols:
-            ticker = Ticker(symbol, http_proxy=self.http_proxy, log_level=self.log_level, config=self.config)
-            market_cap = ticker.market_capitalization()
+        market_cap_table_sql = load_sql_query("select_market_cap_by_industry",
+                                              stock_prices = self.huggingface_client.get_url_path(stock_prices),
+                                              stock_shares_outstanding = self.huggingface_client.get_url_path(stock_shares_outstanding),
+                                              symbols = ", ".join(f"'{s}'" for s in symbols))
 
-            market_cap = market_cap[['report_date', 'market_capitalization']].copy()
-            market_cap = market_cap.rename(columns={'market_capitalization': f'market_cap({symbol})'})
+        total_market_cap = self.duckdb_client.query(market_cap_table_sql)
 
-            if total_market_cap is None:
-                total_market_cap = market_cap
-            else:
-                total_market_cap = pd.merge(total_market_cap, market_cap, on='report_date', how='outer')
-
-        market_cap_cols = [col for col in total_market_cap.columns if col.startswith('market_cap(')]
+        market_cap_cols = [col for col in total_market_cap.columns if col != 'report_date']
 
         total_market_cap['total_market_cap'] = total_market_cap[market_cap_cols].sum(axis=1, skipna=True)
         total_market_cap['industry'] = industry
-        df = total_market_cap[['report_date', 'industry', 'total_market_cap']]
+        total_market_cap = total_market_cap[['report_date', 'industry', 'total_market_cap']]
+        total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
 
-        for symbol in symbols:
-            ticker = Ticker(symbol, http_proxy=self.http_proxy, log_level=self.log_level, config=self.config)
-            ttm_net_income = ticker.ttm_net_income_common_stockholders()
-            ttm_net_income = ttm_net_income[['report_date', 'ttm_net_income_usd']].copy()
-            ttm_net_income = ttm_net_income.rename(columns={
-                'ttm_net_income_usd': f'ttm_net_income_usd({symbol})'
-            })
+        ttm_net_income_sql = load_sql_query("select_ttm_net_income_by_industry",
+                                              stock_statement = self.huggingface_client.get_url_path(stock_statement),
+                                              symbols = ", ".join(f"'{s}'" for s in symbols))
+        ttm_net_income = self.duckdb_client.query(ttm_net_income_sql)
+        ttm_net_income_df = ttm_net_income.copy()
+        currency_dict = load_financial_currency()
+        ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date'])
+        for symbol in ttm_net_income_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency = currency_dict.get(symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': ttm_net_income_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
 
-            df = pd.merge_asof(
-                df,
-                ttm_net_income,
+            merged_df = pd.merge_asof(
+                ttm_net_income_df[['report_date', symbol]].rename(columns={symbol: 'ttm_net_income'}),
+                currency_df.sort_values('report_date'),
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            ttm_net_income_df[f'{symbol}_usd'] = (merged_df['ttm_net_income'] / merged_df['close']).round(2)
+
+        cols_to_keep = ['report_date'] + [c for c in ttm_net_income_df.columns if c.endswith('_usd')]
+        ttm_net_income_usd_df = ttm_net_income_df[cols_to_keep]
+        ttm_net_income_usd_df = ttm_net_income_usd_df.ffill()
+
+        ttm_net_income_usd_cols = [col for col in ttm_net_income_usd_df.columns if col != 'report_date']
+        ttm_net_income_usd_df['total_ttm_net_income'] = ttm_net_income_usd_df[ttm_net_income_usd_cols].sum(axis=1, skipna=True)
+        ttm_net_income_usd_df = ttm_net_income_usd_df[['report_date', 'total_ttm_net_income']]
+        ttm_net_income_usd_df['report_date'] = pd.to_datetime(ttm_net_income_usd_df['report_date'])
+        df = pd.merge_asof(
+                total_market_cap,
+                ttm_net_income_usd_df,
                 left_on='report_date',
                 right_on='report_date',
                 direction='backward'
             )
 
-        ttm_net_income_usd_cols = [col for col in df.columns if col.startswith('ttm_net_income_usd(')]
-        df['total_ttm_net_income'] = df[ttm_net_income_usd_cols].sum(axis=1, skipna=True)
-        df = df[['report_date', 'industry', 'total_market_cap', 'total_ttm_net_income']]
         df['industry_pe'] = (df['total_market_cap'] / df['total_ttm_net_income']).replace([np.inf, -np.inf], np.nan).round(2)
         return df
 
