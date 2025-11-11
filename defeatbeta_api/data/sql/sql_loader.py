@@ -1,6 +1,6 @@
 from importlib.resources import files
 
-def load_sql_query(template_name: str, **kwargs) -> str:
+def load_sql(template_name: str, **kwargs) -> str:
     if not template_name or any(c in template_name for c in ['/', '\\', '..']):
         raise ValueError(f"Invalid template name: {template_name}")
 
