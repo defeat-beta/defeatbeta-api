@@ -7,7 +7,7 @@ import pandas as pd
 from defeatbeta_api import HuggingFaceClient
 from defeatbeta_api.client.duckdb_client import get_duckdb_client
 from defeatbeta_api.client.duckdb_conf import Configuration
-from defeatbeta_api.data.sql.sql_loader import load_sql_query
+from defeatbeta_api.data.sql.sql_loader import load_sql
 from defeatbeta_api.data.ticker import Ticker
 from defeatbeta_api.utils.const import stock_profile
 
@@ -41,7 +41,7 @@ class TestTickerMultithreaded(unittest.TestCase):
 
         huggingface_client = HuggingFaceClient()
         url = huggingface_client.get_url_path(stock_profile)
-        sql = load_sql_query("select_tickers_by_industry", url=url, industry=industry)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
         duckdb_client = get_duckdb_client(http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG, config=Configuration())
         symbols = duckdb_client.query(sql)['symbol']
         symbols = symbols[symbols != t]
