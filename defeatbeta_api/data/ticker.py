@@ -15,7 +15,7 @@ from defeatbeta_api.data.finance_value import FinanceValue
 from defeatbeta_api.data.income_statement import IncomeStatement
 from defeatbeta_api.data.news import News
 from defeatbeta_api.data.print_visitor import PrintVisitor
-from defeatbeta_api.data.sql.sql_loader import load_sql_query
+from defeatbeta_api.data.sql.sql_loader import load_sql
 from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.stock_statement import StockStatement
 from defeatbeta_api.data.transcripts import Transcripts
@@ -174,7 +174,7 @@ class Ticker:
 
     def news(self) -> News:
         url = self.huggingface_client.get_url_path(stock_news)
-        sql = load_sql_query("news_by_symbol", ticker = self.ticker, url = url)
+        sql = load_sql("select_news_by_symbol", ticker = self.ticker, url = url)
         return News(self.duckdb_client.query(sql))
 
     def revenue_by_segment(self) -> pd.DataFrame:
@@ -417,9 +417,9 @@ class Ticker:
 
     def _quarterly_book_value_of_equity(self) -> pd.DataFrame:
         stockholders_equity_url = self.huggingface_client.get_url_path(stock_statement)
-        stockholders_equity_sql = load_sql_query("_quarterly_book_value_of_equity",
-                                                 ticker = self.ticker,
-                                                 stockholders_equity_url = stockholders_equity_url)
+        stockholders_equity_sql = load_sql("select_quarterly_book_value_of_equity_by_symbol",
+                                           ticker = self.ticker,
+                                           stockholders_equity_url = stockholders_equity_url)
         stockholders_equity_df = self.duckdb_client.query(stockholders_equity_sql)
 
         currency = load_financial_currency().get(self.ticker)
@@ -472,9 +472,9 @@ class Ticker:
 
     def ttm_revenue(self) -> pd.DataFrame:
         ttm_revenue_url = self.huggingface_client.get_url_path(stock_statement)
-        ttm_revenue_sql = load_sql_query("ttm_revenue",
-                                         ticker = self.ticker,
-                                         ttm_revenue_url = ttm_revenue_url)
+        ttm_revenue_sql = load_sql("select_ttm_revenue_by_symbol",
+                                   ticker = self.ticker,
+                                   ttm_revenue_url = ttm_revenue_url)
         ttm_revenue_df = self.duckdb_client.query(ttm_revenue_sql)
 
         currency = load_financial_currency().get(self.ticker)
@@ -527,9 +527,9 @@ class Ticker:
 
     def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
         ttm_net_income_url = self.huggingface_client.get_url_path(stock_statement)
-        ttm_net_income_sql = load_sql_query("ttm_net_income_common_stockholders",
-                                ticker=self.ticker,
-                                ttm_net_income_url=ttm_net_income_url)
+        ttm_net_income_sql = load_sql("select_ttm_net_income_common_stockholders_by_symbol",
+                                      ticker=self.ticker,
+                                      ttm_net_income_url=ttm_net_income_url)
         ttm_net_income_df = self.duckdb_client.query(ttm_net_income_sql)
 
         currency = load_financial_currency().get(self.ticker)
@@ -583,7 +583,7 @@ class Ticker:
 
     def roe(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = load_sql_query("roe", ticker = self.ticker, url = url)
+        sql = load_sql("select_roe_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
             'report_date',
@@ -597,7 +597,7 @@ class Ticker:
 
     def roa(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = load_sql_query("roa", ticker = self.ticker, url = url)
+        sql = load_sql("select_roa_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
             'report_date',
@@ -611,7 +611,7 @@ class Ticker:
 
     def roic(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = load_sql_query("roic", ticker = self.ticker, url = url)
+        sql = load_sql("select_roic_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
             'report_date',
@@ -678,7 +678,7 @@ class Ticker:
 
     def wacc(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = load_sql_query("wacc", ticker = self.ticker, url = url)
+        sql = load_sql("select_wacc_by_symbol", ticker = self.ticker, url = url)
         wacc_df = self.duckdb_client.query(sql)
         currency = load_financial_currency().get(self.ticker)
         if currency is None:
@@ -860,15 +860,15 @@ class Ticker:
             raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
 
         url = self.huggingface_client.get_url_path(stock_profile)
-        sql = load_sql_query("select_tickers_by_industry", url = url, industry=industry)
+        sql = load_sql("select_tickers_by_industry", url = url, industry=industry)
         symbols = self.duckdb_client.query(sql)['symbol']
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
-        market_cap_table_sql = load_sql_query("select_market_cap_by_industry",
-                                              stock_prices = self.huggingface_client.get_url_path(stock_prices),
-                                              stock_shares_outstanding = self.huggingface_client.get_url_path(stock_shares_outstanding),
-                                              symbols = ", ".join(f"'{s}'" for s in symbols))
+        market_cap_table_sql = load_sql("select_market_cap_by_industry",
+                                        stock_prices = self.huggingface_client.get_url_path(stock_prices),
+                                        stock_shares_outstanding = self.huggingface_client.get_url_path(stock_shares_outstanding),
+                                        symbols = ", ".join(f"'{s}'" for s in symbols))
 
         total_market_cap = self.duckdb_client.query(market_cap_table_sql)
 
@@ -879,9 +879,9 @@ class Ticker:
         total_market_cap = total_market_cap[['report_date', 'industry', 'total_market_cap']]
         total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
 
-        ttm_net_income_sql = load_sql_query("select_ttm_net_income_by_industry",
-                                              stock_statement = self.huggingface_client.get_url_path(stock_statement),
-                                              symbols = ", ".join(f"'{s}'" for s in symbols))
+        ttm_net_income_sql = load_sql("select_ttm_net_income_by_industry",
+                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
+                                      symbols = ", ".join(f"'{s}'" for s in symbols))
         ttm_net_income = self.duckdb_client.query(ttm_net_income_sql)
         ttm_net_income_df = ttm_net_income.copy()
         currency_dict = load_financial_currency()
@@ -929,12 +929,12 @@ class Ticker:
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
-        sql = load_sql_query("_quarterly_eps_yoy_growth",
-                             ticker = self.ticker,
-                             url = url,
-                             eps_column = eps_column,
-                             current_alias = current_alias,
-                             prev_alias = prev_alias)
+        sql = load_sql("select_quarterly_eps_yoy_growth_by_symbol",
+                       ticker = self.ticker,
+                       url = url,
+                       eps_column = eps_column,
+                       current_alias = current_alias,
+                       prev_alias = prev_alias)
         return self.duckdb_client.query(sql)
 
     def _calculate_yoy_growth(self, item_name: str, period_type: str, finance_type: str) -> pd.DataFrame:
@@ -942,20 +942,20 @@ class Ticker:
         metric_name = item_name.replace('total_', '')  # For naming consistency in output
         ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ''
 
-        sql = load_sql_query("_calculate_yoy_growth",
-                             ticker = self.ticker,
-                             url = url,
-                             metric_name = metric_name,
-                             item_name = item_name,
-                             period_type = period_type,
-                             finance_type = finance_type,
-                             ttm_filter = ttm_filter)
+        sql = load_sql("select_metric_calculate_yoy_growth_by_symbol",
+                       ticker = self.ticker,
+                       url = url,
+                       metric_name = metric_name,
+                       item_name = item_name,
+                       period_type = period_type,
+                       finance_type = finance_type,
+                       ttm_filter = ttm_filter)
         return self.duckdb_client.query(sql)
 
     def _revenue_by_breakdown(self, breakdown_type: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
-        sql = load_sql_query(
-            "_revenue_by_breakdown",
+        sql = load_sql(
+            "select_revenue_breakdown_by_symbol",
             ticker = self.ticker,
             url = url,
             breakdown_type = breakdown_type)
@@ -973,14 +973,14 @@ class Ticker:
             "AND finance_type = 'income_statement'" if margin_type in ['gross', 'operating', 'net', 'ebitda'] \
             else "AND finance_type in ('income_statement', 'cash_flow')" if margin_type == 'fcf' \
             else ""
-        sql = load_sql_query("_generate_margin",
-                             ticker = self.ticker,
-                             url = url,
-                             numerator_item = numerator_item,
-                             margin_column = margin_column,
-                             period_type = period_type,
-                             ttm_filter = ttm_filter,
-                             finance_type_filter = finance_type_filter)
+        sql = load_sql("select_margin_for_symbol",
+                       ticker = self.ticker,
+                       url = url,
+                       numerator_item = numerator_item,
+                       margin_column = margin_column,
+                       period_type = period_type,
+                       ttm_filter = ttm_filter,
+                       finance_type_filter = finance_type_filter)
         return self.duckdb_client.query(sql)
 
     def _query_data(self, table_name: str) -> pd.DataFrame:
@@ -988,19 +988,19 @@ class Ticker:
 
     def _query_data2(self, table_name: str, ticker: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(table_name)
-        sql = load_sql_query(
-            "_query_data",
+        sql = load_sql(
+            "select_all_by_symbol",
                         ticker = ticker,
                         url = url)
         return self.duckdb_client.query(sql)
 
     def _statement(self, finance_type: str, period_type: str) -> Statement:
         url = self.huggingface_client.get_url_path(stock_statement)
-        sql = load_sql_query("_statement",
-                             url=url,
-                             ticker=self.ticker,
-                             finance_type=finance_type,
-                             period_type=period_type)
+        sql = load_sql("select_statement_by_symbol",
+                       url=url,
+                       ticker=self.ticker,
+                       finance_type=finance_type,
+                       period_type=period_type)
         df = self.duckdb_client.query(sql)
         stock_statements = self._dataframe_to_stock_statements(df=df)
         if finance_type == income_statement:
