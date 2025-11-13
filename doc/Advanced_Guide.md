@@ -90,7 +90,10 @@ ticker = Ticker("BABA", config=Configuration())
 ## Load from Hugging Face
 
 ```python
-from defeatbeta_api.client.hugging_face_client import get_dataset
-from defeatbeta_api.utils.const import stock_prices
-dataset = get_dataset(stock_prices)
+from datasets import load_dataset
+import datasets
+dataset = load_dataset(
+    "bwzheng2010/yahoo-finance-data",
+    data_files="data/stock_prices.parquet"
+)
 ```
