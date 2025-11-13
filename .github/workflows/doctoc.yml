@@ -10,6 +10,7 @@ on:
       - 'doc/LLM_KeyData_Example.md'
       - 'doc/LLM_ChangeData_Example.md'
       - 'doc/Economy_Examples.md'
+      - 'doc/Advanced_Guide.md'
 
 jobs:
   doctoc:
