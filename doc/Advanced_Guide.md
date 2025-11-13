@@ -89,6 +89,8 @@ ticker = Ticker("BABA", config=Configuration())
 ## Load from Hugging Face
 
 ```python
+from datasets import load_dataset
+import datasets
 dataset = load_dataset(
     "bwzheng2010/yahoo-finance-data",
     data_files="data/stock_prices.parquet"
