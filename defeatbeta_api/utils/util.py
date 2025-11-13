@@ -6,6 +6,7 @@ import tempfile
 from importlib.resources import files
 from typing import List, Dict, Any
 
+import nltk
 import numpy as np
 import pandas as pd
 import psutil
@@ -44,6 +45,18 @@ def validate_memory_limit(memory_limit: str) -> str:
         f"Invalid memory_limit: '{memory_limit}'. Expected format: e.g., '10GB', '1000MB'. "
         f"Valid units: {', '.join(valid_units)}"
     )
+
+def nltk_sentences(content: str) -> List[str]:
+    return nltk.sent_tokenize(content)
+
+def validate_nltk_directory(name: str) -> str:
+    if platform.system() in ("Darwin", "Linux"):
+        temp_dir = "/tmp"
+    else:
+        temp_dir = tempfile.gettempdir()
+    cache_dir = os.path.join(temp_dir, name)
+    os.makedirs(cache_dir, exist_ok=True)
+    return cache_dir
 
 def validate_httpfs_cache_directory(name: str) -> str:
     if platform.system() in ("Darwin", "Linux"):
