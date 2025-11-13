@@ -8,7 +8,6 @@ Change Log
 - Support Industry PE[`#67 <https://github.com/defeat-beta/defeatbeta-api/issues/67>`_]
 - IO Error: SSL connection failed error for HTTP HEAD to xxxx[`#87 <https://github.com/defeat-beta/defeatbeta-api/issues/87>`_]
 - Optimize the perf of Industry PE[`#88 <https://github.com/defeat-beta/defeatbeta-api/issues/88>`_]
-- Extend get_dataset function to enable direct loading of HuggingFace datasets.[`#89 <https://github.com/defeat-beta/defeatbeta-api/issues/89>`_]
 
 0.0.23
 -------
