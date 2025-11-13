@@ -1,11 +1,12 @@
+from datasets import load_dataset
 import datasets
-
-from defeatbeta_api.client.hugging_face_client import get_dataset
-from defeatbeta_api.utils.const import stock_prices
 
 datasets.utils.logging.set_verbosity_debug()
 
-dataset = get_dataset(stock_prices)
+dataset = load_dataset(
+    "bwzheng2010/yahoo-finance-data",
+    data_files="data/stock_prices.parquet"
+)
 
 # Inspect available splits
 print(dataset)
