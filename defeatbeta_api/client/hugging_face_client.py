@@ -1,10 +1,20 @@
 from typing import Dict, Any
 
+import datasets
 import requests
+from datasets import load_dataset
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from defeatbeta_api.utils.const import tables
+
+
+def get_dataset(table: str) -> datasets.Dataset:
+    dataset = load_dataset(
+        "bwzheng2010/yahoo-finance-data",
+        data_files=f"data/{table}.parquet"
+    )
+    return dataset
 
 
 class HuggingFaceClient:
