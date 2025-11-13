@@ -7,6 +7,7 @@
   - [Set Http Proxy](#set-http-proxy)
   - [Set Logging](#set-logging)
   - [Set Configuration](#set-configuration)
+  - [Load from Hugging Face](#load-from-hugging-face)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
