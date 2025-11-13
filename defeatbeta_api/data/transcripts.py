@@ -6,7 +6,6 @@ import time
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
 
-import nltk
 import pandas as pd
 from openai import OpenAI
 from rich.console import Console
@@ -17,7 +16,7 @@ from tabulate import tabulate
 from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 from defeatbeta_api.utils.util import load_transcripts_summary_prompt_temp, load_transcripts_summary_tools_def, \
     unit_map, load_transcripts_analyze_change_prompt, load_transcripts_analyze_change_tools, \
-    load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools
+    load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools, nltk_sentences
 
 
 def _unnest(record: pd.DataFrame) -> pd.DataFrame:
@@ -56,7 +55,7 @@ class Transcripts:
         transcript_json = transcript.to_dict(orient="records")
         for paragraph in transcript_json:
             content = paragraph.pop("content")
-            sentences = nltk.sent_tokenize(content)
+            sentences = nltk_sentences(content)
             paragraph["sentences"] = sentences
         transcript_str = json.dumps(transcript_json, ensure_ascii=False, indent=2)
         prompt = re.sub(pattern_transcripts, transcript_str, template)
@@ -180,7 +179,7 @@ class Transcripts:
         transcript_json = transcript.to_dict(orient="records")
         for paragraph in transcript_json:
             content = paragraph.pop("content")
-            sentences = nltk.sent_tokenize(content)
+            sentences = nltk_sentences(content)
             paragraph["sentences"] = sentences
         transcript_str = json.dumps(transcript_json, ensure_ascii=False, indent=2)
         prompt = re.sub(pattern_transcripts, transcript_str, template)

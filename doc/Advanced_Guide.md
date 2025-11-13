@@ -84,3 +84,13 @@ ticker = Ticker("BABA", config=Configuration())
 | cache_httpfs_file_handle_cache_entry_timeout_millisec | Cache entry timeout in milliseconds for file handle cache.                                                                                                                                                                                                                                                                    |    28800000    |
 | cache_httpfs_max_in_mem_cache_block_count             | Max in-memory cache block count for in-memory caches for all cache filesystems, so users are able to configure the maximum memory consumption. It's worth noting it should be set only once before all filesystem access, otherwise there's no affect.                                                                        |       64       |
 | cache_httpfs_in_mem_cache_block_timeout_millisec      | Data block cache entry timeout in milliseconds.                                                                                                                                                                                                                                                                               |    1800000     |
+
+
+## Load from Hugging Face
+
+```python
+dataset = load_dataset(
+    "bwzheng2010/yahoo-finance-data",
+    data_files="data/stock_prices.parquet"
+)
+```
