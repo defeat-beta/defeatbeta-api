@@ -467,3 +467,32 @@ ticker.industry_ps_ratio()
 
 [7652 rows x 5 columns]
 ```
+
+## 15. Stock Historical PB Ratio
+```markdown
+total_market_cap          = sum of the market cap of all stocks in the industry  
+
+total_book_value_of_equity      = sum of the book value of equity of all stocks in the industry
+
+industry_pb_ratio               = total_market_cap / total_book_value_of_equity
+```
+
+```python
+ticker.industry_pb_ratio()
+```
+```text
+     report_date         industry  ...     total_bve  industry_pb_ratio
+0     1995-06-22  Internet Retail  ...           NaN                NaN
+1     1995-06-23  Internet Retail  ...           NaN                NaN
+2     1995-06-26  Internet Retail  ...           NaN                NaN
+3     1995-06-27  Internet Retail  ...           NaN                NaN
+4     1995-06-28  Internet Retail  ...           NaN                NaN
+...          ...              ...  ...           ...                ...
+7647  2025-11-10  Internet Retail  ...  6.327552e+11               5.91
+7648  2025-11-11  Internet Retail  ...  6.327552e+11               5.89
+7649  2025-11-12  Internet Retail  ...  6.327552e+11               5.79
+7650  2025-11-13  Internet Retail  ...  6.327552e+11               5.67
+7651  2025-11-14  Internet Retail  ...  6.327552e+11               5.59
+
+[7652 rows x 5 columns]
+```
