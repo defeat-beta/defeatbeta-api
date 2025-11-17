@@ -437,3 +437,32 @@ ticker.industry_ttm_pe()
 [7778 rows x 5 columns]
 
 ```
+
+## 14. Industry Historical PS Ratio
+```markdown
+total_market_cap          = sum of the market cap of all stocks in the industry  
+
+total_ttm_revenue      = sum of the trailing twelve months (TTM) revenue of all stocks in the industry
+
+industry_ps_ratio               = total_market_cap / total_ttm_revenue
+```
+
+```python
+ticker.industry_ps_ratio()
+```
+```text
+     report_date         industry  ...  total_ttm_revenue  industry_ps_ratio
+0     1995-06-22  Internet Retail  ...                NaN                NaN
+1     1995-06-23  Internet Retail  ...                NaN                NaN
+2     1995-06-26  Internet Retail  ...                NaN                NaN
+3     1995-06-27  Internet Retail  ...                NaN                NaN
+4     1995-06-28  Internet Retail  ...                NaN                NaN
+...          ...              ...  ...                ...                ...
+7647  2025-11-10  Internet Retail  ...       1.251700e+12               2.99
+7648  2025-11-11  Internet Retail  ...       1.251700e+12               2.98
+7649  2025-11-12  Internet Retail  ...       1.251700e+12               2.93
+7650  2025-11-13  Internet Retail  ...       1.251700e+12               2.86
+7651  2025-11-14  Internet Retail  ...       1.251700e+12               2.83
+
+[7652 rows x 5 columns]
+```

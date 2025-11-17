@@ -3,6 +3,7 @@ Change Log
 
 0.0.25
 -------
+- Support Industry P/S Ratio[`#60 <https://github.com/defeat-beta/defeatbeta-api/issues/60>`_]
 
 0.0.24
 -------
