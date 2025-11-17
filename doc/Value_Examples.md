@@ -15,6 +15,7 @@
 - [11. Stock Historical Assert Turnover](#11-stock-historical-assert-turnover)
 - [12. Stock Historical WACC](#12-stock-historical-wacc)
 - [13. Industry Historical TTM PE](#13-industry-historical-ttm-pe)
+- [14. Industry Historical PS Ratio](#14-industry-historical-ps-ratio)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
