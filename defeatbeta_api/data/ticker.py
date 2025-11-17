@@ -1005,6 +1005,84 @@ class Ticker:
         df['industry_ps_ratio'] = (df['total_market_cap'] / df['total_ttm_revenue']).replace([np.inf, -np.inf], np.nan).round(2)
         return df
 
+    def industry_pb_ratio(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+
+        if not industry or pd.isna(industry):
+            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
+        symbols = self.duckdb_client.query(sql)['symbol']
+        symbols = symbols[symbols != self.ticker]
+        symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
+
+        market_cap_table_sql = load_sql("select_market_cap_by_industry",
+                                        stock_prices=self.huggingface_client.get_url_path(stock_prices),
+                                        stock_shares_outstanding=self.huggingface_client.get_url_path(
+                                            stock_shares_outstanding),
+                                        symbols=", ".join(f"'{s}'" for s in symbols))
+
+        total_market_cap = self.duckdb_client.query(market_cap_table_sql)
+
+        market_cap_cols = [col for col in total_market_cap.columns if col != 'report_date']
+
+        total_market_cap['total_market_cap'] = total_market_cap[market_cap_cols].sum(axis=1, skipna=True)
+        total_market_cap['industry'] = industry
+        total_market_cap = total_market_cap[['report_date', 'industry', 'total_market_cap']]
+        total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
+
+        bve_sql = load_sql("select_quarterly_book_value_of_equity_by_industry",
+                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
+                                      symbols = ", ".join(f"'{s}'" for s in symbols))
+        bve = self.duckdb_client.query(bve_sql)
+        bve_df = bve.copy()
+        currency_dict = load_financial_currency()
+        bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
+        for symbol in bve_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency = currency_dict.get(symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': bve_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                bve_df[['report_date', symbol]].rename(columns={symbol: 'bve'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            bve_df[f'{symbol}_usd'] = (merged_df['bve'] / merged_df['close']).round(2)
+
+        cols_to_keep = ['report_date'] + [c for c in bve_df.columns if c.endswith('_usd')]
+        bve_df = bve_df[cols_to_keep]
+        bve_df = bve_df.ffill()
+
+        bve_df_cols = [col for col in bve_df.columns if col != 'report_date']
+        bve_df['total_bve'] = bve_df[bve_df_cols].sum(axis=1, skipna=True)
+        bve_df = bve_df[['report_date', 'total_bve']]
+        bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
+        df = pd.merge_asof(
+                total_market_cap,
+                bve_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+
+        df['industry_pb_ratio'] = (df['total_market_cap'] / df['total_bve']).replace([np.inf, -np.inf], np.nan).round(2)
+        return df
+
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
         sql = load_sql("select_quarterly_eps_yoy_growth_by_symbol",

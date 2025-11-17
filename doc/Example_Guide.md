@@ -26,7 +26,7 @@
 > 
 > [Growth](Growth_Examples.md) includes `revenue yoy growth`, `operating income yoy growth`, `net income yoy growth`, `fcf yoy growth`, `eps yoy growth` etc.
 > 
-> [Value](Value_Examples.md) includes `ttm-eps`, `ttm-pe`, `historical-market-cap`, `historical-ps-ratio`, `historical-pb-ratio`, `historical-peg-ratio`, `historical-roe`, `historical-roa`, `historical-roic`, `historical-wacc`, `historical-equity-multiplier`, `historical-assert-turnover`, `industry-ttm-pe`, `industry-ps-ratio` etc.
+> [Value](Value_Examples.md) includes `ttm-eps`, `ttm-pe`, `historical-market-cap`, `historical-ps-ratio`, `historical-pb-ratio`, `historical-peg-ratio`, `historical-roe`, `historical-roa`, `historical-roic`, `historical-wacc`, `historical-equity-multiplier`, `historical-assert-turnover`, `industry-ttm-pe`, `industry-ps-ratio`, `industry-pb-ratio` etc.
 
 ---
 
