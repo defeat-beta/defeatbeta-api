@@ -1083,6 +1083,53 @@ class Ticker:
         df['industry_pb_ratio'] = (df['total_market_cap'] / df['total_bve']).replace([np.inf, -np.inf], np.nan).round(2)
         return df
 
+    def industry_roe(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+
+        if not industry or pd.isna(industry):
+            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
+        symbols = self.duckdb_client.query(sql)['symbol']
+        symbols = symbols[symbols != self.ticker]
+        symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
+
+        roe_table_sql = load_sql("select_roe_by_industry",
+                                        stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                        symbols=", ".join(f"'{s}'" for s in symbols))
+        roe_table = self.duckdb_client.query(roe_table_sql)
+
+        net_income_common_stockholders_df = (roe_table[['report_date'] + [
+            col for col in roe_table.columns
+            if col.endswith('_net_income_common_stockholders')
+        ]]).ffill()
+        net_income_common_stockholders_df['total_net_income_common_stockholders'] = net_income_common_stockholders_df[[col for col in net_income_common_stockholders_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+        net_income_common_stockholders_df = net_income_common_stockholders_df[['report_date', 'total_net_income_common_stockholders']]
+
+        avg_equity_df = (roe_table[['report_date'] + [
+            col for col in roe_table.columns
+            if col.endswith('_avg_equity')
+        ]]).ffill()
+        avg_equity_df['total_avg_equity'] = avg_equity_df[
+            [col for col in avg_equity_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+        avg_equity_df = avg_equity_df[
+            ['report_date', 'total_avg_equity']]
+
+        df = (
+            net_income_common_stockholders_df
+            .merge(avg_equity_df, on='report_date', how='outer')
+            .sort_values('report_date')
+            .reset_index(drop=True)
+        )
+        df['industry_roe'] = (df['total_net_income_common_stockholders'] / df['total_avg_equity']).replace([np.inf, -np.inf],
+                                                                                          np.nan).round(4)
+        df.insert(1, "industry", industry)
+        return df
+
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
         sql = load_sql("select_quarterly_eps_yoy_growth_by_symbol",
