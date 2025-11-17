@@ -16,7 +16,8 @@
 - [12. Stock Historical WACC](#12-stock-historical-wacc)
 - [13. Industry Historical TTM PE](#13-industry-historical-ttm-pe)
 - [14. Industry Historical PS Ratio](#14-industry-historical-ps-ratio)
-- [15. Stock Historical PB Ratio](#15-stock-historical-pb-ratio)
+- [15. Industry Historical PB Ratio](#15-industry-historical-pb-ratio)
+- [16. Industry Historical ROE](#16-industry-historical-roe)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
