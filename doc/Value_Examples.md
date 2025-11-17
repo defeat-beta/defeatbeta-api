@@ -442,11 +442,11 @@ ticker.industry_ttm_pe()
 
 ## 14. Industry Historical PS Ratio
 ```markdown
-total_market_cap          = sum of the market cap of all stocks in the industry  
+total_market_cap       = sum of the market cap of all stocks in the industry  
 
 total_ttm_revenue      = sum of the trailing twelve months (TTM) revenue of all stocks in the industry
 
-industry_ps_ratio               = total_market_cap / total_ttm_revenue
+industry_ps_ratio      = total_market_cap / total_ttm_revenue
 ```
 
 ```python
@@ -469,9 +469,9 @@ ticker.industry_ps_ratio()
 [7652 rows x 5 columns]
 ```
 
-## 15. Stock Historical PB Ratio
+## 15. Industry Historical PB Ratio
 ```markdown
-total_market_cap          = sum of the market cap of all stocks in the industry  
+total_market_cap                = sum of the market cap of all stocks in the industry  
 
 total_book_value_of_equity      = sum of the book value of equity of all stocks in the industry
 
@@ -496,4 +496,46 @@ ticker.industry_pb_ratio()
 7651  2025-11-14  Internet Retail  ...  6.327552e+11               5.59
 
 [7652 rows x 5 columns]
+```
+
+## 16. Industry Historical ROE
+```markdown
+total_net_income_common_stockholders  
+    = the sum of the net income attributable to common shareholders across all stocks in the industry  
+
+total_avg_equity  
+    = for each stock, compute the average shareholders' equity  
+        avg_equity(symbol) = (beginning_stockholders_equity + ending_stockholders_equity) / 2  
+      then sum the average equity of all stocks in the industry  
+        total_avg_equity = Σ avg_equity(symbol)
+
+industry_roe  
+    = total_net_income_common_stockholders / total_avg_equity
+```
+
+```python
+ticker.industry_roe()
+```
+```text
+   report_date         industry  total_net_income_common_stockholders  total_avg_equity  industry_roe
+0   2022-12-31  Internet Retail                         -3.825941e+06      5.402964e+07       -0.0708
+1   2023-03-31  Internet Retail                         -5.060200e+04      5.238035e+07       -0.0010
+2   2023-06-30  Internet Retail                          1.412058e+07      4.567494e+08        0.0309
+3   2023-09-30  Internet Retail                          6.117720e+10      1.649778e+12        0.0371
+4   2023-10-31  Internet Retail                          6.114183e+10      1.650157e+12        0.0371
+5   2023-12-31  Internet Retail                          5.553121e+10      1.696493e+12        0.0327
+6   2024-01-31  Internet Retail                          5.560084e+10      1.696566e+12        0.0328
+7   2024-03-31  Internet Retail                          5.135219e+10      1.721213e+12        0.0298
+8   2024-04-30  Internet Retail                          5.138482e+10      1.721338e+12        0.0299
+9   2024-06-30  Internet Retail                          8.443039e+10      1.730448e+12        0.0488
+10  2024-07-31  Internet Retail                          8.466259e+10      1.730436e+12        0.0489
+11  2024-09-30  Internet Retail                          9.810638e+10      1.769326e+12        0.0554
+12  2024-10-31  Internet Retail                          9.781121e+10      1.769116e+12        0.0553
+13  2024-12-31  Internet Retail                          1.070672e+11      1.864952e+12        0.0574
+14  2025-01-31  Internet Retail                          1.070860e+11      1.864839e+12        0.0574
+15  2025-03-31  Internet Retail                          5.800727e+10      1.945630e+12        0.0298
+16  2025-04-30  Internet Retail                          5.804688e+10      1.945706e+12        0.0298
+17  2025-06-30  Internet Retail                          9.624862e+10      1.993436e+12        0.0483
+18  2025-07-31  Internet Retail                          9.624822e+10      1.993501e+12        0.0483
+19  2025-09-30  Internet Retail                          1.021753e+11      2.022750e+12        0.0505
 ```
