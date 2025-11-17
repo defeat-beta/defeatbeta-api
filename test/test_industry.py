@@ -6,7 +6,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-            cls.ticker = Ticker("BABA", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
+            cls.ticker = Ticker("ZK", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -26,6 +26,8 @@ class TestTicker(unittest.TestCase):
         print(result)
 
     def test_industry_roe(self):
+        result = self.ticker.roe()
+        print(result.to_string())
         result = self.ticker.industry_roe()
         print(result.to_string())
 

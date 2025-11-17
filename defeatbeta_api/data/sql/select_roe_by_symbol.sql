@@ -103,5 +103,12 @@ select symbol,
         beginning_stockholders_equity,
         ending_stockholders_equity,
         avg_equity,
-        round(net_income_common_stockholders / avg_equity, 4) AS roe
+        ROUND(
+            CASE
+                WHEN net_income_common_stockholders < 0 OR avg_equity < 0 THEN
+                    -ABS(net_income_common_stockholders / avg_equity)
+                ELSE
+                    net_income_common_stockholders / avg_equity
+            END
+        , 4) AS roe
     from equity_avg order by report_date;
