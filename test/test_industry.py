@@ -17,6 +17,10 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.industry_ttm_pe()
         print(result.to_string())
 
+    def test_industry_ps_ratio(self):
+        result = self.ticker.industry_ps_ratio()
+        print(result)
+
     def test_ttm_net_income_common_stockholders(self):
         result = self.ticker.ttm_net_income_common_stockholders()
         print(result)
