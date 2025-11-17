@@ -1125,8 +1125,11 @@ class Ticker:
             .sort_values('report_date')
             .reset_index(drop=True)
         )
-        df['industry_roe'] = (df['total_net_income_common_stockholders'] / df['total_avg_equity']).replace([np.inf, -np.inf],
-                                                                                          np.nan).round(4)
+        df['industry_roe'] = np.where(
+            (df['total_net_income_common_stockholders'] < 0) | (df['total_avg_equity'] < 0),
+            -np.abs(df['total_net_income_common_stockholders'] / df['total_avg_equity']),
+            df['total_net_income_common_stockholders'] / df['total_avg_equity']
+        ).round(4)
         df.insert(1, "industry", industry)
         return df
 
