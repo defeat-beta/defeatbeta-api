@@ -1447,6 +1447,37 @@ class Ticker:
         df.insert(1, "industry", industry)
         return df
 
+    def industry_asset_turnover(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+        roa = self.industry_roa()
+        quarterly_net_margin = self.industry_quarterly_net_margin()
+
+        roa['report_date'] = pd.to_datetime(roa['report_date'])
+        quarterly_net_margin['report_date'] = pd.to_datetime(quarterly_net_margin['report_date'])
+
+        result_df = pd.merge_asof(
+            roa,
+            quarterly_net_margin,
+            left_on='report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['industry_asset_turnover'] = round(result_df['industry_roa'] / result_df['industry_net_margin'], 2)
+
+        result_df = result_df[[
+            'report_date',
+            'industry_roa',
+            'industry_net_margin',
+            'industry_asset_turnover'
+        ]]
+        result_df.insert(1, "industry", industry)
+
+        return result_df
+
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
         sql = load_sql("select_quarterly_eps_yoy_growth_by_symbol",
