@@ -1113,6 +1113,33 @@ class Ticker:
             col for col in roe_table.columns
             if col.endswith('_net_income_common_stockholders')
         ]]).ffill()
+        currency_dict = load_financial_currency()
+        net_income_common_stockholders_df['report_date'] = pd.to_datetime(net_income_common_stockholders_df['report_date'])
+        new_cols = {}
+        for symbol in net_income_common_stockholders_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_net_income_common_stockholders")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': net_income_common_stockholders_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                net_income_common_stockholders_df[['report_date', symbol]].rename(columns={symbol: 'net_income_common_stockholders'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_net_income_common_stockholders_usd'] = (merged_df['net_income_common_stockholders'] / merged_df['close']).round(2)
+
+        net_income_common_stockholders_df = pd.concat([net_income_common_stockholders_df['report_date'] , pd.DataFrame(new_cols)], axis=1)
         net_income_common_stockholders_df['total_net_income_common_stockholders'] = net_income_common_stockholders_df[[col for col in net_income_common_stockholders_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
         net_income_common_stockholders_df = net_income_common_stockholders_df[['report_date', 'total_net_income_common_stockholders']]
 
@@ -1120,6 +1147,36 @@ class Ticker:
             col for col in roe_table.columns
             if col.endswith('_avg_equity')
         ]]).ffill()
+        avg_equity_df['report_date'] = pd.to_datetime(
+            avg_equity_df['report_date'])
+        new_cols = {}
+        for symbol in avg_equity_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_avg_equity_df")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': avg_equity_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                avg_equity_df[['report_date', symbol]].rename(
+                    columns={symbol: 'avg_equity'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_avg_equity_usd'] = (
+                        merged_df['avg_equity'] / merged_df['close']).round(2)
+
+        avg_equity_df = pd.concat(
+            [avg_equity_df['report_date'], pd.DataFrame(new_cols)], axis=1)
         avg_equity_df['total_avg_equity'] = avg_equity_df[
             [col for col in avg_equity_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
         avg_equity_df = avg_equity_df[
