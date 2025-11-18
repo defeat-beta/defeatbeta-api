@@ -658,8 +658,8 @@ class Ticker:
         quarterly_net_margin['report_date'] = pd.to_datetime(quarterly_net_margin['report_date'])
 
         result_df = pd.merge_asof(
-            roa.sort_values('report_date'),
-            quarterly_net_margin.sort_values('report_date'),
+            roa,
+            quarterly_net_margin,
             left_on='report_date',
             right_on='report_date',
             direction='backward'
@@ -708,8 +708,8 @@ class Ticker:
         currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
 
         wacc_df = pd.merge_asof(
-            wacc_df.sort_values('report_date'),
-            currency_df.sort_values('report_date'),
+            wacc_df,
+            currency_df,
             left_on='report_date',
             right_on='report_date',
             direction='backward'
@@ -724,8 +724,8 @@ class Ticker:
         market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
 
         result_df1 = pd.merge_asof(
-            wacc_df.sort_values('report_date'),
-            market_cap_df.sort_values('report_date'),
+            wacc_df,
+            market_cap_df,
             left_on='report_date',
             right_on='report_date',
             direction='backward'
@@ -739,8 +739,8 @@ class Ticker:
         ]
 
         result_df2 = pd.merge_asof(
-            market_cap_after.sort_values('report_date'),
-            wacc_df.sort_values('report_date'),
+            market_cap_after,
+            wacc_df,
             left_on='report_date',
             right_on='report_date',
             direction='backward'
@@ -766,8 +766,8 @@ class Ticker:
         ten_year_returns['end_date'] = pd.to_datetime(ten_year_returns['end_date'])
 
         result_df = pd.merge_asof(
-            result_df.sort_values('report_date'),
-            ten_year_returns.sort_values('end_date'),
+            result_df,
+            ten_year_returns,
             left_on='report_date',
             right_on='end_date',
             direction='backward'
@@ -800,8 +800,8 @@ class Ticker:
         treasure['report_date'] = pd.to_datetime(treasure['report_date'])
 
         result_df = pd.merge_asof(
-            result_df.sort_values('report_date'),
-            treasure.sort_values('report_date'),
+            result_df,
+            treasure,
             left_on='report_date',
             right_on='report_date',
             direction='backward'
