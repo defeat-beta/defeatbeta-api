@@ -539,9 +539,9 @@ total_net_income_common_stockholders
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
 
 total_avg_asserts  
-    = for each stock, compute the average shareholders' equity  
+    = for each stock, compute the average asserts 
         avg_asserts(symbol) = (beginning_asserts + ending_asserts) / 2  
-      then sum the average equity of all stocks in the industry  
+      then sum the average asserts of all stocks in the industry  
         total_avg_asserts = Σ avg_asserts(symbol)
 
 industry_roa  
