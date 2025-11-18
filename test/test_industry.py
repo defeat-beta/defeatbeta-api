@@ -6,7 +6,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-            cls.ticker = Ticker("ZK", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
+            cls.ticker = Ticker("DUOL", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -18,10 +18,14 @@ class TestTicker(unittest.TestCase):
         print(result.to_string())
 
     def test_industry_ps_ratio(self):
+        result = self.ticker.ps_ratio()
+        print(result)
         result = self.ticker.industry_ps_ratio()
         print(result)
 
     def test_industry_pb_ratio(self):
+        result = self.ticker.pb_ratio()
+        print(result)
         result = self.ticker.industry_pb_ratio()
         print(result)
 

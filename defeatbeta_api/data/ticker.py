@@ -964,6 +964,7 @@ class Ticker:
         ttm_revenue_df = ttm_revenue.copy()
         currency_dict = load_financial_currency()
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
+        new_cols = {}
         for symbol in ttm_revenue_df.columns:
             if symbol == 'report_date':
                 continue
@@ -984,7 +985,9 @@ class Ticker:
                 right_on='report_date',
                 direction='backward'
             )
-            ttm_revenue_df[f'{symbol}_usd'] = (merged_df['ttm_revenue'] / merged_df['close']).round(2)
+            new_cols[f'{symbol}_usd'] = (merged_df['ttm_revenue'] / merged_df['close']).round(2)
+
+        ttm_revenue_df = pd.concat([ttm_revenue_df, pd.DataFrame(new_cols)], axis=1)
 
         cols_to_keep = ['report_date'] + [c for c in ttm_revenue_df.columns if c.endswith('_usd')]
         ttm_revenue_df = ttm_revenue_df[cols_to_keep]
@@ -992,7 +995,7 @@ class Ticker:
 
         ttm_revenue_df_cols = [col for col in ttm_revenue_df.columns if col != 'report_date']
         ttm_revenue_df['total_ttm_revenue'] = ttm_revenue_df[ttm_revenue_df_cols].sum(axis=1, skipna=True)
-        ttm_revenue_df = ttm_revenue_df[['report_date', 'total_ttm_revenue']]
+        ttm_revenue_df = ttm_revenue_df[['report_date', 'total_ttm_revenue']].copy()
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
         df = pd.merge_asof(
                 total_market_cap,
@@ -1042,6 +1045,7 @@ class Ticker:
         bve_df = bve.copy()
         currency_dict = load_financial_currency()
         bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
+        new_cols = {}
         for symbol in bve_df.columns:
             if symbol == 'report_date':
                 continue
@@ -1062,7 +1066,9 @@ class Ticker:
                 right_on='report_date',
                 direction='backward'
             )
-            bve_df[f'{symbol}_usd'] = (merged_df['bve'] / merged_df['close']).round(2)
+            new_cols[f'{symbol}_usd'] = (merged_df['bve'] / merged_df['close']).round(2)
+
+        bve_df = pd.concat([bve_df, pd.DataFrame(new_cols)], axis=1)
 
         cols_to_keep = ['report_date'] + [c for c in bve_df.columns if c.endswith('_usd')]
         bve_df = bve_df[cols_to_keep]
@@ -1070,7 +1076,7 @@ class Ticker:
 
         bve_df_cols = [col for col in bve_df.columns if col != 'report_date']
         bve_df['total_bve'] = bve_df[bve_df_cols].sum(axis=1, skipna=True)
-        bve_df = bve_df[['report_date', 'total_bve']]
+        bve_df = bve_df[['report_date', 'total_bve']].copy()
         bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
         df = pd.merge_asof(
                 total_market_cap,
