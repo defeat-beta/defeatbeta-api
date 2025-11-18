@@ -21,6 +21,7 @@
 - [17. Industry Historical ROA](#17-industry-historical-roa)
 - [18. Industry Historical Equity Multiplier](#18-industry-historical-equity-multiplier)
 - [19. Industry Quarterly Historical Net Income Margin](#19-industry-quarterly-historical-net-income-margin)
+- [20. Industry Historical Asset Turnover](#20-industry-historical-asset-turnover)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
