@@ -1304,6 +1304,10 @@ class Ticker:
         return df
 
     def industry_equity_multiplier(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
         roe = self.industry_roe()
         roa = self.industry_roa()
 
@@ -1326,6 +1330,7 @@ class Ticker:
             'industry_roa',
             'industry_equity_multiplier'
         ]]
+        result_df.insert(1, "industry", industry)
         return result_df
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
