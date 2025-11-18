@@ -7,6 +7,7 @@ Change Log
 - Support Industry P/B Ratio[`#61 <https://github.com/defeat-beta/defeatbeta-api/issues/61>`_]
 - Support Industry ROE Ratio[`#62 <https://github.com/defeat-beta/defeatbeta-api/issues/62>`_]
 - Support Industry ROA Ratio[`#63 <https://github.com/defeat-beta/defeatbeta-api/issues/63>`_]
+- Support Industry Equity Multiplier[`#66 <https://github.com/defeat-beta/defeatbeta-api/issues/66>`_]
 
 0.0.24
 -------

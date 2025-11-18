@@ -41,6 +41,12 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.industry_roa()
         print(result.to_string())
 
+    def test_industry_em(self):
+        result = self.ticker.equity_multiplier()
+        print(result.to_string())
+        result = self.ticker.industry_equity_multiplier()
+        print(result.to_string())
+
     def test_ttm_net_income_common_stockholders(self):
         result = self.ticker.ttm_net_income_common_stockholders()
         print(result)

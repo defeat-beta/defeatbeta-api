@@ -563,3 +563,26 @@ ticker.industry_roa()
 8  2025-06-30  Auto Manufacturers                          5.536484e+09       1.678078e+12        0.0033
 9  2025-09-30  Auto Manufacturers                          7.128733e+09       1.685806e+12        0.0042
 ```
+
+## 18. Industry Historical Equity Multiplier
+```markdown
+Industry Equity Multiplier = Industry ROE / Industry ROA
+```
+
+```python
+ticker.industry_equity_multiplier()
+```
+```text
+  report_date  industry_roe  industry_roa  industry_equity_multiplier
+0  2023-06-30       -0.0910       -0.0659                        1.38
+1  2023-09-30        0.0255        0.0084                        3.04
+2  2023-12-31        0.0311        0.0102                        3.05
+3  2024-03-31        0.0180        0.0058                        3.10
+4  2024-06-30        0.0234        0.0074                        3.16
+5  2024-09-30        0.0119        0.0038                        3.13
+6  2024-12-31        0.0256        0.0081                        3.16
+7  2025-03-31        0.0093        0.0029                        3.21
+8  2025-06-30        0.0105        0.0033                        3.18
+9  2025-09-30        0.0136        0.0042                        3.24
+
+```
