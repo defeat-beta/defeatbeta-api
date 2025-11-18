@@ -6,6 +6,7 @@ Change Log
 - Support Industry P/S Ratio[`#60 <https://github.com/defeat-beta/defeatbeta-api/issues/60>`_]
 - Support Industry P/B Ratio[`#61 <https://github.com/defeat-beta/defeatbeta-api/issues/61>`_]
 - Support Industry ROE Ratio[`#62 <https://github.com/defeat-beta/defeatbeta-api/issues/62>`_]
+- Support Industry ROA Ratio[`#63 <https://github.com/defeat-beta/defeatbeta-api/issues/63>`_]
 
 0.0.24
 -------

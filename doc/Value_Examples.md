@@ -424,20 +424,20 @@ industry_pe               = total_market_cap / total_ttm_net_income
 ticker.industry_ttm_pe()
 ```
 ```text
-     report_date        industry  ...  total_ttm_net_income  industry_pe
-0     1994-11-30  Semiconductors  ...          0.000000e+00          NaN
-1     1994-12-01  Semiconductors  ...          0.000000e+00          NaN
-2     1994-12-02  Semiconductors  ...          0.000000e+00          NaN
-3     1994-12-05  Semiconductors  ...          0.000000e+00          NaN
-4     1994-12-06  Semiconductors  ...          0.000000e+00          NaN
-...          ...             ...  ...                   ...          ...
-7773  2025-10-20  Semiconductors  ...          1.691450e+11        56.76
-7774  2025-10-21  Semiconductors  ...          1.691450e+11        56.20
-7775  2025-10-22  Semiconductors  ...          1.691450e+11        55.51
-7776  2025-10-23  Semiconductors  ...          1.691450e+11        56.19
-7777  2025-10-24  Semiconductors  ...          1.691450e+11        57.43
+     report_date            industry  ...  total_ttm_net_income  industry_pe
+0     1994-11-30  Auto Manufacturers  ...                   NaN          NaN
+1     1994-12-01  Auto Manufacturers  ...                   NaN          NaN
+2     1994-12-02  Auto Manufacturers  ...                   NaN          NaN
+3     1994-12-05  Auto Manufacturers  ...                   NaN          NaN
+4     1994-12-06  Auto Manufacturers  ...                   NaN          NaN
+...          ...                 ...  ...                   ...          ...
+7788  2025-11-10  Auto Manufacturers  ...          3.084231e+10        68.63
+7789  2025-11-11  Auto Manufacturers  ...          3.084231e+10        68.37
+7790  2025-11-12  Auto Manufacturers  ...          3.084231e+10        67.39
+7791  2025-11-13  Auto Manufacturers  ...          3.084231e+10        63.96
+7792  2025-11-14  Auto Manufacturers  ...          3.084231e+10        64.06
 
-[7778 rows x 5 columns]
+[7793 rows x 5 columns]
 
 ```
 
@@ -454,20 +454,20 @@ industry_ps_ratio      = total_market_cap / total_ttm_revenue
 ticker.industry_ps_ratio()
 ```
 ```text
-     report_date         industry  ...  total_ttm_revenue  industry_ps_ratio
-0     1995-06-22  Internet Retail  ...                NaN                NaN
-1     1995-06-23  Internet Retail  ...                NaN                NaN
-2     1995-06-26  Internet Retail  ...                NaN                NaN
-3     1995-06-27  Internet Retail  ...                NaN                NaN
-4     1995-06-28  Internet Retail  ...                NaN                NaN
-...          ...              ...  ...                ...                ...
-7647  2025-11-10  Internet Retail  ...       1.251700e+12               2.99
-7648  2025-11-11  Internet Retail  ...       1.251700e+12               2.98
-7649  2025-11-12  Internet Retail  ...       1.251700e+12               2.93
-7650  2025-11-13  Internet Retail  ...       1.251700e+12               2.86
-7651  2025-11-14  Internet Retail  ...       1.251700e+12               2.83
+     report_date            industry  ...  total_ttm_revenue  industry_ps_ratio
+0     1994-11-30  Auto Manufacturers  ...                NaN                NaN
+1     1994-12-01  Auto Manufacturers  ...                NaN                NaN
+2     1994-12-02  Auto Manufacturers  ...                NaN                NaN
+3     1994-12-05  Auto Manufacturers  ...                NaN                NaN
+4     1994-12-06  Auto Manufacturers  ...                NaN                NaN
+...          ...                 ...  ...                ...                ...
+7788  2025-11-10  Auto Manufacturers  ...       1.026618e+12               2.06
+7789  2025-11-11  Auto Manufacturers  ...       1.026618e+12               2.05
+7790  2025-11-12  Auto Manufacturers  ...       1.026618e+12               2.02
+7791  2025-11-13  Auto Manufacturers  ...       1.026618e+12               1.92
+7792  2025-11-14  Auto Manufacturers  ...       1.026618e+12               1.92
 
-[7652 rows x 5 columns]
+[7793 rows x 5 columns]
 ```
 
 ## 15. Industry Historical PB Ratio
@@ -483,20 +483,20 @@ industry_pb_ratio               = total_market_cap / total_book_value_of_equity
 ticker.industry_pb_ratio()
 ```
 ```text
-     report_date         industry  ...     total_bve  industry_pb_ratio
-0     1995-06-22  Internet Retail  ...           NaN                NaN
-1     1995-06-23  Internet Retail  ...           NaN                NaN
-2     1995-06-26  Internet Retail  ...           NaN                NaN
-3     1995-06-27  Internet Retail  ...           NaN                NaN
-4     1995-06-28  Internet Retail  ...           NaN                NaN
-...          ...              ...  ...           ...                ...
-7647  2025-11-10  Internet Retail  ...  6.327552e+11               5.91
-7648  2025-11-11  Internet Retail  ...  6.327552e+11               5.89
-7649  2025-11-12  Internet Retail  ...  6.327552e+11               5.79
-7650  2025-11-13  Internet Retail  ...  6.327552e+11               5.67
-7651  2025-11-14  Internet Retail  ...  6.327552e+11               5.59
+     report_date            industry  ...     total_bve  industry_pb_ratio
+0     1994-11-30  Auto Manufacturers  ...           NaN                NaN
+1     1994-12-01  Auto Manufacturers  ...           NaN                NaN
+2     1994-12-02  Auto Manufacturers  ...           NaN                NaN
+3     1994-12-05  Auto Manufacturers  ...           NaN                NaN
+4     1994-12-06  Auto Manufacturers  ...           NaN                NaN
+...          ...                 ...  ...           ...                ...
+7788  2025-11-10  Auto Manufacturers  ...  6.133932e+11               3.45
+7789  2025-11-11  Auto Manufacturers  ...  6.133932e+11               3.44
+7790  2025-11-12  Auto Manufacturers  ...  6.133932e+11               3.39
+7791  2025-11-13  Auto Manufacturers  ...  6.133932e+11               3.22
+7792  2025-11-14  Auto Manufacturers  ...  6.133932e+11               3.22
 
-[7652 rows x 5 columns]
+[7793 rows x 5 columns]
 ```
 
 ## 16. Industry Historical ROE
@@ -518,25 +518,47 @@ industry_roe
 ticker.industry_roe()
 ```
 ```text
-   report_date         industry  total_net_income_common_stockholders  total_avg_equity  industry_roe
-0   2022-12-31  Internet Retail                         -3.825941e+06      5.402964e+07       -0.0708
-1   2023-03-31  Internet Retail                         -5.060200e+04      5.238035e+07       -0.0010
-2   2023-06-30  Internet Retail                          1.412058e+07      4.567494e+08        0.0309
-3   2023-09-30  Internet Retail                          6.117720e+10      1.649778e+12        0.0371
-4   2023-10-31  Internet Retail                          6.114183e+10      1.650157e+12        0.0371
-5   2023-12-31  Internet Retail                          5.553121e+10      1.696493e+12        0.0327
-6   2024-01-31  Internet Retail                          5.560084e+10      1.696566e+12        0.0328
-7   2024-03-31  Internet Retail                          5.135219e+10      1.721213e+12        0.0298
-8   2024-04-30  Internet Retail                          5.138482e+10      1.721338e+12        0.0299
-9   2024-06-30  Internet Retail                          8.443039e+10      1.730448e+12        0.0488
-10  2024-07-31  Internet Retail                          8.466259e+10      1.730436e+12        0.0489
-11  2024-09-30  Internet Retail                          9.810638e+10      1.769326e+12        0.0554
-12  2024-10-31  Internet Retail                          9.781121e+10      1.769116e+12        0.0553
-13  2024-12-31  Internet Retail                          1.070672e+11      1.864952e+12        0.0574
-14  2025-01-31  Internet Retail                          1.070860e+11      1.864839e+12        0.0574
-15  2025-03-31  Internet Retail                          5.800727e+10      1.945630e+12        0.0298
-16  2025-04-30  Internet Retail                          5.804688e+10      1.945706e+12        0.0298
-17  2025-06-30  Internet Retail                          9.624862e+10      1.993436e+12        0.0483
-18  2025-07-31  Internet Retail                          9.624822e+10      1.993501e+12        0.0483
-19  2025-09-30  Internet Retail                          1.021753e+11      2.022750e+12        0.0505
+  report_date            industry  total_net_income_common_stockholders  total_avg_equity  industry_roe
+0  2023-06-30  Auto Manufacturers                         -1.407448e+07      1.547128e+08       -0.0910
+1  2023-09-30  Auto Manufacturers                          1.224270e+10      4.807896e+11        0.0255
+2  2023-12-31  Auto Manufacturers                          1.574871e+10      5.068826e+11        0.0311
+3  2024-03-31  Auto Manufacturers                          8.833054e+09      4.915669e+11        0.0180
+4  2024-06-30  Auto Manufacturers                          1.143964e+10      4.897561e+11        0.0234
+5  2024-09-30  Auto Manufacturers                          6.302880e+09      5.294544e+11        0.0119
+6  2024-12-31  Auto Manufacturers                          1.273238e+10      4.982886e+11        0.0256
+7  2025-03-31  Auto Manufacturers                          4.782458e+09      5.161979e+11        0.0093
+8  2025-06-30  Auto Manufacturers                          5.536484e+09      5.253515e+11        0.0105
+9  2025-09-30  Auto Manufacturers                          7.128733e+09      5.245579e+11        0.0136
+```
+
+## 17. Industry Historical ROA
+```markdown
+total_net_income_common_stockholders  
+    = the sum of the net income attributable to common shareholders across all stocks in the industry  
+
+total_avg_asserts  
+    = for each stock, compute the average shareholders' equity  
+        avg_asserts(symbol) = (beginning_asserts + ending_asserts) / 2  
+      then sum the average equity of all stocks in the industry  
+        total_avg_asserts = Σ avg_asserts(symbol)
+
+industry_roa  
+    = total_net_income_common_stockholders / total_avg_asserts
+```
+
+```python
+ticker.industry_roa()
+```
+```text
+  report_date            industry  total_net_income_common_stockholders  total_avg_asserts  industry_roa
+0  2023-06-30  Auto Manufacturers                         -1.407448e+07       2.135580e+08       -0.0659
+1  2023-09-30  Auto Manufacturers                          1.224270e+10       1.461015e+12        0.0084
+2  2023-12-31  Auto Manufacturers                          1.574871e+10       1.539417e+12        0.0102
+3  2024-03-31  Auto Manufacturers                          8.833054e+09       1.531480e+12        0.0058
+4  2024-06-30  Auto Manufacturers                          1.143964e+10       1.537488e+12        0.0074
+5  2024-09-30  Auto Manufacturers                          6.302880e+09       1.648691e+12        0.0038
+6  2024-12-31  Auto Manufacturers                          1.273238e+10       1.581029e+12        0.0081
+7  2025-03-31  Auto Manufacturers                          4.782458e+09       1.641880e+12        0.0029
+8  2025-06-30  Auto Manufacturers                          5.536484e+09       1.678078e+12        0.0033
+9  2025-09-30  Auto Manufacturers                          7.128733e+09       1.685806e+12        0.0042
 ```

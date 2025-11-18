@@ -1153,7 +1153,7 @@ class Ticker:
         for symbol in avg_equity_df.columns:
             if symbol == 'report_date':
                 continue
-            currency_symbol = symbol.removesuffix("_avg_equity_df")
+            currency_symbol = symbol.removesuffix("_avg_equity")
             currency = currency_dict.get(currency_symbol, 'USD')
             if currency == 'USD':
                 currency_df = pd.DataFrame({
@@ -1192,6 +1192,113 @@ class Ticker:
             (df['total_net_income_common_stockholders'] < 0) | (df['total_avg_equity'] < 0),
             -np.abs(df['total_net_income_common_stockholders'] / df['total_avg_equity']),
             df['total_net_income_common_stockholders'] / df['total_avg_equity']
+        ).round(4)
+        df.insert(1, "industry", industry)
+        return df
+
+    def industry_roa(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+
+        if not industry or pd.isna(industry):
+            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
+        symbols = self.duckdb_client.query(sql)['symbol']
+        symbols = symbols[symbols != self.ticker]
+        symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
+
+        roa_table_sql = load_sql("select_roa_by_industry",
+                                        stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                        symbols=", ".join(f"'{s}'" for s in symbols))
+        roa_table = self.duckdb_client.query(roa_table_sql)
+
+        net_income_common_stockholders_df = (roa_table[['report_date'] + [
+            col for col in roa_table.columns
+            if col.endswith('_net_income_common_stockholders')
+        ]]).ffill()
+        currency_dict = load_financial_currency()
+        net_income_common_stockholders_df['report_date'] = pd.to_datetime(net_income_common_stockholders_df['report_date'])
+        new_cols = {}
+        for symbol in net_income_common_stockholders_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_net_income_common_stockholders")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': net_income_common_stockholders_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                net_income_common_stockholders_df[['report_date', symbol]].rename(columns={symbol: 'net_income_common_stockholders'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_net_income_common_stockholders_usd'] = (merged_df['net_income_common_stockholders'] / merged_df['close']).round(2)
+
+        net_income_common_stockholders_df = pd.concat([net_income_common_stockholders_df['report_date'] , pd.DataFrame(new_cols)], axis=1)
+        net_income_common_stockholders_df['total_net_income_common_stockholders'] = net_income_common_stockholders_df[[col for col in net_income_common_stockholders_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+        net_income_common_stockholders_df = net_income_common_stockholders_df[['report_date', 'total_net_income_common_stockholders']]
+
+        avg_asserts_df = (roa_table[['report_date'] + [
+            col for col in roa_table.columns
+            if col.endswith('_avg_asserts')
+        ]]).ffill()
+        avg_asserts_df['report_date'] = pd.to_datetime(
+            avg_asserts_df['report_date'])
+        new_cols = {}
+        for symbol in avg_asserts_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_avg_asserts")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': avg_asserts_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                avg_asserts_df[['report_date', symbol]].rename(
+                    columns={symbol: 'avg_asserts'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_avg_asserts_usd'] = (
+                        merged_df['avg_asserts'] / merged_df['close']).round(2)
+
+        avg_asserts_df = pd.concat(
+            [avg_asserts_df['report_date'], pd.DataFrame(new_cols)], axis=1)
+        avg_asserts_df['total_avg_asserts'] = avg_asserts_df[
+            [col for col in avg_asserts_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+        avg_asserts_df = avg_asserts_df[
+            ['report_date', 'total_avg_asserts']]
+
+        df = (
+            net_income_common_stockholders_df
+            .merge(avg_asserts_df, on='report_date', how='outer')
+            .sort_values('report_date')
+            .reset_index(drop=True)
+        )
+        df['industry_roa'] = np.where(
+            (df['total_net_income_common_stockholders'] < 0) | (df['total_avg_asserts'] < 0),
+            -np.abs(df['total_net_income_common_stockholders'] / df['total_avg_asserts']),
+            df['total_net_income_common_stockholders'] / df['total_avg_asserts']
         ).round(4)
         df.insert(1, "industry", industry)
         return df
