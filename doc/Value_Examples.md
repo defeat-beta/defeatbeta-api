@@ -18,6 +18,7 @@
 - [14. Industry Historical PS Ratio](#14-industry-historical-ps-ratio)
 - [15. Industry Historical PB Ratio](#15-industry-historical-pb-ratio)
 - [16. Industry Historical ROE](#16-industry-historical-roe)
+- [17. Industry Historical ROA](#17-industry-historical-roa)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
