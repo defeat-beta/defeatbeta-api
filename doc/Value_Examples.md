@@ -20,6 +20,7 @@
 - [16. Industry Historical ROE](#16-industry-historical-roe)
 - [17. Industry Historical ROA](#17-industry-historical-roa)
 - [18. Industry Historical Equity Multiplier](#18-industry-historical-equity-multiplier)
+- [19. Industry Quarterly Historical Net Income Margin](#19-industry-quarterly-historical-net-income-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
