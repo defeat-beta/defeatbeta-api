@@ -9,6 +9,7 @@ Change Log
 - Support Industry ROA Ratio[`#63 <https://github.com/defeat-beta/defeatbeta-api/issues/63>`_]
 - Support Industry Equity Multiplier[`#66 <https://github.com/defeat-beta/defeatbeta-api/issues/66>`_]
 - Support Industry Net Income Margin[`#90 <https://github.com/defeat-beta/defeatbeta-api/issues/90>`_]
+- Support Industry Assert Turnover Ratio[`#65 <https://github.com/defeat-beta/defeatbeta-api/issues/65>`_]
 
 0.0.24
 -------

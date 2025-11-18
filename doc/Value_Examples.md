@@ -618,3 +618,25 @@ ticker.industry_quarterly_net_margin()
 12  2025-06-30  Auto Manufacturers      5.536484e+09   2.613396e+11               0.0212
 13  2025-09-30  Auto Manufacturers      7.128733e+09   2.663335e+11               0.0268
 ```
+
+## 20. Industry Historical Asset Turnover
+```markdown
+Industry Asset Turnover = Industry ROA / Industry Net Margin
+```
+
+```python
+ticker.industry_asset_turnover()
+```
+```text
+  report_date            industry  industry_roa  industry_net_margin  industry_asset_turnover
+0  2023-06-30  Auto Manufacturers       -0.0659               0.0615                    -1.07
+1  2023-09-30  Auto Manufacturers        0.0084               0.0506                     0.17
+2  2023-12-31  Auto Manufacturers        0.0102               0.0591                     0.17
+3  2024-03-31  Auto Manufacturers        0.0058               0.0385                     0.15
+4  2024-06-30  Auto Manufacturers        0.0074               0.0465                     0.16
+5  2024-09-30  Auto Manufacturers        0.0038               0.0246                     0.15
+6  2024-12-31  Auto Manufacturers        0.0081               0.0496                     0.16
+7  2025-03-31  Auto Manufacturers        0.0029               0.0200                     0.14
+8  2025-06-30  Auto Manufacturers        0.0033               0.0212                     0.16
+9  2025-09-30  Auto Manufacturers        0.0042               0.0268                     0.16
+```
