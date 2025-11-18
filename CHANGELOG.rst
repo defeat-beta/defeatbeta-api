@@ -8,6 +8,7 @@ Change Log
 - Support Industry ROE Ratio[`#62 <https://github.com/defeat-beta/defeatbeta-api/issues/62>`_]
 - Support Industry ROA Ratio[`#63 <https://github.com/defeat-beta/defeatbeta-api/issues/63>`_]
 - Support Industry Equity Multiplier[`#66 <https://github.com/defeat-beta/defeatbeta-api/issues/66>`_]
+- Support Industry Net Income Margin[`#90 <https://github.com/defeat-beta/defeatbeta-api/issues/90>`_]
 
 0.0.24
 -------
