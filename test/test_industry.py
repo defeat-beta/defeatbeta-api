@@ -48,3 +48,9 @@ class TestTicker(unittest.TestCase):
         print(result.to_string())
         result = self.ticker.industry_equity_multiplier()
         print(result.to_string())
+
+    def test_industry_quarterly_net_margin(self):
+        result = self.ticker.quarterly_net_margin()
+        print(result.to_string())
+        result = self.ticker.industry_quarterly_net_margin()
+        print(result.to_string())

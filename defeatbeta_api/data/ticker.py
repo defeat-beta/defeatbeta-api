@@ -1333,6 +1333,120 @@ class Ticker:
         result_df.insert(1, "industry", industry)
         return result_df
 
+    def industry_quarterly_net_margin(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+
+        if not industry or pd.isna(industry):
+            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
+        symbols = self.duckdb_client.query(sql)['symbol']
+        symbols = symbols[symbols != self.ticker]
+        symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
+
+        net_income_and_revenue_table_sql = load_sql("select_net_income_and_revenue_by_industry",
+                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                 symbols=", ".join(f"'{s}'" for s in symbols))
+        net_income_and_revenue_table = self.duckdb_client.query(net_income_and_revenue_table_sql)
+
+        currency_dict = load_financial_currency()
+        net_income_df = (net_income_and_revenue_table[['report_date'] + [
+            col for col in net_income_and_revenue_table.columns
+            if col.endswith('_net_income_common_stockholders')
+        ]]).ffill()
+        net_income_df['report_date'] = pd.to_datetime(
+            net_income_df['report_date'])
+        new_cols = {}
+        for symbol in net_income_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_net_income_common_stockholders")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': net_income_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                net_income_df[['report_date', symbol]].rename(
+                    columns={symbol: 'net_income_common_stockholders'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_net_income_usd'] = (
+                    merged_df['net_income_common_stockholders'] / merged_df['close']).round(2)
+
+        net_income_df = pd.concat(
+            [net_income_df['report_date'], pd.DataFrame(new_cols)], axis=1)
+        net_income_df['total_net_income'] = net_income_df[
+            [col for col in net_income_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+
+        net_income_df = net_income_df[
+            ['report_date', 'total_net_income']]
+
+        revenue_df = (net_income_and_revenue_table[['report_date'] + [
+            col for col in net_income_and_revenue_table.columns
+            if col.endswith('_revenue')
+        ]]).ffill()
+        revenue_df['report_date'] = pd.to_datetime(
+            revenue_df['report_date'])
+        new_cols = {}
+        for symbol in revenue_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_revenue")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': revenue_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                revenue_df[['report_date', symbol]].rename(
+                    columns={symbol: 'revenue'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_revenue_usd'] = (
+                    merged_df['revenue'] / merged_df['close']).round(2)
+
+        revenue_df = pd.concat(
+            [revenue_df['report_date'], pd.DataFrame(new_cols)], axis=1)
+        revenue_df['total_revenue'] = revenue_df[
+            [col for col in revenue_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+        revenue_df = revenue_df[
+            ['report_date', 'total_revenue']]
+
+        df = (
+            net_income_df
+            .merge(revenue_df, on='report_date', how='outer')
+            .sort_values('report_date')
+            .reset_index(drop=True)
+        )
+        df['industry_net_margin'] = np.where(
+            (df['total_net_income'] < 0) | (df['total_revenue'] < 0),
+            -np.abs(df['total_net_income'] / df['total_revenue']),
+            df['total_net_income'] / df['total_revenue']
+        ).round(4)
+        df.insert(1, "industry", industry)
+        return df
+
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_tailing_eps)
         sql = load_sql("select_quarterly_eps_yoy_growth_by_symbol",
