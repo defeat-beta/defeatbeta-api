@@ -1,3 +1,5 @@
+<img src="./doc/logo.webp" height="50" alt="">
+
 # Defeat Beta API
 
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/badge/python-3.9+-blue.svg?style=flat" alt="Python version"></a>
