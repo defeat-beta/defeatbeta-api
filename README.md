@@ -1,4 +1,4 @@
-<img src="./doc/logo.webp" height="50" alt="">
+<img src="./doc/logo.webp" height="100" alt="">
 
 # Defeat Beta API
 
