@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import platform
@@ -11,6 +12,7 @@ import numpy as np
 import pandas as pd
 import psutil
 from pandas import DataFrame
+from tabulate import tabulate
 
 from defeatbeta_api.__version__ import __version__
 from defeatbeta_api.data.finance_item import FinanceItem
@@ -235,3 +237,54 @@ unit_map = {
     "million": 1e6,
     "thousand": 1e3
 }
+
+
+def in_notebook(matplotlib_inline=False):
+    try:
+        # Get IPython shell class name
+        shell = get_ipython().__class__.__name__  # type: ignore
+        if shell == "ZMQInteractiveShell":
+            # Jupyter notebook or qtconsole
+            if matplotlib_inline:
+                get_ipython().run_line_magic("matplotlib", "inline")  # type: ignore
+            return True
+        if shell == "TerminalInteractiveShell":
+            # Terminal running IPython
+            return False
+        # Other type (?)
+        return False
+    except NameError:
+        # Probably standard Python interpreter
+        return False
+
+
+def file_stream():
+    return io.BytesIO()
+
+
+def embed_figure(figfiles, figfmt):
+    figbytes = figfiles.getvalue()
+    if figfmt == "svg":
+        # SVG can be embedded directly as text
+        return figbytes.decode()
+    else:
+        raise NotImplementedError
+
+def html_table(obj, showindex="default"):
+    # Convert DataFrame to HTML table using tabulate
+    obj = tabulate(
+        obj, headers="keys", tablefmt="html", floatfmt=".2f", showindex=showindex
+    )
+
+    # Remove default tabulate styling attributes
+    obj = obj.replace(' style="text-align: right;"', "")
+    obj = obj.replace(' style="text-align: left;"', "")
+    obj = obj.replace(' style="text-align: center;"', "")
+
+    # Clean up spacing in table cells
+    obj = re.sub("<td> +", "<td>", obj)
+    obj = re.sub(" +</td>", "</td>", obj)
+    obj = re.sub("<th> +", "<th>", obj)
+    obj = re.sub(" +</th>", "</th>", obj)
+
+    return obj
