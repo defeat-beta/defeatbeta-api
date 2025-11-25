@@ -198,29 +198,6 @@ ticker.annual_fcf_margin()
 ```
 
 
-## 11. Industry Quarterly Historical Net Income Margin
-```markdown
-total_net_income                = sum of the net income of all stocks in the industry  
-
-total_revenue                   = sum of the revenue of all stocks in the industry
-
-industry_net_margin             = total_net_income / total_revenue
-```
-
-```python
-ticker.industry_quarterly_net_margin()
-```
-```text
-  report_date            industry  total_net_income  total_revenue  industry_net_margin
-0  2024-06-30  Auto Manufacturers      1.144196e+10   2.458395e+11               0.0465
-1  2024-09-30  Auto Manufacturers      6.176102e+09   2.580736e+11               0.0239
-2  2024-12-31  Auto Manufacturers      1.273238e+10   2.566520e+11               0.0496
-3  2025-03-31  Auto Manufacturers      4.782458e+09   2.390910e+11               0.0200
-4  2025-06-30  Auto Manufacturers      5.536484e+09   2.613396e+11               0.0212
-5  2025-09-30  Auto Manufacturers      7.111671e+09   2.672693e+11               0.0266
-```
-
-
 ## 11. Industry Quarterly Historical Gross Margin
 ```markdown
 total_gross_profit              = sum of the gross profit of all stocks in the industry  
@@ -241,4 +218,27 @@ ticker.industry_quarterly_gross_margin()
 3  2025-03-31  Auto Manufacturers        3.674957e+10   2.390910e+11                 0.1537
 4  2025-06-30  Auto Manufacturers        3.639969e+10   2.613396e+11                 0.1393
 5  2025-09-30  Auto Manufacturers        3.574678e+10   2.672693e+11                 0.1337
+```
+
+
+## 12. Industry Quarterly Historical Net Income Margin
+```markdown
+total_net_income                = sum of the net income of all stocks in the industry  
+
+total_revenue                   = sum of the revenue of all stocks in the industry
+
+industry_net_margin             = total_net_income / total_revenue
+```
+
+```python
+ticker.industry_quarterly_net_margin()
+```
+```text
+  report_date            industry  total_net_income  total_revenue  industry_net_margin
+0  2024-06-30  Auto Manufacturers      1.144196e+10   2.458395e+11               0.0465
+1  2024-09-30  Auto Manufacturers      6.176102e+09   2.580736e+11               0.0239
+2  2024-12-31  Auto Manufacturers      1.273238e+10   2.566520e+11               0.0496
+3  2025-03-31  Auto Manufacturers      4.782458e+09   2.390910e+11               0.0200
+4  2025-06-30  Auto Manufacturers      5.536484e+09   2.613396e+11               0.0212
+5  2025-09-30  Auto Manufacturers      7.111671e+09   2.672693e+11               0.0266
 ```
