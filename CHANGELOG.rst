@@ -4,6 +4,7 @@ Change Log
 0.0.26
 -------
 - Improve the calculation method of industry PE to enhance accuracy[`#92 <https://github.com/defeat-beta/defeatbeta-api/issues/92>`_]
+- Generate Profile & P/E report[`#93 <https://github.com/defeat-beta/defeatbeta-api/issues/93>`_]
 
 0.0.25
 -------

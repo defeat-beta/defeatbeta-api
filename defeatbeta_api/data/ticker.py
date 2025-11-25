@@ -882,11 +882,12 @@ class Ticker:
 
         ttm_net_income_sql = load_sql("select_ttm_net_income_by_industry",
                                       stock_statement = self.huggingface_client.get_url_path(stock_statement),
-                                      symbols = ", ".join(f"'{s}'" for s in symbols))
+                                      symbols = ", ".join(f"'{s}'" for s in market_cap_cols))
         ttm_net_income = self.duckdb_client.query(ttm_net_income_sql)
         ttm_net_income_df = ttm_net_income.copy()
         currency_dict = load_financial_currency()
         ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date'])
+        usd_columns = []
         for symbol in ttm_net_income_df.columns:
             if symbol == 'report_date':
                 continue
@@ -907,7 +908,12 @@ class Ticker:
                 right_on='report_date',
                 direction='backward'
             )
-            ttm_net_income_df[f'{symbol}_usd'] = (merged_df['ttm_net_income'] / merged_df['close']).round(2)
+            usd_series = (merged_df['ttm_net_income'] / merged_df['close']).round(2)
+            usd_series.name = f"{symbol}_usd"
+
+            usd_columns.append(usd_series)
+
+        ttm_net_income_df = pd.concat([ttm_net_income_df] + usd_columns, axis=1)
 
         cols_to_keep = ['report_date'] + [c for c in ttm_net_income_df.columns if c.endswith('_usd')]
         ttm_net_income_usd_df = ttm_net_income_df[cols_to_keep]
