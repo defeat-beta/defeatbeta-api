@@ -41,7 +41,7 @@ def html(
     with open(output, "w", encoding="utf-8") as f:
         f.write(tpl)
 
-def fill_quarterly_gross_margin_profitability(ticker, tpl):
+def fill_quarterly_gross_margin_profitability(ticker: Ticker, tpl):
     stock_gross_margin = ticker.quarterly_gross_margin()
     industry_gross_margin = ticker.industry_quarterly_gross_margin()
     stock_gross_margin['report_date'] = pd.to_datetime(stock_gross_margin['report_date'])
@@ -82,8 +82,8 @@ def fill_quarterly_gross_margin_profitability(ticker, tpl):
     gross_margin_table.rename(
         columns={
             'report_date': 'Report Date',
-            'gross_margin': 'Gross Margin',
-            'industry_gross_margin': 'Industry Gross Margin'
+            'gross_margin': f"{ticker.ticker}",
+            'industry_gross_margin': f"{industry_gross_margin['industry'].iloc[0]} Industry",
         },
         inplace=True
     )
@@ -131,8 +131,8 @@ def fill_quarterly_net_margin_profitability(ticker, tpl):
     net_margin_table.rename(
         columns={
             'report_date': 'Report Date',
-            'net_margin': 'Net Margin',
-            'industry_net_margin': 'Industry Net Margin'
+            'net_margin': f"{ticker.ticker}",
+            'industry_net_margin': f"{industry_net_margin['industry'].iloc[0]} Industry"
         },
         inplace=True
     )
