@@ -26,7 +26,10 @@ dependencies = [
     "nltk >= 3.9.2",
     "datasets >= 4.4.1",
     "huggingface_hub >= 1.1.2",
-    "pyarrow >= 22.0.0"
+    "pyarrow >= 22.0.0",
+    "ipython>=9.7.0",
+    "matplotlib>=3.10.7",
+    "seaborn>=0.13.2"
 ]
 
 [tool.setuptools.dynamic]
