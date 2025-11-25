@@ -1343,6 +1343,125 @@ class Ticker:
         result_df.insert(1, "industry", industry)
         return result_df
 
+    def industry_quarterly_gross_margin(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+
+        if not industry or pd.isna(industry):
+            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
+        symbols = self.duckdb_client.query(sql)['symbol']
+        symbols = symbols[symbols != self.ticker]
+        symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
+
+        gross_profit_and_revenue_table_sql = load_sql("select_gross_profit_and_revenue_by_industry",
+                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                 symbols=", ".join(f"'{s}'" for s in symbols))
+        gross_profit_and_revenue_table = self.duckdb_client.query(gross_profit_and_revenue_table_sql)
+
+        currency_dict = load_financial_currency()
+        gross_profit_df = (gross_profit_and_revenue_table[['report_date'] + [
+            col for col in gross_profit_and_revenue_table.columns
+            if col.endswith('_gross_profit')
+        ]]).ffill()
+        gross_profit_df = gross_profit_df.dropna(axis=1, how='all')
+        valid_idx = gross_profit_df.notna().all(axis=1).idxmax()
+        gross_profit_df = gross_profit_df.loc[valid_idx:].reset_index(drop=True)
+        gross_profit_df['report_date'] = pd.to_datetime(
+            gross_profit_df['report_date'])
+        new_cols = {}
+        for symbol in gross_profit_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_gross_profit")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': gross_profit_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                gross_profit_df[['report_date', symbol]].rename(
+                    columns={symbol: 'gross_profit'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_gross_profit_usd'] = (
+                    merged_df['gross_profit'] / merged_df['close']).round(2)
+        gross_profit_df = pd.concat(
+            [gross_profit_df['report_date'], pd.DataFrame(new_cols)], axis=1)
+        gross_profit_df['total_gross_profit'] = gross_profit_df[
+            [col for col in gross_profit_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+
+        gross_profit_df = gross_profit_df[
+            ['report_date', 'total_gross_profit']]
+
+        revenue_df = (gross_profit_and_revenue_table[['report_date'] + [
+            col for col in gross_profit_and_revenue_table.columns
+            if col.endswith('_revenue')
+        ]]).ffill()
+        revenue_df = revenue_df.dropna(axis=1, how='all')
+        valid_idx = revenue_df.notna().all(axis=1).idxmax()
+        revenue_df = revenue_df.loc[valid_idx:].reset_index(drop=True)
+        revenue_df['report_date'] = pd.to_datetime(
+            revenue_df['report_date'])
+        new_cols = {}
+        for symbol in revenue_df.columns:
+            if symbol == 'report_date':
+                continue
+            currency_symbol = symbol.removesuffix("_revenue")
+            currency = currency_dict.get(currency_symbol, 'USD')
+            if currency == 'USD':
+                currency_df = pd.DataFrame({
+                    'report_date': revenue_df['report_date'],
+                    'close': 1.0
+                })
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+            merged_df = pd.merge_asof(
+                revenue_df[['report_date', symbol]].rename(
+                    columns={symbol: 'revenue'}),
+                currency_df,
+                left_on='report_date',
+                right_on='report_date',
+                direction='backward'
+            )
+            new_cols[f'{symbol}_revenue_usd'] = (
+                    merged_df['revenue'] / merged_df['close']).round(2)
+
+        revenue_df = pd.concat(
+            [revenue_df['report_date'], pd.DataFrame(new_cols)], axis=1)
+        revenue_df['total_revenue'] = revenue_df[
+            [col for col in revenue_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+        revenue_df = revenue_df[
+            ['report_date', 'total_revenue']]
+
+        df = (
+            gross_profit_df
+            .merge(revenue_df, on='report_date', how='outer')
+            .sort_values('report_date')
+            .reset_index(drop=True)
+        )
+        df['industry_gross_margin'] = np.where(
+            (df['total_gross_profit'] < 0) | (df['total_revenue'] < 0),
+            -np.abs(df['total_gross_profit'] / df['total_revenue']),
+            df['total_gross_profit'] / df['total_revenue']
+        ).round(4)
+        df.insert(1, "industry", industry)
+        return df
+
     def industry_quarterly_net_margin(self) -> pd.DataFrame:
         info = self.info()
         industry = info['industry']
@@ -1368,6 +1487,9 @@ class Ticker:
             col for col in net_income_and_revenue_table.columns
             if col.endswith('_net_income_common_stockholders')
         ]]).ffill()
+        net_income_df = net_income_df.dropna(axis=1, how='all')
+        valid_idx = net_income_df.notna().all(axis=1).idxmax()
+        net_income_df = net_income_df.loc[valid_idx:].reset_index(drop=True)
         net_income_df['report_date'] = pd.to_datetime(
             net_income_df['report_date'])
         new_cols = {}
@@ -1408,6 +1530,9 @@ class Ticker:
             col for col in net_income_and_revenue_table.columns
             if col.endswith('_revenue')
         ]]).ffill()
+        revenue_df = revenue_df.dropna(axis=1, how='all')
+        valid_idx = revenue_df.notna().all(axis=1).idxmax()
+        revenue_df = revenue_df.loc[valid_idx:].reset_index(drop=True)
         revenue_df['report_date'] = pd.to_datetime(
             revenue_df['report_date'])
         new_cols = {}
