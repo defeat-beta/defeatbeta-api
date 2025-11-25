@@ -871,6 +871,7 @@ class Ticker:
                                         symbols = ", ".join(f"'{s}'" for s in symbols))
 
         total_market_cap = self.duckdb_client.query(market_cap_table_sql)
+        total_market_cap = total_market_cap.dropna(axis=1, how='all')
 
         market_cap_cols = [col for col in total_market_cap.columns if col != 'report_date']
 
@@ -911,6 +912,9 @@ class Ticker:
         cols_to_keep = ['report_date'] + [c for c in ttm_net_income_df.columns if c.endswith('_usd')]
         ttm_net_income_usd_df = ttm_net_income_df[cols_to_keep]
         ttm_net_income_usd_df = ttm_net_income_usd_df.ffill()
+        ttm_net_income_usd_df = ttm_net_income_usd_df.dropna(axis=1, how='all')
+        valid_idx = ttm_net_income_usd_df.notna().all(axis=1).idxmax()
+        ttm_net_income_usd_df = ttm_net_income_usd_df.loc[valid_idx:].reset_index(drop=True)
 
         ttm_net_income_usd_cols = [col for col in ttm_net_income_usd_df.columns if col != 'report_date']
         ttm_net_income_usd_df['total_ttm_net_income'] = ttm_net_income_usd_df[ttm_net_income_usd_cols].sum(axis=1, skipna=True)
