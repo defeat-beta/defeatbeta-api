@@ -34,12 +34,63 @@ def html(
 
     tpl = fill_pe(ticker, tpl)
 
-    tpl = fill_quarterly_profitability(ticker, tpl)
+    tpl = fill_quarterly_gross_margin_profitability(ticker, tpl)
+
+    tpl = fill_quarterly_net_margin_profitability(ticker, tpl)
 
     with open(output, "w", encoding="utf-8") as f:
         f.write(tpl)
 
-def fill_quarterly_profitability(ticker, tpl):
+def fill_quarterly_gross_margin_profitability(ticker, tpl):
+    stock_gross_margin = ticker.quarterly_gross_margin()
+    industry_gross_margin = ticker.industry_quarterly_gross_margin()
+    stock_gross_margin['report_date'] = pd.to_datetime(stock_gross_margin['report_date'])
+    industry_gross_margin['report_date'] = pd.to_datetime(industry_gross_margin['report_date'])
+    merged_df = pd.merge_asof(
+        stock_gross_margin,
+        industry_gross_margin,
+        left_on='report_date',
+        right_on='report_date',
+        direction='backward'
+    )
+    merged_df = merged_df.dropna(subset=['gross_margin', 'industry_gross_margin'])
+
+    figure = plot_vs_figure(
+        title='Gross Margin (vs Industry)',
+        target_series_x=merged_df['report_date'],
+        target_series_y=merged_df['gross_margin'],
+        target_series_label='Stock Gross Margin',
+        baseline_series_x=merged_df['report_date'],
+        baseline_series_y=merged_df['industry_gross_margin'],
+        baseline_series_label='Industry Gross Margin',
+        fig_size=(8, 4),
+        y_axis_ticks=10,
+        formater=PercentFormatter(xmax=1.0, decimals=1),
+        figure_type='bar'
+    )
+    tpl = tpl.replace("{{gross_margin}}", util.embed_figure(figure, "svg"))
+    tpl = tpl.replace("{{gross_margin_title}}", "<h3>Gross Margin</h3>")
+    gross_margin_table = merged_df[['report_date', 'gross_margin', 'industry_gross_margin']].copy()
+    gross_margin_table['report_date'] = gross_margin_table['report_date'].dt.date
+    gross_margin_table['gross_margin'] = gross_margin_table['gross_margin'].apply(
+        lambda x: f"{x * 100:.2f}%" if pd.notna(x) else 'NaN'
+    )
+    gross_margin_table['industry_gross_margin'] = gross_margin_table['industry_gross_margin'].apply(
+        lambda x: f"{x * 100:.2f}%" if pd.notna(x) else 'NaN'
+    )
+
+    gross_margin_table.rename(
+        columns={
+            'report_date': 'Report Date',
+            'gross_margin': 'Gross Margin',
+            'industry_gross_margin': 'Industry Gross Margin'
+        },
+        inplace=True
+    )
+    tpl = tpl.replace("{{gross_margin_table}}", html_table(gross_margin_table, showindex=False))
+    return tpl
+
+def fill_quarterly_net_margin_profitability(ticker, tpl):
     stock_net_margin = ticker.quarterly_net_margin()
     industry_net_margin = ticker.industry_quarterly_net_margin()
     stock_net_margin['report_date'] = pd.to_datetime(stock_net_margin['report_date'])
@@ -51,6 +102,8 @@ def fill_quarterly_profitability(ticker, tpl):
         right_on='report_date',
         direction='backward'
     )
+    merged_df = merged_df.dropna(subset=['net_margin', 'industry_net_margin'])
+
     figure = plot_vs_figure(
         title='Net Margin (vs Industry)',
         target_series_x=merged_df['report_date'],
@@ -117,7 +170,7 @@ def fill_pe(ticker, tpl):
         {'Metrics': 'Current TTM P/E', 'Value': last_pe},
         {'Metrics': 'Current Industry TTM P/E', 'Value': df_ind_trim['industry_pe'].iloc[-1]},
         {'Metrics': 'μ-Line', 'Value': f"{mean:.2f}"},
-        {'Metrics': '±1σ Band', 'Value': f"{mean - std:.2f} ~ {mean + std:.2f}"}])
+        {'Metrics': 'u±1σ Band', 'Value': f"{mean - std:.2f} ~ {mean + std:.2f}"}])
     tpl = tpl.replace("{{ttm_pe_table}}", html_table(ttm_pe_table, showindex=False))
     return tpl
 
