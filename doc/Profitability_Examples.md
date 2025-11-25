@@ -12,7 +12,8 @@
 - [8. Stock Annual EBITDA Margin](#8-stock-annual-ebitda-margin)
 - [9. Stock Quarterly FCF Margin](#9-stock-quarterly-fcf-margin)
 - [10. Stock Annual FCF Margin](#10-stock-annual-fcf-margin)
-- [11. Industry Quarterly Historical Net Income Margin](#11-industry-quarterly-historical-net-income-margin)
+- [11. Industry Quarterly Historical Gross Margin](#11-industry-quarterly-historical-gross-margin)
+- [12. Industry Quarterly Historical Net Income Margin](#12-industry-quarterly-historical-net-income-margin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
