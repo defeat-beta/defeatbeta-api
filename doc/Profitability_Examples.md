@@ -211,19 +211,34 @@ industry_net_margin             = total_net_income / total_revenue
 ticker.industry_quarterly_net_margin()
 ```
 ```text
-   report_date            industry  total_net_income  total_revenue  industry_net_margin
-0   2022-06-30  Auto Manufacturers     -1.712000e+09   3.640000e+08              -4.7033
-1   2022-09-30  Auto Manufacturers     -1.724000e+09   5.360000e+08              -3.2164
-2   2022-12-31  Auto Manufacturers     -1.796284e+09   6.648099e+08              -2.7020
-3   2023-03-31  Auto Manufacturers     -1.013621e+09   3.360098e+10              -0.0302
-4   2023-06-30  Auto Manufacturers      1.419416e+10   2.306202e+11               0.0615
-5   2023-09-30  Auto Manufacturers      1.190986e+10   2.352829e+11               0.0506
-6   2023-12-31  Auto Manufacturers      1.509432e+10   2.555192e+11               0.0591
-7   2024-03-31  Auto Manufacturers      8.830194e+09   2.296047e+11               0.0385
-8   2024-06-30  Auto Manufacturers      1.144196e+10   2.458395e+11               0.0465
-9   2024-09-30  Auto Manufacturers      6.302880e+09   2.565668e+11               0.0246
-10  2024-12-31  Auto Manufacturers      1.273238e+10   2.566520e+11               0.0496
-11  2025-03-31  Auto Manufacturers      4.782458e+09   2.390910e+11               0.0200
-12  2025-06-30  Auto Manufacturers      5.536484e+09   2.613396e+11               0.0212
-13  2025-09-30  Auto Manufacturers      7.128733e+09   2.663335e+11               0.0268
+  report_date            industry  total_net_income  total_revenue  industry_net_margin
+0  2024-06-30  Auto Manufacturers      1.144196e+10   2.458395e+11               0.0465
+1  2024-09-30  Auto Manufacturers      6.176102e+09   2.580736e+11               0.0239
+2  2024-12-31  Auto Manufacturers      1.273238e+10   2.566520e+11               0.0496
+3  2025-03-31  Auto Manufacturers      4.782458e+09   2.390910e+11               0.0200
+4  2025-06-30  Auto Manufacturers      5.536484e+09   2.613396e+11               0.0212
+5  2025-09-30  Auto Manufacturers      7.111671e+09   2.672693e+11               0.0266
+```
+
+
+## 11. Industry Quarterly Historical Gross Margin
+```markdown
+total_gross_profit              = sum of the gross profit of all stocks in the industry  
+
+total_revenue                   = sum of the revenue of all stocks in the industry
+
+industry_gross_margin           = total_gross_profit / total_revenue
+```
+
+```python
+ticker.industry_quarterly_gross_margin()
+```
+```text
+  report_date            industry  total_gross_profit  total_revenue  industry_gross_margin
+0  2024-06-30  Auto Manufacturers        3.964851e+10   2.458395e+11                 0.1613
+1  2024-09-30  Auto Manufacturers        4.237159e+10   2.580736e+11                 0.1642
+2  2024-12-31  Auto Manufacturers        3.792915e+10   2.566520e+11                 0.1478
+3  2025-03-31  Auto Manufacturers        3.674957e+10   2.390910e+11                 0.1537
+4  2025-06-30  Auto Manufacturers        3.639969e+10   2.613396e+11                 0.1393
+5  2025-09-30  Auto Manufacturers        3.574678e+10   2.672693e+11                 0.1337
 ```
