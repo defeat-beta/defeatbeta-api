@@ -163,11 +163,17 @@ def fill_pe(ticker, tpl):
     mean = df_stock_trim['ttm_pe'].mean()
     std = df_stock_trim['ttm_pe'].std()
     last_pe = df_stock_trim['ttm_pe'].iloc[-1]
+    total_count = df_stock_trim['ttm_pe'].count()
+    low_count = (last_pe < df_stock_trim['ttm_pe']).sum()
+    percentile_rank = (low_count / total_count) * 100
+
     ttm_pe_table = pd.DataFrame([
         {'Metrics': 'Current TTM P/E', 'Value': last_pe},
         {'Metrics': 'Current Industry TTM P/E', 'Value': df_ind_trim['industry_pe'].iloc[-1]},
         {'Metrics': 'μ-Line', 'Value': f"{mean:.2f}"},
-        {'Metrics': 'u±1σ Band', 'Value': f"{mean - std:.2f} ~ {mean + std:.2f}"}])
+        {'Metrics': 'u±1σ Band', 'Value': f"{mean - std:.2f} ~ {mean + std:.2f}"},
+        {'Metrics': 'Below-History %', 'Value': f"{percentile_rank:.2f}%"},
+    ])
     tpl = tpl.replace("{{ttm_pe_table}}", html_table(ttm_pe_table, showindex=False))
     return tpl
 
