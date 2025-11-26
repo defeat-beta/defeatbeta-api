@@ -15,10 +15,7 @@ except ImportError:
 from pathlib import Path
 
 
-def html(
-    ticker: Ticker,
-    output=None,
-):
+def html(ticker: Ticker, output=None):
     if output is None and not util.in_notebook():
         raise ValueError("`output` must be specified")
 
