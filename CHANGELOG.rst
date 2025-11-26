@@ -6,6 +6,7 @@ Change Log
 - Improve the calculation method of industry PE to enhance accuracy[`#92 <https://github.com/defeat-beta/defeatbeta-api/issues/92>`_]
 - Generate Profile & P/E report[`#93 <https://github.com/defeat-beta/defeatbeta-api/issues/93>`_]
 - Support Industry Gross Margin[`#95 <https://github.com/defeat-beta/defeatbeta-api/issues/95>`_]
+- Generate Profitability Report(Gross Margin\Net Margin)[`#94 <https://github.com/defeat-beta/defeatbeta-api/issues/94>`_]
 
 0.0.25
 -------
