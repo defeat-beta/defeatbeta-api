@@ -7,6 +7,7 @@ Change Log
 - Generate Profile & P/E report[`#93 <https://github.com/defeat-beta/defeatbeta-api/issues/93>`_]
 - Support Industry Gross Margin[`#95 <https://github.com/defeat-beta/defeatbeta-api/issues/95>`_]
 - Generate Profitability Report(Gross Margin\Net Margin)[`#94 <https://github.com/defeat-beta/defeatbeta-api/issues/94>`_]
+- Generate Revenue Growth Report[`#97 <https://github.com/defeat-beta/defeatbeta-api/issues/97>`_]
 
 0.0.25
 -------
