@@ -288,3 +288,12 @@ def html_table(obj, showindex="default"):
     obj = re.sub(" +</th>", "</th>", obj)
 
     return obj
+
+def human_format(num):
+    if num is None or pd.isna(num):
+        return ""
+    for unit in ["", "K", "M", "B", "T"]:
+        if abs(num) < 1000:
+            return f"{num:.1f}{unit}"
+        num /= 1000
+    return f"{num:.1f}P"
