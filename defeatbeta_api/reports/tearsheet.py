@@ -5,7 +5,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter, Formatter, Perc
 from defeatbeta_api import __version__, data_update_time
 from defeatbeta_api.data.ticker import Ticker
 from defeatbeta_api.utils import util
-from defeatbeta_api.utils.util import html_table
+from defeatbeta_api.utils.util import html_table, human_format
 
 try:
     from IPython.core.display import display as iDisplay, HTML as iHTML
@@ -35,8 +35,65 @@ def html(ticker: Ticker, output=None):
 
     tpl = fill_quarterly_net_margin_profitability(ticker, tpl)
 
+    tpl = fill_quarterly_revenue_growth(ticker, tpl)
+
     with open(output, "w", encoding="utf-8") as f:
         f.write(tpl)
+
+def fill_quarterly_revenue_growth(ticker: Ticker, tpl):
+    stock_revenue_growth = ticker.quarterly_revenue_yoy_growth()
+    stock_revenue_growth = stock_revenue_growth.dropna(subset=['yoy_growth'])
+    y_min = stock_revenue_growth['yoy_growth'].min()
+    y_max = stock_revenue_growth['yoy_growth'].max()
+    ranges = []
+    if y_min < 0:
+        ranges.append((y_min, 0.0, "#F7C6C7", "Cornered"))
+    if 0 < y_max < 0.1:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+    if 0.1 < y_max < 0.2:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+        ranges.append((0.10, 0.20, "#D5F5D0", "Stalwarts"))
+    if 0.2 < y_max:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+        ranges.append((0.10, 0.20, "#D5F5D0", "Stalwarts"))
+        ranges.append((0.20, y_max, "#D6EAF8", "Fast Growers"))
+
+    figure = plot_single_series_figure(
+        title='Quarterly Revenue YoY Growth',
+        series_x=stock_revenue_growth['report_date'],
+        series_y=stock_revenue_growth['yoy_growth'],
+        series_label='Quarterly Revenue YoY Growth',
+        fig_size=(8, 4),
+        y_axis_ticks=10,
+        formater=PercentFormatter(xmax=1.0, decimals=1),
+        figure_type='bar',
+        horizontal_lines=[0],
+        range_lines=ranges
+    )
+    tpl = tpl.replace("{{quarterly_revenue_yoy_growth}}", util.embed_figure(figure, "svg"))
+    tpl = tpl.replace("{{quarterly_revenue_yoy_growth_title}}", "<h3>Quarterly Revenue YoY Growth</h3>")
+    quarterly_revenue_yoy_growth_table = stock_revenue_growth[['report_date', 'revenue', 'prev_year_revenue', 'yoy_growth']].copy()
+    quarterly_revenue_yoy_growth_table['report_date'] = quarterly_revenue_yoy_growth_table['report_date'].dt.date
+    quarterly_revenue_yoy_growth_table['yoy_growth'] = quarterly_revenue_yoy_growth_table['yoy_growth'].apply(
+        lambda x: f"{x * 100:.2f}%" if pd.notna(x) else 'NaN'
+    )
+    quarterly_revenue_yoy_growth_table["revenue"] = \
+        quarterly_revenue_yoy_growth_table["revenue"].apply(human_format)
+    quarterly_revenue_yoy_growth_table["prev_year_revenue"] = \
+        quarterly_revenue_yoy_growth_table["prev_year_revenue"].apply(human_format)
+
+    quarterly_revenue_yoy_growth_table.rename(
+        columns={
+            'report_date': 'Report Date',
+            'revenue': 'Revenue',
+            'prev_year_revenue': 'Rev (YoY Base)',
+            'yoy_growth': 'YoY %'
+        },
+        inplace=True
+    )
+
+    tpl = tpl.replace("{{quarterly_revenue_yoy_growth_table}}", html_table(quarterly_revenue_yoy_growth_table, showindex=False))
+    return tpl
 
 def fill_quarterly_gross_margin_profitability(ticker: Ticker, tpl):
     stock_gross_margin = ticker.quarterly_gross_margin()
@@ -191,6 +248,71 @@ def fill_headline(ticker, tpl):
     tpl = tpl.replace("{{v}}", __version__)
     return tpl
 
+def plot_single_series_figure(
+        title: str,
+        series_x: pd.Series, series_y: pd.Series, series_label:str,
+        fig_size: tuple,
+        y_axis_ticks: int,
+        formater: Formatter,
+        figure_type: str = "line",
+        horizontal_lines: list = None,
+        range_lines: list = None):
+    fig, ax = plt.subplots(figsize = fig_size)
+    for spine in ["top", "right", "bottom", "left"]:
+        ax.spines[spine].set_visible(False)
+    fig.suptitle(title, fontweight="bold", fontname="Arial", fontsize=15, color="black")
+    fig.set_facecolor("white")
+    ax.set_facecolor("white")
+
+    x = series_x
+
+    for line in horizontal_lines:
+        ax.hlines(y=line, xmin=series_x.iloc[0], xmax=series_x.iloc[-1], colors="#FA2D1A", linewidth=1.0,
+                  linestyles="--")
+
+    for low, high, color, label in range_lines:
+        ax.fill_between(
+            x,
+            low,
+            high,
+            color=color,
+            alpha=0.3,
+            linewidth=0,
+        )
+        x_pos = x.iloc[-1]
+
+        y_pos = high - (high - low) * 0.05
+
+        ax.text(
+            x_pos,
+            y_pos,
+            label,
+            ha="right",
+            va="top",
+            fontsize=8,
+            alpha=0.5,
+            color="#555555",
+        )
+
+    if figure_type == "line":
+        ax.plot(series_x, series_y, label=series_label, color='#75FA4C', linewidth=1.5)
+    elif figure_type == "bar":
+        bar_width = pd.Timedelta(days=20)
+        ax.bar(series_x, series_y, width=bar_width, label=series_label, color='#75FA4C')
+        for x, y in zip(series_x, series_y):
+            ax.text(x, y,f"{y:.1%}", ha='center', va='bottom', fontsize=8, color="#333333")
+    else:
+        raise Exception(f"Unknown figure type: {figure_type}")
+
+    ax.yaxis.set_major_locator(LinearLocator(y_axis_ticks))
+    ax.yaxis.set_major_formatter(formater)
+    ax.legend()
+    ax.grid(color='gray', alpha=0.2, linewidth=0.3)
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    fig_file = util.file_stream()
+    fig.savefig(fig_file, format="svg")
+    return fig_file
 
 def plot_vs_figure(
         title: str,
@@ -214,8 +336,8 @@ def plot_vs_figure(
         ax.plot(baseline_series_x, baseline_series_y, label=baseline_series_label, color='#1F46F4', linewidth=1.5)
     elif figure_type == "bar":
         bar_width = pd.Timedelta(days=20)
-        ax.bar(target_series_x - pd.Timedelta(days=10), target_series_y, width=bar_width, label=target_series_label, color='#75FA4C', alpha=0.85)
-        ax.bar(baseline_series_x + pd.Timedelta(days=10), baseline_series_y, width=bar_width, label=baseline_series_label, color='#1F46F4', alpha=0.85)
+        ax.bar(target_series_x - pd.Timedelta(days=10), target_series_y, width=bar_width, label=target_series_label, color='#75FA4C')
+        ax.bar(baseline_series_x + pd.Timedelta(days=10), baseline_series_y, width=bar_width, label=baseline_series_label, color='#1F46F4')
         for x, y in zip(target_series_x - pd.Timedelta(days=10), target_series_y):
             ax.text(x, y,f"{y:.1%}", ha='center', va='bottom', fontsize=8, color="#333333")
 
