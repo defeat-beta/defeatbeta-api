@@ -8,6 +8,7 @@ Change Log
 - Support Industry Gross Margin[`#95 <https://github.com/defeat-beta/defeatbeta-api/issues/95>`_]
 - Generate Profitability Report(Gross Margin\Net Margin)[`#94 <https://github.com/defeat-beta/defeatbeta-api/issues/94>`_]
 - Generate Revenue Growth Report[`#97 <https://github.com/defeat-beta/defeatbeta-api/issues/97>`_]
+- Generate Quarterly Diluted EPS YoY Growth Report[`#98 <https://github.com/defeat-beta/defeatbeta-api/issues/98>`_]
 
 0.0.25
 -------

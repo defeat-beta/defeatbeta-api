@@ -37,12 +37,69 @@ def html(ticker: Ticker, output=None):
 
     tpl = fill_quarterly_revenue_growth(ticker, tpl)
 
+    tpl = fill_quarterly_eps_growth(ticker, tpl)
+
     with open(output, "w", encoding="utf-8") as f:
         f.write(tpl)
 
+def fill_quarterly_eps_growth(ticker: Ticker, tpl):
+    stock_eps_growth = ticker.quarterly_eps_yoy_growth()
+    stock_eps_growth = stock_eps_growth.dropna(subset=['yoy_growth']).tail(8)
+    y_min = stock_eps_growth['yoy_growth'].min()
+    y_max = stock_eps_growth['yoy_growth'].max()
+    ranges = []
+    if y_min < 0:
+        ranges.append((y_min, 0.0, "#F7C6C7", "Cornered"))
+    if 0 < y_max < 0.1:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+    if 0.1 < y_max < 0.2:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+        ranges.append((0.10, 0.20, "#D5F5D0", "Stalwarts"))
+    if 0.2 < y_max:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+        ranges.append((0.10, 0.20, "#D5F5D0", "Stalwarts"))
+        ranges.append((0.20, y_max, "#D6EAF8", "Fast Growers"))
+
+    figure = plot_single_series_figure(
+        title='Quarterly Diluted EPS YoY Growth',
+        series_x=stock_eps_growth['report_date'],
+        series_y=stock_eps_growth['yoy_growth'],
+        series_label='Quarterly EPS YoY Growth',
+        fig_size=(8, 4),
+        y_axis_ticks=10,
+        formater=PercentFormatter(xmax=1.0, decimals=1),
+        figure_type='bar',
+        horizontal_lines=[0],
+        range_lines=ranges
+    )
+    tpl = tpl.replace("{{quarterly_eps_yoy_growth}}", util.embed_figure(figure, "svg"))
+    tpl = tpl.replace("{{quarterly_eps_yoy_growth_title}}", "<h3>Quarterly Diluted EPS YoY Growth</h3>")
+    quarterly_eps_yoy_growth_table = stock_eps_growth[['report_date', 'eps', 'prev_year_eps', 'yoy_growth']].copy()
+    quarterly_eps_yoy_growth_table['report_date'] = quarterly_eps_yoy_growth_table['report_date'].dt.date
+    quarterly_eps_yoy_growth_table['yoy_growth'] = quarterly_eps_yoy_growth_table['yoy_growth'].apply(
+        lambda x: f"{x * 100:.2f}%" if pd.notna(x) else 'NaN'
+    )
+    quarterly_eps_yoy_growth_table["eps"] = \
+        quarterly_eps_yoy_growth_table["eps"].apply(human_format)
+    quarterly_eps_yoy_growth_table["prev_year_eps"] = \
+        quarterly_eps_yoy_growth_table["prev_year_eps"].apply(human_format)
+
+    quarterly_eps_yoy_growth_table.rename(
+        columns={
+            'report_date': 'Report Date',
+            'eps': 'EPS',
+            'prev_year_eps': 'EPS (YoY Base)',
+            'yoy_growth': 'YoY %'
+        },
+        inplace=True
+    )
+
+    tpl = tpl.replace("{{quarterly_eps_yoy_growth_table}}", html_table(quarterly_eps_yoy_growth_table, showindex=False))
+    return tpl
+
 def fill_quarterly_revenue_growth(ticker: Ticker, tpl):
     stock_revenue_growth = ticker.quarterly_revenue_yoy_growth()
-    stock_revenue_growth = stock_revenue_growth.dropna(subset=['yoy_growth'])
+    stock_revenue_growth = stock_revenue_growth.dropna(subset=['yoy_growth']).tail(8)
     y_min = stock_revenue_growth['yoy_growth'].min()
     y_max = stock_revenue_growth['yoy_growth'].max()
     ranges = []
