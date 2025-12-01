@@ -17,6 +17,11 @@ from tabulate import tabulate
 from defeatbeta_api.__version__ import __version__
 from defeatbeta_api.data.finance_item import FinanceItem
 from defeatbeta_api.data.template.transcripts_extract_fin_data_tools import FUNCTION_SCHEMA
+try:
+    from IPython.core.display import display, HTML
+except ImportError:
+    from IPython.display import display
+    from IPython.core.display import HTML
 
 
 def validate_memory_limit(memory_limit: str) -> str:
@@ -257,6 +262,25 @@ def in_notebook(matplotlib_inline=False):
         # Probably standard Python interpreter
         return False
 
+def download_html(html: str, filename: str):
+    js_code = re.sub(
+        " +",
+        " ",
+        """<script>
+    var bl=new Blob(['{{html}}'],{type:"text/html"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(bl);
+    a.download="{{filename}}";
+    a.hidden=true;document.body.appendChild(a);
+    a.innerHTML="download report";
+    a.click();</script>""".replace(
+            "\n", ""
+        ),
+    )
+
+    js_code = js_code.replace("{{html}}", re.sub(" +", " ", html.replace("\n", "")))
+
+    display(HTML(js_code.replace("{{filename}}", filename)))
 
 def file_stream():
     return io.BytesIO()

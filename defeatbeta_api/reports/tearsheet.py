@@ -8,13 +8,6 @@ from defeatbeta_api.utils import util
 from defeatbeta_api.utils.util import html_table, human_format
 from pathlib import Path
 
-try:
-    from IPython.core.display import display as iDisplay, HTML as iHTML
-except ImportError:
-    from IPython.display import display as iDisplay
-    from IPython.core.display import HTML as iHTML
-
-
 def html(ticker: Ticker, output=None):
     if output is None and not util.in_notebook():
         raise ValueError("`output` must be specified")
@@ -42,11 +35,9 @@ def html(ticker: Ticker, output=None):
     tpl = fill_quarterly_eps_growth(ticker, tpl)
 
     if util.in_notebook():
-        from IPython.display import IFrame
-        with open(f"{ticker}.html", "w", encoding="utf-8") as f:
-            f.write(tpl)
-        IFrame(f"{ticker}.html", width="100%", height="100%")
-
+        if output is None:
+            output = f"{ticker.ticker}.html"
+        util.download_html(tpl, output)
     else:
         with open(output, "w", encoding="utf-8") as f:
             f.write(tpl)
