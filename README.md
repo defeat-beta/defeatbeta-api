@@ -17,13 +17,7 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ### Key features:
 
-✅ **Reliable Data**: Sources market data directly from Hugging Face's [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset, bypassing Yahoo scraping.
-
-✅ **No Rate Limits**: Hugging Face's infrastructure provides guaranteed access without API throttling or quotas.
-
-✅ **High Performance**: [DuckDB's OLAP engine](https://duckdb.org/) + [cache_httpfs](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension delivers sub-second query latency.
-
-✅ **SQL-Compatible**: Python-native interface with full SQL support via DuckDB's optimized execution.
+✅ **High-Performance & Reliable Data Engine**: Provides a stable, reproducible market data source fully hosted on Hugging Face’s [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset—eliminating scraping issues and rate limits. Powered by [DuckDB’s OLAP engine](https://duckdb.org/) and the [`cache_httpfs`](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension, the system delivers sub-second analytical queries with full SQL compatibility, giving you a unified, high-performance workflow for large-scale financial data.
 
 ✅ **Extended Financial Data**: Includes [TTM EPS](doc/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/Value_Examples.md#6-stock-historical-peg-ratio), [ROE](doc/Value_Examples.md#7-stock-historical-roe), [ROIC](doc/Value_Examples.md#9-stock-historical-roic), [WACC](doc/Value_Examples.md#12-stock-historical-wacc), [ROA](doc/Value_Examples.md#8-stock-historical-roa), [Equity Multiplier](doc/Value_Examples.md#10-stock-historical-equity-multiplier), [Assert Turnover](doc/Value_Examples.md#11-stock-historical-assert-turnover), [Earnings call transcripts](doc/Info_Examples.md#3-accessing-earnings-call-transcripts), [Stock News](doc/Info_Examples.md#4-accessing-financial-news), [Revenue by segment](doc/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
 
