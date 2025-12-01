@@ -7,6 +7,13 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from defeatbeta_api.utils.util import in_notebook
+try:
+    from IPython.core.display import display, HTML
+except ImportError:
+    from IPython.display import display
+    from IPython.core.display import HTML
+
 
 @dataclass
 class News:
@@ -37,7 +44,7 @@ class News:
         news = data['news']
         length = 120
 
-        console = Console(width=length)
+
         main_table = Table(show_header=False, title=title, box=ROUNDED, padding=(0, 0))
         main_table.add_row(Text(textwrap.fill(publisher + " / " + report_date + " / " + news_type, int(length * 0.9)), justify="center"))
         main_table.add_row(Text(textwrap.fill("[" + ', '.join(related_symbols) + "]", int(length * 0.9)), justify="center"))
@@ -50,7 +57,14 @@ class News:
                 main_table.add_row("")
                 main_table.add_row(Text(textwrap.fill(line.strip(), int(length * 0.99)), justify="left"))
             main_table.add_row("")
-        console.print(main_table, justify="left")
+        if in_notebook():
+            console = Console(record=True)
+            console.print(main_table)
+            html = console.export_html(inline_styles=True)
+            HTML(html)
+        else:
+            console = Console(width=length)
+            console.print(main_table, justify="left")
 
 
     def __str__(self):
