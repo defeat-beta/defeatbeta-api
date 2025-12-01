@@ -1,3 +1,4 @@
+-e .
 duckdb >= 1.4.1
 pandas >= 2.2.3
 requests ~= 2.32.3
