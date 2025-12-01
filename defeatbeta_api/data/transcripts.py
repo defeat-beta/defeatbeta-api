@@ -12,11 +12,16 @@ from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from tabulate import tabulate
+try:
+    from IPython.core.display import display, HTML
+except ImportError:
+    from IPython.display import display
+    from IPython.core.display import HTML
 
 from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 from defeatbeta_api.utils.util import load_transcripts_summary_prompt_temp, load_transcripts_summary_tools_def, \
     unit_map, load_transcripts_analyze_change_prompt, load_transcripts_analyze_change_tools, \
-    load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools, nltk_sentences
+    load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools, nltk_sentences, in_notebook
 
 
 def _unnest(record: pd.DataFrame) -> pd.DataFrame:
@@ -430,8 +435,12 @@ class Transcripts:
         report_date = record["report_date"].iloc[0]
         df_paragraphs = _unnest(record)
         title = f"Earnings Call Transcripts FY{fiscal_year} Q{fiscal_quarter} (Reported on {report_date})\n"
-        table = tabulate(df_paragraphs, headers="keys", tablefmt="grid", showindex=False)
-        print(title + table)
+        if in_notebook():
+            html = tabulate(df_paragraphs, headers="keys", tablefmt="html", showindex=False)
+            HTML(html)
+        else:
+            table = tabulate(df_paragraphs, headers="keys", tablefmt="grid", showindex=False)
+            print(title + table)
 
     def __str__(self):
         return self.transcripts.to_string(columns=["symbol", 'fiscal_year', "fiscal_quarter", "report_date"])
