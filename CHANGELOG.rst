@@ -10,6 +10,7 @@ Change Log
 - Generate Revenue Growth Report[`#97 <https://github.com/defeat-beta/defeatbeta-api/issues/97>`_]
 - Generate Quarterly Diluted EPS YoY Growth Report[`#98 <https://github.com/defeat-beta/defeatbeta-api/issues/98>`_]
 - Support Industry EBITDA Margin[`#99 <https://github.com/defeat-beta/defeatbeta-api/issues/99>`_]
+- Generate Profitability Report(EBITDA Margin)[`#100 <https://github.com/defeat-beta/defeatbeta-api/issues/100>`_]
 
 0.0.25
 -------

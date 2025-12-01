@@ -33,6 +33,8 @@ def html(ticker: Ticker, output=None):
 
     tpl = fill_quarterly_gross_margin_profitability(ticker, tpl)
 
+    tpl = fill_quarterly_ebitda_margin_profitability(ticker, tpl)
+
     tpl = fill_quarterly_net_margin_profitability(ticker, tpl)
 
     tpl = fill_quarterly_revenue_growth(ticker, tpl)
@@ -248,6 +250,55 @@ def fill_quarterly_net_margin_profitability(ticker, tpl):
         inplace=True
     )
     tpl = tpl.replace("{{net_margin_table}}", html_table(net_margin_table, showindex=False))
+    return tpl
+
+def fill_quarterly_ebitda_margin_profitability(ticker, tpl):
+    stock_ebitda_margin = ticker.quarterly_ebitda_margin()
+    industry_ebitda_margin = ticker.industry_quarterly_ebitda_margin()
+    stock_ebitda_margin['report_date'] = pd.to_datetime(stock_ebitda_margin['report_date'])
+    industry_ebitda_margin['report_date'] = pd.to_datetime(industry_ebitda_margin['report_date'])
+    merged_df = pd.merge_asof(
+        stock_ebitda_margin,
+        industry_ebitda_margin,
+        left_on='report_date',
+        right_on='report_date',
+        direction='backward'
+    )
+    merged_df = merged_df.dropna(subset=['ebitda_margin', 'industry_ebitda_margin'])
+
+    figure = plot_vs_figure(
+        title='EBITDA Margin (vs Industry)',
+        target_series_x=merged_df['report_date'],
+        target_series_y=merged_df['ebitda_margin'],
+        target_series_label='Stock EBITDA Margin',
+        baseline_series_x=merged_df['report_date'],
+        baseline_series_y=merged_df['industry_ebitda_margin'],
+        baseline_series_label='Industry EBITDA Margin',
+        fig_size=(8, 4),
+        y_axis_ticks=10,
+        formater=PercentFormatter(xmax=1.0, decimals=1),
+        figure_type='bar'
+    )
+    tpl = tpl.replace("{{ebitda_margin}}", util.embed_figure(figure, "svg"))
+    tpl = tpl.replace("{{ebitda_margin_title}}", "<h3>EBITDA Margin</h3>")
+    net_margin_table = merged_df[['report_date', 'ebitda_margin', 'industry_ebitda_margin']].copy()
+    net_margin_table['report_date'] = net_margin_table['report_date'].dt.date
+    net_margin_table['ebitda_margin'] = net_margin_table['ebitda_margin'].apply(
+        lambda x: f"{x * 100:.2f}%" if pd.notna(x) else 'NaN'
+    )
+    net_margin_table['industry_ebitda_margin'] = net_margin_table['industry_ebitda_margin'].apply(
+        lambda x: f"{x * 100:.2f}%" if pd.notna(x) else 'NaN'
+    )
+
+    net_margin_table.rename(
+        columns={
+            'report_date': 'Report Date',
+            'ebitda_margin': f"{ticker.ticker}",
+            'industry_ebitda_margin': f"{industry_ebitda_margin['industry'].iloc[0]} Industry"
+        },
+        inplace=True
+    )
+    tpl = tpl.replace("{{ebitda_margin_table}}", html_table(net_margin_table, showindex=False))
     return tpl
 
 def fill_pe(ticker, tpl):
