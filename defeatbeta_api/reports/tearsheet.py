@@ -6,13 +6,13 @@ from defeatbeta_api import __version__, data_update_time
 from defeatbeta_api.data.ticker import Ticker
 from defeatbeta_api.utils import util
 from defeatbeta_api.utils.util import html_table, human_format
+from pathlib import Path
 
 try:
     from IPython.core.display import display as iDisplay, HTML as iHTML
 except ImportError:
     from IPython.display import display as iDisplay
     from IPython.core.display import HTML as iHTML
-from pathlib import Path
 
 
 def html(ticker: Ticker, output=None):
@@ -41,8 +41,15 @@ def html(ticker: Ticker, output=None):
 
     tpl = fill_quarterly_eps_growth(ticker, tpl)
 
-    with open(output, "w", encoding="utf-8") as f:
-        f.write(tpl)
+    if util.in_notebook():
+        from IPython.display import IFrame
+        with open(f"{ticker}.html", "w", encoding="utf-8") as f:
+            f.write(tpl)
+        IFrame(f"{ticker}.html", width="100%", height="100%")
+
+    else:
+        with open(output, "w", encoding="utf-8") as f:
+            f.write(tpl)
 
 def fill_quarterly_eps_growth(ticker: Ticker, tpl):
     stock_eps_growth = ticker.quarterly_eps_yoy_growth()
