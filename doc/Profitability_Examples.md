@@ -243,3 +243,26 @@ ticker.industry_quarterly_net_margin()
 4  2025-06-30  Auto Manufacturers      5.536484e+09   2.613396e+11               0.0212
 5  2025-09-30  Auto Manufacturers      7.111671e+09   2.672693e+11               0.0266
 ```
+
+
+## 13. Industry Quarterly Historical EBITDA Margin
+```markdown
+total_ebitda                = sum of the ebitda of all stocks in the industry  
+
+total_revenue                   = sum of the revenue of all stocks in the industry
+
+industry_ebitda_margin             = total_ebitda / total_revenue
+```
+
+```python
+ticker.industry_quarterly_ebitda_margin()
+```
+```text
+  report_date            industry  total_ebitda  total_revenue  industry_ebitda_margin
+0  2024-06-30  Auto Manufacturers  3.117391e+10   2.458395e+11                  0.1268
+1  2024-09-30  Auto Manufacturers  2.350209e+10   2.580736e+11                  0.0911
+2  2024-12-31  Auto Manufacturers  3.116696e+10   2.566520e+11                  0.1214
+3  2025-03-31  Auto Manufacturers  2.098070e+10   2.390910e+11                  0.0878
+4  2025-06-30  Auto Manufacturers  2.426165e+10   2.613396e+11                  0.0928
+5  2025-09-30  Auto Manufacturers  2.553228e+10   2.673781e+11                  0.0955
+```
