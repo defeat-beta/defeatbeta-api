@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.27
+-------
+- Generate Reports in Jupyter Notebook[`#101 <https://github.com/defeat-beta/defeatbeta-api/issues/101>`_]
+
 0.0.26
 -------
 - Improve the calculation method of industry PE to enhance accuracy[`#92 <https://github.com/defeat-beta/defeatbeta-api/issues/92>`_]
