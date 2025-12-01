@@ -437,8 +437,7 @@ class Transcripts:
         title = f"Earnings Call Transcripts FY{fiscal_year} Q{fiscal_quarter} (Reported on {report_date})\n"
         if in_notebook():
             html = tabulate(df_paragraphs, headers="keys", tablefmt="html", showindex=False)
-            print(f'debug=>{html}')
-            HTML(html)
+            display(HTML(html))
         else:
             table = tabulate(df_paragraphs, headers="keys", tablefmt="grid", showindex=False)
             print(title + table)
