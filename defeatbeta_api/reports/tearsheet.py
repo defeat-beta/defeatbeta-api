@@ -1,5 +1,5 @@
 import pandas as pd
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 from matplotlib.ticker import LinearLocator, FormatStrFormatter, Formatter, PercentFormatter
 
 from defeatbeta_api import __version__, data_update_time
@@ -418,6 +418,7 @@ def plot_single_series_figure(
     plt.tight_layout()
     fig_file = util.file_stream()
     fig.savefig(fig_file, format="svg")
+    plt.close(fig)
     return fig_file
 
 def plot_vs_figure(
@@ -460,6 +461,7 @@ def plot_vs_figure(
     plt.tight_layout()
     fig_file = util.file_stream()
     fig.savefig(fig_file, format="svg")
+    plt.close(fig)
     return fig_file
 
 

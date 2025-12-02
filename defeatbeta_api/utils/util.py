@@ -19,9 +19,11 @@ from defeatbeta_api.data.finance_item import FinanceItem
 from defeatbeta_api.data.template.transcripts_extract_fin_data_tools import FUNCTION_SCHEMA
 try:
     from IPython.core.display import display, HTML
+    from IPython.display import IFrame
 except ImportError:
     from IPython.display import display
     from IPython.core.display import HTML
+    from IPython.display import IFrame
 
 
 def validate_memory_limit(memory_limit: str) -> str:
@@ -263,24 +265,18 @@ def in_notebook(matplotlib_inline=False):
         return False
 
 def download_html(html: str, filename: str):
-    js_code = re.sub(
-        " +",
-        " ",
-        """<script>
-    var bl=new Blob(['{{html}}'],{type:"text/html"});
-    var a=document.createElement("a");
-    a.href=URL.createObjectURL(bl);
-    a.download="{{filename}}";
-    a.hidden=true;document.body.appendChild(a);
-    a.innerHTML="download report";
-    a.click();</script>""".replace(
-            "\n", ""
-        ),
-    )
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(html)
 
-    js_code = js_code.replace("{{html}}", re.sub(" +", " ", html.replace("\n", "")))
+    download_link = f"""
+    <a href="{filename}" download="{filename}"
+       style="font-size:16px; margin-top:12px; display:inline-block;">
+       ⬇️ Download {filename}
+    </a>
+    """
+    display(HTML(download_link))
 
-    display(HTML(js_code.replace("{{filename}}", filename)))
+    display(IFrame(filename, width="100%", height="1024px"))
 
 def file_stream():
     return io.BytesIO()
