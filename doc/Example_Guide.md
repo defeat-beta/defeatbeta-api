@@ -30,6 +30,12 @@
 
 ---
 
+## 📰 Generate Analysis Report
+> [!TIP]
+> This project can also generate an HTML Tearsheets report. See the [linked document](Report_Examples.md) for details.
+
+---
+
 ## 🤖 LLM-Powered Analysis
 
 > [!TIP]
