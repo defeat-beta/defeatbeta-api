@@ -366,7 +366,7 @@ def plot_single_series_figure(
     fig, ax = plt.subplots(figsize = fig_size)
     for spine in ["top", "right", "bottom", "left"]:
         ax.spines[spine].set_visible(False)
-    fig.suptitle(title, fontweight="bold", fontname="Arial", fontsize=15, color="black")
+    fig.suptitle(title, fontweight="bold", fontsize=15, color="black")
     fig.set_facecolor("white")
     ax.set_facecolor("white")
 
@@ -431,7 +431,7 @@ def plot_vs_figure(
     fig, ax = plt.subplots(figsize = fig_size)
     for spine in ["top", "right", "bottom", "left"]:
         ax.spines[spine].set_visible(False)
-    fig.suptitle(title, fontweight="bold", fontname="Arial", fontsize=15, color="black")
+    fig.suptitle(title, fontweight="bold", fontsize=15, color="black")
     fig.set_facecolor("white")
     ax.set_facecolor("white")
     if use_reasonable_range:
