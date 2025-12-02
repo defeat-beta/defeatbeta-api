@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 import pandas as pd
-from rich.console import Console
 
 from defeatbeta_api.utils.util import in_notebook
+
 try:
     from IPython.core.display import display, HTML
 except ImportError:
@@ -19,21 +19,7 @@ class Statement:
 
     def print_pretty_table(self):
         if in_notebook():
-            html = f"""
-                <div style="
-                    overflow-x: auto;
-                    border: 1px solid #ddd;
-                    border-radius: 6px;
-                    padding: 12px;
-                    background: #fafafa;
-                    font-family: 'JetBrains Mono', Consolas, monospace;
-                    font-size: 14px;
-                    line-height: 1.4;
-                    white-space: pre;
-                ">
-                {self.table}
-                </div>
-                """
+            html = f"<pre style='font-family: monospace; font-size: 14px;'>{self.table}</pre>"
             display(HTML(html))
         else:
             print(self.table)
