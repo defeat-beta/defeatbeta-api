@@ -4,6 +4,7 @@
 
 - [Main Usage Index](#main-usage-index)
   - [📊 Stock Evaluation Dimensions](#-stock-evaluation-dimensions)
+  - [📰 Generate Analysis Report](#-generate-analysis-report)
   - [🤖 LLM-Powered Analysis](#-llm-powered-analysis)
   - [🏦 Economy Analysis](#-economy-analysis)
 

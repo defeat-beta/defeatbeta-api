@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [DefeatBeta-API User Guide: Report Generation](#defeatbeta-api-user-guide-report-generation)
+  - [Overview](#overview)
+  - [Try it on Notebook](#try-it-on-notebook)
+  - [Try it on Local](#try-it-on-local)
+    - [Installation](#installation)
+    - [Generate a Report](#generate-a-report)
+    - [Example Screenshot](#example-screenshot)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # DefeatBeta-API User Guide: Report Generation
 
 ## Overview
