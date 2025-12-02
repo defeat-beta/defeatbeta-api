@@ -11,6 +11,8 @@ on:
       - 'doc/LLM_ChangeData_Example.md'
       - 'doc/Economy_Examples.md'
       - 'doc/Advanced_Guide.md'
+      - 'doc/Example_Guide.md'
+      - 'doc/Report_Examples.md'
 
 jobs:
   doctoc:
