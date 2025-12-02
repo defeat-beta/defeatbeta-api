@@ -19,10 +19,22 @@ class Statement:
 
     def print_pretty_table(self):
         if in_notebook():
-            console = Console(record=True)
-            console.print(self.table)
-            html = console.export_html(inline_styles=True)
-            HTML(html)
+            html = f"""
+                <div style="
+                    overflow-x: auto;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 12px;
+                    background: #fafafa;
+                    font-family: 'JetBrains Mono', Consolas, monospace;
+                    font-size: 14px;
+                    line-height: 1.4;
+                    white-space: pre;
+                ">
+                {self.table}
+                </div>
+                """
+            display(HTML(html))
         else:
             print(self.table)
 
