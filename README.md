@@ -16,30 +16,11 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ## Introduction
 
-### Key features:
-
 ✅ **High-Performance & Reliable Data Engine**: Provides a stable, reproducible market data source fully hosted on Hugging Face’s [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset—eliminating scraping issues and rate limits. Powered by [DuckDB’s OLAP engine](https://duckdb.org/) and the [`cache_httpfs`](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension, the system delivers sub-second analytical queries with full SQL compatibility, giving you a unified, high-performance workflow for large-scale financial data.
 
 ✅ **Extended Financial Data**: Includes [TTM EPS](doc/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/Value_Examples.md#6-stock-historical-peg-ratio), [ROE](doc/Value_Examples.md#7-stock-historical-roe), [ROIC](doc/Value_Examples.md#9-stock-historical-roic), [WACC](doc/Value_Examples.md#12-stock-historical-wacc), [ROA](doc/Value_Examples.md#8-stock-historical-roa), [Equity Multiplier](doc/Value_Examples.md#10-stock-historical-equity-multiplier), [Assert Turnover](doc/Value_Examples.md#11-stock-historical-assert-turnover), [Earnings call transcripts](doc/Info_Examples.md#3-accessing-earnings-call-transcripts), [Stock News](doc/Info_Examples.md#4-accessing-financial-news), [Revenue by segment](doc/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
 
 ✅ **LLM-Powered Analysis**: Use Large Language Models (LLMs) to analyze [earnings call transcripts](doc/LLM_KeyData_Example.md), [quarterly financial changes](doc/LLM_ChangeData_Example.md), and [quarterly forecasts](doc/LLM_ForecastData_Example.md) to extract key data, understand metric changes, and interpret forecast drivers.
-
-### How it compares to yfinance:
-`defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
-
-**Advantages over yfinance:**
-
-**1. No rate limits:** defeat-beta avoids Yahoo Finance’s real-time rate limit by fetching data periodically (typically once a week) and uploading it to `Hugging Face`.
-
-**2. Efficient data format:** It uses the Parquet format, supporting flexible SQL queries via `DuckDB`.
-
-**3. High-performance caching:** Data is stored remotely on `Hugging Face` but leverages `cache_httpfs` for local disk caching, ensuring excellent performance.
-
-**4. Multi-source data:** defeat-beta integrates additional data sources, unlike `yfinance` which relies solely on Yahoo Finance data.
-
-**Disadvantages compared to yfinance:**
-
-**Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike `yfinance`.
 
 ## Quickstart
 
@@ -400,3 +381,21 @@ news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
 ### Advanced Usage
 
 See [Advanced Usage](doc/Advanced_Guide.md) for details.
+
+
+## How it compares to yfinance:
+`defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
+
+**Advantages over yfinance:**
+
+**1. No rate limits:** defeat-beta avoids Yahoo Finance’s real-time rate limit by fetching data periodically (typically once a week) and uploading it to `Hugging Face`.
+
+**2. Efficient data format:** It uses the Parquet format, supporting flexible SQL queries via `DuckDB`.
+
+**3. High-performance caching:** Data is stored remotely on `Hugging Face` but leverages `cache_httpfs` for local disk caching, ensuring excellent performance.
+
+**4. Multi-source data:** defeat-beta integrates additional data sources, unlike `yfinance` which relies solely on Yahoo Finance data.
+
+**Disadvantages compared to yfinance:**
+
+**Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike `yfinance`.
