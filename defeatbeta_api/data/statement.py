@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 import pandas as pd
-from rich import Console
+from rich.console import Console
 
 from defeatbeta_api.utils.util import in_notebook
 try:
