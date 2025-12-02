@@ -19,8 +19,8 @@ class Statement:
 
     def print_pretty_table(self):
         if in_notebook():
-            html = (f"<div>"
-                    f"  <pre style='font-family: monospace; font-size: 14px;'>{self.table}</pre>"
+            html = (f"<div style=\"white-space: pre;\">"
+                        f"{self.table}"
                     f"</div>")
             display(HTML(html))
         else:
