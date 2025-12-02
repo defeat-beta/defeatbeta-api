@@ -19,9 +19,9 @@ class Statement:
 
     def print_pretty_table(self):
         if in_notebook():
-            html = (f"<div style=\"overflow-x: auto; white-space: pre;\">"
+            html = (f"<div style=\"font-family: 'JetBrains Mono', Consolas, monospace; white-space: pre;\">\n"
                         f"{self.table}"
-                    f"</div>")
+                    f"\n</div>")
             display(HTML(html))
         else:
             print(self.table)
