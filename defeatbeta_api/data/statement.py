@@ -19,7 +19,7 @@ class Statement:
 
     def print_pretty_table(self):
         if in_notebook():
-            html = (f"<div style=\"white-space: pre;\">"
+            html = (f"<div style=\"overflow-x: auto; white-space: pre;\">"
                         f"{self.table}"
                     f"</div>")
             display(HTML(html))
