@@ -1,6 +1,14 @@
 from dataclasses import dataclass
 
 import pandas as pd
+from rich import Console
+
+from defeatbeta_api.utils.util import in_notebook
+try:
+    from IPython.core.display import display, HTML
+except ImportError:
+    from IPython.display import display
+    from IPython.core.display import HTML
 
 
 @dataclass
@@ -10,7 +18,13 @@ class Statement:
         self.table = content
 
     def print_pretty_table(self):
-        print(self.table)
+        if in_notebook():
+            console = Console(record=True)
+            console.print(self.table)
+            html = console.export_html(inline_styles=True)
+            HTML(html)
+        else:
+            print(self.table)
 
     def df(self):
         return self.data
