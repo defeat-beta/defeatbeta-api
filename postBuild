@@ -2,4 +2,4 @@
 # used by `binder`
 pip install jupyterlab-execute-time
 pip install jupyterlab-lsp python-lsp-server
-pip install jupyterlab-data-explorer
+pip install python-lsp-server[all] pylsp-mypy pylsp-rope
