@@ -1,3 +1,5 @@
 #!/bin/bash
 # used by `binder`
 pip install jupyterlab-execute-time
+pip install jupyterlab-lsp python-lsp-server
+pip install jupyterlab-data-explorer
