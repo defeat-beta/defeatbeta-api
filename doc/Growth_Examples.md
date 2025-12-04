@@ -82,7 +82,40 @@ ticker.annual_operating_income_yoy_growth()
 4   TSLA  2024-12-31      7.760000e+09                8.891000e+09     -0.1272
 ```
 
-## 5. Stock Quarterly Net Income YoY Growth
+## 5. Stock Quarterly EBITDA YoY Growth
+```python
+ticker.quarterly_ebitda_yoy_growth()
+```
+```text
+>>> ticker.quarterly_ebitda_yoy_growth()
+  symbol report_date        ebitda  prev_year_ebitda  yoy_growth
+0   TSLA  2023-06-30  4.119000e+09               NaN         NaN
+1   TSLA  2023-09-30  3.318000e+09               NaN         NaN
+2   TSLA  2023-12-31  3.484000e+09               NaN         NaN
+3   TSLA  2024-03-31  3.210000e+09               NaN         NaN
+4   TSLA  2024-06-30  3.151000e+09      4.119000e+09     -0.2350
+5   TSLA  2024-09-30  4.224000e+09      3.318000e+09      0.2731
+6   TSLA  2024-12-31  4.358000e+09      3.484000e+09      0.2509
+7   TSLA  2025-03-31  2.127000e+09      3.210000e+09     -0.3374
+8   TSLA  2025-06-30  3.068000e+09      3.151000e+09     -0.0263
+9   TSLA  2025-09-30  3.660000e+09      4.224000e+09     -0.1335
+```
+
+## 6. Stock Annual EBITDA YoY Growth
+```python
+ticker.annual_ebitda_yoy_growth()
+```
+```text
+>>> ticker.annual_ebitda_yoy_growth()
+  symbol report_date        ebitda  prev_year_ebitda  yoy_growth
+0   TSLA  2020-12-31  4.224000e+09               NaN         NaN
+1   TSLA  2021-12-31  9.625000e+09      4.224000e+09      1.2786
+2   TSLA  2022-12-31  1.765700e+10      9.625000e+09      0.8345
+3   TSLA  2023-12-31  1.479600e+10      1.765700e+10     -0.1620
+4   TSLA  2024-12-31  1.470800e+10      1.479600e+10     -0.0059
+```
+
+## 7. Stock Quarterly Net Income YoY Growth
 ```python
 ticker.quarterly_net_income_yoy_growth()
 ```
@@ -101,7 +134,7 @@ ticker.quarterly_net_income_yoy_growth()
 9   TSLA  2025-06-30                    1.172000e+09                              1.400000e+09     -0.1629
 ```
 
-## 6. Stock Annual Net Income YoY Growth
+## 8. Stock Annual Net Income YoY Growth
 ```python
 ticker.annual_net_income_yoy_growth()
 ```
@@ -115,7 +148,7 @@ ticker.annual_net_income_yoy_growth()
 4   TSLA  2024-12-31                    7.130000e+09                              1.499900e+10     -0.5246
 ```
 
-## 7. Stock Quarterly Free Cash Flow YoY Growth
+## 9. Stock Quarterly Free Cash Flow YoY Growth
 ```python
 ticker.quarterly_fcf_yoy_growth()
 ```
@@ -134,7 +167,7 @@ ticker.quarterly_fcf_yoy_growth()
 9   TSLA  2025-06-30    1.460000e+08              1.340000e+09     -0.8910
 ```
 
-## 8. Stock Annual Free Cash Flow YoY Growth
+## 10. Stock Annual Free Cash Flow YoY Growth
 ```python
 ticker.annual_fcf_yoy_growth()
 ```
@@ -148,7 +181,7 @@ ticker.annual_fcf_yoy_growth()
 4   TSLA  2024-12-31    3.581000e+09              4.357000e+09     -0.1781
 ```
 
-## 9. Stock Quarterly EPS YoY Growth
+## 11. Stock Quarterly EPS YoY Growth
 ```python
 ticker.quarterly_eps_yoy_growth()
 ```
@@ -224,7 +257,7 @@ ticker.quarterly_eps_yoy_growth()
 66   TSLA  2025-06-30  0.33           0.40     -0.1750
 ```
 
-## 10. Stock Quarterly TTM EPS YoY Growth
+## 12. Stock Quarterly TTM EPS YoY Growth
 ```python
 ticker.quarterly_ttm_eps_yoy_growth()
 ```

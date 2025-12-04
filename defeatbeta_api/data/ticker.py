@@ -198,6 +198,12 @@ class Ticker:
     def annual_operating_income_yoy_growth(self) -> pd.DataFrame:
         return self._calculate_yoy_growth(item_name='operating_income', period_type='annual', finance_type='income_statement')
 
+    def quarterly_ebitda_yoy_growth(self) -> pd.DataFrame:
+        return self._calculate_yoy_growth(item_name='ebitda', period_type='quarterly', finance_type='income_statement')
+
+    def annual_ebitda_yoy_growth(self) -> pd.DataFrame:
+        return self._calculate_yoy_growth(item_name='ebitda', period_type='annual', finance_type='income_statement')
+
     def quarterly_net_income_yoy_growth(self) -> pd.DataFrame:
         return self._calculate_yoy_growth(item_name='net_income_common_stockholders', period_type='quarterly', finance_type='income_statement')
 
