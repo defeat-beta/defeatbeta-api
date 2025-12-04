@@ -4,6 +4,7 @@ Change Log
 0.0.28
 -------
 - Generate Quarterly Net Income YoY Growth Report[`#103 <https://github.com/defeat-beta/defeatbeta-api/issues/103>`_]
+- Support Stock Quarterly / Annual EBITDA Growth[`#104 <https://github.com/defeat-beta/defeatbeta-api/issues/104>`_]
 
 0.0.27
 -------
