@@ -7,7 +7,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("BABA", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
+        cls.ticker = Ticker("TSLA", http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -176,6 +176,14 @@ class TestTicker(unittest.TestCase):
 
     def test_annual_operating_income_yoy_growth(self):
         result = self.ticker.annual_operating_income_yoy_growth()
+        print(result.to_string())
+
+    def test_quarterly_ebitda_yoy_growth(self):
+        result = self.ticker.quarterly_ebitda_yoy_growth()
+        print(result.to_string())
+
+    def test_annual_ebitda_yoy_growth(self):
+        result = self.ticker.annual_ebitda_yoy_growth()
         print(result.to_string())
 
     def test_quarterly_net_income_yoy_growth(self):
