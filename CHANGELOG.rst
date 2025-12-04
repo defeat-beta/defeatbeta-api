@@ -3,6 +3,7 @@ Change Log
 
 0.0.28
 -------
+- Generate Quarterly Net Income YoY Growth Report[`#103 <https://github.com/defeat-beta/defeatbeta-api/issues/103>`_]
 
 0.0.27
 -------
