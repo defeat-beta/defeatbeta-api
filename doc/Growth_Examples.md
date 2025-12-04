@@ -6,12 +6,14 @@
 - [2. Stock Annual Revenue YoY Growth](#2-stock-annual-revenue-yoy-growth)
 - [3. Stock Quarterly Operating Income YoY Growth](#3-stock-quarterly-operating-income-yoy-growth)
 - [4. Stock Annual Operating Income YoY Growth](#4-stock-annual-operating-income-yoy-growth)
-- [5. Stock Quarterly Net Income YoY Growth](#5-stock-quarterly-net-income-yoy-growth)
-- [6. Stock Annual Net Income YoY Growth](#6-stock-annual-net-income-yoy-growth)
-- [7. Stock Quarterly Free Cash Flow YoY Growth](#7-stock-quarterly-free-cash-flow-yoy-growth)
-- [8. Stock Annual Free Cash Flow YoY Growth](#8-stock-annual-free-cash-flow-yoy-growth)
-- [9. Stock Quarterly EPS YoY Growth](#9-stock-quarterly-eps-yoy-growth)
-- [10. Stock Quarterly TTM EPS YoY Growth](#10-stock-quarterly-ttm-eps-yoy-growth)
+- [5. Stock Quarterly EBITDA YoY Growth](#5-stock-quarterly-ebitda-yoy-growth)
+- [6. Stock Annual EBITDA YoY Growth](#6-stock-annual-ebitda-yoy-growth)
+- [7. Stock Quarterly Net Income YoY Growth](#7-stock-quarterly-net-income-yoy-growth)
+- [8. Stock Annual Net Income YoY Growth](#8-stock-annual-net-income-yoy-growth)
+- [9. Stock Quarterly Free Cash Flow YoY Growth](#9-stock-quarterly-free-cash-flow-yoy-growth)
+- [10. Stock Annual Free Cash Flow YoY Growth](#10-stock-annual-free-cash-flow-yoy-growth)
+- [11. Stock Quarterly EPS YoY Growth](#11-stock-quarterly-eps-yoy-growth)
+- [12. Stock Quarterly TTM EPS YoY Growth](#12-stock-quarterly-ttm-eps-yoy-growth)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
