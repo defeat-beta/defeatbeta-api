@@ -32,6 +32,8 @@ def html(ticker: Ticker, output=None):
 
     tpl = fill_quarterly_revenue_growth(ticker, tpl)
 
+    tpl = fill_quarterly_net_income_growth(ticker, tpl)
+
     tpl = fill_quarterly_eps_growth(ticker, tpl)
 
     if util.in_notebook():
@@ -87,8 +89,8 @@ def fill_quarterly_eps_growth(ticker: Ticker, tpl):
     quarterly_eps_yoy_growth_table.rename(
         columns={
             'report_date': 'Report Date',
-            'eps': 'EPS',
-            'prev_year_eps': 'EPS (YoY Base)',
+            'eps': 'Current',
+            'prev_year_eps': 'Prev. (YoY Base)',
             'yoy_growth': 'YoY %'
         },
         inplace=True
@@ -142,14 +144,69 @@ def fill_quarterly_revenue_growth(ticker: Ticker, tpl):
     quarterly_revenue_yoy_growth_table.rename(
         columns={
             'report_date': 'Report Date',
-            'revenue': 'Revenue',
-            'prev_year_revenue': 'Rev (YoY Base)',
+            'revenue': 'Current',
+            'prev_year_revenue': 'Prev. (YoY Base)',
             'yoy_growth': 'YoY %'
         },
         inplace=True
     )
 
     tpl = tpl.replace("{{quarterly_revenue_yoy_growth_table}}", html_table(quarterly_revenue_yoy_growth_table, showindex=False))
+    return tpl
+
+def fill_quarterly_net_income_growth(ticker: Ticker, tpl):
+    stock_net_income_growth = ticker.quarterly_net_income_yoy_growth()
+    stock_net_income_growth = stock_net_income_growth.dropna(subset=['yoy_growth']).tail(8)
+    y_min = stock_net_income_growth['yoy_growth'].min()
+    y_max = stock_net_income_growth['yoy_growth'].max()
+    ranges = []
+    if y_min < 0:
+        ranges.append((y_min, 0.0, "#F7C6C7", "Cornered"))
+    if 0 < y_max < 0.1:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+    if 0.1 < y_max < 0.2:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+        ranges.append((0.10, 0.20, "#D5F5D0", "Stalwarts"))
+    if 0.2 < y_max:
+        ranges.append((0.0, 0.10, "#F8E5B9", "Slow Growers"))
+        ranges.append((0.10, 0.20, "#D5F5D0", "Stalwarts"))
+        ranges.append((0.20, y_max, "#D6EAF8", "Fast Growers"))
+
+    figure = plot_single_series_figure(
+        title='Quarterly Net Income YoY Growth',
+        series_x=stock_net_income_growth['report_date'],
+        series_y=stock_net_income_growth['yoy_growth'],
+        series_label='Quarterly Net Income YoY Growth',
+        fig_size=(8, 4),
+        y_axis_ticks=10,
+        formater=PercentFormatter(xmax=1.0, decimals=1),
+        figure_type='bar',
+        horizontal_lines=[0],
+        range_lines=ranges
+    )
+    tpl = tpl.replace("{{quarterly_net_income_yoy_growth}}", util.embed_figure(figure, "svg"))
+    tpl = tpl.replace("{{quarterly_net_income_yoy_growth_title}}", "<h3>Quarterly Net Income YoY Growth</h3>")
+    quarterly_net_income_yoy_growth_table = stock_net_income_growth[['report_date', 'net_income_common_stockholders', 'prev_year_net_income_common_stockholders', 'yoy_growth']].copy()
+    quarterly_net_income_yoy_growth_table['report_date'] = quarterly_net_income_yoy_growth_table['report_date'].dt.date
+    quarterly_net_income_yoy_growth_table['yoy_growth'] = quarterly_net_income_yoy_growth_table['yoy_growth'].apply(
+        lambda x: f"{x * 100:.2f}%" if pd.notna(x) else 'NaN'
+    )
+    quarterly_net_income_yoy_growth_table["net_income_common_stockholders"] = \
+        quarterly_net_income_yoy_growth_table["net_income_common_stockholders"].apply(human_format)
+    quarterly_net_income_yoy_growth_table["prev_year_net_income_common_stockholders"] = \
+        quarterly_net_income_yoy_growth_table["prev_year_net_income_common_stockholders"].apply(human_format)
+
+    quarterly_net_income_yoy_growth_table.rename(
+        columns={
+            'report_date': 'Report Date',
+            'net_income_common_stockholders': 'Current',
+            'prev_year_net_income_common_stockholders': 'Prev. (YoY Base)',
+            'yoy_growth': 'YoY %'
+        },
+        inplace=True
+    )
+
+    tpl = tpl.replace("{{quarterly_net_income_yoy_growth_table}}", html_table(quarterly_net_income_yoy_growth_table, showindex=False))
     return tpl
 
 def fill_quarterly_gross_margin_profitability(ticker: Ticker, tpl):
