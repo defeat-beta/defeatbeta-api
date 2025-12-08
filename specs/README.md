@@ -16,6 +16,10 @@ This project aims to replicate the architecture and patterns of `defeatbeta-api`
 | [04 - Client Library](./04-client-library.md) | Consumer library design and API | Draft |
 | [05 - Data Schemas](./05-data-schemas.md) | Parquet schemas, SQL templates | Draft |
 | [06 - Implementation Roadmap](./06-implementation-roadmap.md) | **Dagster-based** phased delivery plan | **Updated** |
+| [07 - Testing Strategy](./07-testing-strategy.md) | Unit/integration tests, mocking, CI/CD | **New** |
+| [08 - Configuration](./08-configuration.md) | Environment variables, secrets, multi-env setup | **New** |
+| [09 - Error Handling](./09-error-handling.md) | API failures, recovery, alerting | **New** |
+| [10 - Security](./10-security.md) | API keys, secrets rotation, access controls | **New** |
 
 ## Quick Links
 
