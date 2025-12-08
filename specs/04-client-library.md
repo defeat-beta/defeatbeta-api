@@ -638,3 +638,418 @@ dev = [
     "pytest-cov >= 4.0.0",
 ]
 ```
+
+---
+
+## Template Definitions
+
+### token_categories.json
+
+Token categorization for filtering and grouping by market sector.
+
+```json
+{
+  "version": "1.0.0",
+  "updated_at": "2024-01-01T00:00:00Z",
+  "categories": {
+    "layer1": {
+      "name": "Layer 1",
+      "description": "Base layer blockchain protocols",
+      "symbols": [
+        "BTCUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT", "DOTUSDT",
+        "ADAUSDT", "NEARUSDT", "ATOMUSDT", "APTUSDT", "SUIUSDT"
+      ]
+    },
+    "layer2": {
+      "name": "Layer 2",
+      "description": "Scaling solutions built on Layer 1",
+      "symbols": [
+        "MATICUSDT", "ARBUSDT", "OPUSDT", "IMXUSDT", "METISUSDT",
+        "ZKUSDT", "MANTAUSDT", "STRKUSDT"
+      ]
+    },
+    "defi": {
+      "name": "DeFi",
+      "description": "Decentralized finance protocols",
+      "symbols": [
+        "UNIUSDT", "AAVEUSDT", "MKRUSDT", "COMPUSDT", "CRVUSDT",
+        "SNXUSDT", "YFIUSDT", "SUSHIUSDT", "1INCHUSDT", "LDOUSDT"
+      ]
+    },
+    "exchange": {
+      "name": "Exchange Tokens",
+      "description": "Centralized and decentralized exchange tokens",
+      "symbols": [
+        "BNBUSDT", "FTMUSDT", "OKBUSDT", "HTUSDT", "KCSUSDT",
+        "CRONUSDT", "GTUSDT"
+      ]
+    },
+    "meme": {
+      "name": "Meme Coins",
+      "description": "Community-driven meme tokens",
+      "symbols": [
+        "DOGEUSDT", "SHIBUSDT", "PEPEUSDT", "FLOKIUSDT", "BONKUSDT",
+        "WIFUSDT", "MEMEUSDT"
+      ]
+    },
+    "gaming": {
+      "name": "Gaming & Metaverse",
+      "description": "Gaming and virtual world tokens",
+      "symbols": [
+        "AXSUSDT", "SANDUSDT", "MANAUSDT", "ENJUSDT", "GALAUSDT",
+        "IMXUSDT", "YGGUSDT", "MAGICUSDT"
+      ]
+    },
+    "infrastructure": {
+      "name": "Infrastructure",
+      "description": "Blockchain infrastructure and oracle services",
+      "symbols": [
+        "LINKUSDT", "FILUSDT", "GRTUSDT", "ARUSDT", "OCEANUSDT",
+        "RNDRSUDT", "THETAUSDT"
+      ]
+    },
+    "stablecoin": {
+      "name": "Stablecoins",
+      "description": "Price-stable cryptocurrencies (for reference)",
+      "symbols": [
+        "USDTUSDC", "DAIUSDT", "FRAXUSDT", "LUSDUSDT", "TUSDUSDT"
+      ]
+    },
+    "ai": {
+      "name": "AI & Machine Learning",
+      "description": "AI-focused blockchain projects",
+      "symbols": [
+        "FETUSDT", "AGIXUSDT", "OCEANUSDT", "RNDRSUDT", "TAOUSDT",
+        "ARKMUSDT", "WLDUSDT"
+      ]
+    },
+    "privacy": {
+      "name": "Privacy Coins",
+      "description": "Privacy-focused cryptocurrencies",
+      "symbols": [
+        "XMRUSDT", "ZECUSDT", "DASHUSDT", "SCRTUSDT"
+      ]
+    }
+  },
+  "symbol_to_category": {
+    "BTCUSDT": ["layer1"],
+    "ETHUSDT": ["layer1", "defi"],
+    "SOLUSDT": ["layer1"],
+    "BNBUSDT": ["layer1", "exchange"],
+    "XRPUSDT": ["layer1"],
+    "ADAUSDT": ["layer1"],
+    "DOGEUSDT": ["meme"],
+    "AVAXUSDT": ["layer1"],
+    "DOTUSDT": ["layer1"],
+    "MATICUSDT": ["layer2"],
+    "LINKUSDT": ["infrastructure"],
+    "UNIUSDT": ["defi"],
+    "AAVEUSDT": ["defi"],
+    "ARBUSDT": ["layer2"],
+    "OPUSDT": ["layer2"],
+    "SHIBUSDT": ["meme"],
+    "PEPEUSDT": ["meme"],
+    "FETUSDT": ["ai"],
+    "RNDRSUDT": ["ai", "infrastructure"]
+  }
+}
+```
+
+### exchange_symbols.json
+
+Mapping of normalized symbols to exchange-specific formats.
+
+```json
+{
+  "version": "1.0.0",
+  "updated_at": "2024-01-01T00:00:00Z",
+  "exchanges": {
+    "binance": {
+      "name": "Binance",
+      "base_url": "https://api.binance.com",
+      "symbol_format": "{base}{quote}",
+      "default_quote": "USDT",
+      "symbols": {
+        "BTCUSDT": {
+          "native_symbol": "BTCUSDT",
+          "base": "BTC",
+          "quote": "USDT",
+          "contract_type": "spot",
+          "status": "active",
+          "min_notional": 10.0,
+          "tick_size": 0.01,
+          "lot_size": 0.00001
+        },
+        "ETHUSDT": {
+          "native_symbol": "ETHUSDT",
+          "base": "ETH",
+          "quote": "USDT",
+          "contract_type": "spot",
+          "status": "active",
+          "min_notional": 10.0,
+          "tick_size": 0.01,
+          "lot_size": 0.0001
+        },
+        "SOLUSDT": {
+          "native_symbol": "SOLUSDT",
+          "base": "SOL",
+          "quote": "USDT",
+          "contract_type": "spot",
+          "status": "active"
+        }
+      },
+      "perpetuals": {
+        "BTCUSDT": {
+          "native_symbol": "BTCUSDT",
+          "base": "BTC",
+          "quote": "USDT",
+          "contract_type": "perpetual",
+          "funding_interval_hours": 8,
+          "status": "active"
+        },
+        "ETHUSDT": {
+          "native_symbol": "ETHUSDT",
+          "base": "ETH",
+          "quote": "USDT",
+          "contract_type": "perpetual",
+          "funding_interval_hours": 8,
+          "status": "active"
+        }
+      }
+    },
+    "coinbase": {
+      "name": "Coinbase",
+      "base_url": "https://api.exchange.coinbase.com",
+      "symbol_format": "{base}-{quote}",
+      "default_quote": "USD",
+      "symbols": {
+        "BTCUSDT": {
+          "native_symbol": "BTC-USD",
+          "base": "BTC",
+          "quote": "USD",
+          "contract_type": "spot",
+          "status": "active"
+        },
+        "ETHUSDT": {
+          "native_symbol": "ETH-USD",
+          "base": "ETH",
+          "quote": "USD",
+          "contract_type": "spot",
+          "status": "active"
+        },
+        "SOLUSDT": {
+          "native_symbol": "SOL-USD",
+          "base": "SOL",
+          "quote": "USD",
+          "contract_type": "spot",
+          "status": "active"
+        }
+      }
+    },
+    "okx": {
+      "name": "OKX",
+      "base_url": "https://www.okx.com",
+      "symbol_format": "{base}-{quote}",
+      "default_quote": "USDT",
+      "symbols": {
+        "BTCUSDT": {
+          "native_symbol": "BTC-USDT",
+          "base": "BTC",
+          "quote": "USDT",
+          "contract_type": "spot",
+          "status": "active"
+        },
+        "ETHUSDT": {
+          "native_symbol": "ETH-USDT",
+          "base": "ETH",
+          "quote": "USDT",
+          "contract_type": "spot",
+          "status": "active"
+        }
+      },
+      "perpetuals": {
+        "BTCUSDT": {
+          "native_symbol": "BTC-USDT-SWAP",
+          "base": "BTC",
+          "quote": "USDT",
+          "contract_type": "perpetual",
+          "funding_interval_hours": 8,
+          "status": "active"
+        }
+      }
+    },
+    "bybit": {
+      "name": "Bybit",
+      "base_url": "https://api.bybit.com",
+      "symbol_format": "{base}{quote}",
+      "default_quote": "USDT",
+      "symbols": {
+        "BTCUSDT": {
+          "native_symbol": "BTCUSDT",
+          "base": "BTC",
+          "quote": "USDT",
+          "contract_type": "spot",
+          "status": "active"
+        },
+        "ETHUSDT": {
+          "native_symbol": "ETHUSDT",
+          "base": "ETH",
+          "quote": "USDT",
+          "contract_type": "spot",
+          "status": "active"
+        }
+      },
+      "perpetuals": {
+        "BTCUSDT": {
+          "native_symbol": "BTCUSDT",
+          "base": "BTC",
+          "quote": "USDT",
+          "contract_type": "perpetual",
+          "funding_interval_hours": 8,
+          "status": "active"
+        }
+      }
+    }
+  },
+  "normalized_symbols": [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+    "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "MATICUSDT",
+    "LINKUSDT", "UNIUSDT", "AAVEUSDT", "ARBUSDT", "OPUSDT",
+    "SHIBUSDT", "LTCUSDT", "BCHUSDT", "ATOMUSDT", "NEARUSDT"
+  ],
+  "delisted": {
+    "LUNAUSDT": {
+      "delisted_at": "2022-05-13",
+      "reason": "Terra collapse",
+      "exchanges": ["binance", "coinbase", "okx"]
+    },
+    "FTXUSDT": {
+      "delisted_at": "2022-11-11",
+      "reason": "FTX bankruptcy",
+      "exchanges": ["binance"]
+    }
+  }
+}
+```
+
+### Template Loader
+
+```python
+# defeatbeta_crypto/data/template/loader.py
+
+import json
+from pathlib import Path
+from typing import Dict, List, Optional
+from functools import lru_cache
+
+
+TEMPLATE_DIR = Path(__file__).parent
+
+
+@lru_cache(maxsize=2)
+def load_token_categories() -> Dict:
+    """Load token categories template."""
+    path = TEMPLATE_DIR / "token_categories.json"
+    with open(path) as f:
+        return json.load(f)
+
+
+@lru_cache(maxsize=2)
+def load_exchange_symbols() -> Dict:
+    """Load exchange symbols template."""
+    path = TEMPLATE_DIR / "exchange_symbols.json"
+    with open(path) as f:
+        return json.load(f)
+
+
+def get_symbols_by_category(category: str) -> List[str]:
+    """Get all symbols in a category."""
+    data = load_token_categories()
+    cat = data["categories"].get(category)
+    if not cat:
+        raise ValueError(f"Unknown category: {category}")
+    return cat["symbols"]
+
+
+def get_category_for_symbol(symbol: str) -> List[str]:
+    """Get categories for a symbol."""
+    data = load_token_categories()
+    return data["symbol_to_category"].get(symbol, [])
+
+
+def get_native_symbol(normalized: str, exchange: str) -> Optional[str]:
+    """Convert normalized symbol to exchange-native format."""
+    data = load_exchange_symbols()
+    exchange_data = data["exchanges"].get(exchange)
+    if not exchange_data:
+        raise ValueError(f"Unknown exchange: {exchange}")
+    
+    symbol_data = exchange_data["symbols"].get(normalized)
+    if symbol_data:
+        return symbol_data["native_symbol"]
+    
+    # Check perpetuals
+    perps = exchange_data.get("perpetuals", {})
+    perp_data = perps.get(normalized)
+    if perp_data:
+        return perp_data["native_symbol"]
+    
+    return None
+
+
+def get_normalized_symbol(native: str, exchange: str) -> Optional[str]:
+    """Convert exchange-native symbol to normalized format."""
+    data = load_exchange_symbols()
+    exchange_data = data["exchanges"].get(exchange)
+    if not exchange_data:
+        return None
+    
+    # Search in spot symbols
+    for norm, sym_data in exchange_data["symbols"].items():
+        if sym_data["native_symbol"] == native:
+            return norm
+    
+    # Search in perpetuals
+    for norm, sym_data in exchange_data.get("perpetuals", {}).items():
+        if sym_data["native_symbol"] == native:
+            return norm
+    
+    return None
+
+
+def is_delisted(symbol: str) -> bool:
+    """Check if a symbol has been delisted."""
+    data = load_exchange_symbols()
+    return symbol in data.get("delisted", {})
+
+
+def get_all_normalized_symbols() -> List[str]:
+    """Get list of all normalized symbols."""
+    data = load_exchange_symbols()
+    return data["normalized_symbols"]
+```
+
+### Usage with Templates
+
+```python
+from defeatbeta_crypto import Token
+from defeatbeta_crypto.data.template.loader import (
+    get_symbols_by_category,
+    get_native_symbol,
+    get_category_for_symbol,
+)
+
+# Get all DeFi tokens
+defi_symbols = get_symbols_by_category("defi")
+for symbol in defi_symbols[:5]:
+    token = Token(symbol)
+    print(f"{symbol}: {token.price()['close'].iloc[0]}")
+
+# Check symbol categories
+categories = get_category_for_symbol("ETHUSDT")
+print(f"ETH categories: {categories}")  # ['layer1', 'defi']
+
+# Get native symbol for exchange
+native = get_native_symbol("BTCUSDT", "coinbase")
+print(f"Coinbase native: {native}")  # BTC-USD
+```
