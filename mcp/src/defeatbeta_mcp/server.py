@@ -19,7 +19,7 @@ def get_stock_price(symbol: str):
     return {
         "symbol": symbol,
         "rows": len(df),
-        "data": df.tail(20).to_dict(orient="records"),
+        "data": df.to_dict(orient="records"),
     }
 
 
