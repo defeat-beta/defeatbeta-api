@@ -1,0 +1,18 @@
+[project]
+name = "defeatbeta-mcp"
+version = "0.1.0"
+description = "MCP server for defeatbeta financial data"
+requires-python = ">=3.11"
+
+dependencies = [
+    "mcp",
+    "defeatbeta-api",
+    "pandas"
+]
+
+[project.scripts]
+defeatbeta-mcp = "defeatbeta_mcp.server:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
