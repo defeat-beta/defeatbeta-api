@@ -5,7 +5,7 @@ from defeatbeta_api.data.ticker import Ticker
 import pandas as pd
 
 mcp = FastMCP(
-    name="Defeat Beta",
+    name="Defeat Beta API",
     instructions="An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
     website_url="https://github.com/defeat-beta/defeatbeta-api"
 )
