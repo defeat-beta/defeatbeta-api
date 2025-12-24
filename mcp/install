@@ -49,7 +49,7 @@ pip install \
   pandas
 
 # 7. Permissions
-chmod +x run.sh
+chmod +x "$INSTALL_DIR"/run.sh
 
 echo ""
 echo "✅ Installation completed successfully!"
