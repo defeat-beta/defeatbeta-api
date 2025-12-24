@@ -49,19 +49,19 @@ pip install \
   pandas
 
 # 7. Permissions
-chmod +x "$INSTALL_DIR"/run.sh
+chmod +x "$INSTALL_DIR"/mcp/run.sh
 
 echo ""
 echo "✅ Installation completed successfully!"
 echo ""
 echo "👉 MCP server entry:"
-echo "   $INSTALL_DIR/run.sh"
+echo "   $INSTALL_DIR/mcp/run.sh"
 echo ""
 echo "👉 Cherry Studio MCP config:"
 echo "--------------------------------"
 echo "{"
 echo "  \"name\": \"defeatbeta-finance\","
-echo "  \"command\": \"$INSTALL_DIR/run.sh\","
+echo "  \"command\": \"$INSTALL_DIR/mcp/run.sh\","
 echo "  \"args\": []"
 echo "}"
 echo "--------------------------------"
