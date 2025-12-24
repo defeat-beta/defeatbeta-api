@@ -4,8 +4,11 @@ from defeatbeta_api import data_update_time
 from defeatbeta_api.data.ticker import Ticker
 import pandas as pd
 
-mcp = FastMCP("defeatbeta-finance")
-
+mcp = FastMCP(
+    name="Defeat Beta",
+    instructions="An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
+    website_url="https://github.com/defeat-beta/defeatbeta-api"
+)
 
 @mcp.tool()
 def get_stock_price(symbol: str, start_date: str = None, end_date: str = None):
