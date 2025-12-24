@@ -1,6 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 from defeatbeta_api.data.ticker import Ticker
 import pandas as pd
+from datetime import date
 
 mcp = FastMCP("defeatbeta-finance")
 
@@ -93,6 +94,22 @@ def get_stock_price(symbol: str, start_date: str = None, end_date: str = None):
         "data": data_records.to_dict(orient="records")
     }
 
+@mcp.tool()
+def get_current_date():
+    """
+    Get the current date.
+
+    This tool returns today's date in YYYY-MM-DD format.
+    Useful for calculating relative date ranges like "recent 10 days", "last month", etc.
+
+    Returns:
+        A dictionary with the current date as a string.
+    """
+    today = date.today()
+    return {
+        "current_date": today.strftime("%Y-%m-%d"),
+        "note": "This is the date the server considers as 'today'. All relative queries should be based on this."
+    }
 
 def main():
     mcp.run()
