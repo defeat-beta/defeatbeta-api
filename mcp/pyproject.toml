@@ -5,9 +5,7 @@ description = "MCP server for defeatbeta financial data"
 requires-python = ">=3.11"
 
 dependencies = [
-    "mcp",
-    "defeatbeta-api",
-    "pandas"
+    "defeatbeta-api"
 ]
 
 [project.scripts]
