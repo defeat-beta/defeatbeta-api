@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="https://github.com/defeatbeta/defeatbeta-api"
+REPO="https://github.com/defeat-beta/defeatbeta-api"
 BRANCH="main"
 INSTALL_DIR="$HOME/.defeatbeta/mcp"
+TMP_TAR="/tmp/defeatbeta-mcp.tar.gz"
 
 echo "🚀 Installing defeatbeta MCP server (stdio mode)"
 echo "📁 Install location: $INSTALL_DIR"
@@ -19,26 +20,35 @@ fi
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# 3. Download MCP source only
-echo "📥 Downloading MCP source..."
-curl -sSL "$REPO/archive/refs/heads/$BRANCH.tar.gz" \
-  | tar -xz --strip-components=2 "defeatbeta-api-$BRANCH/mcp"
+# 3. Download archive (robust way)
+echo "📥 Downloading MCP source archive..."
+curl -fL "$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP_TAR"
 
-# 4. Create virtual environment
+# 4. Extract MCP files
+echo "📦 Extracting MCP files..."
+tar -xzf "$TMP_TAR"
+rm -f "$TMP_TAR"
+
+# Move only the mcp directory into place
+rm -rf mcp
+mv "defeatbeta-api-$BRANCH/mcp" .
+rm -rf "defeatbeta-api-$BRANCH"
+
+# 5. Create virtual environment
 echo "🐍 Creating virtual environment..."
 python3 -m venv .venv
 source .venv/bin/activate
 
 pip install --upgrade pip
 
-# 5. Install runtime dependencies (PyPI only)
+# 6. Install runtime dependencies (PyPI only)
 echo "📦 Installing dependencies..."
 pip install \
   mcp \
   defeatbeta-api \
   pandas
 
-# 6. Permissions
+# 7. Permissions
 chmod +x run.sh
 
 echo ""
