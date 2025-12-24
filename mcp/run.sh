@@ -2,7 +2,7 @@
 set -e
 
 # Absolute path of this script
-DIR="$(cd "$(dirname "$0")" && pwd)"
+DIR="$(cd "$(dirname "$(dirname "$0")")" && pwd)"
 
 # Activate isolated environment
 source "$DIR/.venv/bin/activate"
