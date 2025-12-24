@@ -17,6 +17,7 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 # 2. Prepare directory
+rm -r "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
