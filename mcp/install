@@ -45,9 +45,7 @@ pip install --upgrade pip
 # 6. Install runtime dependencies
 echo "📦 Installing dependencies..."
 pip install \
-  mcp \
-  defeatbeta-api \
-  pandas
+  defeatbeta-api
 
 # 7. Permissions
 chmod +x "$INSTALL_DIR/mcp/run.sh"

@@ -29,7 +29,8 @@ dependencies = [
     "pyarrow >= 22.0.0",
     "ipython>=8.0.0,<=8.37.0",
     "matplotlib>=3.10.7",
-    "seaborn>=0.13.2"
+    "seaborn>=0.13.2",
+    "mcp>=1.25.0"
 ]
 
 [tool.setuptools.dynamic]
