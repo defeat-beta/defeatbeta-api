@@ -20,7 +20,7 @@ fi
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# 3. Download archive (robust way)
+# 3. Download archive
 echo "📥 Downloading MCP source archive..."
 curl -fL "$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP_TAR"
 
@@ -36,12 +36,12 @@ rm -rf "defeatbeta-api-$BRANCH"
 
 # 5. Create virtual environment
 echo "🐍 Creating virtual environment..."
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv "$INSTALL_DIR/.venv"
+source "$INSTALL_DIR/.venv/bin/activate"
 
 pip install --upgrade pip
 
-# 6. Install runtime dependencies (PyPI only)
+# 6. Install runtime dependencies
 echo "📦 Installing dependencies..."
 pip install \
   mcp \
@@ -49,7 +49,7 @@ pip install \
   pandas
 
 # 7. Permissions
-chmod +x "$INSTALL_DIR"/mcp/run.sh
+chmod +x "$INSTALL_DIR/mcp/run.sh"
 
 echo ""
 echo "✅ Installation completed successfully!"
@@ -61,10 +61,10 @@ echo "👉 Cherry Studio MCP config:"
 echo "--------------------------------"
 echo "{"
 echo "  \"mcpServers\": {"
-echo "   \"defeatbeta-finance\": {"
-echo "      \"command\": \"/Users/kevin.zheng/.defeatbeta/mcp/run.sh\","
+echo "    \"defeatbeta-finance\": {"
+echo "      \"command\": \"$INSTALL_DIR/mcp/run.sh\","
 echo "      \"args\": []"
-echo "   }"
+echo "    }"
 echo "  }"
 echo "}"
 echo "--------------------------------"
