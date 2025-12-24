@@ -157,6 +157,6 @@ Once the MCP Server is configured and successfully connected, you can directly a
 - Please provide me with the price of TSLA for the past 30 days.
 ```
 
-The AI will use **Defeat Beta API MCP** to call the `defeatbeta-api` data interfaces, retrieve Tesla's (TSLA) market data for the past month, and provide intelligent analysis such as trend assessment, price change summaries, or risk insights.
+The AI will use **Defeat Beta API MCP** to call the `defeatbeta-api` data interfaces, retrieve Tesla's (TSLA) market data, and provide intelligent analysis.
 
 ![img.png](../doc/talk_to_llm_with_mcp.png)
