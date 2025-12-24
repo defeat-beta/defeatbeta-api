@@ -22,7 +22,7 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ✅ **LLM-Powered Analysis**: Use Large Language Models (LLMs) to analyze [earnings call transcripts](doc/LLM_KeyData_Example.md), [quarterly financial changes](doc/LLM_ChangeData_Example.md), and [quarterly forecasts](doc/LLM_ForecastData_Example.md) to extract key data, understand metric changes, and interpret forecast drivers.
 
-✅ **MCP Server implementation**: [A MCP server implementation](mcp/README.md) for `defeatbeta-api, provides AI access analysis through MCP.
+✅ **MCP Server implementation**: [A MCP server implementation](mcp/README.md) for `defeatbeta-api`, provides AI access analysis through MCP.
 
 ## Quickstart
 
