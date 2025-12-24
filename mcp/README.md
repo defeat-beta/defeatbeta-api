@@ -104,7 +104,7 @@ After installation, the directory structure is as follows:
 
 ## Usage
 
-### Eg. Use in Cherry Studio
+### Eg. Use in [Cherry Studio](https://www.cherry-ai.com/)
 
 
 #### 1. Obtain MCP Config
