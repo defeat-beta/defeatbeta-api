@@ -1,7 +1,8 @@
 from mcp.server.fastmcp import FastMCP
+
+from defeatbeta_api import data_update_time
 from defeatbeta_api.data.ticker import Ticker
 import pandas as pd
-from datetime import date
 
 mcp = FastMCP("defeatbeta-finance")
 
@@ -95,20 +96,28 @@ def get_stock_price(symbol: str, start_date: str = None, end_date: str = None):
     }
 
 @mcp.tool()
-def get_current_date():
+def get_latest_data_update_date():
     """
-    Get the current date.
+        Get the latest data update date of the defeatbeta dataset.
 
-    This tool returns today's date in YYYY-MM-DD format.
-    Useful for calculating relative date ranges like "recent 10 days", "last month", etc.
+        This is the most recent date for which historical price data is available
+        in the defeatbeta dataset (typically the last date when the entire dataset
+        was refreshed with new trading data).
 
-    Returns:
-        A dictionary with the current date as a string.
+        This is NOT the real-time server date, and NOT necessarily today's date.
+        All available stock prices are up to and including trading days on or before
+        this data date.
+
+        Use this date as the reference point ("today" in data terms) when handling
+        relative time queries such as "last 10 days", "past month", "year-to-date", etc.
+
+        Returns:
+            A dictionary containing the latest data date in YYYY-MM-DD format.
     """
-    today = date.today()
+    latest_data_date = data_update_time
     return {
-        "current_date": today.strftime("%Y-%m-%d"),
-        "note": "This is the date the server considers as 'today'. All relative queries should be based on this."
+        "latest_data_date": latest_data_date.strftime("%Y-%m-%d"),
+        "note": "This is the date defeatbeta latest update date. All relative queries should be based on this."
     }
 
 def main():
