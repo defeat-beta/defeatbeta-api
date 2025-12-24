@@ -3,7 +3,7 @@ set -e
 
 REPO="https://github.com/defeat-beta/defeatbeta-api"
 BRANCH="main"
-INSTALL_DIR="$HOME/.defeatbeta/mcp"
+INSTALL_DIR="$HOME/.defeatbeta"
 TMP_TAR="/tmp/defeatbeta-mcp.tar.gz"
 
 echo "🚀 Installing defeatbeta MCP server (stdio mode)"
