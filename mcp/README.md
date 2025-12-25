@@ -48,7 +48,7 @@
 ### macOS or Linux
 Run script to install:
 ```shell
-curl -sSL https://raw.githubusercontent.com/defeat-beta/defeatbeta-api/refs/heads/main/mcp/install | bash
+curl -sSL https://raw.githubusercontent.com/defeat-beta/defeatbeta-api/main/mcp/install | bash
 ```
 
 ### What this script does
@@ -122,7 +122,10 @@ After the installation is complete, the terminal will output the MCP server conf
 {
   "mcpServers": {
     "defeatbeta-api": {
-      "command": "/Users/xxx/.defeatbeta/mcp/run.sh",
+      "command": "/Users/kevin.zheng/.defeatbeta/mcp/run.sh",
+      "description": "An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
+      "provider": "Defeat Beta API",
+      "providerUrl": "https://github.com/defeat-beta/defeatbeta-api",
       "args": []
     }
   }
