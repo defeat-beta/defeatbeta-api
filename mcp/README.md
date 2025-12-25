@@ -117,7 +117,7 @@ After the installation is complete, the terminal will output the MCP server conf
 👉 MCP server entry:
    /Users/xxx/.defeatbeta/mcp/run.sh
 
-👉 MCP config:
+👉 Studio MCP config:
 --------------------------------
 {
   "mcpServers": {
