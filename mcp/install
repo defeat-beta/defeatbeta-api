@@ -23,7 +23,7 @@ cd "$INSTALL_DIR"
 
 # 3. Download archive
 echo "📥 Downloading MCP source archive..."
-curl -fL "$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP_TAR"
+curl -fL "$REPO/archive/main/$BRANCH.tar.gz" -o "$TMP_TAR"
 
 # 4. Extract MCP files
 echo "📦 Extracting MCP files..."
