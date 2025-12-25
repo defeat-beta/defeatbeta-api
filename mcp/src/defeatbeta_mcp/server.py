@@ -11,6 +11,86 @@ mcp = FastMCP(
 )
 
 @mcp.tool()
+def get_latest_data_update_date():
+    """
+        Get the latest data update date of the defeatbeta dataset.
+
+        This is the most recent date for which historical price data is available
+        in the defeatbeta dataset (typically the last date when the entire dataset
+        was refreshed with new trading data).
+
+        This is NOT the real-time server date, and NOT necessarily today's date.
+        All available stock prices are up to and including trading days on or before
+        this data date.
+
+        Use this date as the reference point ("today" in data terms) when handling
+        relative time queries such as "last 10 days", "past month", "year-to-date", etc.
+
+        Returns:
+            A dictionary containing the latest data date in YYYY-MM-DD format.
+    """
+    return {
+        "latest_data_date": data_update_time,
+        "note": "This is the latest DATA UPDATE DATE of the defeatbeta dataset. "
+                "All historical price data available through this API is current "
+                "up to this date. Use this date as the base for any relative time "
+                "queries (e.g., 'recent 10 days' refers to the 10 trading days ending "
+                "on or before this date)."
+    }
+
+@mcp.tool()
+def get_stock_profile(symbol: str):
+    """
+        Retrieve the basic company profile information for a given stock symbol.
+
+        Args:
+            symbol (str): The stock ticker symbol, e.g., "TSLA" or "tsla" (will be automatically converted to uppercase).
+
+        Returns:
+            dict: A dictionary containing the company's basic profile information. Common keys include:
+                - symbol: Stock ticker symbol
+                - address: Company headquarters address
+                - city: City where the company is headquartered
+                - country: Country of headquarters
+                - phone: Company phone number
+                - zip: Postal/ZIP code
+                - industry: Industry classification
+                - sector: Sector classification
+                - long_business_summary: Detailed business description/summary
+                - full_time_employees: Number of full-time employees
+                - web_site: Official company website URL
+                - report_date: Date of the data report or last update
+
+        Example (for TSLA):
+            {
+                'symbol': 'TSLA',
+                'address': '1 Tesla Road',
+                'city': 'Austin',
+                'country': 'United States',
+                'phone': '512 516 8177',
+                'zip': '78725',
+                'industry': 'Auto Manufacturers',
+                'sector': 'Consumer Cyclical',
+                'long_business_summary': 'Tesla, Inc. designs, develops, manufactures, l...',
+                'full_time_employees': 125665,
+                'web_site': 'https://www.tesla.com',
+                'report_date': '2025-04-12'
+            }
+
+        Notes:
+            - The underlying data is returned as a single-row pandas DataFrame from the ticker details.
+            - The function converts the first row to a dictionary for easier handling.
+            - If no data is available (empty DataFrame), an empty dictionary is returned.
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+    df = ticker.info()
+    # Convert the first row of the DataFrame to dict; return empty dict if no data
+    profile = df.iloc[0].to_dict() if not df.empty else {}
+
+    return profile
+
+@mcp.tool()
 def get_stock_price(symbol: str, start_date: str = None, end_date: str = None):
     """
     Retrieve historical stock price data for the specified symbol and optional date range.
@@ -96,34 +176,6 @@ def get_stock_price(symbol: str, start_date: str = None, end_date: str = None):
         "truncated": truncated,
         "latest_close": float(df['close'].iloc[-1]),
         "data": data_records.to_dict(orient="records")
-    }
-
-@mcp.tool()
-def get_latest_data_update_date():
-    """
-        Get the latest data update date of the defeatbeta dataset.
-
-        This is the most recent date for which historical price data is available
-        in the defeatbeta dataset (typically the last date when the entire dataset
-        was refreshed with new trading data).
-
-        This is NOT the real-time server date, and NOT necessarily today's date.
-        All available stock prices are up to and including trading days on or before
-        this data date.
-
-        Use this date as the reference point ("today" in data terms) when handling
-        relative time queries such as "last 10 days", "past month", "year-to-date", etc.
-
-        Returns:
-            A dictionary containing the latest data date in YYYY-MM-DD format.
-    """
-    return {
-        "latest_data_date": data_update_time,
-        "note": "This is the latest DATA UPDATE DATE of the defeatbeta dataset. "
-                "All historical price data available through this API is current "
-                "up to this date. Use this date as the base for any relative time "
-                "queries (e.g., 'recent 10 days' refers to the 10 trading days ending "
-                "on or before this date)."
     }
 
 def main():
