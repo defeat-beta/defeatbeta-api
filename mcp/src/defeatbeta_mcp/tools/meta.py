@@ -46,15 +46,6 @@ def get_current_datetime():
     It is intended for temporal comparison and reasoning, NOT as a replacement
     for the MCP data reference date.
 
-    Typical use cases include:
-    - Determining whether recent events may not yet be reflected in the data
-    - Comparing real-world time with the latest data update date
-    - Reasoning about data freshness or potential reporting delays
-    - General time awareness for agent workflows
-
-    This tool SHOULD NOT be used to compute financial metrics, recent periods,
-    or relative time ranges for MCP data.
-
     Returns:
         dict: A dictionary containing:
             - datetime (str): ISO-8601 formatted datetime (UTC)
