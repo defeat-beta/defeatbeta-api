@@ -28,15 +28,3 @@ def get_latest_data_update_date():
                 "queries (e.g., 'recent 10 days' refers to the 10 trading days ending "
                 "on or before this date)."
     }
-
-def get_defeatbeta_api_version():
-    """
-        Retrieve version and dataset metadata for the Defeat Beta API.
-
-        Returns: A dictionary containing the version of the Defeat Beta API
-    """
-    version = __version__
-    return {
-        "version": version,
-        "note": "The API version reflects the installed defeatbeta_api package."
-    }
