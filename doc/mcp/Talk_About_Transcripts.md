@@ -19,3 +19,7 @@
 # Case-3: I want to see the full transcript of AMD's latest quarterly earnings call.
 
 ![img.png](Talk_About_Transcripts_3.png)
+
+# Case-4: Were there any notable guidance or strategic updates in AMD’s most recent earnings call?
+
+![img.png](Talk_About_Transcripts_4.png)
