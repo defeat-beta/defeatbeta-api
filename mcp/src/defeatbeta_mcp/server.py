@@ -2,7 +2,7 @@ from mcp.server.fastmcp import FastMCP
 
 from .tools.officers import get_stock_officers
 from .tools.profile import get_stock_profile
-from .tools.meta import get_latest_data_update_date, get_defeatbeta_api_version, get_current_datetime
+from .tools.meta import get_latest_data_update_date, get_defeatbeta_api_version
 from .tools.price import get_stock_price
 from .tools.transcripts import get_stock_earning_call_transcripts_list, get_stock_earning_call_transcript
 from .tools.news import get_stock_news
@@ -19,7 +19,6 @@ mcp = FastMCP(
 # Meta / system tools
 mcp.tool()(get_defeatbeta_api_version)
 mcp.tool()(get_latest_data_update_date)
-mcp.tool()(get_current_datetime)
 
 # Stock core data
 mcp.tool()(get_stock_profile)
