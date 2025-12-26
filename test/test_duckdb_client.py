@@ -9,7 +9,7 @@ class TestDuckDBClient(unittest.TestCase):
 
     def test_query(self):
         client = DuckDBClient(
-            http_proxy="http://127.0.0.1:33210", log_level=logging.DEBUG, config=Configuration(threads=8)
+            http_proxy="http://127.0.0.1:7890", log_level=logging.DEBUG, config=Configuration(threads=8)
         )
         try:
             result = client.query(

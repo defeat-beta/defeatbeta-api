@@ -39,7 +39,7 @@ print(result)
 import defeatbeta_api
 from defeatbeta_api.data.ticker import Ticker
 
-ticker = Ticker("BABA", http_proxy="http://127.0.0.1:33210")
+ticker = Ticker("BABA", http_proxy="http://127.0.0.1:7890")
 ```
 
 ## Set Logging

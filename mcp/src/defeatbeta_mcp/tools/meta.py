@@ -32,9 +32,12 @@ def get_current_datetime():
     """
     MCP Tool: Get the current real-world date and time.
 
-    This tool provides the ground-truth current datetime from the server,
-    which can be used by LLMs to reason about time-sensitive financial data
-    such as earnings dates, market status, or recent events.
+    This tool provides the ground-truth current date and time from the server.
+    It serves as a reliable temporal reference for LLMs when analyzing or
+    reasoning about time-dependent company information and financial data,
+    including profiles, governance, earnings-related information, market
+    prices, financial statements, forecasts, valuation metrics, profitability,
+    and growth indicators.
 
     Returns:
         dict: A structured datetime object including date, datetime, timestamp,
