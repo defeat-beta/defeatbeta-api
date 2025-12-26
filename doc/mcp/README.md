@@ -16,6 +16,7 @@ Below are some practical and popular ways to use MCP in real-world scenarios:
 2. 👉 *Talk to AI About Company Officers* ([Click here](Talk_About_Officers.md))
 3. 👉 *Talk to AI About Stock Prices and Historical Performance* ([Click here](Talk_About_Price.md))
 4. 👉 *Talk to AI About Earnings Call Transcripts* ([Click here](Talk_About_Transcripts.md))
+5. 👉 *Talk to AI About News* ([Click here](Talk_About_News.md))
 
 ---
 
