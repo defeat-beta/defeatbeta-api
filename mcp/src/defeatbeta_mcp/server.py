@@ -5,7 +5,7 @@ from .tools.profile import get_stock_profile
 from .tools.meta import get_latest_data_update_date, get_defeatbeta_api_version, get_current_datetime
 from .tools.price import get_stock_price
 from .tools.transcripts import get_stock_earning_call_transcripts_list, get_stock_earning_call_transcript
-from .tools.news import get_stock_news_list, get_stock_news
+from .tools.news import get_stock_news
 
 mcp = FastMCP(
     name="Defeat Beta API",
@@ -39,7 +39,6 @@ mcp.tool()(get_stock_earning_call_transcripts_list)
 mcp.tool()(get_stock_earning_call_transcript)
 
 # News
-mcp.tool()(get_stock_news_list)
 mcp.tool()(get_stock_news)
 
 def main():
