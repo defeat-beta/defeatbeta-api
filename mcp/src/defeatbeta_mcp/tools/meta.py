@@ -20,30 +20,6 @@ def get_latest_data_update_date():
         "timezone": "UTC"
     }
 
-
-def get_current_datetime():
-    """
-    MCP Tool: Get the current real-world datetime.
-
-    Returns:
-        dict: A dictionary containing:
-            - datetime (str): ISO-8601 formatted datetime (UTC)
-            - date (str): Current date in YYYY-MM-DD format
-            - timestamp (int): Unix timestamp (seconds)
-            - timezone (str): Timezone
-            - day_of_week (str): Day of the week
-    """
-    now = data_update_time
-
-    return {
-        "datetime": now.isoformat(),
-        "date": now.strftime("%Y-%m-%d"),
-        "timestamp": int(now.timestamp()),
-        "timezone": "UTC",
-        "day_of_week": now.strftime("%A"),
-    }
-
-
 def get_defeatbeta_api_version():
     """
         Retrieve version and dataset metadata for the Defeat Beta API.
