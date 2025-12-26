@@ -13,7 +13,7 @@ With MCP (Model Context Protocol), you can directly connect **Defeat Beta API** 
 Below are some practical and popular ways to use MCP in real-world scenarios:
 
 1. 👉 *Talk to AI About Company Profiles* ([Click here](Talk_About_Profile.md))
-2. 👉 *Talk to AI About Stock Prices and Historical Performance* (Click here)
+2. 👉 *Talk to AI About Stock Prices and Historical Performance* ([Click here](Talk_About_Price.md))
 3. 👉 *Talk to AI About Earnings Call Transcripts* (Click here)
 
 ---
