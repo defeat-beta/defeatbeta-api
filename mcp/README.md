@@ -122,7 +122,7 @@ After the installation is complete, the terminal will output the MCP server conf
 {
   "mcpServers": {
     "defeatbeta-api": {
-      "command": "/Users/kevin.zheng/.defeatbeta/mcp/run.sh",
+      "command": "/Users/xxx/.defeatbeta/mcp/run.sh",
       "description": "An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
       "provider": "Defeat Beta API",
       "providerUrl": "https://github.com/defeat-beta/defeatbeta-api",
