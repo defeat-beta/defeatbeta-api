@@ -163,3 +163,7 @@ Once the MCP Server is configured and successfully connected, you can directly a
 The AI will use **Defeat Beta API MCP** to call the `defeatbeta-api` data interfaces, retrieve Tesla's (TSLA) market data, and provide intelligent analysis.
 
 ![img.png](../doc/talk_to_llm_with_mcp.png)
+
+#### 4. Explore More MCP Use Cases
+
+Click here to discover more ways to use MCP and explore additional use cases and best practices.

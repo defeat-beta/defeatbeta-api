@@ -9,7 +9,7 @@
 
 An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
 
-See the [example guide](doc/Example_Guide.md) for detailed usage instructions, and try it out directly in an interactive environment using
+See the [example guide](doc/Guide) for detailed usage instructions, and try it out directly in an interactive environment using
 [![JupyterLab](https://img.shields.io/badge/Run%20in%20JupyterLab-blue?logo=jupyter&logoColor=white)](https://mybinder.org/v2/gh/defeat-beta/defeatbeta-api/release-0.0.27?urlpath=lab/tree/notebooks/05_tutorial_report.ipynb).
 
 The list of changes can be found in the [Changelog](CHANGELOG.rst)
@@ -18,9 +18,9 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ✅ **High-Performance & Reliable Data Engine**: Provides a stable, reproducible market data source fully hosted on Hugging Face’s [yahoo-finance-data](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data) dataset—eliminating scraping issues and rate limits. Powered by [DuckDB’s OLAP engine](https://duckdb.org/) and the [`cache_httpfs`](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension, the system delivers sub-second analytical queries with full SQL compatibility, giving you a unified, high-performance workflow for large-scale financial data.
 
-✅ **Extended Financial Data**: Includes [TTM EPS](doc/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/Value_Examples.md#6-stock-historical-peg-ratio), [ROE](doc/Value_Examples.md#7-stock-historical-roe), [ROIC](doc/Value_Examples.md#9-stock-historical-roic), [WACC](doc/Value_Examples.md#12-stock-historical-wacc), [ROA](doc/Value_Examples.md#8-stock-historical-roa), [Equity Multiplier](doc/Value_Examples.md#10-stock-historical-equity-multiplier), [Assert Turnover](doc/Value_Examples.md#11-stock-historical-assert-turnover), [Earnings call transcripts](doc/Info_Examples.md#3-accessing-earnings-call-transcripts), [Stock News](doc/Info_Examples.md#4-accessing-financial-news), [Revenue by segment](doc/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
+✅ **Extended Financial Data**: Includes [TTM EPS](doc/api/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/api/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/api/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/api/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/api/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/api/Value_Examples.md#6-stock-historical-peg-ratio), [ROE](doc/api/Value_Examples.md#7-stock-historical-roe), [ROIC](doc/api/Value_Examples.md#9-stock-historical-roic), [WACC](doc/api/Value_Examples.md#12-stock-historical-wacc), [ROA](doc/api/Value_Examples.md#8-stock-historical-roa), [Equity Multiplier](doc/api/Value_Examples.md#10-stock-historical-equity-multiplier), [Assert Turnover](doc/api/Value_Examples.md#11-stock-historical-assert-turnover), [Earnings call transcripts](doc/api/Info_Examples.md#3-accessing-earnings-call-transcripts), [Stock News](doc/api/Info_Examples.md#4-accessing-financial-news), [Revenue by segment](doc/api/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/api/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
 
-✅ **LLM-Powered Analysis**: Use Large Language Models (LLMs) to analyze [earnings call transcripts](doc/LLM_KeyData_Example.md), [quarterly financial changes](doc/LLM_ChangeData_Example.md), and [quarterly forecasts](doc/LLM_ForecastData_Example.md) to extract key data, understand metric changes, and interpret forecast drivers.
+✅ **LLM-Powered Analysis**: Use Large Language Models (LLMs) to analyze [earnings call transcripts](doc/api/LLM_KeyData_Example.md), [quarterly financial changes](doc/api/LLM_ChangeData_Example.md), and [quarterly forecasts](doc/api/LLM_ForecastData_Example.md) to extract key data, understand metric changes, and interpret forecast drivers.
 
 ✅ **MCP Server implementation**: [A MCP server implementation](mcp/README.md) for `defeatbeta-api`, provides AI access analysis through MCP.
 
@@ -61,7 +61,7 @@ import defeatbeta_api
 from defeatbeta_api.data.ticker import Ticker
 ticker = Ticker('TSLA')
 ```
-The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/Example_Guide.md)):
+The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/Guide)):
 
 #### Example: Fetching Stock Price Data
 ```python
@@ -382,7 +382,7 @@ news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
 
 ### Advanced Usage
 
-See [Advanced Usage](doc/Advanced_Guide.md) for details.
+See [Advanced Usage](doc/api/Advanced_Usage.md) for details.
 
 
 ## How it compares to yfinance:
