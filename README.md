@@ -9,7 +9,7 @@
 
 An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
 
-See the [example guide](doc/Guide.md) for detailed usage instructions, and try it out directly in an interactive environment using
+See the [example guide](doc/README) for detailed usage instructions, and try it out directly in an interactive environment using
 [![JupyterLab](https://img.shields.io/badge/Run%20in%20JupyterLab-blue?logo=jupyter&logoColor=white)](https://mybinder.org/v2/gh/defeat-beta/defeatbeta-api/release-0.0.27?urlpath=lab/tree/notebooks/05_tutorial_report.ipynb).
 
 The list of changes can be found in the [Changelog](CHANGELOG.rst)
@@ -61,7 +61,7 @@ import defeatbeta_api
 from defeatbeta_api.data.ticker import Ticker
 ticker = Ticker('TSLA')
 ```
-The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/Guide)):
+The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/README)):
 
 #### Example: Fetching Stock Price Data
 ```python
