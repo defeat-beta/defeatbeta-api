@@ -1,23 +1,32 @@
 from defeatbeta_api import __version__
-
 from defeatbeta_api import data_update_time
+
 
 def get_latest_data_update_date():
     """
-    Get the latest data update date of the defeatbeta dataset.
+        Get the latest data update date of the defeatbeta dataset.
 
-    This is the most recent date for which historical data is available
-    in the defeatbeta dataset (typically the last date when the entire dataset
-    was refreshed with new trading data).
+        This is the most recent date for which historical price data is available
+        in the defeatbeta dataset (typically the last date when the entire dataset
+        was refreshed with new trading data).
 
-    Returns:
-        dict: A dictionary containing:
-            - latest_data_date (str): Data reference date in YYYY-MM-DD format
-            - timezone (str): Timezone of the data reference date
+        This is NOT the real-time server date, and NOT necessarily today's date.
+        All available stock prices are up to and including trading days on or before
+        this data date.
+
+        Use this date as the reference point ("today" in data terms) when handling
+        relative time queries such as "last 10 days", "past month", "year-to-date", etc.
+
+        Returns:
+            A dictionary containing the latest data date in YYYY-MM-DD format.
     """
     return {
         "latest_data_date": data_update_time,
-        "timezone": "UTC"
+        "note": "This is the latest DATA UPDATE DATE of the defeatbeta dataset. "
+                "All historical price data available through this API is current "
+                "up to this date. Use this date as the base for any relative time "
+                "queries (e.g., 'recent 10 days' refers to the 10 trading days ending "
+                "on or before this date)."
     }
 
 def get_defeatbeta_api_version():
