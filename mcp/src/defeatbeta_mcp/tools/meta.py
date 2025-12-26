@@ -1,57 +1,78 @@
 from defeatbeta_api import data_update_time, __version__
 from datetime import datetime, timezone
 
+from defeatbeta_api import data_update_time
+
 def get_latest_data_update_date():
     """
-        Get the latest data update date of the defeatbeta dataset.
+    MCP Tool: Get the latest data update date.
 
-        This is the most recent date for which historical price data is available
-        in the defeatbeta dataset (typically the last date when the entire dataset
-        was refreshed with new trading data).
+    This tool defines the current reference date of the MCP data universe.
+    All company, financial, and market data provided by this MCP server
+    is guaranteed to be complete and consistent up to this date.
 
-        This is NOT the real-time server date, and NOT necessarily today's date.
-        All available stock prices are up to and including trading days on or before
-        this data date.
+    This is NOT the real-world current date and NOT a real-time timestamp.
 
-        Use this date as the reference point ("today" in data terms) when handling
-        relative time queries such as "last 10 days", "past month", "year-to-date", etc.
+    LLMs should treat this date as "today" when reasoning about:
+    - Recent stock prices
+    - Latest earnings and financial statements
+    - Most recent earnings calls
+    - Company news and events
+    - Relative time expressions such as "last 10 days", "past month",
+      "year-to-date", or "latest quarter"
 
-        Returns:
-            A dictionary containing the latest data date in YYYY-MM-DD format.
+    Returns:
+        dict: A dictionary containing:
+            - latest_data_date (str): Data reference date in YYYY-MM-DD format
+            - timezone (str): Timezone of the data reference date
+            - semantics (str): Explanation of how this date should be used
     """
     return {
         "latest_data_date": data_update_time,
-        "note": "This is the latest DATA UPDATE DATE of the defeatbeta dataset. "
-                "All historical price data available through this API is current "
-                "up to this date. Use this date as the base for any relative time "
-                "queries (e.g., 'recent 10 days' refers to the 10 trading days ending "
-                "on or before this date)."
+        "timezone": "UTC",
+        "semantics": (
+            "This date represents the current reference point of the MCP data universe. "
+            "All financial, company, and market data is complete up to and including this date. "
+            "Use this date as 'today' for all data-driven reasoning."
+        )
     }
+
 
 def get_current_datetime():
     """
-    MCP Tool: Get the current real-world date and time.
+    MCP Tool: Get the current real-world datetime.
 
     This tool provides the ground-truth current date and time from the server.
-    It serves as a reliable temporal reference for LLMs when analyzing or
-    reasoning about time-dependent company information and financial data,
-    including profiles, governance, earnings-related information, market
-    prices, financial statements, forecasts, valuation metrics, profitability,
-    and growth indicators.
+    It is intended for temporal comparison and reasoning, NOT as a replacement
+    for the MCP data reference date.
+
+    Typical use cases include:
+    - Determining whether recent events may not yet be reflected in the data
+    - Comparing real-world time with the latest data update date
+    - Reasoning about data freshness or potential reporting delays
+    - General time awareness for agent workflows
+
+    This tool SHOULD NOT be used to compute financial metrics, recent periods,
+    or relative time ranges for MCP data.
 
     Returns:
-        dict: A structured datetime object including date, datetime, timestamp,
-              timezone, and day of week.
+        dict: A dictionary containing:
+            - datetime (str): ISO-8601 formatted datetime (UTC)
+            - date (str): Current date in YYYY-MM-DD format
+            - timestamp (int): Unix timestamp (seconds)
+            - timezone (str): Timezone
+            - day_of_week (str): Day of the week
     """
     now = datetime.now(timezone.utc)
 
     return {
-        "date": now.strftime("%Y-%m-%d"),
         "datetime": now.isoformat(),
+        "date": now.strftime("%Y-%m-%d"),
         "timestamp": int(now.timestamp()),
         "timezone": "UTC",
-        "day_of_week": now.strftime("%A")
+        "day_of_week": now.strftime("%A"),
     }
+
 
 def get_defeatbeta_api_version():
     """
