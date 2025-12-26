@@ -4,7 +4,11 @@ from defeatbeta_api import data_update_time
 
 def get_latest_data_update_date():
     """
-    Get the latest data update date.
+    Get the latest data update date of the defeatbeta dataset.
+
+    This is the most recent date for which historical data is available
+    in the defeatbeta dataset (typically the last date when the entire dataset
+    was refreshed with new trading data).
 
     Returns:
         dict: A dictionary containing:

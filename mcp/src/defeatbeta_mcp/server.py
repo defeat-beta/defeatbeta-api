@@ -11,16 +11,6 @@ mcp = FastMCP(
     name="Defeat Beta API",
     instructions="""
                     An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
-                    
-                    Unless explicitly stated otherwise, all tools operate on data that is
-                    current up to the latest data update date returned by `get_latest_data_update_date`.
-                    
-                    This date should be treated as the canonical "today" when interpreting
-                    relative time expressions such as:
-                    - recent
-                    - last N days
-                    - last quarter
-                    - year-to-date
                 """,
     website_url="https://github.com/defeat-beta/defeatbeta-api"
 )
