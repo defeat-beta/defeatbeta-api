@@ -1,4 +1,4 @@
-from defeatbeta_api import data_update_time, __version__
+from defeatbeta_api import __version__
 from datetime import datetime, timezone
 
 from defeatbeta_api import data_update_time
