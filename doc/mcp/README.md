@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Exploring More MCP Use Cases](#exploring-more-mcp-use-cases)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Exploring More MCP Use Cases
 
 With MCP (Model Context Protocol), you can directly connect **Defeat Beta API** to AI models, enabling them to analyze and reason over real, structured financial data instead of relying on assumptions or outdated information.
