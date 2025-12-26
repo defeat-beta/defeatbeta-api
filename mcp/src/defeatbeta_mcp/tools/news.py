@@ -7,11 +7,10 @@ def get_stock_news_list(
     end_date: str = None
 ):
     """
-    Retrieve a list of recent news related to a given stock symbol.
+    Retrieve a list of recent news articles related to a given stock symbol.
 
-    This tool returns structured metadata for each news item without
-    including the full article content. To avoid overwhelming the LLM,
-    the number of returned records is capped.
+    This tool returns structured metadata for each news item **without the full article content**.
+    Use the `uuid` field to fetch the full content of a specific news article via `get_stock_news`.
 
     Args:
         symbol (str): Stock ticker symbol (e.g. "AMD", "AAPL", "TSLA").
@@ -30,12 +29,7 @@ def get_stock_news_list(
             - truncated (bool): Whether results were truncated by MAX_ROWS
             - news (list[dict]): List of news metadata records, each including:
                 - uuid (str)
-                - related_symbols (list[str])
-                - title (str)
-                - publisher (str)
                 - report_date (str)
-                - type (str)
-                - link (str)
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
@@ -89,12 +83,7 @@ def get_stock_news_list(
     # Select only MCP / LLM friendly fields
     fields = [
         "uuid",
-        "related_symbols",
-        "title",
-        "publisher",
-        "report_date",
-        "type",
-        "link",
+        "report_date"
     ]
 
     records = df[fields].copy()
