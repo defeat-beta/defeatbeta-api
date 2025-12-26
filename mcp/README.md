@@ -2,6 +2,8 @@
 
 **Defeat Beta API MCP** is an [MCP](https://modelcontextprotocol.io/introduction) server that exposes data from [defeatbeta-api](https://github.com/defeat-beta/defeatbeta-api) to large language models via standardized contextual interfaces, enabling structured and controlled financial data analysis.
 
+Click [here](../doc/mcp/Mcp_Use_Case) to discover more ways to use MCP and explore additional use cases and best practices.
+
 ## Overall Architecture
 
 ```text
@@ -147,7 +149,7 @@ Please record and copy the **`MCP config`** content.
 
 Once saved, Cherry Studio will automatically start the MCP Server in **stdio mode**.
 
-![img.png](../doc/mcp_config.png)
+![img.png](../doc/mcp/mcp_config.png)
 
 ---
 
@@ -162,8 +164,4 @@ Once the MCP Server is configured and successfully connected, you can directly a
 
 The AI will use **Defeat Beta API MCP** to call the `defeatbeta-api` data interfaces, retrieve Tesla's (TSLA) market data, and provide intelligent analysis.
 
-![img.png](../doc/talk_to_llm_with_mcp.png)
-
-#### 4. Explore More MCP Use Cases
-
-Click here to discover more ways to use MCP and explore additional use cases and best practices.
+![img.png](../doc/mcp/talk_to_llm_with_mcp.png)
