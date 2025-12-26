@@ -1,6 +1,4 @@
 from defeatbeta_api.data.ticker import Ticker
-
-from defeatbeta_api.data.ticker import Ticker
 import pandas as pd
 
 def get_stock_news_list(
