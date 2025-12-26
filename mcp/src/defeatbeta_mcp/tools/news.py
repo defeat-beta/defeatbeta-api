@@ -1,31 +1,43 @@
 from defeatbeta_api.data.ticker import Ticker
 
-def get_stock_news_list(symbol: str):
+from defeatbeta_api.data.ticker import Ticker
+import pandas as pd
+
+def get_stock_news_list(
+    symbol: str,
+    start_date: str = None,
+    end_date: str = None
+):
     """
     Retrieve a list of recent news related to a given stock symbol.
 
     This tool returns structured metadata for each news item without
-    including the full article content. It is suitable for browsing,
-    filtering, ranking, or selecting specific news articles for further
-    analysis.
+    including the full article content. To avoid overwhelming the LLM,
+    the number of returned records is capped.
 
     Args:
         symbol (str): Stock ticker symbol (e.g. "AMD", "AAPL", "TSLA").
                       The symbol is case-insensitive and will be converted
                       to uppercase automatically.
+        start_date (str, optional): Filter news on or after this date
+                                    (YYYY-MM-DD).
+        end_date (str, optional): Filter news on or before this date
+                                  (YYYY-MM-DD).
 
     Returns:
         dict: A dictionary containing:
             - symbol (str): Stock ticker symbol
+            - date_range (str): Actual date range covered
             - rows_returned (int): Number of news items returned
+            - truncated (bool): Whether results were truncated by MAX_ROWS
             - news (list[dict]): List of news metadata records, each including:
-                - uuid (str): Unique identifier of the news item
-                - related_symbols (list[str]): Related stock symbols
-                - title (str): News title
-                - publisher (str): News publisher
-                - report_date (str): News publish date (YYYY-MM-DD)
-                - type (str): News type (e.g. STORY, PRESS_RELEASE)
-                - link (str): Original news link
+                - uuid (str)
+                - related_symbols (list[str])
+                - title (str)
+                - publisher (str)
+                - report_date (str)
+                - type (str)
+                - link (str)
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
@@ -37,8 +49,44 @@ def get_stock_news_list(symbol: str):
         return {
             "symbol": symbol,
             "rows_returned": 0,
+            "truncated": False,
             "news": []
         }
+
+    # Ensure report_date is datetime for filtering
+    df["report_date"] = pd.to_datetime(df["report_date"], errors="coerce")
+    df = df.sort_values("report_date").reset_index(drop=True)
+
+    # Apply date filters
+    if start_date:
+        try:
+            start_dt = pd.to_datetime(start_date)
+            df = df[df["report_date"] >= start_dt]
+        except ValueError:
+            return {"error": f"Invalid start_date format: '{start_date}'. Use YYYY-MM-DD."}
+
+    if end_date:
+        try:
+            end_dt = pd.to_datetime(end_date)
+            df = df[df["report_date"] <= end_dt]
+        except ValueError:
+            return {"error": f"Invalid end_date format: '{end_date}'. Use YYYY-MM-DD."}
+
+    if df.empty:
+        return {
+            "symbol": symbol,
+            "rows_returned": 0,
+            "truncated": False,
+            "news": []
+        }
+
+    # Safety cap to avoid LLM token overflow
+    MAX_ROWS = 500
+    if len(df) > MAX_ROWS:
+        df = df.tail(MAX_ROWS)  # keep the most recent news
+        truncated = True
+    else:
+        truncated = False
 
     # Select only MCP / LLM friendly fields
     fields = [
@@ -51,12 +99,15 @@ def get_stock_news_list(symbol: str):
         "link",
     ]
 
-    records = df[fields].to_dict(orient="records")
+    records = df[fields].copy()
+    records["report_date"] = records["report_date"].dt.strftime("%Y-%m-%d")
 
     return {
         "symbol": symbol,
+        "date_range": f"{records['report_date'].iloc[0]} to {records['report_date'].iloc[-1]}",
         "rows_returned": len(records),
-        "news": records
+        "truncated": truncated,
+        "news": records.to_dict(orient="records"),
     }
 
 
