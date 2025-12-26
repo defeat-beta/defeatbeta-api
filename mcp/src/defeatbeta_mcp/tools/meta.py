@@ -1,4 +1,5 @@
 from defeatbeta_api import data_update_time, __version__
+from datetime import datetime, timezone
 
 def get_latest_data_update_date():
     """
@@ -25,6 +26,28 @@ def get_latest_data_update_date():
                 "up to this date. Use this date as the base for any relative time "
                 "queries (e.g., 'recent 10 days' refers to the 10 trading days ending "
                 "on or before this date)."
+    }
+
+def get_current_datetime():
+    """
+    MCP Tool: Get the current real-world date and time.
+
+    This tool provides the ground-truth current datetime from the server,
+    which can be used by LLMs to reason about time-sensitive financial data
+    such as earnings dates, market status, or recent events.
+
+    Returns:
+        dict: A structured datetime object including date, datetime, timestamp,
+              timezone, and day of week.
+    """
+    now = datetime.now(timezone.utc)
+
+    return {
+        "date": now.strftime("%Y-%m-%d"),
+        "datetime": now.isoformat(),
+        "timestamp": int(now.timestamp()),
+        "timezone": "UTC",
+        "day_of_week": now.strftime("%A")
     }
 
 def get_defeatbeta_api_version():
