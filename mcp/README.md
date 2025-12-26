@@ -2,7 +2,7 @@
 
 **Defeat Beta API MCP** is an [MCP](https://modelcontextprotocol.io/introduction) server that exposes data from [defeatbeta-api](https://github.com/defeat-beta/defeatbeta-api) to large language models via standardized contextual interfaces, enabling structured and controlled financial data analysis.
 
-Click [here](../doc/mcp/README) to discover more ways to use MCP and explore additional use cases and best practices.
+Click [here](../doc/mcp/README.md) to discover more ways to use MCP and explore additional use cases and best practices.
 
 ## Overall Architecture
 
