@@ -15,9 +15,3 @@
 
 # Case-2: Based on NVIDIA’s income statements over the last four quarters, summarize the revenue and profitability trends.
 ![img.png](Talk_About_Statement_2.png)
-
-# Case-3: Compare the last four quarterly income statements of NVIDIA and AMD, focusing on gross margin,  operating margin and net margin.
-![img.png](Talk_About_Statement_3.png)
-
-# Case-4: What is AMD’s gross profit margin for each of the most recent quarters?
-![img.png](Talk_About_Statement_4.png)
