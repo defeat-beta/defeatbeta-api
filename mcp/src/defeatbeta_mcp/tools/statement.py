@@ -250,7 +250,7 @@ def get_stock_annual_cash_flow(symbol: str):
     symbol = symbol.upper()
     ticker = Ticker(symbol)
 
-    df = ticker.annual_balance_sheet().df()
+    df = ticker.annual_cash_flow().df()
 
     if df is None or df.empty:
         return {
