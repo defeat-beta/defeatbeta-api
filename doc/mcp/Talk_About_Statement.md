@@ -5,6 +5,7 @@
 - [Case-1: Please provide me with the income statements of NVIDIA for the last four quarters, presented in the commonly used format for financial reports.](#case-1-please-provide-me-with-the-income-statements-of-nvidia-for-the-last-four-quarters-presented-in-the-commonly-used-format-for-financial-reports)
 - [Case-2: Based on NVIDIA’s income statements over the last four quarters, summarize the revenue and profitability trends.](#case-2-based-on-nvidias-income-statements-over-the-last-four-quarters-summarize-the-revenue-and-profitability-trends)
 - [Case-3: Compare the last four quarterly income statements of NVIDIA and AMD, focusing on gross margin,  operating margin and net margin.](#case-3-compare-the-last-four-quarterly-income-statements-of-nvidia-and-amd-focusing-on-gross-margin--operating-margin-and-net-margin)
+- [Case-4: What is AMD’s gross profit margin for each of the most recent quarters?](#case-4-what-is-amds-gross-profit-margin-for-each-of-the-most-recent-quarters)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
