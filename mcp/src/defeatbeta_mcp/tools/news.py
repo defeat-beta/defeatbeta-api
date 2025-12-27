@@ -3,10 +3,7 @@ import pandas as pd
 
 def get_stock_news(symbol: str, start_date: str = None, end_date: str = None, max_rows: int = 50):
     """
-    Retrieve recent news articles for a given stock symbol, including full content.
-
-    This tool returns a list of news items with metadata and paragraph-level content.
-    Suitable for reading, summarization, sentiment analysis, or extracting key information.
+    Retrieve historical news data for the specified symbol and optional date range, including full content.
 
     Args:
         symbol (str): Stock ticker symbol (e.g., "AMD", "AAPL", "TSLA").
@@ -14,6 +11,27 @@ def get_stock_news(symbol: str, start_date: str = None, end_date: str = None, ma
         start_date (str, optional): Filter news on or after this date (YYYY-MM-DD).
         end_date (str, optional): Filter news on or before this date (YYYY-MM-DD).
         max_rows (int, optional): Maximum number of news items to return (default 50).
+
+    Important note on data limits:
+        To prevent responses from becoming too large for the language model to process
+        (which can cause errors or token limit exceeded issues), this tool limits the
+        maximum number of news items returned using the `max_rows` parameter
+        (default: 50).
+
+        When the number of news articles matching the requested date range exceeds
+        `max_rows`, only the most recent news items are returned, and
+        "truncated": true is set in the response.
+
+        If you need more or older news:
+        - Increase the `max_rows` value (with caution)
+        - Or make multiple calls with narrower date ranges (e.g., split by week or month)
+
+    Note:
+        Unless explicitly stated otherwise, this tool operates on data that is
+        current up to the latest data update date returned by
+        `get_latest_data_update_date`. Use that date as the authoritative
+        reference point ("today") when interpreting date ranges or relative
+        time expressions.
 
     Returns:
         dict: {
