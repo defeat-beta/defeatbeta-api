@@ -3,11 +3,7 @@ from defeatbeta_api.data.ticker import Ticker
 
 def get_stock_quarterly_income_statement(symbol: str):
     """
-    Quarterly income statements.
-
-    Notes:
-    - Only actual fiscal quarters are returned.
-    - TTM data is explicitly excluded.
+        Quarterly Income Statements. Only fiscal quarters are returned.
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
@@ -29,11 +25,7 @@ def get_stock_quarterly_income_statement(symbol: str):
 
 def get_stock_annual_income_statement(symbol: str):
     """
-    Annual (fiscal year) income statements.
-
-    Notes:
-    - Only full fiscal year data is returned.
-    - TTM data is NOT included by design.
+        Annual Income Statements. Only full fiscal year data is returned.
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
