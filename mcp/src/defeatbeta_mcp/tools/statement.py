@@ -3,7 +3,29 @@ from defeatbeta_api.data.ticker import Ticker
 
 def get_stock_quarterly_income_statement(symbol: str):
     """
-        Quarterly Income Statements. Only fiscal quarters are returned.
+    Retrieve the quarterly income statement for a given stock symbol.
+
+    This tool returns income statement data structured by quarter, with
+    each quarter represented as a record containing standardized income
+    statement line items.
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
+            "rows_returned": int,          # number of periods
+            "statement": [
+                {
+                    "period": str,         # quarter end date
+                    "items": {
+                        "<breakdown_name>": float | None,
+                        ...
+                    }
+                },
+                ...
+            ]
+        }
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
@@ -25,7 +47,29 @@ def get_stock_quarterly_income_statement(symbol: str):
 
 def get_stock_annual_income_statement(symbol: str):
     """
-        Annual Income Statements. Only full fiscal year data is returned.
+    Retrieve the annual income statement for a given stock symbol.
+
+    This tool returns income statement data structured by year, with
+    each year represented as a record containing standardized income
+    statement line items.
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "annual",
+            "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
+            "rows_returned": int,          # number of periods
+            "statement": [
+                {
+                    "period": str,         # year-end date
+                    "items": {
+                        "<breakdown_name>": float | None,
+                        ...
+                    }
+                },
+                ...
+            ]
+        }
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
