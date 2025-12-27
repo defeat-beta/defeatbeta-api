@@ -7,7 +7,8 @@ from .tools.price import get_stock_price
 from .tools.transcripts import get_stock_earning_call_transcripts_list, get_stock_earning_call_transcript
 from .tools.news import get_stock_news
 from .tools.statement import get_stock_quarterly_income_statement, get_stock_annual_income_statement, \
-    get_stock_quarterly_balance_sheet, get_stock_annual_balance_sheet
+    get_stock_quarterly_balance_sheet, get_stock_annual_balance_sheet, get_stock_quarterly_cash_flow, \
+    get_stock_annual_cash_flow
 
 mcp = FastMCP(
     name="Defeat Beta API",
@@ -38,6 +39,8 @@ mcp.tool()(get_stock_quarterly_income_statement)
 mcp.tool()(get_stock_annual_income_statement)
 mcp.tool()(get_stock_quarterly_balance_sheet)
 mcp.tool()(get_stock_annual_balance_sheet)
+mcp.tool()(get_stock_quarterly_cash_flow)
+mcp.tool()(get_stock_annual_cash_flow)
 
 def main():
     mcp.run()
