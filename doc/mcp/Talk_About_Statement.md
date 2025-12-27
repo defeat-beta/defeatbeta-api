@@ -13,3 +13,6 @@
 
 # Case-2: Based on NVIDIA’s income statements over the last four quarters, summarize the revenue and profitability trends.
 ![img.png](Talk_About_Statement_2.png)
+
+# Case-3: Please present Alibaba Group’s income statements for the most recent four fiscal years, formatted in a standard financial reporting layout.
+![img.png](Talk_About_Statement_3.png)
