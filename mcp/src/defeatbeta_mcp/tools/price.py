@@ -33,6 +33,13 @@ def get_stock_price(symbol: str, start_date: str = None, end_date: str = None):
         If you need data further back:
         - Make multiple calls with different (earlier) date ranges
         - Or call with a narrower start_date/end_date to stay under the limit
+
+    Note:
+        Unless explicitly stated otherwise, this tool operates on data that is
+        current up to the latest data update date returned by
+        `get_latest_data_update_date`. Use that date as the authoritative
+        reference point ("today") when interpreting date ranges or relative
+        time expressions.
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
