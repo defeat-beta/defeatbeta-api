@@ -1,5 +1,4 @@
-from defeatbeta_api import __version__
-from defeatbeta_api import data_update_time
+from defeatbeta_api import HuggingFaceClient
 
 
 def get_latest_data_update_date():
@@ -20,6 +19,8 @@ def get_latest_data_update_date():
         Returns:
             A dictionary containing the latest data date in YYYY-MM-DD format.
     """
+    client = HuggingFaceClient()
+    data_update_time = client.get_data_update_time()
     return {
         "latest_data_date": data_update_time,
         "note": "This is the latest DATA UPDATE DATE of the defeatbeta dataset. "
