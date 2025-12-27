@@ -177,6 +177,94 @@ def get_stock_annual_balance_sheet(symbol: str):
     result["symbol"] = symbol
     return result
 
+def get_stock_quarterly_cash_flow(symbol: str):
+    """
+    Retrieve the quarterly cash flow for a given stock symbol.
+
+    This tool returns cash flow data structured by quarter, with
+    each quarter represented as a record containing standardized cash
+    flow line items.
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
+            "rows_returned": int,          # number of periods
+            "statement": [
+                {
+                    "period": str,         # quarter end date
+                    "items": {
+                        "<breakdown_name>": float | None,
+                        ...
+                    }
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.quarterly_cash_flow().df()
+
+    if df is None or df.empty:
+        return {
+            "symbol": symbol,
+            "period_type": "quarterly",
+            "periods": [],
+            "rows_returned": 0,
+            "statement": []
+        }
+
+    result = _build_statement(df, period_type="quarterly")
+    result["symbol"] = symbol
+    return result
+
+def get_stock_annual_cash_flow(symbol: str):
+    """
+    Retrieve the annual cash flow for a given stock symbol.
+
+    This tool returns cash flow data structured by year, with
+    each year represented as a record containing standardized cash
+    flow line items.
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "annual",
+            "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
+            "rows_returned": int,          # number of periods
+            "statement": [
+                {
+                    "period": str,         # year-end date
+                    "items": {
+                        "<breakdown_name>": float | None,
+                        ...
+                    }
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.annual_balance_sheet().df()
+
+    if df is None or df.empty:
+        return {
+            "symbol": symbol,
+            "period_type": "annual",
+            "periods": [],
+            "rows_returned": 0,
+            "statement": []
+        }
+
+    result = _build_statement(df, period_type="annual")
+    result["symbol"] = symbol
+    return result
+
 def _build_statement(df: pd.DataFrame, period_type: str):
     breakdown_col = "Breakdown"
 
