@@ -3,29 +3,11 @@ from defeatbeta_api.data.ticker import Ticker
 
 def get_stock_quarterly_income_statement(symbol: str):
     """
-    Retrieve the quarterly income statement for a given stock symbol.
+    Quarterly income statements.
 
-    This tool returns income statement data structured by quarter, with
-    each quarter represented as a record containing standardized income
-    statement line items.
-
-    Returns:
-        dict: {
-            "symbol": str,
-            "period_type": "quarterly",
-            "quarters": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
-            "rows_returned": int,          # number of quarters
-            "statement": [
-                {
-                    "period": str,         # quarter end date
-                    "items": {
-                        "<breakdown_name>": float | None,
-                        ...
-                    }
-                },
-                ...
-            ]
-        }
+    Notes:
+    - Only actual fiscal quarters are returned.
+    - TTM data is explicitly excluded.
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
@@ -35,26 +17,49 @@ def get_stock_quarterly_income_statement(symbol: str):
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "period_type": "quarterly",
+            "periods": [],
             "rows_returned": 0,
             "statement": []
         }
 
-    # First column is Breakdown, others are TTM / quarter end dates
-    breakdown_col = "Breakdown"
-    period_cols = [c for c in df.columns if c != breakdown_col]
+    result = _build_statement(df, period_type="quarterly")
+    result["symbol"] = symbol
+    return result
 
-    # Clean values: "*" -> None, numbers -> float
-    def normalize_value(v):
-        if pd.isna(v):
-            return None
-        if isinstance(v, str):
-            v = v.replace(",", "").strip()
-            if v == "*" or v == "":
-                return None
-        try:
-            return float(v)
-        except Exception:
-            return None
+def get_stock_annual_income_statement(symbol: str):
+    """
+    Annual (fiscal year) income statements.
+
+    Notes:
+    - Only full fiscal year data is returned.
+    - TTM data is NOT included by design.
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.annual_income_statement().df()
+
+    if df is None or df.empty:
+        return {
+            "symbol": symbol,
+            "period_type": "annual",
+            "periods": [],
+            "rows_returned": 0,
+            "statement": []
+        }
+
+    result = _build_statement(df, period_type="annual")
+    result["symbol"] = symbol
+    return result
+
+def _build_statement(df: pd.DataFrame, period_type: str):
+    breakdown_col = "Breakdown"
+
+    period_cols = [
+        c for c in df.columns
+        if c != breakdown_col and c.upper() != "TTM"
+    ]
 
     statement = []
 
@@ -62,8 +67,7 @@ def get_stock_quarterly_income_statement(symbol: str):
         items = {}
         for _, row in df.iterrows():
             key = row[breakdown_col]
-            value = normalize_value(row[period])
-            items[key] = value
+            items[key] = _normalize_value(row[period])
 
         statement.append({
             "period": period,
@@ -71,9 +75,20 @@ def get_stock_quarterly_income_statement(symbol: str):
         })
 
     return {
-        "symbol": symbol,
-        "period_type": "quarterly",
-        "quarters": period_cols,
+        "period_type": period_type,
+        "periods": period_cols,
         "rows_returned": len(statement),
         "statement": statement
     }
+
+def _normalize_value(v):
+    if pd.isna(v):
+        return None
+    if isinstance(v, str):
+        v = v.replace(",", "").strip()
+        if v in ("", "*"):
+            return None
+    try:
+        return float(v)
+    except Exception:
+        return None
