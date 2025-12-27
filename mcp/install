@@ -66,6 +66,7 @@ echo "      \"description\": \"An open-source alternative to Yahoo Finance's mar
 echo "      \"provider\": \"Defeat Beta API\","
 echo "      \"providerUrl\": \"https://github.com/defeat-beta/defeatbeta-api\","
 echo "      \"timeout\": 600,"
+echo "      \"logoUrl\": \"https://github.com/defeat-beta/defeatbeta-api/blob/main/doc/favicon.ico?raw=true\","
 echo "      \"args\": []"
 echo "    }"
 echo "  }"
