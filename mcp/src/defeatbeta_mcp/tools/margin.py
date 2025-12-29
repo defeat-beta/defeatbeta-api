@@ -186,3 +186,97 @@ def get_stock_annual_operating_margin(symbol: str):
         "rows_returned": len(data),
         "data": data
     }
+
+
+def get_stock_quarterly_net_margin(symbol: str):
+    """
+    Retrieve quarterly net margin data for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "net_income_common_stockholders": decimal | None,
+                    "total_revenue": decimal | None,
+                    "net_margin": decimal | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.quarterly_net_margin()
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "net_income_common_stockholders": row.get("net_income_common_stockholders"),
+            "total_revenue": row.get("total_revenue"),
+            "net_margin": row.get("net_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
+
+
+def get_stock_annual_net_margin(symbol: str):
+    """
+    Retrieve annual net margin data for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "annual",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "net_income_common_stockholders": decimal | None,
+                    "total_revenue": decimal | None,
+                    "net_margin": decimal | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.annual_net_margin()
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "net_income_common_stockholders": row.get("net_income_common_stockholders"),
+            "total_revenue": row.get("total_revenue"),
+            "net_margin": row.get("net_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "period_type": "annual",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
