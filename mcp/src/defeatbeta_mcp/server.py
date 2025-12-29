@@ -9,7 +9,7 @@ from .tools.news import get_stock_news
 from .tools.statement import get_stock_quarterly_income_statement, get_stock_annual_income_statement, \
     get_stock_quarterly_balance_sheet, get_stock_annual_balance_sheet, get_stock_quarterly_cash_flow, \
     get_stock_annual_cash_flow
-from .tools.segment import get_quarterly_revenue_by_segment, get_quarterly_revenue_by_geography
+from .tools.breakdown import get_quarterly_revenue_by_segment, get_quarterly_revenue_by_geography
 
 mcp = FastMCP(
     name="Defeat Beta API",
