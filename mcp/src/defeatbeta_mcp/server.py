@@ -50,7 +50,7 @@ mcp.tool()(get_quarterly_revenue_by_geography)
 
 # Margin
 mcp.tool()(get_stock_quarterly_gross_margin)
-mcp.tool()(get_stock_annual_balance_sheet)
+mcp.tool()(get_stock_annual_gross_margin)
 
 def main():
     mcp.run()
