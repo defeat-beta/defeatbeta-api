@@ -468,3 +468,55 @@ def get_stock_annual_fcf_margin(symbol: str):
         "rows_returned": len(data),
         "data": data
     }
+
+
+def get_industry_quarterly_gross_margin(symbol: str):
+    """
+    Retrieve quarterly gross margin for the industry that the given
+    stock symbol belongs to.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "industry": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "total_gross_profit": float | None,
+                    "total_revenue": float | None,
+                    "industry_gross_margin": float | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.industry_quarterly_gross_margin()
+
+    industry_name = df["industry"].iloc[0] if "industry" in df.columns else None
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "total_gross_profit": row.get("total_gross_profit"),
+            "total_revenue": row.get("total_revenue"),
+            "industry_gross_margin": row.get("industry_gross_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "industry": industry_name,
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
