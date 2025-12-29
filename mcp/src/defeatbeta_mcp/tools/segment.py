@@ -12,7 +12,7 @@ def get_quarterly_revenue_by_segment(symbol: str):
         dict: {
             "symbol": str,
             "period_type": "quarterly",
-            "periods": list[str],     # e.g. ["2024-12-31", "2024-09-30", ...]
+            "periods": list[str],     # e.g. ["2024-09-30", "2024-12-31", ...]
             "segments": list[str],    # e.g. ["Online Marketing Services", "Transaction Services"]
             "rows_returned": int,
             "data": [
@@ -44,7 +44,7 @@ def get_quarterly_revenue_by_segment(symbol: str):
 
     df = df.copy()
     df["report_date"] = pd.to_datetime(df["report_date"])
-    df = df.sort_values("report_date", ascending=False).reset_index(drop=True)
+    df = df.sort_values("report_date", ascending=True).reset_index(drop=True)
 
     segment_cols = sorted(c for c in df.columns if c != "report_date")
 
@@ -86,7 +86,7 @@ def get_quarterly_revenue_by_geography(symbol: str):
         dict: {
             "symbol": str,
             "period_type": "quarterly",
-            "periods": list[str],    # e.g. ["2024-12-31", "2024-09-30", ...]
+            "periods": list[str],    # e.g. ["2024-09-30", "2024-12-31", ...]
             "regions": list[str],    # e.g. ["China", "United States", "Other"]
             "rows_returned": int,
             "data": [
@@ -118,7 +118,7 @@ def get_quarterly_revenue_by_geography(symbol: str):
 
     df = df.copy()
     df["report_date"] = pd.to_datetime(df["report_date"])
-    df = df.sort_values("report_date", ascending=False).reset_index(drop=True)
+    df = df.sort_values("report_date", ascending=True).reset_index(drop=True)
 
     region_cols = sorted(c for c in df.columns if c != "report_date")
 
