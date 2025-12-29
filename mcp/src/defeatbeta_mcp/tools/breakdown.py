@@ -21,7 +21,8 @@ def get_quarterly_revenue_by_segment(symbol: str):
                     "revenue": {
                         "<segment>": float | None,
                         ...
-                    }
+                    },
+                    "unit": "usd"
                 },
                 ...
             ]
@@ -63,7 +64,8 @@ def get_quarterly_revenue_by_segment(symbol: str):
 
         data.append({
             "period": row["report_date"].strftime("%Y-%m-%d"),
-            "revenue": values
+            "revenue": values,
+            "unit": "usd"
         })
 
     return {
@@ -95,7 +97,8 @@ def get_quarterly_revenue_by_geography(symbol: str):
                     "revenue": {
                         "<region>": float | None,
                         ...
-                    }
+                    },
+                    "unit": "usd"
                 },
                 ...
             ]
@@ -137,7 +140,8 @@ def get_quarterly_revenue_by_geography(symbol: str):
 
         data.append({
             "period": row["report_date"].strftime("%Y-%m-%d"),
-            "revenue": values
+            "revenue": values,
+            "unit": "usd"
         })
 
     return {
