@@ -1,3 +1,5 @@
+import pandas as pd
+
 from defeatbeta_api.data.ticker import Ticker
 
 
@@ -500,13 +502,14 @@ def get_industry_quarterly_gross_margin(symbol: str):
     ticker = Ticker(symbol)
 
     df = ticker.industry_quarterly_gross_margin()
+    df["report_date"] = pd.to_datetime(df["report_date"])
 
     industry_name = df["industry"].iloc[0] if "industry" in df.columns else None
 
     data = []
     for _, row in df.iterrows():
         data.append({
-            "period": row.get("report_date"),
+            "period": row["report_date"].strftime("%Y-%m-%d"),
             "total_gross_profit": row.get("total_gross_profit"),
             "total_revenue": row.get("total_revenue"),
             "industry_gross_margin": row.get("industry_gross_margin")
