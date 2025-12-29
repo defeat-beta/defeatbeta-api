@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "bwzheng2010", email = "bwzheng2010@gmail.com"}
+    {name = "bwzheng2010", email = "5077921+bwzheng2010@users.noreply.github.com"}
 ]
 dependencies = [
     "duckdb >= 1.4.1",
