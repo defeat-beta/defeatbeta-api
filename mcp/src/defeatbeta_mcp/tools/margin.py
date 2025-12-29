@@ -523,3 +523,109 @@ def get_industry_quarterly_gross_margin(symbol: str):
         "rows_returned": len(data),
         "data": data
     }
+
+
+def get_industry_quarterly_net_margin(symbol: str):
+    """
+    Retrieve quarterly net margin for the industry that the given
+    stock symbol belongs to.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "industry": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "total_net_income": float | None,
+                    "total_revenue": float | None,
+                    "industry_net_margin": float | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.industry_quarterly_net_margin()
+    df["report_date"] = pd.to_datetime(df["report_date"])
+
+    industry_name = df["industry"].iloc[0] if "industry" in df.columns else None
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row["report_date"].strftime("%Y-%m-%d"),
+            "total_net_income": row.get("total_net_income"),
+            "total_revenue": row.get("total_revenue"),
+            "industry_net_margin": row.get("industry_net_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "industry": industry_name,
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
+
+
+def get_industry_quarterly_ebitda_margin(symbol: str):
+    """
+    Retrieve quarterly ebitda margin for the industry that the given
+    stock symbol belongs to.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "industry": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "total_ebitda": float | None,
+                    "total_revenue": float | None,
+                    "industry_ebitda_margin": float | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.industry_quarterly_ebitda_margin()
+    df["report_date"] = pd.to_datetime(df["report_date"])
+
+    industry_name = df["industry"].iloc[0] if "industry" in df.columns else None
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row["report_date"].strftime("%Y-%m-%d"),
+            "total_ebitda": row.get("total_ebitda"),
+            "total_revenue": row.get("total_revenue"),
+            "industry_ebitda_margin": row.get("industry_ebitda_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "industry": industry_name,
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
