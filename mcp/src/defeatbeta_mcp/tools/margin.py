@@ -280,3 +280,97 @@ def get_stock_annual_net_margin(symbol: str):
         "rows_returned": len(data),
         "data": data
     }
+
+
+def get_stock_quarterly_ebitda_margin(symbol: str):
+    """
+    Retrieve quarterly ebitda margin data for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "ebitda": decimal | None,
+                    "total_revenue": decimal | None,
+                    "ebitda_margin": decimal | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.quarterly_ebitda_margin()
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "ebitda": row.get("ebitda"),
+            "total_revenue": row.get("total_revenue"),
+            "ebitda_margin": row.get("ebitda_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
+
+
+def get_stock_annual_ebitda_margin(symbol: str):
+    """
+    Retrieve annual ebitda margin data for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "annual",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "ebitda": decimal | None,
+                    "total_revenue": decimal | None,
+                    "ebitda_margin": decimal | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.annual_ebitda_margin()
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "ebitda": row.get("ebitda"),
+            "total_revenue": row.get("total_revenue"),
+            "ebitda_margin": row.get("ebitda_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "period_type": "annual",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
