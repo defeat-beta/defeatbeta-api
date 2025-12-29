@@ -374,3 +374,97 @@ def get_stock_annual_ebitda_margin(symbol: str):
         "rows_returned": len(data),
         "data": data
     }
+
+
+def get_stock_quarterly_fcf_margin(symbol: str):
+    """
+    Retrieve quarterly fcf margin data for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "quarterly",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "free_cash_flow": decimal | None,
+                    "total_revenue": decimal | None,
+                    "fcf_margin": decimal | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.quarterly_fcf_margin()
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "free_cash_flow": row.get("free_cash_flow"),
+            "total_revenue": row.get("total_revenue"),
+            "fcf_margin": row.get("fcf_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
+
+
+def get_stock_annual_fcf_margin(symbol: str):
+    """
+    Retrieve annual fcf margin data for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "period_type": "annual",
+            "periods": list[str],        # report dates (oldest -> newest)
+            "rows_returned": int,
+            "data": [
+                {
+                    "period": str,
+                    "free_cash_flow": decimal | None,
+                    "total_revenue": decimal | None,
+                    "fcf_margin": decimal | None
+                },
+                ...
+            ]
+        }
+    """
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.annual_fcf_margin()
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "free_cash_flow": row.get("free_cash_flow"),
+            "total_revenue": row.get("total_revenue"),
+            "fcf_margin": row.get("fcf_margin")
+        })
+
+    return {
+        "symbol": symbol,
+        "period_type": "annual",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
