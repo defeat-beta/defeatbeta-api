@@ -42,7 +42,7 @@ def get_stock_eps_and_ttm_eps(symbol: str):
     df['report_date'] = pd.to_datetime(df['report_date'])
     data_records = (
         df[['report_date', 'eps', 'tailing_eps']]
-        .rename(columns={'tailing_eps': 'ttm_eps'})
+        .rename(columns={'eps': 'diluted_eps', 'tailing_eps': 'ttm_diluted_eps'})
         .copy()
     )
     data_records['report_date'] = data_records['report_date'].dt.strftime('%Y-%m-%d')
