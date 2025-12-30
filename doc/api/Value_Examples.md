@@ -26,6 +26,9 @@
 
 
 ## 1. Stock TTM EPS
+```markdown
+EPS refers to Diluted EPS unless otherwise stated, which is also the standard denominator used for P/E ratio calculations.
+```
 ```python
 ticker.ttm_eps()
 ```
