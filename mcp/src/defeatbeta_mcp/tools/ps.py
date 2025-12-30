@@ -2,29 +2,36 @@ import pandas as pd
 
 from defeatbeta_api.data.ticker import Ticker
 
-def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
+def get_stock_ps_ratio(symbol: str, start_date: str = None, end_date: str = None):
     """
-    Retrieve historical TTM P/E (price-to-earnings) ratio for a given stock symbol.
+    Retrieve historical Price-to-Sales (P/S) ratio for a given stock symbol.
 
     Args:
-        symbol: Stock ticker symbol, e.g., "TSLA", "AAPL" (case-insensitive).
-        start_date: Optional start date in YYYY-MM-DD format (e.g., "2015-12-30").
-                    If None, data starts from the earliest available date.
-        end_date: Optional end date in YYYY-MM-DD format (e.g., "2025-12-24").
-                  If None, data goes up to the most recent trading day.
+        symbol (str):
+            Stock ticker symbol, e.g., "TSLA", "AAPL" (case-insensitive).
+
+        start_date (str, optional):
+            Start date in YYYY-MM-DD format.
+            Filters data where report_date >= start_date.
+            If None, data starts from the earliest available date.
+
+        end_date (str, optional):
+            End date in YYYY-MM-DD format.
+            Filters data where report_date <= end_date.
+            If None, data goes up to the most recent trading day.
 
     Returns:
         dict: {
             "symbol": str,
-            "date_range": str,            # Actual date range returned
-            "rows_returned": int,         # Number of rows
-            "truncated": bool,            # True if rows were truncated due to MAX_ROWS
-            "data": list[dict],           # List of records with:
-                - report_date (str):      # Date of stock price observation
-                - eps_report_date (str):  # The fiscal quarter-end date of the latest earnings used to compute TTM EPS
-                - close_price (decimal):  # Stock closing price on report_date
-                - ttm_diluted_eps (decimal | None):  # Most recent four-quarter Diluted EPS
-                - ttm_pe (decimal | None):           # P/E ratio = close_price / ttm_diluted_eps
+            "date_range": str,                            # Actual date range returned
+            "rows_returned": int,                         # Number of rows
+            "truncated": bool,                            # True if rows were truncated due to MAX_ROWS
+            "data": list[dict],                           # List of records with:
+                - report_date (str):                      # Date of stock price observation
+                - fiscal_quarter (str):                   # Fiscal quarter-end date of the latest financial report used to compute TTM revenue.
+                - market_capitalization (decimal):        # Total equity market value on report_date.
+                - ttm_revenue_usd (decimal):              # Trailing Twelve Months (TTM) revenue in USD
+                - ps_ratio (decimal):                     # ps_ratio = market_capitalization / ttm_revenue_usd
         }
 
     Important note on data limits:
@@ -47,7 +54,7 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
-    df = ticker.ttm_pe()
+    df = ticker.ps_ratio()
 
     if df.empty:
         return {
@@ -55,7 +62,7 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
             "message": "No historical data available for this symbol."
         }
     df['report_date'] = pd.to_datetime(df['report_date'])
-    df['eps_report_date'] = pd.to_datetime(df['eps_report_date'])
+    df['fiscal_quarter'] = pd.to_datetime(df['fiscal_quarter'])
 
     # Apply date filters
     if start_date:
@@ -88,12 +95,11 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
 
     # Format dates as strings for clean JSON
     data_records = (
-        df[['report_date', 'eps_report_date', 'close_price', 'ttm_eps', 'ttm_pe']]
-        .rename(columns={'ttm_eps': 'ttm_diluted_eps'})
+        df[['report_date', 'fiscal_quarter', 'market_capitalization', 'ttm_revenue_usd', 'ps_ratio']]
         .copy()
     )
     data_records['report_date'] = data_records['report_date'].dt.strftime('%Y-%m-%d')
-    data_records['eps_report_date'] = data_records['eps_report_date'].dt.strftime('%Y-%m-%d')
+    data_records['fiscal_quarter'] = data_records['fiscal_quarter'].dt.strftime('%Y-%m-%d')
 
     return {
         "symbol": symbol,
