@@ -2,9 +2,9 @@ import pandas as pd
 
 from defeatbeta_api.data.ticker import Ticker
 
-def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
+def get_stock_market_capitalization(symbol: str, start_date: str = None, end_date: str = None):
     """
-    Retrieve historical TTM P/E (price-to-earnings) ratio and related data for a given stock symbol.
+    Retrieve historical market capitalization data for a given stock symbol.
 
     Args:
         symbol: Stock ticker symbol, e.g., "TSLA", "AAPL" (case-insensitive).
@@ -20,11 +20,11 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
             "rows_returned": int,         # Number of rows
             "truncated": bool,            # True if rows were truncated due to MAX_ROWS
             "data": list[dict],           # List of records with:
-                - report_date (str):      # Date of stock price observation
-                - eps_report_date (str):  # The fiscal quarter-end date of the latest earnings used to compute TTM EPS
-                - close_price (decimal):  # Stock closing price on report_date
-                - ttm_diluted_eps (decimal | None):  # Most recent four-quarter Diluted EPS
-                - ttm_pe (decimal | None):           # P/E ratio = close_price / ttm_diluted_eps
+                - report_date (str):            # Date of stock price observation
+                - shares_report_date (str):     # Reporting date of shares outstanding
+                - close_price (decimal):        # Stock closing price on report_date
+                - shares_outstanding (decimal): # Total shares outstanding as of shares_report_date
+                - market_capitalization (decimal): # Market cap = close_price × shares_outstanding
         }
 
     Important note on data limits:
@@ -55,7 +55,7 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
             "message": "No historical data available for this symbol."
         }
     df['report_date'] = pd.to_datetime(df['report_date'])
-    df['eps_report_date'] = pd.to_datetime(df['eps_report_date'])
+    df['shares_report_date'] = pd.to_datetime(df['shares_report_date'])
 
     # Apply date filters
     if start_date:
@@ -88,12 +88,11 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
 
     # Format dates as strings for clean JSON
     data_records = (
-        df[['report_date', 'eps_report_date', 'close_price', 'ttm_eps', 'ttm_pe']]
-        .rename(columns={'ttm_eps': 'ttm_diluted_eps'})
+        df[['report_date', 'shares_report_date', 'close_price', 'shares_outstanding', 'market_capitalization']]
         .copy()
     )
     data_records['report_date'] = data_records['report_date'].dt.strftime('%Y-%m-%d')
-    data_records['eps_report_date'] = data_records['eps_report_date'].dt.strftime('%Y-%m-%d')
+    data_records['shares_report_date'] = data_records['shares_report_date'].dt.strftime('%Y-%m-%d')
 
     return {
         "symbol": symbol,
