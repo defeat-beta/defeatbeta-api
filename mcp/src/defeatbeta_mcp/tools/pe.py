@@ -26,10 +26,28 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
                 - ttm_diluted_eps (decimal | None):  # Most recent four-quarter Diluted EPS
                 - ttm_pe (decimal | None):           # P/E ratio = close_price / ttm_diluted_eps
         }
+
+    Important note on data limits:
+        To prevent responses from becoming too large for the language model to process
+        (which can cause errors or token limit exceeded issues), this tool caps the
+        maximum number of rows returned at 1000 (MAX_ROWS = 1000).
+        When the requested range contains more than 1000 rows, only the most recent
+        1000 trading days are returned, and "truncated": true is set.
+
+        If you need data further back:
+        - Make multiple calls with different (earlier) date ranges
+        - Or call with a narrower start_date/end_date to stay under the limit
+
+    Note:
+        Unless explicitly stated otherwise, this tool operates on data that is
+        current up to the latest data update date returned by
+        `get_latest_data_update_date`. Use that date as the authoritative
+        reference point ("today") when interpreting date ranges or relative
+        time expressions.
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
-    df = ticker.price()
+    df = ticker.ttm_pe()
 
     if df.empty:
         return {
