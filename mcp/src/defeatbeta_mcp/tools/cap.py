@@ -47,7 +47,7 @@ def get_stock_market_capitalization(symbol: str, start_date: str = None, end_dat
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
-    df = ticker.ttm_pe()
+    df = ticker.market_capitalization()
 
     if df.empty:
         return {
