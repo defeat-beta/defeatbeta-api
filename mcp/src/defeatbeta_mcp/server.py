@@ -17,6 +17,7 @@ from .tools.margin import get_stock_quarterly_gross_margin, get_stock_annual_gro
     get_stock_quarterly_fcf_margin, get_stock_annual_fcf_margin, \
     get_industry_quarterly_gross_margin, get_industry_quarterly_net_margin, get_industry_quarterly_ebitda_margin
 from .tools.eps import get_stock_eps_and_ttm_eps
+from .tools.pe import get_stock_ttm_pe
 
 mcp = FastMCP(
     name="Defeat Beta API",
@@ -71,6 +72,7 @@ mcp.tool()(get_industry_quarterly_ebitda_margin)
 
 # Value
 mcp.tool()(get_stock_eps_and_ttm_eps)
+mcp.tool()(get_stock_ttm_pe)
 
 def main():
     mcp.run()
