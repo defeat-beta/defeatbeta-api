@@ -2,9 +2,9 @@ import pandas as pd
 
 from defeatbeta_api.data.ticker import Ticker
 
-def get_stock_ps_ratio(symbol: str, start_date: str = None, end_date: str = None):
+def get_stock_pb_ratio(symbol: str, start_date: str = None, end_date: str = None):
     """
-    Retrieve historical Price-to-Sales (P/S) ratio for a given stock symbol.
+    Retrieve historical Price-to-Book (P/B) ratio for a given stock symbol.
 
     Args:
         symbol (str):
@@ -30,8 +30,8 @@ def get_stock_ps_ratio(symbol: str, start_date: str = None, end_date: str = None
                 - report_date (str):                      # Date of stock price observation
                 - fiscal_quarter (str):                   # Fiscal quarter-end date of the latest financial report used to compute TTM revenue.
                 - market_capitalization (decimal):        # Total equity market value on report_date.
-                - ttm_revenue_usd (decimal):              # Trailing Twelve Months (TTM) revenue in USD = Trailing Twelve Months (TTM) revenue / Exchange Rate
-                - ps_ratio (decimal):                     # ps_ratio = market_capitalization / ttm_revenue_usd
+                - book_value_of_equity_usd (decimal):     # Book value of equity in USD = Stockholders' Equity / Exchange Rate
+                - pb_ratio (decimal):                     # pb_ratio = market_capitalization / book_value_of_equity_usd
         }
 
     Important note on data limits:
@@ -54,7 +54,7 @@ def get_stock_ps_ratio(symbol: str, start_date: str = None, end_date: str = None
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
-    df = ticker.ps_ratio()
+    df = ticker.pb_ratio()
 
     if df.empty:
         return {
@@ -95,7 +95,7 @@ def get_stock_ps_ratio(symbol: str, start_date: str = None, end_date: str = None
 
     # Format dates as strings for clean JSON
     data_records = (
-        df[['report_date', 'fiscal_quarter', 'market_capitalization', 'ttm_revenue_usd', 'ps_ratio']]
+        df[['report_date', 'fiscal_quarter', 'market_capitalization', 'book_value_of_equity_usd', 'pb_ratio']]
         .copy()
     )
     data_records['report_date'] = data_records['report_date'].dt.strftime('%Y-%m-%d')
