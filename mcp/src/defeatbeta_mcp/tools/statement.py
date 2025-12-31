@@ -13,7 +13,6 @@ def get_stock_quarterly_income_statement(symbol: str):
 
     Returns:
         dict: {
-            "symbol": str,
             "currency": "USD",
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
@@ -40,7 +39,6 @@ def get_stock_quarterly_income_statement(symbol: str):
 
     if df is None or df.empty:
         return {
-            "symbol": symbol,
             "currency": currency,
             "period_type": "quarterly",
             "periods": [],
@@ -48,8 +46,7 @@ def get_stock_quarterly_income_statement(symbol: str):
             "statement": []
         }
 
-    result = _build_statement(df, period_type="quarterly")
-    result["symbol"] = symbol
+    result = _build_statement(df, currency, period_type="quarterly")
     return result
 
 def get_stock_annual_income_statement(symbol: str):
@@ -62,7 +59,6 @@ def get_stock_annual_income_statement(symbol: str):
 
     Returns:
         dict: {
-            "symbol": str,
             "currency": "USD",
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
@@ -89,7 +85,6 @@ def get_stock_annual_income_statement(symbol: str):
 
     if df is None or df.empty:
         return {
-            "symbol": symbol,
             "currency": currency,
             "period_type": "annual",
             "periods": [],
@@ -97,8 +92,7 @@ def get_stock_annual_income_statement(symbol: str):
             "statement": []
         }
 
-    result = _build_statement(df, period_type="annual")
-    result["symbol"] = symbol
+    result = _build_statement(df, currency, period_type="annual")
     return result
 
 def get_stock_quarterly_balance_sheet(symbol: str):
@@ -111,7 +105,6 @@ def get_stock_quarterly_balance_sheet(symbol: str):
 
     Returns:
         dict: {
-            "symbol": str,
             "currency": "USD",
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
@@ -138,7 +131,6 @@ def get_stock_quarterly_balance_sheet(symbol: str):
 
     if df is None or df.empty:
         return {
-            "symbol": symbol,
             "currency": currency,
             "period_type": "quarterly",
             "periods": [],
@@ -146,8 +138,7 @@ def get_stock_quarterly_balance_sheet(symbol: str):
             "statement": []
         }
 
-    result = _build_statement(df, period_type="quarterly")
-    result["symbol"] = symbol
+    result = _build_statement(df, currency, period_type="quarterly")
     return result
 
 def get_stock_annual_balance_sheet(symbol: str):
@@ -160,7 +151,6 @@ def get_stock_annual_balance_sheet(symbol: str):
 
     Returns:
         dict: {
-            "symbol": str,
             "currency": "USD",
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
@@ -187,7 +177,6 @@ def get_stock_annual_balance_sheet(symbol: str):
 
     if df is None or df.empty:
         return {
-            "symbol": symbol,
             "currency": currency,
             "period_type": "annual",
             "periods": [],
@@ -195,8 +184,7 @@ def get_stock_annual_balance_sheet(symbol: str):
             "statement": []
         }
 
-    result = _build_statement(df, period_type="annual")
-    result["symbol"] = symbol
+    result = _build_statement(df, currency, period_type="annual")
     return result
 
 def get_stock_quarterly_cash_flow(symbol: str):
@@ -209,7 +197,6 @@ def get_stock_quarterly_cash_flow(symbol: str):
 
     Returns:
         dict: {
-            "symbol": str,
             "currency": "USD",
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
@@ -236,7 +223,6 @@ def get_stock_quarterly_cash_flow(symbol: str):
 
     if df is None or df.empty:
         return {
-            "symbol": symbol,
             "currency": currency,
             "period_type": "quarterly",
             "periods": [],
@@ -244,8 +230,7 @@ def get_stock_quarterly_cash_flow(symbol: str):
             "statement": []
         }
 
-    result = _build_statement(df, period_type="quarterly")
-    result["symbol"] = symbol
+    result = _build_statement(df, currency, period_type="quarterly")
     return result
 
 def get_stock_annual_cash_flow(symbol: str):
@@ -258,7 +243,6 @@ def get_stock_annual_cash_flow(symbol: str):
 
     Returns:
         dict: {
-            "symbol": str,
             "currency": "USD",
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
@@ -285,7 +269,6 @@ def get_stock_annual_cash_flow(symbol: str):
 
     if df is None or df.empty:
         return {
-            "symbol": symbol,
             "currency": currency,
             "period_type": "annual",
             "periods": [],
@@ -293,11 +276,10 @@ def get_stock_annual_cash_flow(symbol: str):
             "statement": []
         }
 
-    result = _build_statement(df, period_type="annual")
-    result["symbol"] = symbol
+    result = _build_statement(df, currency, period_type="annual")
     return result
 
-def _build_statement(df: pd.DataFrame, period_type: str):
+def _build_statement(df: pd.DataFrame, currency:str, period_type: str):
     breakdown_col = "Breakdown"
 
     period_cols = [
@@ -319,6 +301,7 @@ def _build_statement(df: pd.DataFrame, period_type: str):
         })
 
     return {
+        "currency": currency,
         "period_type": period_type,
         "periods": period_cols,
         "rows_returned": len(statement),
