@@ -1,5 +1,7 @@
 import pandas as pd
 from defeatbeta_api.data.ticker import Ticker
+from defeatbeta_api.utils.util import load_financial_currency
+
 
 def get_stock_quarterly_income_statement(symbol: str):
     """
@@ -12,6 +14,7 @@ def get_stock_quarterly_income_statement(symbol: str):
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
             "rows_returned": int,          # number of periods
@@ -29,12 +32,16 @@ def get_stock_quarterly_income_statement(symbol: str):
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
+    currency = load_financial_currency().get(symbol)
+    if currency is None:
+        currency = 'USD'
 
     df = ticker.quarterly_income_statement().df()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "currency": currency,
             "period_type": "quarterly",
             "periods": [],
             "rows_returned": 0,
@@ -56,6 +63,7 @@ def get_stock_annual_income_statement(symbol: str):
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
             "rows_returned": int,          # number of periods
@@ -73,12 +81,16 @@ def get_stock_annual_income_statement(symbol: str):
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
+    currency = load_financial_currency().get(symbol)
+    if currency is None:
+        currency = 'USD'
 
     df = ticker.annual_income_statement().df()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "currency": currency,
             "period_type": "annual",
             "periods": [],
             "rows_returned": 0,
@@ -100,6 +112,7 @@ def get_stock_quarterly_balance_sheet(symbol: str):
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
             "rows_returned": int,          # number of periods
@@ -117,12 +130,16 @@ def get_stock_quarterly_balance_sheet(symbol: str):
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
+    currency = load_financial_currency().get(symbol)
+    if currency is None:
+        currency = 'USD'
 
     df = ticker.quarterly_balance_sheet().df()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "currency": currency,
             "period_type": "quarterly",
             "periods": [],
             "rows_returned": 0,
@@ -144,6 +161,7 @@ def get_stock_annual_balance_sheet(symbol: str):
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
             "rows_returned": int,          # number of periods
@@ -161,12 +179,16 @@ def get_stock_annual_balance_sheet(symbol: str):
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
+    currency = load_financial_currency().get(symbol)
+    if currency is None:
+        currency = 'USD'
 
     df = ticker.annual_balance_sheet().df()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "currency": currency,
             "period_type": "annual",
             "periods": [],
             "rows_returned": 0,
@@ -188,6 +210,7 @@ def get_stock_quarterly_cash_flow(symbol: str):
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
             "rows_returned": int,          # number of periods
@@ -205,12 +228,16 @@ def get_stock_quarterly_cash_flow(symbol: str):
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
+    currency = load_financial_currency().get(symbol)
+    if currency is None:
+        currency = 'USD'
 
     df = ticker.quarterly_cash_flow().df()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "currency": currency,
             "period_type": "quarterly",
             "periods": [],
             "rows_returned": 0,
@@ -232,6 +259,7 @@ def get_stock_annual_cash_flow(symbol: str):
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
             "rows_returned": int,          # number of periods
@@ -249,12 +277,16 @@ def get_stock_annual_cash_flow(symbol: str):
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
+    currency = load_financial_currency().get(symbol)
+    if currency is None:
+        currency = 'USD'
 
     df = ticker.annual_cash_flow().df()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "currency": currency,
             "period_type": "annual",
             "periods": [],
             "rows_returned": 0,
