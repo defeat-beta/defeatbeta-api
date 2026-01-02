@@ -30,7 +30,7 @@ def get_stock_quarterly_roa(symbol: str):
     symbol = symbol.upper()
     ticker = Ticker(symbol)
 
-    df = ticker.roe()
+    df = ticker.roa()
 
     data = []
     for _, row in df.iterrows():
