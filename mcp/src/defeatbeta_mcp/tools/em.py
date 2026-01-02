@@ -1,3 +1,5 @@
+import pandas as pd
+
 from defeatbeta_api.data.ticker import Ticker
 
 
@@ -34,6 +36,10 @@ def get_stock_quarterly_equity_multiplier(symbol: str):
     ticker = Ticker(symbol)
 
     df = ticker.equity_multiplier()
+    df['report_date'] = (
+        pd.to_datetime(df['report_date'], errors='coerce')
+        .dt.strftime('%Y-%m-%d')
+    )
 
     data = []
     for _, row in df.iterrows():
