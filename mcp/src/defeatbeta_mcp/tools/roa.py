@@ -1,5 +1,5 @@
 from defeatbeta_api.data.ticker import Ticker
-from util import get_currency
+from .util import get_currency
 
 
 def get_stock_quarterly_roa(symbol: str):
