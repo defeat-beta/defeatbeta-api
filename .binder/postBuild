@@ -1,3 +1,4 @@
 #!/bin/bash
 # used by binder
+pip install defeatbeta-api
 pip install jupyterlab-execute-time
