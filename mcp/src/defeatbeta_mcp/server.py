@@ -21,6 +21,7 @@ from .tools.pe import get_stock_ttm_pe
 from .tools.cap import get_stock_market_capitalization
 from .tools.ps import get_stock_ps_ratio
 from .tools.pb import get_stock_pb_ratio
+from .tools.peg import get_stock_peg_ratio
 
 mcp = FastMCP(
     name="Defeat Beta API",
@@ -79,6 +80,7 @@ mcp.tool()(get_stock_ttm_pe)
 mcp.tool()(get_stock_market_capitalization)
 mcp.tool()(get_stock_ps_ratio)
 mcp.tool()(get_stock_pb_ratio)
+mcp.tool()(get_stock_peg_ratio)
 
 def main():
     mcp.run()
