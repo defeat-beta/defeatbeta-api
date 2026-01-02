@@ -1,7 +1,7 @@
 import pandas as pd
 
 from defeatbeta_api.data.ticker import Ticker
-from defeatbeta_api.utils.util import load_financial_currency
+from util import get_currency
 
 
 def get_stock_quarterly_gross_margin(symbol: str):
@@ -45,7 +45,7 @@ def get_stock_quarterly_gross_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "quarterly",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -93,7 +93,7 @@ def get_stock_annual_gross_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "annual",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -142,7 +142,7 @@ def get_stock_quarterly_operating_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "quarterly",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -191,7 +191,7 @@ def get_stock_annual_operating_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "annual",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -240,7 +240,7 @@ def get_stock_quarterly_net_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "quarterly",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -289,7 +289,7 @@ def get_stock_annual_net_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "annual",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -338,7 +338,7 @@ def get_stock_quarterly_ebitda_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "quarterly",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -387,7 +387,7 @@ def get_stock_annual_ebitda_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "annual",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -436,7 +436,7 @@ def get_stock_quarterly_fcf_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "quarterly",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -485,7 +485,7 @@ def get_stock_annual_fcf_margin(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": _get_currency(symbol),
+        "currency": get_currency(symbol),
         "period_type": "annual",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
@@ -650,9 +650,3 @@ def get_industry_quarterly_ebitda_margin(symbol: str):
         "rows_returned": len(data),
         "data": data
     }
-
-def _get_currency(symbol: str):
-    currency = load_financial_currency().get(symbol)
-    if currency is None:
-        currency = 'USD'
-    return currency

@@ -2,9 +2,9 @@ from defeatbeta_api.data.ticker import Ticker
 from util import get_currency
 
 
-def get_stock_quarterly_roe(symbol: str):
+def get_stock_quarterly_roa(symbol: str):
     """
-    Retrieve historical Return on Equity (ROE) data for a given stock symbol.
+    Retrieve historical Return on Assert (ROA) data for a given stock symbol.
 
     Args:
         symbol (str):
@@ -14,20 +14,19 @@ def get_stock_quarterly_roe(symbol: str):
         dict: {
             "symbol": str,
             "currency": str,                                 # Reporting currency (e.g., "USD")
-            "period_type": "quarterly",                      # ROE is reported on quarterly basis
+            "period_type": "quarterly",                      # ROA is reported on quarterly basis
             "periods": list[str],                            # List of fiscal period end dates
             "rows_returned": int,                            # Number of periods returned
             "data": list[dict],                              # List of records with:
                 - period (str):                              # Fiscal period end date
                 - net_income_common_stockholders (decimal):  # Net income attributable to common stockholders
-                - beginning_stockholders_equity (decimal):   # Stockholders' equity at the beginning of the period (i.e., prior period ending equity)
-                - ending_stockholders_equity (decimal):      # Stockholders' equity at the end of the current period
-                - avg_equity (decimal):                      # Average stockholders' equity = (beginning_stockholders_equity + ending_stockholders_equity) / 2
-                - roe (decimal):                             # Return on Equity = net_income_common_stockholders / avg_equity
+                - beginning_total_assets (decimal):          # Total assets at the beginning of the quarter (i.e., total assets from the prior quarter).
+                - ending_total_assets (decimal):             # Total assets at the end of the current quarter.
+                - avg_assets (decimal):                      # Average total assets = (beginning_total_assets + ending_total_assets) / 2
+                - roa (decimal):                             # Return on Assert = net_income_common_stockholders / avg_assets
         }
 
     """
-
     symbol = symbol.upper()
     ticker = Ticker(symbol)
 
@@ -38,10 +37,10 @@ def get_stock_quarterly_roe(symbol: str):
         data.append({
             "period": row.get("report_date"),
             "net_income_common_stockholders": row.get("net_income_common_stockholders"),
-            "beginning_stockholders_equity": row.get("beginning_stockholders_equity"),
-            "ending_stockholders_equity": row.get("ending_stockholders_equity"),
-            "avg_equity": row.get("avg_equity"),
-            "roe": row.get("roe")
+            "beginning_total_assets": row.get("beginning_total_assets"),
+            "ending_total_assets": row.get("ending_total_assets"),
+            "avg_assets": row.get("avg_assets"),
+            "roa": row.get("roa")
         })
 
     return {
