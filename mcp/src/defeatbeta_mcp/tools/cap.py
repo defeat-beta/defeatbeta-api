@@ -16,6 +16,7 @@ def get_stock_market_capitalization(symbol: str, start_date: str = None, end_dat
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "date_range": str,            # Actual date range returned
             "rows_returned": int,         # Number of rows
             "truncated": bool,            # True if rows were truncated due to MAX_ROWS
@@ -96,6 +97,7 @@ def get_stock_market_capitalization(symbol: str, start_date: str = None, end_dat
 
     return {
         "symbol": symbol,
+        "currency": "USD",
         "date_range": f"{df['report_date'].min().date()} to {df['report_date'].max().date()}",
         "rows_returned": len(df),
         "truncated": truncated,
