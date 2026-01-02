@@ -18,6 +18,7 @@ def get_stock_eps_and_ttm_eps(symbol: str):
     Returns:
         dict: {
             "symbol": str,
+            "currency": "USD",
             "rows_returned": int,
             "data": [
                 {
@@ -48,6 +49,7 @@ def get_stock_eps_and_ttm_eps(symbol: str):
     data_records['report_date'] = data_records['report_date'].dt.strftime('%Y-%m-%d')
     return {
         "symbol": symbol,
+        "currency": "USD",
         "rows_returned": len(data_records),
         "data": data_records.to_dict(orient="records")
     }
