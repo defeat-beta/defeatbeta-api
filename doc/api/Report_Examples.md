@@ -28,7 +28,7 @@ This guide shows two ways to try it:
 
 You can try this example directly in a Jupyter notebook via Binder:
 
-[![Try it on Notebook](https://img.shields.io/badge/Run%20in%20JupyterLab-blue?logo=jupyter&logoColor=white)](https://mybinder.org/v2/gh/defeat-beta/defeatbeta-api/release-0.0.27?urlpath=lab/tree/notebooks/05_tutorial_report.ipynb)
+[![Try it on Notebook](https://img.shields.io/badge/Run%20in%20JupyterLab-blue?logo=jupyter&logoColor=white)](https://mybinder.org/v2/gh/defeat-beta/defeatbeta-api/release-0.0.28?urlpath=lab/tree/notebooks/05_tutorial_report.ipynb)
 
 > This option is ideal if you want to test without installing anything locally. The notebook contains the same example code and will generate a report you can view in the browser.
 
