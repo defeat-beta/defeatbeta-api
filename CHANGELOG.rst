@@ -3,6 +3,7 @@ Change Log
 
 0.0.29
 -------
+- Update stock symbol & currency[`#122 <https://github.com/defeat-beta/defeatbeta-api/issues/122>`_]
 
 0.0.28
 -------
