@@ -32,6 +32,18 @@ def get_stock_earning_call_transcripts_list(symbol: str):
                 ]
             }
 
+    Important notes on fiscal periods:
+        - "fiscal_year" and "fiscal_quarter" follow the company's fiscal calendar,
+          which may differ from the calendar year and calendar quarters.
+        - Fiscal periods are determined by the company's accounting calendar,
+          not by the current date.
+        Example:
+            A company may report earnings in December 2025 that are labeled as:
+                fiscal_year = 2026
+                fiscal_quarter = 2
+            This means the earnings belong to the company's FY 2026 Q2,
+            even though the calendar year is still 2025.
+
     Notes:
         - This tool provides metadata only.
         - Use `get_earning_call_transcript` to retrieve the full transcript
@@ -93,10 +105,21 @@ def get_stock_earning_call_transcript(
                 ]
             }
 
+    Important notes on fiscal periods:
+        - "fiscal_year" and "fiscal_quarter" follow the company's fiscal calendar,
+          which may differ from the calendar year and calendar quarters.
+        - Fiscal periods are determined by the company's accounting calendar,
+          not by the current date.
+        Example:
+            A company may report earnings in December 2025 that are labeled as:
+                fiscal_year = 2026
+                fiscal_quarter = 2
+            This means the earnings belong to the company's FY 2026 Q2,
+            even though the calendar year is still 2025.
+
     Notes:
         - Transcript content can be large and may consume many tokens.
-        - Intended for summarization, Q&A, or qualitative analysis
-          of management commentary.
+        - Intended for summarization, Q&A, or qualitative analysis of management commentary.
     """
     symbol = symbol.upper()
     ticker = Ticker(symbol)
