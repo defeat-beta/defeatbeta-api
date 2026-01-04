@@ -23,7 +23,7 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.ps_ratio()
         print(result)
         result = self.ticker.industry_ps_ratio()
-        print(result)
+        print(result.to_string())
 
     def test_industry_pb_ratio(self):
         result = self.ticker.pb_ratio()
