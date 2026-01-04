@@ -19,7 +19,7 @@ from .tools.margin import get_stock_quarterly_gross_margin, get_stock_annual_gro
 from .tools.eps import get_stock_eps_and_ttm_eps
 from .tools.pe import get_stock_ttm_pe, get_industry_ttm_pe
 from .tools.cap import get_stock_market_capitalization
-from .tools.ps import get_stock_ps_ratio
+from .tools.ps import get_stock_ps_ratio, get_industry_ps_ratio
 from .tools.pb import get_stock_pb_ratio
 from .tools.peg import get_stock_peg_ratio
 from .tools.roe import get_stock_quarterly_roe
@@ -90,6 +90,7 @@ mcp.tool()(get_stock_quarterly_roa)
 mcp.tool()(get_stock_quarterly_roic)
 mcp.tool()(get_stock_quarterly_equity_multiplier)
 mcp.tool()(get_industry_ttm_pe)
+mcp.tool()(get_industry_ps_ratio)
 
 def main():
     mcp.run()
