@@ -29,7 +29,7 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.pb_ratio()
         print(result)
         result = self.ticker.industry_pb_ratio()
-        print(result)
+        print(result.to_string())
 
     def test_industry_roe(self):
         result = self.ticker.roe()
