@@ -25,7 +25,7 @@ from .tools.peg import get_stock_peg_ratio
 from .tools.roe import get_stock_quarterly_roe, get_industry_quarterly_roe
 from .tools.roa import get_stock_quarterly_roa, get_industry_quarterly_roa
 from .tools.roic import get_stock_quarterly_roic
-from .tools.em import get_stock_quarterly_equity_multiplier
+from .tools.em import get_stock_quarterly_equity_multiplier, get_industry_quarterly_equity_multiplier
 
 mcp = FastMCP(
     name="Defeat Beta API",
@@ -94,6 +94,7 @@ mcp.tool()(get_industry_ps_ratio)
 mcp.tool()(get_industry_pb_ratio)
 mcp.tool()(get_industry_quarterly_roe)
 mcp.tool()(get_industry_quarterly_roa)
+mcp.tool()(get_industry_quarterly_equity_multiplier)
 
 def main():
     mcp.run()
