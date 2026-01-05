@@ -1,3 +1,5 @@
+import pandas as pd
+
 from defeatbeta_api.data.ticker import Ticker
 from .util import get_currency
 
@@ -83,6 +85,10 @@ def get_industry_quarterly_roa(symbol: str):
     ticker = Ticker(symbol)
 
     df = ticker.industry_roa()
+    df['report_date'] = (
+        pd.to_datetime(df['report_date'], errors='coerce')
+        .dt.strftime('%Y-%m-%d')
+    )
 
     data = []
     for _, row in df.iterrows():
@@ -96,7 +102,7 @@ def get_industry_quarterly_roa(symbol: str):
 
     return {
         "symbol": symbol,
-        "currency": get_currency(symbol, "USD"),
+        "currency": "USD",
         "period_type": "quarterly",
         "periods": [d["period"] for d in data],
         "rows_returned": len(data),
