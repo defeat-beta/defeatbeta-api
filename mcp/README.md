@@ -46,14 +46,47 @@ Click [here](../doc/mcp/README.md) to discover more ways to use MCP and explore 
 ```
 
 ## Installation
+- Method 1: Run with uvx (Recommended)
+- Method 2: One-line Install Script (Optional)
 
-### macOS or Linux
+### Method 1: Run with `uvx` (Recommended)
+
+The recommended way to run **Defeat Beta API MCP** is via `uvx`.
+
+This method requires **no manual installation**, **no virtual environment management**, and works seamlessly with MCP-native clients such as **Manus**, **Cherry Studio**, and **Claude Desktop**.
+
+**MCP Configuration:**
+
+```json
+{
+  "mcpServers": {
+    "defeatbeta-api": {
+      "command": "uvx",
+      "args": [
+        "--refresh",
+        "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
+      ],
+      "note": "An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
+      "icon": "https://github.com/defeat-beta/defeatbeta-api/blob/main/doc/favicon.ico?raw=true"
+    }
+  }
+}
+```
+
+Once added, your MCP client will automatically:
+- Fetch the repository
+- Resolve and cache dependencies
+- Launch the MCP server in stdio mode
+No further setup is required.
+
+### Method 2: One-line Install Script
+#### macOS or Linux
 Run script to install:
 ```shell
 curl -sSL https://raw.githubusercontent.com/defeat-beta/defeatbeta-api/main/mcp/install | bash
 ```
 
-### What this script does
+#### What this script does
 
 The installation script will automatically perform the following steps:
 
@@ -76,7 +109,7 @@ The installation script will automatically perform the following steps:
    * Installs the MCP protocol implementation and required runtime dependencies (including `defeatbeta-api`).
    * Dependencies are resolved and installed once during installation, avoiding repeated downloads or installations at runtime.
 
-### Installed Directory Structure
+#### Installed Directory Structure
 
 After installation, the directory structure is as follows:
 
@@ -105,8 +138,38 @@ After installation, the directory structure is as follows:
   Core implementation of the MCP Server, responsible for exposing `defeatbeta-api` data as MCP tools.
 
 ## Usage
+- Use in Manus
+- Use in Cherry Studio
 
-### Eg. Use in [Cherry Studio](https://www.cherry-ai.com/)
+### Use in [Manus](https://manus.im/app)
+
+### Use in [Cherry Studio](https://www.cherry-ai.com/)
+
+#### 1. Add MCP Server in Manus
+Navigate to **Personalization center → Connectors → Add connectors → Custom MCP → Import by JSON** and add the following MCP server configuration:
+```json
+{
+  "mcpServers": {
+    "defeatbeta-api": {
+      "command": "uvx",
+      "args": [
+        "--refresh",
+        "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
+      ],
+      "note": "An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
+      "icon": "https://github.com/defeat-beta/defeatbeta-api/blob/main/doc/favicon.ico?raw=true"
+    }
+  }
+}
+```
+![img.png](../doc/mcp/manus_mcp_config.png)
+
+#### 2. Talk to LLM with MCP
+
+Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Manus, for example:
+
+![img.png](../doc/mcp/Talk_With_Manus.png)
+
 
 
 #### 1. Obtain MCP Config
