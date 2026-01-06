@@ -18,3 +18,5 @@
 # Case-3: Analyze the quarterly net profits and operating cash flows of AMD.
 ![img.png](Talk_About_Statement_3.png)
 
+# Case-4: Analyze Alibaba’s capital expenditure (CapEx) trends on an annual basis.
+![img.png](Talk_About_Statement_4.png)
