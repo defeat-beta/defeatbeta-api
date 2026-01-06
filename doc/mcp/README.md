@@ -21,6 +21,7 @@ Below are some practical and popular ways to use MCP in real-world scenarios:
 7. 👉 *Talk to AI About Revenue Breakdown* ([Click here](Talk_About_Breakdown.md))
 8. 👉 *Talk to AI About Profitability* ([Click here](Talk_About_Profitability.md))
 9. 👉 *Talk to AI About Valuation* ([Click here](Talk_About_Valuation.md))
+10. 👉 *Talk to AI About Growth* ([Click here](Talk_About_Growth.md))
 
 ---
 
