@@ -9,8 +9,9 @@ Click [here](../doc/mcp/README.md) to discover more ways to use MCP and explore 
 ```text
 ┌──────────────────────┐
 │   MCP Client         │
-│  (Cherry Studio /    │
-│   Claude Desktop /   │
+│  (Claude Desktop /   │
+│   Manus AI /         │
+│   Cherry Studio /    │
 │   Other MCP Clients) │
 └──────────┬───────────┘
            │  MCP (stdio)
