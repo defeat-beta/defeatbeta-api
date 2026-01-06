@@ -37,7 +37,6 @@ class DuckDBClient:
         )
         self.logger = logging.getLogger(self.__class__.__name__)
         self._initialize_connection()
-        self._validate_httpfs_cache()
 
     def _initialize_connection(self) -> None:
         try:
@@ -56,21 +55,6 @@ class DuckDBClient:
                 self.connection.execute(query)
         except Exception as e:
             self.logger.error(f"Failed to initialize connection: {str(e)}")
-            raise
-
-    def _validate_httpfs_cache(self):
-        try:
-            current_spec = self.query(
-                "SELECT * FROM 'https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data/resolve/main/spec.json'"
-            )
-            current_update_time = current_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
-            if current_update_time != data_update_time:
-                self.logger.debug(f"Current update time: {current_update_time}, Remote update time: {data_update_time}")
-                self.query(
-                    "SELECT cache_httpfs_clear_cache()"
-                )
-        except Exception as e:
-            self.logger.error(f"Failed to validate httpfs cache: {str(e)}")
             raise
 
     @contextmanager

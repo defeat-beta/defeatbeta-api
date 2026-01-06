@@ -8,7 +8,7 @@ WITH wacc_table AS (
         MAX(CASE WHEN item_name = 'tax_provision' THEN item_value END) AS tax_provision,
         MAX(CASE WHEN item_name = 'tax_rate_for_calcs' THEN item_value END) AS tax_rate_for_calcs
     FROM
-        '{url}'
+        {url}
     WHERE
         symbol = '{ticker}'
         AND item_name IN ('total_debt', 'interest_expense', 'pretax_income', 'tax_provision', 'tax_rate_for_calcs')

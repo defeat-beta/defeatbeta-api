@@ -3,6 +3,12 @@ from importlib.resources import files
 def load_sql(template_name: str, **kwargs) -> str:
     if not template_name or any(c in template_name for c in ['/', '\\', '..']):
         raise ValueError(f"Invalid template name: {template_name}")
+    
+    # use custom cache
+    if 'url' in kwargs:
+        url_value = str(kwargs['url'])
+        if 'read_parquet' not in url_value and not url_value.strip().upper().startswith('SELECT'):
+            kwargs['url'] = f"read_parquet('{url_value}')"
 
     try:
         base_path = files("defeatbeta_api.data.sql")

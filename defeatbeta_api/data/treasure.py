@@ -18,5 +18,5 @@ class Treasure:
 
     def daily_treasure_yield(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(daily_treasury_yield)
-        sql = f"SELECT * FROM '{url}'"
+        sql = f"SELECT * FROM read_parquet('{url}')"
         return self.duckdb_client.query(sql)

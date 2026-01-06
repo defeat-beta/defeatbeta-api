@@ -3,7 +3,7 @@ WITH eps_data AS (
         symbol,
         CAST(report_date AS DATE) AS report_date,
         {eps_column}
-    FROM '{url}'
+    FROM {url}
     WHERE symbol = '{ticker}'
 ),
 yoy AS (

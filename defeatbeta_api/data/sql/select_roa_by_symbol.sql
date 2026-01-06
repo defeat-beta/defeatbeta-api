@@ -5,7 +5,7 @@ WITH roe_table AS (
                 MAX(CASE WHEN item_name = 'net_income_common_stockholders' THEN item_value END) AS net_income_common_stockholders,
                 MAX(CASE WHEN item_name = 'total_assets' THEN item_value END) AS total_assets
             FROM
-                '{url}'
+                {url}
             WHERE
                 symbol = '{ticker}'
                 AND item_name IN ('net_income_common_stockholders', 'total_assets')

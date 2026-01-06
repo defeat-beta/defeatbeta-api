@@ -5,11 +5,18 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from defeatbeta_api.utils.const import tables
+from defeatbeta_api.utils.util import validate_cache_directory
+from defeatbeta_api.utils.local_http_cache import LocalHttpCache
+
 
 class HuggingFaceClient:
-    def __init__(self, max_retries: int = 3, timeout: int = 30):
+    def __init__(self, max_retries: int = 3, timeout: int = 30, cache_dir_name: str = "defeat_cache"):
         self.base_url = "https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data"
         self.timeout = timeout
+
+        cache_path = validate_cache_directory(cache_dir_name)
+        self.cache = LocalHttpCache(cache_dir=cache_path, default_ttl=8*3600)  # cache live for 8 hours
+
         self.session = requests.Session()
 
         retry_strategy = Retry(
@@ -47,4 +54,5 @@ class HuggingFaceClient:
             raise ValueError(
                 f"Invalid table '{table}'. Valid options are: {', '.join(tables)}"
             )
-        return f"{self.base_url}/resolve/main/data/{table}.parquet"
+        remote_url = f"{self.base_url}/resolve/main/data/{table}.parquet"
+        return self.cache.get_path(remote_url)
