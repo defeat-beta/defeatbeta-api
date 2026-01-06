@@ -143,8 +143,6 @@ After installation, the directory structure is as follows:
 
 ### Use in [Manus](https://manus.im/app)
 
-### Use in [Cherry Studio](https://www.cherry-ai.com/)
-
 #### 1. Add MCP Server in Manus
 Navigate to **Personalization center → Connectors → Add connectors → Custom MCP → Import by JSON** and add the following MCP server configuration:
 ```json
@@ -171,6 +169,8 @@ Once the MCP Server is configured and successfully connected, you can directly a
 ![img.png](../doc/mcp/Talk_With_Manus.png)
 
 
+
+### Use in [Cherry Studio](https://www.cherry-ai.com/)
 
 #### 1. Obtain MCP Config
 
