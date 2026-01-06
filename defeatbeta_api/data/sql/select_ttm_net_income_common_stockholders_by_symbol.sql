@@ -8,7 +8,7 @@ WITH quarterly_data AS (
         period_type,
         YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
     FROM
-        '{ttm_net_income_url}'
+        {ttm_net_income_url}
     WHERE
         symbol = '{ticker}'
         AND item_name = 'net_income_common_stockholders'

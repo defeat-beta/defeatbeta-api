@@ -866,14 +866,14 @@ class Ticker:
             raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
 
         url = self.huggingface_client.get_url_path(stock_profile)
-        sql = load_sql("select_tickers_by_industry", url = url, industry=industry)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
         symbols = self.duckdb_client.query(sql)['symbol']
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         market_cap_table_sql = load_sql("select_market_cap_by_industry",
-                                        stock_prices = self.huggingface_client.get_url_path(stock_prices),
-                                        stock_shares_outstanding = self.huggingface_client.get_url_path(stock_shares_outstanding),
+                                        stock_prices_url = self.huggingface_client.get_url_path(stock_prices),
+                                        stock_shares_outstanding_url = self.huggingface_client.get_url_path(stock_shares_outstanding),
                                         symbols = ", ".join(f"'{s}'" for s in symbols))
 
         total_market_cap = self.duckdb_client.query(market_cap_table_sql)
@@ -887,7 +887,7 @@ class Ticker:
         total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
 
         ttm_net_income_sql = load_sql("select_ttm_net_income_by_industry",
-                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
+                                      stock_statement_url = self.huggingface_client.get_url_path(stock_statement),
                                       symbols = ", ".join(f"'{s}'" for s in market_cap_cols))
         ttm_net_income = self.duckdb_client.query(ttm_net_income_sql)
         ttm_net_income_df = ttm_net_income.copy()
@@ -959,8 +959,8 @@ class Ticker:
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         market_cap_table_sql = load_sql("select_market_cap_by_industry",
-                                        stock_prices=self.huggingface_client.get_url_path(stock_prices),
-                                        stock_shares_outstanding=self.huggingface_client.get_url_path(
+                                        stock_prices_url=self.huggingface_client.get_url_path(stock_prices),
+                                        stock_shares_outstanding_url=self.huggingface_client.get_url_path(
                                             stock_shares_outstanding),
                                         symbols=", ".join(f"'{s}'" for s in symbols))
 
@@ -974,7 +974,7 @@ class Ticker:
         total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
 
         ttm_revenue_sql = load_sql("select_ttm_revenue_by_industry",
-                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
+                                      stock_statement_url = self.huggingface_client.get_url_path(stock_statement),
                                       symbols = ", ".join(f"'{s}'" for s in symbols))
         ttm_revenue = self.duckdb_client.query(ttm_revenue_sql)
         ttm_revenue_df = ttm_revenue.copy()
@@ -1040,8 +1040,8 @@ class Ticker:
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         market_cap_table_sql = load_sql("select_market_cap_by_industry",
-                                        stock_prices=self.huggingface_client.get_url_path(stock_prices),
-                                        stock_shares_outstanding=self.huggingface_client.get_url_path(
+                                        stock_prices_url=self.huggingface_client.get_url_path(stock_prices),
+                                        stock_shares_outstanding_url=self.huggingface_client.get_url_path(
                                             stock_shares_outstanding),
                                         symbols=", ".join(f"'{s}'" for s in symbols))
 
@@ -1055,7 +1055,7 @@ class Ticker:
         total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
 
         bve_sql = load_sql("select_quarterly_book_value_of_equity_by_industry",
-                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
+                                      stock_statement_url = self.huggingface_client.get_url_path(stock_statement),
                                       symbols = ", ".join(f"'{s}'" for s in symbols))
         bve = self.duckdb_client.query(bve_sql)
         bve_df = bve.copy()
@@ -1121,7 +1121,7 @@ class Ticker:
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         roe_table_sql = load_sql("select_roe_by_industry",
-                                        stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                        stock_statement_url=self.huggingface_client.get_url_path(stock_statement),
                                         symbols=", ".join(f"'{s}'" for s in symbols))
         roe_table = self.duckdb_client.query(roe_table_sql)
 
@@ -1228,7 +1228,7 @@ class Ticker:
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         roa_table_sql = load_sql("select_roa_by_industry",
-                                        stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                        stock_statement_url=self.huggingface_client.get_url_path(stock_statement),
                                         symbols=", ".join(f"'{s}'" for s in symbols))
         roa_table = self.duckdb_client.query(roa_table_sql)
 
@@ -1365,7 +1365,7 @@ class Ticker:
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         gross_profit_and_revenue_table_sql = load_sql("select_gross_profit_and_revenue_by_industry",
-                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                 stock_statement_url=self.huggingface_client.get_url_path(stock_statement),
                                  symbols=", ".join(f"'{s}'" for s in symbols))
         gross_profit_and_revenue_table = self.duckdb_client.query(gross_profit_and_revenue_table_sql)
 
@@ -1484,7 +1484,7 @@ class Ticker:
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         ebitda_and_revenue_table_sql = load_sql("select_ebitda_and_revenue_by_industry",
-                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                 stock_statement_url=self.huggingface_client.get_url_path(stock_statement),
                                  symbols=", ".join(f"'{s}'" for s in symbols))
         ebitda_and_revenue_table = self.duckdb_client.query(ebitda_and_revenue_table_sql)
 
@@ -1604,7 +1604,7 @@ class Ticker:
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         net_income_and_revenue_table_sql = load_sql("select_net_income_and_revenue_by_industry",
-                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                 stock_statement_url=self.huggingface_client.get_url_path(stock_statement),
                                  symbols=", ".join(f"'{s}'" for s in symbols))
         net_income_and_revenue_table = self.duckdb_client.query(net_income_and_revenue_table_sql)
 

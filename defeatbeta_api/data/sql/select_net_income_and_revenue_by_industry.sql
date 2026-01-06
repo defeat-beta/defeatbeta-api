@@ -5,7 +5,7 @@ WITH netincome_revenue_table AS (
                 MAX(CASE WHEN item_name = 'net_income_common_stockholders' THEN item_value END) AS net_income_common_stockholders,
                 MAX(CASE WHEN item_name = 'total_revenue' THEN item_value END) AS total_revenue
             FROM
-                '{stock_statement}'
+                {stock_statement_url}
             WHERE
                 symbol in ({symbols})
                 AND item_name IN ('net_income_common_stockholders', 'total_revenue')

@@ -4,7 +4,7 @@ WITH quarterly_data AS (
         report_date,
         item_value as bve
     FROM
-        '{stock_statement}'
+        {stock_statement_url}
     WHERE
         symbol in ({symbols})
         AND item_name = 'stockholders_equity'

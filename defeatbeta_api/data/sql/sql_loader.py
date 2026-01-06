@@ -5,10 +5,11 @@ def load_sql(template_name: str, **kwargs) -> str:
         raise ValueError(f"Invalid template name: {template_name}")
     
     # use custom cache
-    if 'url' in kwargs:
-        url_value = str(kwargs['url'])
-        if 'read_parquet' not in url_value and not url_value.strip().upper().startswith('SELECT'):
-            kwargs['url'] = f"read_parquet('{url_value}')"
+    for key in list(kwargs.keys()):
+        if key.endswith('url'):  # Matches 'url', 'stockholders_equity_url', etc.
+            url_val = str(kwargs[key])
+            if "read_parquet" not in url_val and not url_val.strip().upper().startswith("SELECT"):
+                kwargs[key] = f"read_parquet('{url_val}')"
 
     try:
         base_path = files("defeatbeta_api.data.sql")

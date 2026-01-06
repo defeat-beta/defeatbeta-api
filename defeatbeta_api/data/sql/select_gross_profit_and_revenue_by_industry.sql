@@ -5,7 +5,7 @@ WITH gross_profit_revenue_table AS (
                 MAX(CASE WHEN item_name = 'gross_profit' THEN item_value END) AS gross_profit,
                 MAX(CASE WHEN item_name = 'total_revenue' THEN item_value END) AS total_revenue
             FROM
-                '{stock_statement}'
+                {stock_statement_url}
             WHERE
                 symbol in ({symbols})
                 AND item_name IN ('gross_profit', 'total_revenue')

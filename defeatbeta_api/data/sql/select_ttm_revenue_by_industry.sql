@@ -8,7 +8,7 @@ WITH quarterly_data AS (
         period_type,
         YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
     FROM
-        '{stock_statement}'
+        {stock_statement_url}
     WHERE
         symbol in ({symbols})
         AND item_name = 'total_revenue'
