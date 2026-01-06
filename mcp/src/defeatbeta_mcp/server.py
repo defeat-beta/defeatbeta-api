@@ -27,6 +27,8 @@ from .tools.roa import get_stock_quarterly_roa, get_industry_quarterly_roa
 from .tools.roic import get_stock_quarterly_roic
 from .tools.em import get_stock_quarterly_equity_multiplier, get_industry_quarterly_equity_multiplier
 from .tools.asserts import get_stock_quarterly_asset_turnover, get_industry_quarterly_asset_turnover
+from .tools.growth import get_stock_quarterly_revenue_yoy_growth, get_stock_annual_revenue_yoy_growth, \
+    get_stock_quarterly_operating_income_yoy_growth, get_stock_annual_operating_income_yoy_growth
 
 mcp = FastMCP(
     name="Defeat Beta API",
@@ -98,6 +100,12 @@ mcp.tool()(get_industry_quarterly_roe)
 mcp.tool()(get_industry_quarterly_roa)
 mcp.tool()(get_industry_quarterly_equity_multiplier)
 mcp.tool()(get_industry_quarterly_asset_turnover)
+
+# Growth
+mcp.tool()(get_stock_quarterly_revenue_yoy_growth)
+mcp.tool()(get_stock_annual_revenue_yoy_growth)
+mcp.tool()(get_stock_quarterly_operating_income_yoy_growth)
+mcp.tool()(get_stock_annual_operating_income_yoy_growth)
 
 def main():
     mcp.run()
