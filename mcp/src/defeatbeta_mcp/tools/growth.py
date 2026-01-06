@@ -502,3 +502,103 @@ def get_stock_annual_fcf_yoy_growth(symbol: str):
         "rows_returned": len(data),
         "data": data
     }
+
+def get_stock_quarterly_diluted_eps_yoy_growth(symbol: str):
+    """
+    Retrieve historical quarterly Year-over-Year (YoY) Diluted EPS growth data
+    for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol, e.g., "TSLA", "AAPL" (case-insensitive).
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "currency": str,                                    # Reporting currency (e.g., "USD")
+            "period_type": "quarterly",                         # Diluted EPS growth is measured on a quarterly basis
+            "periods": list[str],                               # List of fiscal period end dates
+            "rows_returned": int,                               # Number of periods returned
+            "data": list[dict],                                 # List of records with:
+                - period (str):                                 # Fiscal period end date
+                - diluted_eps (decimal | None):              # Diluted EPS for the current quarter
+                - prev_year_diluted_eps (decimal | None):    # Diluted EPS from the same fiscal quarter in the prior year
+                - yoy_growth (decimal | None):                  # Year-over-Year Diluted EPS growth rate
+        }
+    """
+
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.quarterly_eps_yoy_growth()
+    df['report_date'] = (
+        pd.to_datetime(df['report_date'], errors='coerce')
+        .dt.strftime('%Y-%m-%d')
+    )
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "diluted_eps": row.get("eps"),
+            "prev_year_diluted_eps": row.get("prev_year_eps"),
+            "yoy_growth": row.get("yoy_growth")
+        })
+
+    return {
+        "symbol": symbol,
+        "currency": get_currency(symbol),
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
+
+def get_stock_quarterly_ttm_diluted_eps_yoy_growth(symbol: str):
+    """
+    Retrieve historical quarterly Year-over-Year (YoY) TTM Diluted EPS growth data
+    for a given stock symbol.
+
+    Args:
+        symbol (str): Stock ticker symbol, e.g., "TSLA", "AAPL" (case-insensitive).
+
+    Returns:
+        dict: {
+            "symbol": str,
+            "currency": str,                                    # Reporting currency (e.g., "USD")
+            "period_type": "quarterly",                         # TTM Diluted EPS growth is measured on a quarterly basis
+            "periods": list[str],                               # List of fiscal period end dates
+            "rows_returned": int,                               # Number of periods returned
+            "data": list[dict],                                 # List of records with:
+                - period (str):                                 # Fiscal period end date
+                - ttm_diluted_eps (decimal | None):              # TTM Diluted EPS for the current quarter
+                - prev_year_ttm_diluted_eps (decimal | None):    # TTM Diluted EPS from the same fiscal quarter in the prior year
+                - yoy_growth (decimal | None):                  # Year-over-Year TTM Diluted EPS growth rate
+        }
+    """
+
+    symbol = symbol.upper()
+    ticker = Ticker(symbol)
+
+    df = ticker.quarterly_eps_yoy_growth()
+    df['report_date'] = (
+        pd.to_datetime(df['report_date'], errors='coerce')
+        .dt.strftime('%Y-%m-%d')
+    )
+
+    data = []
+    for _, row in df.iterrows():
+        data.append({
+            "period": row.get("report_date"),
+            "ttm_diluted_eps": row.get("ttm_eps"),
+            "prev_year_ttm_diluted_eps": row.get("prev_year_ttm_eps"),
+            "yoy_growth": row.get("yoy_growth")
+        })
+
+    return {
+        "symbol": symbol,
+        "currency": get_currency(symbol),
+        "period_type": "quarterly",
+        "periods": [d["period"] for d in data],
+        "rows_returned": len(data),
+        "data": data
+    }
