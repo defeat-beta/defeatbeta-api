@@ -139,8 +139,46 @@ After installation, the directory structure is as follows:
   Core implementation of the MCP Server, responsible for exposing `defeatbeta-api` data as MCP tools.
 
 ## Usage
+- Use in Claude Desktop
 - Use in Manus
 - Use in Cherry Studio
+
+### Use in [Claude Desktop](https://claude.ai/desktop/directory)
+
+#### 1. Add MCP Server in Claude Desktop
+You can do this by looking for the “Add files, connectors, and more /” ![img_1.png](../doc/mcp/claude_config_2.png) icon:
+![img.png](../doc/mcp/claude_config_1.png)
+
+Then follow the path:
+
+**Connectors → Manage connectors → Developer → Edit Config**
+
+Open the `claude_desktop_config.json` file and add the following MCP server configuration:
+
+```json
+{
+  "mcpServers": {
+    "defeatbeta-api": {
+      "command": "uvx",
+      "args": [
+        "--refresh",
+        "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
+      ]
+    }
+  }
+}
+```
+
+After saving the file, restart **Claude for Desktop** to apply the changes.
+
+Once the configuration is complete, hover over the **“Connectors”** menu to verify that **`defeatbeta-api`** appears in the list.
+
+![img_2.png](../doc/mcp/claude_config_3.png)
+
+#### 2. Talk to LLM with MCP
+
+Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Claude, for example:
+![img.png](../doc/mcp/claude_config_4.png)
 
 ### Use in [Manus](https://manus.im/app)
 
