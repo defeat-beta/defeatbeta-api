@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from decimal import Decimal
+import platform
 from typing import Optional, List, Dict
 
 import numpy as np
@@ -1891,3 +1892,15 @@ class Ticker:
                 final_map[key] = values
 
         return final_map
+
+    def download_data_performance(self) -> str:
+        if platform.system() == "Windows":
+            return "Download data performance is not supported on Windows."
+        res = f"-------------- Download Data Performance ---------------"
+        res += f"\n"
+        res += self.duckdb_client.query(
+            "SELECT * FROM cache_httpfs_cache_access_info_query()"
+        ).to_string()
+        res += f"\n"
+        res += f"--------------------------------------------------------"
+        return res

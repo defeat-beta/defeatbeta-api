@@ -1,3 +1,4 @@
+import platform
 from typing import Dict, Any
 
 import requests
@@ -14,8 +15,11 @@ class HuggingFaceClient:
         self.base_url = "https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data"
         self.timeout = timeout
 
-        cache_path = validate_cache_directory(cache_dir_name)
-        self.cache = LocalHttpCache(cache_dir=cache_path, default_ttl=8*3600)
+        if platform.system() == "Windows":
+            cache_path = validate_cache_directory(cache_dir_name)
+            self.cache = LocalHttpCache(cache_dir=cache_path, default_ttl=8*3600)
+        else:
+            self.cache = None
 
         self.session = requests.Session()
 
@@ -55,4 +59,7 @@ class HuggingFaceClient:
                 f"Invalid table '{table}'. Valid options are: {', '.join(tables)}"
             )
         remote_url = f"{self.base_url}/resolve/main/data/{table}.parquet"
-        return self.cache.get_path(remote_url)
+
+        if platform.system() == "Windows":
+            return self.cache.get_path(remote_url) # Download file -> Return local path
+        return remote_url # Return remote URL -> DuckDB cache_httpfs handles it
