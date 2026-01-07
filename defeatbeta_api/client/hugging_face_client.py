@@ -15,7 +15,7 @@ class HuggingFaceClient:
         self.timeout = timeout
 
         cache_path = validate_cache_directory(cache_dir_name)
-        self.cache = LocalHttpCache(cache_dir=cache_path, default_ttl=8*3600)  # cache live for 8 hours
+        self.cache = LocalHttpCache(cache_dir=cache_path, default_ttl=8*3600)
 
         self.session = requests.Session()
 

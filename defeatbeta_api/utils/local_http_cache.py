@@ -1,11 +1,13 @@
 import hashlib
 import json
 import logging
+import os
 import shutil
 import time
 import urllib.request
+import urllib.error
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -46,85 +48,149 @@ class LocalHttpCache:
         meta_path = self.cache_dir / f"{key}.json"
         return content_path, meta_path
 
-    def _is_valid(self, meta_path: Path) -> bool:
-        """Checks if the cached entry is valid based on TTL."""
+    def _get_server_headers(self, url: str) -> Dict[str, str]:
+        """
+        Performs a HEAD request. Handles redirects and extracts
+        Hugging Face specific version headers if available.
+        """
+        try:
+            req = urllib.request.Request(url, method="HEAD")
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                headers = response.headers
+                
+                hf_commit = headers.get("X-Repo-Commit")
+                hf_etag = headers.get("X-Linked-ETag")
+                std_etag = headers.get("ETag")
+                
+                if self.DEBUG:
+                    logger.debug(f"Server headers for {url}: Commit={hf_commit}, Linked-ETag={hf_etag}, ETag={std_etag}")
+                
+                return {
+                    "x-repo-commit": hf_commit,
+                    "x-linked-etag": hf_etag,
+                    "etag": std_etag,
+                }
+        except Exception as e:
+            logger.warning(f"Failed to fetch headers for {url}: {e}")
+            return {}
+
+    def _is_cache_fresh(self, meta_path: Path, server_headers: Dict[str, str]) -> bool:
+        """
+        Determines if the cached file is fresh by comparing local metadata
+        against current server headers.
+        """
         if not meta_path.exists():
+            if self.DEBUG: logger.debug("Cache miss: Metadata file not found.")
             return False
         
         try:
             with meta_path.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-            
-            created_at = data.get("created_at", 0)
-            ttl = data.get("ttl", 0)
-            
-            # 0 TTL implies infinite cache, otherwise check expiration
-            if ttl > 0 and (time.time() - created_at) > ttl:
-                return False
-                
-            return True
+                local_meta = json.load(f)
         except (json.JSONDecodeError, OSError):
+            if self.DEBUG: logger.debug("Cache miss: Metadata file corrupted.")
             return False
+        
+        # 1. Check Hugging Face specific headers first
+        if server_headers.get("x-repo-commit") and local_meta.get("x-repo-commit"):
+            if server_headers["x-repo-commit"] == local_meta["x-repo-commit"]:
+                if self.DEBUG: logger.debug(f"Cache HIT (HF Commit match: {server_headers['x-repo-commit']})")
+                return True
+            else:
+                if self.DEBUG: logger.debug(f"Cache STALE (HF Commit mismatch: Server={server_headers['x-repo-commit']} != Local={local_meta.get('x-repo-commit')})")
+                return False
+
+        if server_headers.get("x-linked-etag") and local_meta.get("x-linked-etag"):
+            if server_headers["x-linked-etag"] == local_meta["x-linked-etag"]:
+                if self.DEBUG: logger.debug(f"Cache HIT (HF Linked-ETag match: {server_headers['x-linked-etag']})")
+                return True
+            else:
+                if self.DEBUG: logger.debug(f"Cache STALE (HF Linked-ETag mismatch: Server={server_headers['x-linked-etag']} != Local={local_meta.get('x-linked-etag')})")
+                return False
+
+        # 2. Check ETag
+        if server_headers.get("etag") and local_meta.get("etag"):
+            server_etag_clean = server_headers["etag"].strip('"')
+            local_etag_clean = local_meta["etag"].strip('"')
+            
+            if server_etag_clean == local_etag_clean:
+                if self.DEBUG: logger.debug(f"Cache HIT (ETag match: {server_etag_clean})")
+                return True
+            else:
+                if self.DEBUG: logger.debug(f"Cache STALE (ETag mismatch: Server={server_etag_clean} != Local={local_etag_clean})")
+                return False
+        
+        # 3. Check TTL (Time To Live)
+        # Used only if the server provided NO validation headers
+        created_at = local_meta.get("created_at", 0)
+        age = time.time() - created_at
+        if age < self.default_ttl:
+            if self.DEBUG: logger.debug(f"Cache HIT (TTL valid: {int(age)}s age < {self.default_ttl}s TTL). No server validation headers found.")
+            return True
+
+        if self.DEBUG: logger.info(f"Cache EXPIRED (TTL exceeded: {int(age)}s age > {self.default_ttl}s TTL)")
+        return False
+
 
     def get_path(self, url: str, ttl: Optional[int] = None, force_refresh: bool = False) -> str:
         """
-        Retrieves the local file path for a URL. Downloads it if not cached or expired.
-
-        Args:
-            url: The HTTP URL to retrieve.
-            ttl: Custom TTL in seconds for this specific request. Defaults to class default.
-            force_refresh: If True, ignores existing cache and re-downloads.
-
-        Returns:
-            str: The absolute path to the cached file (compatible with DuckDB).
+        Retrieves the local file path for a URL.
+        Verifies freshness via HEAD request before returning cached content.
         """
         key = self._generate_key(url)
         content_path, meta_path = self._get_paths(key)
         
-        # Determine effective TTL
-        effective_ttl = ttl if ttl is not None else self.default_ttl
+        # 1. If force_refresh is True, skip all checks and download
+        if not force_refresh and content_path.exists():
+            # Check with server if our file is still good
+            server_headers = self._get_server_headers(url)
+            
+            if self._is_cache_fresh(meta_path, server_headers):
+                return str(content_path)
 
-        # Return existing cache if valid
-        if not force_refresh and content_path.exists() and self._is_valid(meta_path):
-            if self.DEBUG:
-                logger.debug(f"Cache hit: {url} -> {content_path}")
-            return str(content_path)
-
-        if self.DEBUG:
-            logger.info(f"Cache miss (downloading): {url}")
-        
-        # Download and cache
+        # 2. Download (Cache Miss or Stale)
+        if self.DEBUG: logger.info(f"Downloading (Cache miss/stale): {url}")
         try:
-            self._download_file(url, content_path)
-            self._write_metadata(url, meta_path, effective_ttl)
+            self._download_and_save(url, content_path, meta_path)
             return str(content_path)
         except Exception as e:
-            logger.error(f"Failed to cache {url}: {e}")
-            # If download fails but we have a stale version, we might optionally return it
-            # For now, we propagate the error as the data is critical
+            logger.error(f"Download failed for {url}: {e}")
             raise
 
-    def _download_file(self, url: str, destination: Path):
-        """Downloads file to a temp location then renames it for atomicity."""
-        temp_path = destination.with_suffix(".tmp")
-        
-        # Use urllib for zero dependencies
-        with urllib.request.urlopen(url) as response, temp_path.open("wb") as out_file:
-            shutil.copyfileobj(response, out_file)
-            
-        # Atomic move to ensure readers don't see partial files
-        temp_path.replace(destination)
 
-    def _write_metadata(self, url: str, path: Path, ttl: int):
-        """Writes metadata JSON file."""
-        metadata = {
-            "url": url,
-            "created_at": time.time(),
-            "ttl": ttl,
-            "key": path.stem
-        }
-        with path.open("w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
+    def _download_and_save(self, url: str, content_path: Path, meta_path: Path):
+        """Downloads the file and saves metadata atomically."""
+        temp_content = content_path.with_suffix(".tmp")
+        
+        try:
+            # Use urllib for zero dependencies
+            with urllib.request.urlopen(url, timeout=60) as response, temp_content.open("wb") as out_file:
+                shutil.copyfileobj(response, out_file)
+                
+                # Extract headers for next time
+                metadata = {
+                    "url": url,
+                    "created_at": time.time(),
+                    "etag": response.headers.get("ETag"),
+                    "x-repo-commit": response.headers.get("X-Repo-Commit"), # Capture this!
+                    "x-linked-etag": response.headers.get("X-Linked-ETag"), # Capture this!
+                    "key": content_path.stem
+                }
+
+            # Atomic Move
+            temp_content.replace(content_path)
+            
+            # Write Metadata
+            with meta_path.open("w", encoding="utf-8") as f:
+                json.dump(metadata, f, indent=2)
+                
+        except Exception:
+            # Cleanup temp file on failure
+            if self.DEBUG: logger.error(f"Failed to download or save cache for {url}")
+            if temp_content.exists():
+                temp_content.unlink()
+            raise
+
 
     def clear(self):
         """Clears the entire cache directory."""
