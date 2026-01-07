@@ -178,7 +178,6 @@ Once the configuration is complete, hover over the **“Connectors”** menu to 
 #### 2. Talk to LLM with MCP
 
 Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Claude, for example:
-![img.png](../doc/mcp/claude_config_4.png)
 
 ### Use in [Manus](https://manus.im/app)
 
