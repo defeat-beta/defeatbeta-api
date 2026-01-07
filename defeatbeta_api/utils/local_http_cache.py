@@ -59,17 +59,12 @@ class LocalHttpCache:
             with urllib.request.urlopen(req, timeout=10) as response:
                 headers = response.headers
                 
-                hf_commit = headers.get("X-Repo-Commit")
-                hf_etag = headers.get("X-Linked-ETag")
-                std_etag = headers.get("ETag")
-                
+                etag = headers.get("ETag")
                 if self.DEBUG:
-                    logger.debug(f"Server headers for {url}: Commit={hf_commit}, Linked-ETag={hf_etag}, ETag={std_etag}")
+                    logger.debug(f"Server headers for {url}: ETag={etag}")
                 
                 return {
-                    "x-repo-commit": hf_commit,
-                    "x-linked-etag": hf_etag,
-                    "etag": std_etag,
+                    "etag": etag,
                 }
         except Exception as e:
             logger.warning(f"Failed to fetch headers for {url}: {e}")
@@ -91,24 +86,7 @@ class LocalHttpCache:
             if self.DEBUG: logger.debug("Cache miss: Metadata file corrupted.")
             return False
         
-        # 1. Check Hugging Face specific headers first
-        if server_headers.get("x-repo-commit") and local_meta.get("x-repo-commit"):
-            if server_headers["x-repo-commit"] == local_meta["x-repo-commit"]:
-                if self.DEBUG: logger.debug(f"Cache HIT (HF Commit match: {server_headers['x-repo-commit']})")
-                return True
-            else:
-                if self.DEBUG: logger.debug(f"Cache STALE (HF Commit mismatch: Server={server_headers['x-repo-commit']} != Local={local_meta.get('x-repo-commit')})")
-                return False
-
-        if server_headers.get("x-linked-etag") and local_meta.get("x-linked-etag"):
-            if server_headers["x-linked-etag"] == local_meta["x-linked-etag"]:
-                if self.DEBUG: logger.debug(f"Cache HIT (HF Linked-ETag match: {server_headers['x-linked-etag']})")
-                return True
-            else:
-                if self.DEBUG: logger.debug(f"Cache STALE (HF Linked-ETag mismatch: Server={server_headers['x-linked-etag']} != Local={local_meta.get('x-linked-etag')})")
-                return False
-
-        # 2. Check ETag
+        # 1. Check Hugging Face Etag header first
         if server_headers.get("etag") and local_meta.get("etag"):
             server_etag_clean = server_headers["etag"].strip('"')
             local_etag_clean = local_meta["etag"].strip('"')
@@ -120,7 +98,7 @@ class LocalHttpCache:
                 if self.DEBUG: logger.debug(f"Cache STALE (ETag mismatch: Server={server_etag_clean} != Local={local_etag_clean})")
                 return False
         
-        # 3. Check TTL (Time To Live)
+        # 2. Check TTL (Time To Live)
         # Used only if the server provided NO validation headers
         created_at = local_meta.get("created_at", 0)
         age = time.time() - created_at
@@ -172,8 +150,6 @@ class LocalHttpCache:
                     "url": url,
                     "created_at": time.time(),
                     "etag": response.headers.get("ETag"),
-                    "x-repo-commit": response.headers.get("X-Repo-Commit"), # Capture this!
-                    "x-linked-etag": response.headers.get("X-Linked-ETag"), # Capture this!
                     "key": content_path.stem
                 }
 
