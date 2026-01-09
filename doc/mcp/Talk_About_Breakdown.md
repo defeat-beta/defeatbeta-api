@@ -10,5 +10,7 @@
 
 <details>
 <summary>📷 Click to view example screenshot</summary>
-    ![img.png](Talk_About_Breakdown_1.png)
+
+![img.png](Talk_About_Breakdown_1.png)
+
 </details>
