@@ -11,13 +11,36 @@
 
 # Case-1: Please provide me with the income statements of NVIDIA for the last four quarters, presented in the commonly used format for financial reports.
 
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Statement_1.png)
 
+</details>
+
 # Case-2: Based on NVIDIA’s income statements over the last four quarters, summarize the revenue and profitability trends.
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Statement_2.png)
 
+</details>
+
 # Case-3: Analyze the quarterly net profits and operating cash flows of AMD.
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Statement_3.png)
 
+</details>
+
 # Case-4: Analyze Alibaba’s capital expenditure (CapEx) trends on an annual basis.
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Statement_4.png)
+
+</details>
