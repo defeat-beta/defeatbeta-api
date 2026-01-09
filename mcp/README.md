@@ -206,6 +206,9 @@ Navigate to **Personalization center → Connectors → Add connectors → Custo
   }
 }
 ```
+
+**Once configured, the result looks like this:**
+
 ![img.png](../doc/mcp/manus_mcp_config.png)
 
 #### 2. Talk to LLM with MCP
