@@ -178,7 +178,14 @@ Once the configuration is complete, hover over the **“Connectors”** menu to 
 #### 2. Talk to LLM with MCP
 
 Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Claude, for example:
-![img.png](../doc/mcp/claude_config_4.png)
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
+![Claude MCP Example](../doc/mcp/claude_config_4.png)
+
+</details>
+
 
 ### Use in [Manus](https://manus.im/app)
 
@@ -205,8 +212,12 @@ Navigate to **Personalization center → Connectors → Add connectors → Custo
 
 Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Manus, for example:
 
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](../doc/mcp/Talk_With_Manus.png)
 
+</details>
 
 
 ### Use in [Cherry Studio](https://www.cherry-ai.com/)
@@ -266,4 +277,9 @@ Once the MCP Server is configured and successfully connected, you can directly a
 
 The AI will use **Defeat Beta API MCP** to call the `defeatbeta-api` data interfaces, retrieve Tesla's (TSLA) market data, and provide intelligent analysis.
 
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](../doc/mcp/talk_to_llm_with_mcp.png)
+
+</details>
