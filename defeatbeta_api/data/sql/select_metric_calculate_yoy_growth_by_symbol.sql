@@ -3,7 +3,7 @@ WITH metric_data AS (
         symbol,
         CAST(report_date AS DATE) AS report_date,
         item_value as {metric_name}
-    FROM '{url}'
+    FROM {url}
     WHERE symbol='{ticker}'
         AND finance_type = '{finance_type}'
         AND item_name='{item_name}'

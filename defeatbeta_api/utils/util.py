@@ -67,7 +67,7 @@ def validate_nltk_directory(name: str) -> str:
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
-def validate_httpfs_cache_directory(name: str) -> str:
+def validate_cache_directory(name: str) -> str:
     if platform.system() in ("Darwin", "Linux"):
         temp_dir = "/tmp"
     else:

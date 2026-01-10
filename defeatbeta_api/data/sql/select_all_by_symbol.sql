@@ -1,1 +1,1 @@
-SELECT * FROM '{url}' WHERE symbol = '{ticker}'
+SELECT * FROM {url} WHERE symbol = '{ticker}'

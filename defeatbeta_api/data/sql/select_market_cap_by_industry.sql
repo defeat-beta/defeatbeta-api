@@ -4,9 +4,9 @@ WITH market_cap_table AS (
         p.report_date,
         ROUND(p.close * s.shares_outstanding, 2) AS market_capitalization
     FROM
-        read_parquet('{stock_prices}') AS p
+        {stock_prices_url} AS p
     LEFT JOIN
-        read_parquet('{stock_shares_outstanding}') AS s
+        {stock_shares_outstanding_url} AS s
         ON p.symbol = s.symbol
         AND p.report_date >= s.report_date
     WHERE

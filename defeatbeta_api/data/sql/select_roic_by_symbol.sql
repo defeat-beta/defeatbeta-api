@@ -6,7 +6,7 @@ WITH roic_table AS (
      MAX(CASE WHEN item_name = 'tax_rate_for_calcs' THEN item_value END) AS tax_rate_for_calcs,
      MAX(CASE WHEN item_name = 'invested_capital' THEN item_value END) AS invested_capital
  FROM
-     '{url}'
+     {url}
  WHERE
      symbol = '{ticker}'
      AND item_name IN ('ebit', 'tax_rate_for_calcs', 'net_income_common_stockholders', 'invested_capital')
