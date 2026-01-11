@@ -242,7 +242,7 @@ class LocalHttpCache:
         # In-memory cache for recently accessed items to avoid repeated disk I/O
         self._memory_cache: Dict[str, any] = {}  # key -> data
         self._memory_cache_lock = threading.RLock()
-        self.max_memory_cache_size = 2  # Max 50 items in memory cache
+        self.max_memory_cache_size = 10  # Max 10 items in memory cache
         
         # Track last HEAD request times to avoid excessive server checks
         self._last_head_check: Dict[str, float] = {}  # url -> timestamp
