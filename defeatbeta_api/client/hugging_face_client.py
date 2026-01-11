@@ -11,13 +11,14 @@ from defeatbeta_api.utils.local_http_cache import LocalHttpCache
 
 
 class HuggingFaceClient:
-    def __init__(self, max_retries: int = 3, timeout: int = 30, cache_dir_name: str = "defeat_cache"):
+    def __init__(self, max_retries: int = 3, timeout: int = 30, cache_dir_name: str = "defeat_cache", mode: str = "cache" , debug: bool = False):
         self.base_url = "https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data"
         self.timeout = timeout
+        self.mode = mode
 
         if platform.system() == "Windows":
             cache_path = validate_cache_directory(cache_dir_name)
-            self.cache = LocalHttpCache(cache_dir=cache_path, default_ttl=8*3600)
+            self.cache = LocalHttpCache(cache_dir=cache_path, debug=debug)
         else:
             self.cache = None
 
@@ -60,6 +61,6 @@ class HuggingFaceClient:
             )
         remote_url = f"{self.base_url}/resolve/main/data/{table}.parquet"
 
-        if platform.system() == "Windows":
+        if platform.system() == "Windows" and self.mode == "preload":
             return self.cache.get_path(remote_url) # Download file -> Return local path
         return remote_url # Return remote URL -> DuckDB cache_httpfs handles it

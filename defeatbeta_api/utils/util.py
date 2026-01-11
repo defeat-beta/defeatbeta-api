@@ -1,3 +1,4 @@
+from decimal import Decimal
 import io
 import json
 import os
@@ -317,3 +318,48 @@ def human_format(num):
             return f"{num:.1f}{unit}"
         num /= 1000
     return f"{num:.1f}P"
+
+def safe_divide(numerator, denominator, decimals=2):
+    """
+    Safely divide two pandas Series, handling zeros and NaN values.
+    
+    Returns NaN for any divisions where denominator is zero or NaN.
+    
+    Args:
+        numerator: pandas Series to divide
+        denominator: pandas Series to divide by
+        decimals: number of decimal places to round to (default: 2)
+    
+    Returns:
+        pandas Series with safe division results
+    
+    Example:
+        >>> result_df['ratio'] = safe_divide(
+        ...     result_df['value1'], 
+        ...     result_df['value2'], 
+        ...     decimals=2
+        ... )
+    """
+    return (
+        numerator.astype(float)
+        .div(denominator.astype(float))
+        .where(denominator != 0)
+        .round(decimals)
+    )
+
+
+def columns_from_decimal_to_float(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert DataFrame columns containing Decimal types to float. If a column does not contain
+    any Decimal values, it is left unchanged.
+    Args:
+        df: pandas DataFrame to convert
+    Returns:
+        pandas DataFrame with Decimal columns converted to float
+    """
+    df = df.copy()
+    for col in df.columns:
+        if df[col].dtype == object:
+            if df[col].apply(lambda x: isinstance(x, Decimal) or pd.isna(x)).all():
+                df[col] = df[col].astype(float)
+    return df

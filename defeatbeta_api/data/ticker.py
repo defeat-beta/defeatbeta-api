@@ -13,6 +13,7 @@ from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.data.balance_sheet import BalanceSheet
 from defeatbeta_api.data.finance_item import FinanceItem
 from defeatbeta_api.data.finance_value import FinanceValue
+from defeatbeta_api.utils.util import safe_divide
 from defeatbeta_api.data.income_statement import IncomeStatement
 from defeatbeta_api.data.news import News
 from defeatbeta_api.data.print_visitor import PrintVisitor
@@ -44,6 +45,31 @@ class Ticker:
             log_level=self.log_level,
             config=config
         )
+
+    def _get_cached_result(self, cache_key: str) -> Optional[pd.DataFrame]:
+        """
+        Retrieve a cached query result if available and on Windows.
+        
+        Args:
+            cache_key: The cache key for this query
+        
+        Returns:
+            DataFrame if cached result found, None otherwise
+        """
+        if platform.system() == "Windows" and self.huggingface_client.cache is not None:
+            return self.huggingface_client.cache.get_cached_query_result(cache_key)
+        return None
+
+    def _cache_result(self, cache_key: str, result_df: pd.DataFrame) -> None:
+        """
+        Store a query result in cache on Windows.
+        
+        Args:
+            cache_key: The cache key for this query
+            result_df: The DataFrame to cache
+        """
+        if platform.system() == "Windows" and self.huggingface_client.cache is not None:
+            self.huggingface_client.cache.cache_query_result(cache_key, result_df)
 
     def info(self) -> pd.DataFrame:
         return self._query_data(stock_profile)
@@ -121,7 +147,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['ttm_pe'] = round(result_df['close'] / result_df['tailing_eps'], 2)
+        result_df['ttm_pe'] = safe_divide(result_df['close'], result_df['tailing_eps'])
 
         result_df = result_df[[
             'price_report_date',
@@ -281,7 +307,7 @@ class Ticker:
 
         result_df = result_df[result_df['report_date'].notna()]
 
-        result_df['ps_ratio'] = round(result_df['market_capitalization'] / result_df['ttm_total_revenue_usd'], 2)
+        result_df['ps_ratio'] = safe_divide(result_df['market_capitalization'], result_df['ttm_total_revenue_usd'])
 
         result_df = result_df[[
             'market_cap_report_date',
@@ -323,7 +349,7 @@ class Ticker:
 
         result_df = result_df[result_df['report_date'].notna()]
 
-        result_df['pb_ratio'] = round(result_df['market_capitalization'] / result_df['book_value_of_equity_usd'], 2)
+        result_df['pb_ratio'] = safe_divide(result_df['market_capitalization'], result_df['book_value_of_equity_usd'])
 
         result_df = result_df[[
             'market_cap_report_date',
@@ -459,7 +485,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['book_value_of_equity_usd'] = round(result_df['book_value_of_equity'] / result_df['close'], 2)
+        result_df['book_value_of_equity_usd'] = safe_divide(result_df['book_value_of_equity'], result_df['close'])
 
         result_df = result_df[[
             'book_value_of_equity_report_date',
@@ -478,6 +504,13 @@ class Ticker:
         return result_df
 
     def ttm_revenue(self) -> pd.DataFrame:
+        # Check cache first
+        cache_key = f"ttm_revenue#{self.ticker}#v1"
+        if platform.system() == "Windows" and self.huggingface_client.cache is not None:
+            cached_result = self.huggingface_client.cache.get_cached_query_result(cache_key)
+            if cached_result is not None:
+                return cached_result
+        
         ttm_revenue_url = self.huggingface_client.get_url_path(stock_statement)
         ttm_revenue_sql = load_sql("select_ttm_revenue_by_symbol",
                                    ticker = self.ticker,
@@ -490,7 +523,7 @@ class Ticker:
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
-                ttm_revenue_df['report_date'])
+                ttm_revenue_df['report_date'], format='mixed', errors='coerce')
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -499,7 +532,7 @@ class Ticker:
         else:
             currency_df = self.currency(symbol = currency + '=X')
 
-        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
+        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'], format='mixed', errors='coerce')
         currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
 
         result_df = ttm_revenue_df.copy()
@@ -513,7 +546,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['ttm_total_revenue_usd'] = round(result_df['ttm_total_revenue'] / result_df['close'], 2)
+        result_df['ttm_total_revenue_usd'] = safe_divide(result_df['ttm_total_revenue'], result_df['close'])
 
         result_df = result_df[[
             'ttm_revenue_report_date',
@@ -530,9 +563,21 @@ class Ticker:
             'close': 'exchange_to_usd_rate'
         })
 
+        # Cache the final result
+        if platform.system() == "Windows" and self.huggingface_client.cache is not None:
+            self.huggingface_client.cache.cache_query_result(cache_key, result_df)
+
         return result_df
 
     def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
+        # Check cache first
+        cache_key = f"ttm_net_income_common_stockholders#{self.ticker}#v1"
+        if platform.system() == "Windows" and self.huggingface_client.cache is not None:
+            cached_result = self.huggingface_client.cache.get_cached_query_result(cache_key)
+            if cached_result is not None:
+                return cached_result
+        
+        # Use direct SQL query with HuggingFace URL for efficient HTTP range requests
         ttm_net_income_url = self.huggingface_client.get_url_path(stock_statement)
         ttm_net_income_sql = load_sql("select_ttm_net_income_common_stockholders_by_symbol",
                                       ticker=self.ticker,
@@ -546,7 +591,7 @@ class Ticker:
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
-                ttm_net_income_df['report_date'])
+                ttm_net_income_df['report_date'], format='mixed', errors='coerce')
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -555,7 +600,7 @@ class Ticker:
         else:
             currency_df = self.currency(symbol = currency + '=X')
 
-        ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date'])
+        ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date'], format='mixed', errors='coerce')
         currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
 
         result_df = ttm_net_income_df.copy()
@@ -569,7 +614,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['ttm_net_income_usd'] = round(result_df['ttm_net_income'] / result_df['close'], 2)
+        result_df['ttm_net_income_usd'] = safe_divide(result_df['ttm_net_income'], result_df['close'])
 
         result_df = result_df[[
             'ttm_net_income_report_date',
@@ -586,9 +631,21 @@ class Ticker:
             'close': 'exchange_to_usd_rate'
         })
 
+        # Cache the final result
+        if platform.system() == "Windows" and self.huggingface_client.cache is not None:
+            self.huggingface_client.cache.cache_query_result(cache_key, result_df)
+
         return result_df
 
     def roe(self) -> pd.DataFrame:
+        cache_key = f"query_result#{stock_statement}#roe#{self.ticker}#v1"
+        
+        # Try to get from cache first
+        cached = self._get_cached_result(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Use URL directly (DuckDB with cache_httpfs handles HTTP range requests efficiently)
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = load_sql("select_roe_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
@@ -600,9 +657,20 @@ class Ticker:
             'avg_equity',
             'roe'
         ]]
+        
+        # Cache for next time
+        self._cache_result(cache_key, result_df)
         return result_df
 
     def roa(self) -> pd.DataFrame:
+        cache_key = f"query_result#{stock_statement}#roa#{self.ticker}#v1"
+        
+        # Try to get from cache first
+        cached = self._get_cached_result(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Use URL directly (DuckDB with cache_httpfs handles HTTP range requests efficiently)
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = load_sql("select_roa_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
@@ -614,9 +682,20 @@ class Ticker:
             'avg_assets',
             'roa'
         ]]
+        
+        # Cache for next time
+        self._cache_result(cache_key, result_df)
         return result_df
 
     def roic(self) -> pd.DataFrame:
+        cache_key = f"query_result#{stock_statement}#roic#{self.ticker}#v1"
+        
+        # Try to get from cache first
+        cached = self._get_cached_result(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Use URL directly (DuckDB with cache_httpfs handles HTTP range requests efficiently)
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = load_sql("select_roic_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
@@ -630,6 +709,9 @@ class Ticker:
             'avg_invested_capital',
             'roic'
         ]]
+        
+        # Cache for next time
+        self._cache_result(cache_key, result_df)
         return result_df
 
     def equity_multiplier(self) -> pd.DataFrame:
@@ -647,7 +729,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['equity_multiplier'] = round(result_df['roe'] / result_df['roa'], 2)
+        result_df['equity_multiplier'] = safe_divide(result_df['roe'], result_df['roa'])
 
         result_df = result_df[[
             'report_date',
@@ -672,7 +754,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['asset_turnover'] = round(result_df['roa'] / result_df['net_margin'], 2)
+        result_df['asset_turnover'] = safe_divide(result_df['roa'], result_df['net_margin'])
 
         result_df = result_df[[
             'report_date',
@@ -721,10 +803,10 @@ class Ticker:
             right_on='report_date',
             direction='backward'
         )
-        wacc_df['total_debt_usd'] = round(wacc_df['total_debt'] / wacc_df['exchange_rate'], 0)
-        wacc_df['interest_expense_usd'] = round(wacc_df['interest_expense'] / wacc_df['exchange_rate'], 0)
-        wacc_df['pretax_income_usd'] = round(wacc_df['pretax_income'] / wacc_df['exchange_rate'], 0)
-        wacc_df['tax_provision_usd'] = round(wacc_df['tax_provision'] / wacc_df['exchange_rate'], 0)
+        wacc_df['total_debt_usd'] = safe_divide(wacc_df['total_debt'], wacc_df['exchange_rate'], decimals=0)
+        wacc_df['interest_expense_usd'] = safe_divide(wacc_df['interest_expense'], wacc_df['exchange_rate'], decimals=0)
+        wacc_df['pretax_income_usd'] = safe_divide(wacc_df['pretax_income'], wacc_df['exchange_rate'], decimals=0)
+        wacc_df['tax_provision_usd'] = safe_divide(wacc_df['tax_provision'], wacc_df['exchange_rate'], decimals=0)
 
         market_cap_df = self.market_capitalization()
 
@@ -846,9 +928,9 @@ class Ticker:
             result_df['tax_provision_usd'] / result_df['pretax_income_usd']
         )
 
-        result_df['weight_of_debt'] = round(result_df['total_debt_usd'] / (result_df['total_debt_usd'] + result_df['market_capitalization']), 4)
-        result_df['weight_of_equity'] = round(result_df['market_capitalization'] / (result_df['total_debt_usd'] + result_df['market_capitalization']), 4)
-        result_df['cost_of_debt'] = round(result_df['interest_expense_usd'] / result_df['total_debt_usd'], 4)
+        result_df['weight_of_debt'] = safe_divide(result_df['total_debt_usd'], (result_df['total_debt_usd'] + result_df['market_capitalization']), decimals=4)
+        result_df['weight_of_equity'] = safe_divide(result_df['market_capitalization'], (result_df['total_debt_usd'] + result_df['market_capitalization']), decimals=4)
+        result_df['cost_of_debt'] = safe_divide(result_df['interest_expense_usd'], result_df['total_debt_usd'], decimals=4)
         result_df['cost_of_equity'] = round(result_df['treasure_10y_yield'] + result_df['beta_5y'] * (result_df['sp500_10y_cagr'] - result_df['treasure_10y_yield']), 4)
         result_df['wacc'] = round(
             result_df['weight_of_debt'] * result_df['cost_of_debt'] * (1 - result_df['tax_rate_for_calcs']) +
@@ -1339,7 +1421,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['industry_equity_multiplier'] = round(result_df['industry_roe'] / result_df['industry_roa'], 2)
+        result_df['industry_equity_multiplier'] = safe_divide(result_df['industry_roe'], result_df['industry_roa'])
 
         result_df = result_df[[
             'report_date',
@@ -1728,7 +1810,7 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['industry_asset_turnover'] = round(result_df['industry_roa'] / result_df['industry_net_margin'], 2)
+        result_df['industry_asset_turnover'] = safe_divide(result_df['industry_roa'], result_df['industry_net_margin'])
 
         result_df = result_df[[
             'report_date',
@@ -1780,7 +1862,7 @@ class Ticker:
 
     def _generate_margin(self, margin_type: str, period_type: str, numerator_item: str,
                          margin_column: str) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path('stock_statement')
+        url = self.huggingface_client.get_url_path(stock_statement)
         ttm_filter = "AND report_date != 'TTM'" if period_type == 'quarterly' else ""
         finance_type_filter = \
             "AND finance_type = 'income_statement'" if margin_type in ['gross', 'operating', 'net', 'ebitda'] \
@@ -1800,12 +1882,83 @@ class Ticker:
         return self._query_data2(table_name, self.ticker)
 
     def _query_data2(self, table_name: str, ticker: str) -> pd.DataFrame:
+        """
+        Query data for a specific ticker/symbol with result-level caching.
+        On Windows, uses efficient row-group filtering with HTTP range requests.
+        On Unix, uses DuckDB with cache_httpfs.
+        """
+        # Check for cached result first (Windows only for now)
+        if platform.system() == "Windows" and self.huggingface_client.cache is not None:
+            result_cache_key = f"query_result#{table_name}#{ticker}#v2"
+            
+            # Get the URL for ETag validation (optimized tables skip URL validation)
+            remote_url = self.huggingface_client.get_url_path(table_name)
+            
+            # Validate with ETag to detect if server data has changed
+            cached_result = self.huggingface_client.cache.get_cached_query_result(
+                result_cache_key, 
+                url=remote_url,  # validate ETag for freshness (if you want to skip ETag validation, set url=None)
+            )
+
+            # Return cached result if available
+            if cached_result is not None:
+                if self.config and self.config.log_level == logging.DEBUG:
+                    logging.debug(f"Result cache found for {table_name}#{ticker} ({len(cached_result)} rows)")
+                return cached_result
+            
+            # Result not cached, need to fetch it
+            try:
+                # Use optimized path with row-group filtering
+                if self.config and self.config.log_level == logging.DEBUG:
+                    logging.debug(f"No result cache for {table_name}#{ticker}, using optimized query")
+                result = self._query_data_optimized(remote_url, table_name, ticker)
+            except Exception as e:
+                # Fall back to DuckDB if optimized path fails
+                logging.warning(f"Optimized query failed for {table_name}: {e}. Falling back to DuckDB.")
+                url = remote_url
+                sql = load_sql(
+                    "select_all_by_symbol",
+                    ticker=ticker,
+                    url=url)
+                result = self.duckdb_client.query(sql)
+                
+                # Cache result even when using DuckDB fallback
+                self.huggingface_client.cache.cache_query_result(result_cache_key, result)
+                return result
+                
+        # Fall back: Use DuckDB (Unix or if cache unavailable)
         url = self.huggingface_client.get_url_path(table_name)
         sql = load_sql(
             "select_all_by_symbol",
                         ticker = ticker,
                         url = url)
         return self.duckdb_client.query(sql)
+
+    def _query_data_optimized(self, url: str, table_name: str, ticker: str) -> pd.DataFrame:
+        """
+        Optimized query using row-group filtering and HTTP range requests.
+        
+        Works by:
+        1. Reading Parquet footer metadata (few KB)
+        2. Finding row groups containing the ticker symbol
+        3. Downloading ONLY those row groups via HTTP range requests
+        4. Returning filtered results
+        """
+        cache = self.huggingface_client.cache
+        
+        # Get column names for this table
+        meta = cache.read_parquet_metadata(url)
+        columns = meta['column_names']
+        
+        # Use filtered read for efficient symbol-level queries
+        table = cache.read_parquet_by_filter(
+            url,
+            filter_column='symbol',
+            filter_value=ticker,
+            columns=columns
+        )
+        
+        return table.to_pandas()
 
     def _statement(self, finance_type: str, period_type: str) -> Statement:
         url = self.huggingface_client.get_url_path(stock_statement)
