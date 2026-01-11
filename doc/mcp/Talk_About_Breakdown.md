@@ -7,4 +7,10 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Case-1: The revenue composition of Tesla in the past year
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Breakdown_1.png)
+
+</details>

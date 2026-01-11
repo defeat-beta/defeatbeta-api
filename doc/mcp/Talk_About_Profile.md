@@ -8,4 +8,9 @@
 
 # Case-1: show me alibaba's profile
 
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![Talk_About_Profile_1.png](Talk_About_Profile_1.png)
+
+</details>

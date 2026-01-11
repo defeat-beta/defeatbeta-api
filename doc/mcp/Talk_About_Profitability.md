@@ -7,5 +7,11 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Case-1: Provide a comprehensive analysis of Tesla’s profit margin performance.
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Profitability_1.png)
+
+</details>
 

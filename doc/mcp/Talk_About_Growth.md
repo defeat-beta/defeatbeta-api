@@ -7,4 +7,10 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Case-1: Systematically analyze Alibaba’s growth performance using growth rate metrics.
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Growth.png)
+
+</details>

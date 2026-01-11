@@ -139,8 +139,53 @@ After installation, the directory structure is as follows:
   Core implementation of the MCP Server, responsible for exposing `defeatbeta-api` data as MCP tools.
 
 ## Usage
+- Use in Claude Desktop
 - Use in Manus
 - Use in Cherry Studio
+
+### Use in [Claude Desktop](https://claude.ai/desktop/directory)
+
+#### 1. Add MCP Server in Claude Desktop
+You can do this by looking for the “Add files, connectors, and more /” ![img_1.png](../doc/mcp/claude_config_2.png) icon:
+![img.png](../doc/mcp/claude_config_1.png)
+
+Then follow the path:
+
+**Connectors → Manage connectors → Developer → Edit Config**
+
+Open the `claude_desktop_config.json` file and add the following MCP server configuration:
+
+```json
+{
+  "mcpServers": {
+    "defeatbeta-api": {
+      "command": "uvx",
+      "args": [
+        "--refresh",
+        "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
+      ]
+    }
+  }
+}
+```
+
+After saving the file, restart **Claude for Desktop** to apply the changes.
+
+Once the configuration is complete, hover over the **“Connectors”** menu to verify that **`defeatbeta-api`** appears in the list.
+
+![img_2.png](../doc/mcp/claude_config_3.png)
+
+#### 2. Talk to LLM with MCP
+
+Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Claude, for example:
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
+![Claude MCP Example](../doc/mcp/claude_config_4.png)
+
+</details>
+
 
 ### Use in [Manus](https://manus.im/app)
 
@@ -161,14 +206,21 @@ Navigate to **Personalization center → Connectors → Add connectors → Custo
   }
 }
 ```
+
+**Once configured, the result looks like this:**
+
 ![img.png](../doc/mcp/manus_mcp_config.png)
 
 #### 2. Talk to LLM with MCP
 
 Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Manus, for example:
 
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](../doc/mcp/Talk_With_Manus.png)
 
+</details>
 
 
 ### Use in [Cherry Studio](https://www.cherry-ai.com/)
@@ -228,4 +280,9 @@ Once the MCP Server is configured and successfully connected, you can directly a
 
 The AI will use **Defeat Beta API MCP** to call the `defeatbeta-api` data interfaces, retrieve Tesla's (TSLA) market data, and provide intelligent analysis.
 
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](../doc/mcp/talk_to_llm_with_mcp.png)
+
+</details>

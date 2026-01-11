@@ -9,7 +9,19 @@
 
 # Case-1: show me alibaba's officers
 
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Officers_1.png)
 
+</details>
+
+
 # Case-2: Who are the main officers of Alibaba, and what are their roles?
+
+<details>
+<summary>📷 Click to view example screenshot</summary>
+
 ![img.png](Talk_About_Officers_2.png)
+
+</details>
