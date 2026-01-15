@@ -442,6 +442,9 @@ class Transcripts:
             table = tabulate(df_paragraphs, headers="keys", tablefmt="grid", showindex=False)
             print(title + table)
 
+    def __repr__(self):
+        return repr(self.transcripts)
+
     def __str__(self):
         return self.transcripts.to_string(columns=["symbol", 'fiscal_year', "fiscal_quarter", "report_date"])
 
