@@ -66,9 +66,7 @@ This method requires **no manual installation**, **no virtual environment manage
       "args": [
         "--refresh",
         "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
-      ],
-      "note": "An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
-      "icon": "https://github.com/defeat-beta/defeatbeta-api/blob/main/doc/favicon.ico?raw=true"
+      ]
     }
   }
 }
@@ -141,7 +139,6 @@ After installation, the directory structure is as follows:
 ## Usage
 - Use in Claude Desktop
 - Use in Manus
-- Use in Cherry Studio
 
 ### Use in [Claude Desktop](https://claude.ai/desktop/directory)
 
@@ -219,70 +216,5 @@ Once the MCP Server is configured and successfully connected, you can directly a
 <summary>📷 Click to view example screenshot</summary>
 
 ![img.png](../doc/mcp/Talk_With_Manus.png)
-
-</details>
-
-
-### Use in [Cherry Studio](https://www.cherry-ai.com/)
-
-#### 1. Obtain MCP Config
-
-After the installation is complete, the terminal will output the MCP server configuration, for example:
-
-```text
-✅ Installation completed successfully!
-
-👉 MCP server entry:
-   /Users/xxx/.defeatbeta/mcp/run.sh
-
-👉 Studio MCP config:
---------------------------------
-{
-  "mcpServers": {
-    "defeatbeta-api": {
-      "command": "/Users/xxx/.defeatbeta/mcp/run.sh",
-      "description": "An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
-      "provider": "Defeat Beta API",
-      "providerUrl": "https://github.com/defeat-beta/defeatbeta-api",
-      "args": []
-    }
-  }
-}
---------------------------------
-```
-
-Please record and copy the **`MCP config`** content.
-
----
-
-#### 2. Import MCP Config in Cherry Studio
-
-1. Open **Cherry Studio**.
-2. Navigate to **Settings → MCP Servers**.
-3. Click **+ Add Server**.
-4. Paste the **`MCP config`** copied from the previous step directly into the input field.
-5. Save the configuration.
-
-Once saved, Cherry Studio will automatically start the MCP Server in **stdio mode**.
-
-![img.png](../doc/mcp/mcp_config.png)
-
----
-
-#### 3. Talk to LLM with MCP
-
-Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Cherry Studio, for example:
-
-```text
-- How has Tesla performed over the past month?
-- Please provide me with the price of TSLA for the past 30 days.
-```
-
-The AI will use **Defeat Beta API MCP** to call the `defeatbeta-api` data interfaces, retrieve Tesla's (TSLA) market data, and provide intelligent analysis.
-
-<details>
-<summary>📷 Click to view example screenshot</summary>
-
-![img.png](../doc/mcp/talk_to_llm_with_mcp.png)
 
 </details>
