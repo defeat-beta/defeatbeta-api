@@ -45,21 +45,12 @@ class Transcripts:
     def get_transcripts_list(self) -> pd.DataFrame:
         return self.transcripts
 
-    def get_transcript(self, fiscal_year: int, fiscal_quarter: int) -> str:
+    def get_transcript(self, fiscal_year: int, fiscal_quarter: int) -> pd.DataFrame:
         record = self._find_transcripts(fiscal_quarter, fiscal_year)
         if record.empty:
             raise ValueError(f"No transcript found for FY{fiscal_year} Q{fiscal_quarter}")
         df_paragraphs = _unnest(record)
-        # Format as simple text: "Speaker: content\n"
-        lines = []
-        for _, row in df_paragraphs.iterrows():
-            speaker = row.get('speaker', '').strip()
-            content = row.get('content', '').strip()
-            if speaker and content:
-                lines.append(f"{speaker}: {content}")
-            elif content:
-                lines.append(content)
-        return "\n\n".join(lines)
+        return df_paragraphs
 
     def analyze_financial_metrics_forecast_for_future_with_ai(self, fiscal_year: int, fiscal_quarter: int, llm: OpenAI, config: Optional[OpenAIConfiguration] = None) -> pd.DataFrame:
         conf = config if config is not None else OpenAIConfiguration()
