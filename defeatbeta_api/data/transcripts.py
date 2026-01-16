@@ -445,6 +445,9 @@ class Transcripts:
     def __str__(self):
         return self.transcripts.to_string(columns=["symbol", 'fiscal_year', "fiscal_quarter", "report_date"])
 
+    def __repr__(self):
+        return repr(self.transcripts)
+
     def _find_transcripts(self, fiscal_quarter, fiscal_year):
         mask = (self.transcripts['fiscal_year'] == fiscal_year) & \
                (self.transcripts['fiscal_quarter'] == fiscal_quarter)
