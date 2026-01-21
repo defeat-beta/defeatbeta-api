@@ -1,4 +1,4 @@
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 def get_stock_earning_call_transcripts_list(symbol: str):
     """
@@ -50,7 +50,7 @@ def get_stock_earning_call_transcripts_list(symbol: str):
           for a specific fiscal year and quarter.
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     transcripts = ticker.earning_call_transcripts()
     df = transcripts.get_transcripts_list()
@@ -122,7 +122,7 @@ def get_stock_earning_call_transcript(
         - Intended for summarization, Q&A, or qualitative analysis of management commentary.
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     transcripts = ticker.earning_call_transcripts()
     df = transcripts.get_transcript(fiscal_year, fiscal_quarter)

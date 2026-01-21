@@ -1,6 +1,6 @@
 import pandas as pd
 
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 from .util import get_currency
 
 def get_stock_quarterly_revenue_yoy_growth(symbol: str):
@@ -27,7 +27,7 @@ def get_stock_quarterly_revenue_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_revenue_yoy_growth()
     df['report_date'] = (
@@ -77,7 +77,7 @@ def get_stock_annual_revenue_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_revenue_yoy_growth()
     df['report_date'] = (
@@ -127,7 +127,7 @@ def get_stock_quarterly_operating_income_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_operating_income_yoy_growth()
     df['report_date'] = (
@@ -177,7 +177,7 @@ def get_stock_annual_operating_income_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_operating_income_yoy_growth()
     df['report_date'] = (
@@ -227,7 +227,7 @@ def get_stock_quarterly_ebitda_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_ebitda_yoy_growth()
     df['report_date'] = (
@@ -277,7 +277,7 @@ def get_stock_annual_ebitda_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_ebitda_yoy_growth()
     df['report_date'] = (
@@ -327,7 +327,7 @@ def get_stock_quarterly_net_income_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_net_income_yoy_growth()
     df['report_date'] = (
@@ -377,7 +377,7 @@ def get_stock_annual_net_income_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_net_income_yoy_growth()
     df['report_date'] = (
@@ -427,7 +427,7 @@ def get_stock_quarterly_fcf_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_fcf_yoy_growth()
     df['report_date'] = (
@@ -477,7 +477,7 @@ def get_stock_annual_fcf_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_fcf_yoy_growth()
     df['report_date'] = (
@@ -527,7 +527,7 @@ def get_stock_quarterly_diluted_eps_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_eps_yoy_growth()
     df['report_date'] = (
@@ -577,7 +577,7 @@ def get_stock_quarterly_ttm_diluted_eps_yoy_growth(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_eps_yoy_growth()
     df['report_date'] = (

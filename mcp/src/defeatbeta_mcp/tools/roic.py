@@ -1,4 +1,4 @@
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 from .util import get_currency
 
 
@@ -35,7 +35,7 @@ def get_stock_quarterly_roic(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.roic()
 

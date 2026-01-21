@@ -1,5 +1,5 @@
 import pandas as pd
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 def get_quarterly_revenue_by_segment(symbol: str):
     """
@@ -29,7 +29,7 @@ def get_quarterly_revenue_by_segment(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.revenue_by_segment()
 
@@ -105,7 +105,7 @@ def get_quarterly_revenue_by_geography(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.revenue_by_geography()
 

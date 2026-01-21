@@ -1,4 +1,4 @@
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 
 def get_stock_officers(symbol: str):
@@ -44,7 +44,7 @@ def get_stock_officers(symbol: str):
         - If no officer data is available, an empty list is returned.
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     df = ticker.officers()
 
     if df.empty:

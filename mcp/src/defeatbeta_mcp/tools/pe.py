@@ -1,6 +1,6 @@
 import pandas as pd
 
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
     """
@@ -47,7 +47,7 @@ def get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None):
         time expressions.
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     df = ticker.ttm_pe()
 
     if df.empty:
@@ -159,7 +159,7 @@ def get_industry_ttm_pe(symbol: str, start_date: str = None, end_date: str = Non
         time expressions.
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     df = ticker.industry_ttm_pe()
 
     if df.empty:

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 def get_stock_market_capitalization(symbol: str, start_date: str = None, end_date: str = None):
     """
@@ -47,7 +47,7 @@ def get_stock_market_capitalization(symbol: str, start_date: str = None, end_dat
         time expressions.
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     df = ticker.market_capitalization()
 
     if df.empty:
