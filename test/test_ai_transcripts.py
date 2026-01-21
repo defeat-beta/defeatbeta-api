@@ -9,7 +9,7 @@ from openai import OpenAI
 class TestAITranscripts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("META", http_proxy="http://127.0.0.1:7890", log_level=logging.DEBUG)
+        cls.ticker = Ticker("META", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
 
         key = Path(__file__).parent.joinpath("siliconflow_api.key").read_text(encoding="utf-8")
         cls.llm = OpenAI(
