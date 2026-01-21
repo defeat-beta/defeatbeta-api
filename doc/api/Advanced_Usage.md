@@ -33,7 +33,7 @@ result = duckdb_client.query(sql)
 print(result)
 ```
 
-## Set Http Proxy
+## Set Http Proxy (if you’re in a region where cannot access Hugging Face)
 
 ```python
 import defeatbeta_api
