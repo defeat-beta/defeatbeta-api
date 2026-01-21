@@ -79,7 +79,8 @@ Once added, your MCP client will automatically:
 No further setup is required.
 
 
-**Set Http Proxy:**
+**Set HTTP Proxy (if you’re in a region such as China and cannot access Hugging Face):**
+
 ```json
 {
   "mcpServers": {
