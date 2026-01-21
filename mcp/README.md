@@ -79,7 +79,7 @@ Once added, your MCP client will automatically:
 No further setup is required.
 
 
-**Set HTTP Proxy (if you’re in a region such as China and cannot access Hugging Face):**
+**Set HTTP Proxy (if you’re in a region where cannot access Hugging Face):**
 
 ```json
 {
