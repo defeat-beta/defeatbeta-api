@@ -103,7 +103,9 @@ curl -sSL https://raw.githubusercontent.com/defeat-beta/defeatbeta-api/main/mcp/
 
 #### What this script does
 
-The installation script will automatically perform the following steps:
+<details>
+<summary>The installation script will automatically perform the following steps:</summary>
+
 
 1. **Installation Location**
    * The MCP server will be installed to the local directory:
@@ -123,10 +125,9 @@ The installation script will automatically perform the following steps:
 4. **Install Runtime Dependencies**
    * Installs the MCP protocol implementation and required runtime dependencies (including `defeatbeta-api`).
    * Dependencies are resolved and installed once during installation, avoiding repeated downloads or installations at runtime.
+5. **Installed Directory Structure**
 
-#### Installed Directory Structure
-
-After installation, the directory structure is as follows:
+> After installation, the directory structure is as follows:
 
 ```text
 ~/.defeatbeta/
@@ -151,6 +152,8 @@ After installation, the directory structure is as follows:
   Contains all dependencies required to run the MCP Server in an isolated environment.
 * `src/defeatbeta_mcp/server.py`
   Core implementation of the MCP Server, responsible for exposing `defeatbeta-api` data as MCP tools.
+
+</details>
 
 ## Usage
 - Use in Claude Desktop
