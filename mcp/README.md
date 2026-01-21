@@ -78,6 +78,21 @@ Once added, your MCP client will automatically:
 - Launch the MCP server in stdio mode
 No further setup is required.
 
+
+**Set Http Proxy:**
+```json
+{
+  "mcpServers": {
+    "defeatbeta-api": {
+      ...
+      "env": {
+        "DEFEATBETA_GATEWAY": "http://127.0.0.1:8118"
+      }
+    }
+  }
+}
+```
+
 ### Method 2: One-line Install Script
 #### macOS or Linux
 Run script to install:
