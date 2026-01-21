@@ -1,5 +1,7 @@
 from mcp.server.fastmcp import FastMCP
+import sys
 
+from .tools.util import get_http_proxy
 from .tools.officers import get_stock_officers
 from .tools.profile import get_stock_profile
 from .tools.meta import get_latest_data_update_date
@@ -120,6 +122,11 @@ mcp.tool()(get_stock_quarterly_diluted_eps_yoy_growth)
 mcp.tool()(get_stock_quarterly_ttm_diluted_eps_yoy_growth)
 
 def main():
+    proxy = get_http_proxy()
+    print(
+        f"[MCP] Resolved outbound proxy = {proxy or '<none>'}",
+        file=sys.stderr
+    )
     mcp.run()
 
 if __name__ == "__main__":
