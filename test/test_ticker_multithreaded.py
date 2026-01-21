@@ -16,7 +16,7 @@ class TestTickerMultithreaded(unittest.TestCase):
 
     def test_info(self):
         def run_test():
-            ticker = Ticker("BABA", http_proxy="http://127.0.0.1:7890", log_level=logging.DEBUG)
+            ticker = Ticker("BABA", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
             result = ticker.info()
             print(f"Thread {threading.current_thread().name} result:\n{result.to_string()}")
             result = ticker.download_data_performance()
@@ -33,7 +33,7 @@ class TestTickerMultithreaded(unittest.TestCase):
 
     def test_download_data_performance(self):
         t = "BABA"
-        ticker = Ticker(t, http_proxy="http://127.0.0.1:7890", log_level=logging.DEBUG)
+        ticker = Ticker(t, http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
         info = ticker.info()
         industry = info['industry']
         if isinstance(industry, pd.Series):
@@ -42,14 +42,14 @@ class TestTickerMultithreaded(unittest.TestCase):
         huggingface_client = HuggingFaceClient()
         url = huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
-        duckdb_client = get_duckdb_client(http_proxy="http://127.0.0.1:7890", log_level=logging.DEBUG, config=Configuration())
+        duckdb_client = get_duckdb_client(http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG, config=Configuration())
         symbols = duckdb_client.query(sql)['symbol']
         symbols = symbols[symbols != t]
         symbols = pd.concat([pd.Series([t]), symbols], ignore_index=True)
         print(symbols.to_string())
 
         def run_test(symbol):
-            tk = Ticker(symbol, http_proxy="http://127.0.0.1:7890", log_level=logging.DEBUG, config=Configuration())
+            tk = Ticker(symbol, http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG, config=Configuration())
             market_cap = tk.market_capitalization()
             print(market_cap)
 
