@@ -4,7 +4,7 @@
 
 - [Advanced Usage](#advanced-usage)
   - [Use SQL to Access Data](#use-sql-to-access-data)
-  - [Set Http Proxy](#set-http-proxy)
+  - [Set Http Proxy (if you’re in a region where cannot access Hugging Face)](#set-http-proxy-if-youre-in-a-region-where-cannot-access-hugging-face)
   - [Set Logging](#set-logging)
   - [Set Configuration](#set-configuration)
   - [Load from Hugging Face](#load-from-hugging-face)
