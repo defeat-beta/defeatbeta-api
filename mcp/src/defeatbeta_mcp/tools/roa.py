@@ -1,6 +1,6 @@
 import pandas as pd
 
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 from .util import get_currency
 
 
@@ -30,7 +30,7 @@ def get_stock_quarterly_roa(symbol: str):
 
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.roa()
 
@@ -82,7 +82,7 @@ def get_industry_quarterly_roa(symbol: str):
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.industry_roa()
     df['report_date'] = (

@@ -1,4 +1,4 @@
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 
 def get_stock_profile(symbol: str):
@@ -45,7 +45,7 @@ def get_stock_profile(symbol: str):
             - If no data is available (empty DataFrame), an empty dictionary is returned.
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     df = ticker.info()
     # Convert the first row of the DataFrame to dict; return empty dict if no data
     profile = df.iloc[0].to_dict() if not df.empty else {}

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 from .util import get_currency
 
 
@@ -30,7 +30,7 @@ def get_stock_quarterly_gross_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_gross_margin()
 
@@ -78,7 +78,7 @@ def get_stock_annual_gross_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_gross_margin()
 
@@ -127,7 +127,7 @@ def get_stock_quarterly_operating_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_operating_margin()
 
@@ -176,7 +176,7 @@ def get_stock_annual_operating_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_operating_margin()
 
@@ -225,7 +225,7 @@ def get_stock_quarterly_net_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_net_margin()
 
@@ -274,7 +274,7 @@ def get_stock_annual_net_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_net_margin()
 
@@ -323,7 +323,7 @@ def get_stock_quarterly_ebitda_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_ebitda_margin()
 
@@ -372,7 +372,7 @@ def get_stock_annual_ebitda_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_ebitda_margin()
 
@@ -421,7 +421,7 @@ def get_stock_quarterly_fcf_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.quarterly_fcf_margin()
 
@@ -470,7 +470,7 @@ def get_stock_annual_fcf_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.annual_fcf_margin()
 
@@ -520,7 +520,7 @@ def get_industry_quarterly_gross_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.industry_quarterly_gross_margin()
     df["report_date"] = pd.to_datetime(df["report_date"])
@@ -573,7 +573,7 @@ def get_industry_quarterly_net_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.industry_quarterly_net_margin()
     df["report_date"] = pd.to_datetime(df["report_date"])
@@ -626,7 +626,7 @@ def get_industry_quarterly_ebitda_margin(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
 
     df = ticker.industry_quarterly_ebitda_margin()
     df["report_date"] = pd.to_datetime(df["report_date"])

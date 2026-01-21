@@ -1,6 +1,6 @@
 import pandas as pd
 
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 def get_stock_peg_ratio(symbol: str, start_date: str = None, end_date: str = None):
     """
@@ -57,7 +57,7 @@ def get_stock_peg_ratio(symbol: str, start_date: str = None, end_date: str = Non
     """
 
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     df = ticker.peg_ratio()
 
     if df.empty:

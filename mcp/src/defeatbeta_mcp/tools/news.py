@@ -1,4 +1,4 @@
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 import pandas as pd
 
 def get_stock_news(symbol: str, start_date: str = None, end_date: str = None, max_rows: int = 50):
@@ -62,7 +62,7 @@ def get_stock_news(symbol: str, start_date: str = None, end_date: str = None, ma
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     news = ticker.news()
     df = news.get_news_list()
 

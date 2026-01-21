@@ -1,6 +1,6 @@
 import pandas as pd
 
-from defeatbeta_api.data.ticker import Ticker
+from .util import create_ticker
 
 def get_stock_eps_and_ttm_eps(symbol: str):
     """
@@ -31,7 +31,7 @@ def get_stock_eps_and_ttm_eps(symbol: str):
         }
     """
     symbol = symbol.upper()
-    ticker = Ticker(symbol)
+    ticker = create_ticker(symbol)
     df = ticker.ttm_eps()
 
     if df.empty:
