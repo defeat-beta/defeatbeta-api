@@ -28,6 +28,7 @@ from .tools.roe import get_stock_quarterly_roe, get_industry_quarterly_roe
 from .tools.roa import get_stock_quarterly_roa, get_industry_quarterly_roa
 from .tools.roic import get_stock_quarterly_roic
 from .tools.wacc import get_stock_wacc
+from .tools.sp500 import get_sp500_historical_annual_returns, get_sp500_cagr_returns, get_sp500_cagr_returns_rolling
 from .tools.em import get_stock_quarterly_equity_multiplier, get_industry_quarterly_equity_multiplier
 from .tools.asserts import get_stock_quarterly_asset_turnover, get_industry_quarterly_asset_turnover
 from .tools.growth import get_stock_quarterly_revenue_yoy_growth, get_stock_annual_revenue_yoy_growth, \
@@ -48,6 +49,11 @@ mcp = FastMCP(
 
 # Meta / system tools
 mcp.tool()(get_latest_data_update_date)
+
+# Market / Economy
+mcp.tool()(get_sp500_historical_annual_returns)
+mcp.tool()(get_sp500_cagr_returns)
+mcp.tool()(get_sp500_cagr_returns_rolling)
 
 # Stock core data
 mcp.tool()(get_stock_profile)
