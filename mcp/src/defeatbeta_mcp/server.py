@@ -27,6 +27,7 @@ from .tools.peg import get_stock_peg_ratio
 from .tools.roe import get_stock_quarterly_roe, get_industry_quarterly_roe
 from .tools.roa import get_stock_quarterly_roa, get_industry_quarterly_roa
 from .tools.roic import get_stock_quarterly_roic
+from .tools.wacc import get_stock_wacc
 from .tools.em import get_stock_quarterly_equity_multiplier, get_industry_quarterly_equity_multiplier
 from .tools.asserts import get_stock_quarterly_asset_turnover, get_industry_quarterly_asset_turnover
 from .tools.growth import get_stock_quarterly_revenue_yoy_growth, get_stock_annual_revenue_yoy_growth, \
@@ -94,6 +95,7 @@ mcp.tool()(get_stock_market_capitalization)
 mcp.tool()(get_stock_ps_ratio)
 mcp.tool()(get_stock_pb_ratio)
 mcp.tool()(get_stock_peg_ratio)
+mcp.tool()(get_stock_wacc)
 mcp.tool()(get_stock_quarterly_roe)
 mcp.tool()(get_stock_quarterly_roa)
 mcp.tool()(get_stock_quarterly_roic)
