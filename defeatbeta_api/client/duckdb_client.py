@@ -65,10 +65,15 @@ class DuckDBClient:
             )
             current_update_time = current_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
             if current_update_time != data_update_time:
-                self.logger.debug(f"Current update time: {current_update_time}, Remote update time: {data_update_time}")
-                self.query(
-                    "SELECT cache_httpfs_clear_cache()"
+                self.logger.info(f"Cache update time: {current_update_time}, Remote update time: {data_update_time}")
+                self.query("SELECT cache_httpfs_clear_cache()")
+                # Verify cache is cleared
+                verified_spec = self.query(
+                    "SELECT * FROM 'https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data/resolve/main/spec.json'"
                 )
+                verified_update_time = verified_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
+                if verified_update_time != data_update_time:
+                    raise RuntimeError(f"Cache clear failed. Expected: {data_update_time}, Got: {verified_update_time}")
         except Exception as e:
             self.logger.error(f"Failed to validate httpfs cache: {str(e)}")
             raise
