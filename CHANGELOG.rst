@@ -5,6 +5,7 @@ Change Log
 -------
 - Fix uninformative Transcripts object representation in interactive use[`#125 <https://github.com/defeat-beta/defeatbeta-api/issues/125>`_]
 - Load financial_currency from HuggingFace remote with DuckDB caching[`#131 <https://github.com/defeat-beta/defeatbeta-api/issues/131>`_]
+- Improve httpfs cache validation with post-clear verification[`#132 <https://github.com/defeat-beta/defeatbeta-api/issues/132>`_]
 
 0.0.29
 -------
