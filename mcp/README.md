@@ -52,7 +52,7 @@ Click [here](../doc/mcp/README.md) to discover more ways to use MCP and explore 
 
 ### Method 1: Run with `uvx` (Recommended)
 
-The recommended way to run **Defeat Beta API MCP** is via `uvx`.
+The recommended way to run **Defeat Beta API MCP** is using `uvx`. You need to install it first by running `pip install uv`.
 
 This method requires **no manual installation**, **no virtual environment management**, and works seamlessly with MCP-native clients such as **Manus**, **Cherry Studio**, and **Claude Desktop**.
 
