@@ -1,4 +1,5 @@
 from mcp.server.fastmcp import FastMCP
+from mcp.server.models import Icon
 import sys
 
 from .tools.util import get_http_proxy
@@ -44,7 +45,13 @@ mcp = FastMCP(
     instructions="""
                     An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
                 """,
-    website_url="https://github.com/defeat-beta/defeatbeta-api"
+    website_url="https://github.com/defeat-beta/defeatbeta-api",
+    icons=[
+        Icon(
+            src="https://github.com/defeat-beta/defeatbeta-api/blob/main/doc/favicon.ico?raw=true",
+            mimeType="image/x-icon"
+        )
+    ]
 )
 
 
