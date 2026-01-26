@@ -3,6 +3,7 @@ Change Log
 
 0.0.31
 -------
+- Support sec filings (10k, 10Q) feed data[`#34 <https://github.com/defeat-beta/defeatbeta-api/issues/34>`_]
 
 0.0.30
 -------
