@@ -7,7 +7,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("AMD", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
+        cls.ticker = Ticker("TSLA", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -21,6 +21,10 @@ class TestTicker(unittest.TestCase):
     def test_info(self):
         result = self.ticker.info()
         print(result.to_string())
+
+    def test_sec_filing(self):
+        result = self.ticker.sec_filing()
+        print(result)
 
     def test_officers(self):
         result = self.ticker.officers()

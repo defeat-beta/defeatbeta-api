@@ -19,7 +19,7 @@
 > [!TIP]
 > The project evaluates stocks across several key dimensions:
 > 
-> [Information](api/Info_Examples.md) includes `profile`, `officers`, `earnings call transcripts`, `financial news` etc.
+> [Information](api/Info_Examples.md) includes `profile`, `sec filing`, `officers`, `earnings call transcripts`, `financial news` etc.
 > 
 > [Finance](api/Finance_Examples.md) includes `price`, `statement`, `earning calendar`, `earnings report`, `splits`, `dividends`, `revenue forecast`, `earnings forecast`, `summary`, `revenue breakdown`, `geography breakdown`, `product breakdown` etc.
 > 

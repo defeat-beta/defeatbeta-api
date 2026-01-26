@@ -25,7 +25,8 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
-    stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate
+    stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate, \
+    stock_sec_filing
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
     balance_sheet_template_type, cash_flow_template_type, load_financial_currency, sp500_cagr_returns_rolling
 
@@ -46,6 +47,11 @@ class Ticker:
 
     def info(self) -> pd.DataFrame:
         return self._query_data(stock_profile)
+
+    def sec_filing(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_sec_filing)
+        sql = load_sql("select_sec_filing_by_symbol", ticker=self.ticker, url=url)
+        return self.duckdb_client.query(sql)
 
     def officers(self) -> pd.DataFrame:
         return self._query_data(stock_officers)
