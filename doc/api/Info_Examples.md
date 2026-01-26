@@ -30,33 +30,33 @@ ticker.info()
 ```
 
 ## 2. SEC Filing
-- **Description:** Contains SEC (U.S. Securities and Exchange Commission) filing records for publicly traded companies. Supported form types include:
-  - **US Domestic Company Forms:**
-    - `10-K`, `10-K/A` - Annual report
-    - `10-Q`, `10-Q/A` - Quarterly report
-    - `8-K`, `8-K/A` - Current report (material events)
-    - `DEF 14A`, `DEFA14A` - Proxy statement (shareholder meetings, executive compensation)
-  - **Insider Trading Forms:**
-    - `3`, `3/A` - Initial beneficial ownership
-    - `4`, `4/A` - Changes in beneficial ownership
-    - `5`, `5/A` - Annual beneficial ownership
-    - `144`, `144/A` - Notice of proposed sale of securities
-  - **Institutional Holdings:**
-    - `13F-HR`, `13F-HR/A` - Institutional holdings report (quarterly)
-    - `SC 13G`, `SC 13G/A` - Passive investor holdings (>5%)
-    - `SC 13D`, `SC 13D/A` - Active investor holdings (>5%, may influence company)
-  - **Foreign Private Issuer Forms** (e.g., BABA, PDD, JD):
-    - `20-F`, `20-F/A` - Annual report
-    - `6-K`, `6-K/A` - Current report (quarterly + material events)
-  - **Canadian Company Forms** (e.g., SHOP, TD, RY):
-    - `40-F`, `40-F/A` - Annual report
-  - **ETF/Investment Company Forms** (e.g., SPY, QQQ, VOO):
-    - `N-CSR`, `N-CSR/A` - Annual/Semi-annual shareholder report
-    - `N-CSRS`, `N-CSRS/A` - Semi-annual shareholder report
-    - `N-30D`, `N-30D/A` - Shareholder report (legacy format)
-    - `NPORT-P` - Monthly portfolio holdings
-    - `N-CEN` - Annual report (fund operations)
-    - `N-Q`, `N-Q/A` - Quarterly portfolio (discontinued, historical data exists)
+**Description:** Contains SEC (U.S. Securities and Exchange Commission) filing records for publicly traded companies. Supported form types include:
+- **US Domestic Company Forms:**
+  - `10-K`, `10-K/A` - Annual report
+  - `10-Q`, `10-Q/A` - Quarterly report
+  - `8-K`, `8-K/A` - Current report (material events)
+  - `DEF 14A`, `DEFA14A` - Proxy statement (shareholder meetings, executive compensation)
+- **Insider Trading Forms:**
+  - `3`, `3/A` - Initial beneficial ownership
+  - `4`, `4/A` - Changes in beneficial ownership
+  - `5`, `5/A` - Annual beneficial ownership
+  - `144`, `144/A` - Notice of proposed sale of securities
+- **Institutional Holdings:**
+  - `13F-HR`, `13F-HR/A` - Institutional holdings report (quarterly)
+  - `SC 13G`, `SC 13G/A` - Passive investor holdings (>5%)
+  - `SC 13D`, `SC 13D/A` - Active investor holdings (>5%, may influence company)
+- **Foreign Private Issuer Forms** (e.g., BABA, PDD, JD):
+  - `20-F`, `20-F/A` - Annual report
+  - `6-K`, `6-K/A` - Current report (quarterly + material events)
+- **Canadian Company Forms** (e.g., SHOP, TD, RY):
+  - `40-F`, `40-F/A` - Annual report
+- **ETF/Investment Company Forms** (e.g., SPY, QQQ, VOO):
+  - `N-CSR`, `N-CSR/A` - Annual/Semi-annual shareholder report
+  - `N-CSRS`, `N-CSRS/A` - Semi-annual shareholder report
+  - `N-30D`, `N-30D/A` - Shareholder report (legacy format)
+  - `NPORT-P` - Monthly portfolio holdings
+  - `N-CEN` - Annual report (fund operations)
+  - `N-Q`, `N-Q/A` - Quarterly portfolio (discontinued, historical data exists)
 
 ```python
 ticker.sec_filing()
