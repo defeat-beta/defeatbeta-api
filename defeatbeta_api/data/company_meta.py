@@ -9,7 +9,7 @@ from defeatbeta_api.data.sql.sql_loader import load_sql
 
 
 class CompanyMeta:
-    COMPANY_TICKERS_URL = "https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data/resolve/main/data/company_tickers.json"
+    COMPANY_TICKERS_URL = "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/data/company_tickers.json"
 
     def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
         self.http_proxy = http_proxy

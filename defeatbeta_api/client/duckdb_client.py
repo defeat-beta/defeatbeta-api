@@ -61,7 +61,7 @@ class DuckDBClient:
     def _validate_httpfs_cache(self):
         try:
             current_spec = self.query(
-                "SELECT * FROM 'https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data/resolve/main/spec.json'"
+                "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json'"
             )
             current_update_time = current_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
             if current_update_time != data_update_time:
@@ -69,7 +69,7 @@ class DuckDBClient:
                 self.query("SELECT cache_httpfs_clear_cache()")
                 # Verify cache is cleared
                 verified_spec = self.query(
-                    "SELECT * FROM 'https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data/resolve/main/spec.json'"
+                    "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json'"
                 )
                 verified_update_time = verified_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
                 if verified_update_time != data_update_time:

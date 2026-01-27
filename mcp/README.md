@@ -79,7 +79,7 @@ Once added, your MCP client will automatically:
 No further setup is required.
 
 
-**Set HTTP Proxy (if you’re in a region where cannot access [the Hugging Face Dataset](https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data)):**
+**Set HTTP Proxy (if you’re in a region where cannot access [the Hugging Face Dataset](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data)):**
 
 ```json
 {

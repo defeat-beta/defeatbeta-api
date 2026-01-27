@@ -4,7 +4,7 @@ import datasets
 datasets.utils.logging.set_verbosity_debug()
 
 dataset = load_dataset(
-    "bwzheng2010/yahoo-finance-data",
+    "defeatbeta/yahoo-finance-data",
     data_files="data/stock_prices.parquet"
 )
 
