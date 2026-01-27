@@ -20,6 +20,7 @@ from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.stock_statement import StockStatement
 from defeatbeta_api.data.transcripts import Transcripts
 from defeatbeta_api.data.treasure import Treasure
+from defeatbeta_api.data.company_meta import CompanyMeta
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
 from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, \
     stock_split_events, \
@@ -28,7 +29,7 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate, \
     stock_sec_filing
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
-    balance_sheet_template_type, cash_flow_template_type, load_financial_currency, sp500_cagr_returns_rolling
+    balance_sheet_template_type, cash_flow_template_type, sp500_cagr_returns_rolling
 
 
 class Ticker:
@@ -40,6 +41,11 @@ class Ticker:
         self.huggingface_client = HuggingFaceClient()
         self.log_level = log_level
         self.treasure = Treasure(
+            http_proxy=self.http_proxy,
+            log_level=self.log_level,
+            config=config
+        )
+        self.company_meta = CompanyMeta(
             http_proxy=self.http_proxy,
             log_level=self.log_level,
             config=config
@@ -434,9 +440,8 @@ class Ticker:
                                            stockholders_equity_url = stockholders_equity_url)
         stockholders_equity_df = self.duckdb_client.query(stockholders_equity_sql)
 
-        currency = load_financial_currency().get(self.ticker)
-        if currency is None:
-            currency = 'USD'
+        company_info = self.company_meta.get_company_info(self.ticker)
+        currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
 
         if currency == 'USD':
             currency_df = pd.DataFrame()
@@ -489,9 +494,8 @@ class Ticker:
                                    ttm_revenue_url = ttm_revenue_url)
         ttm_revenue_df = self.duckdb_client.query(ttm_revenue_sql)
 
-        currency = load_financial_currency().get(self.ticker)
-        if currency is None:
-            currency = 'USD'
+        company_info = self.company_meta.get_company_info(self.ticker)
+        currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
         if currency == 'USD':
             currency_df = pd.DataFrame()
             currency_df['report_date'] = pd.to_datetime(
@@ -544,9 +548,8 @@ class Ticker:
                                       ttm_net_income_url=ttm_net_income_url)
         ttm_net_income_df = self.duckdb_client.query(ttm_net_income_sql)
 
-        currency = load_financial_currency().get(self.ticker)
-        if currency is None:
-            currency = 'USD'
+        company_info = self.company_meta.get_company_info(self.ticker)
+        currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
 
         if currency == 'USD':
             currency_df = pd.DataFrame()
@@ -692,9 +695,8 @@ class Ticker:
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = load_sql("select_wacc_by_symbol", ticker = self.ticker, url = url)
         wacc_df = self.duckdb_client.query(sql)
-        currency = load_financial_currency().get(self.ticker)
-        if currency is None:
-            currency = 'USD'
+        company_info = self.company_meta.get_company_info(self.ticker)
+        currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
 
         if currency == 'USD':
             currency_df = pd.DataFrame()
@@ -897,7 +899,7 @@ class Ticker:
                                       symbols = ", ".join(f"'{s}'" for s in market_cap_cols))
         ttm_net_income = self.duckdb_client.query(ttm_net_income_sql)
         ttm_net_income_df = ttm_net_income.copy()
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date'])
         usd_columns = []
         for symbol in ttm_net_income_df.columns:
@@ -984,7 +986,7 @@ class Ticker:
                                       symbols = ", ".join(f"'{s}'" for s in symbols))
         ttm_revenue = self.duckdb_client.query(ttm_revenue_sql)
         ttm_revenue_df = ttm_revenue.copy()
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
         new_cols = {}
         for symbol in ttm_revenue_df.columns:
@@ -1065,7 +1067,7 @@ class Ticker:
                                       symbols = ", ".join(f"'{s}'" for s in symbols))
         bve = self.duckdb_client.query(bve_sql)
         bve_df = bve.copy()
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
         new_cols = {}
         for symbol in bve_df.columns:
@@ -1135,7 +1137,7 @@ class Ticker:
             col for col in roe_table.columns
             if col.endswith('_net_income_common_stockholders')
         ]]).ffill()
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         net_income_common_stockholders_df['report_date'] = pd.to_datetime(net_income_common_stockholders_df['report_date'])
         new_cols = {}
         for symbol in net_income_common_stockholders_df.columns:
@@ -1242,7 +1244,7 @@ class Ticker:
             col for col in roa_table.columns
             if col.endswith('_net_income_common_stockholders')
         ]]).ffill()
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         net_income_common_stockholders_df['report_date'] = pd.to_datetime(net_income_common_stockholders_df['report_date'])
         new_cols = {}
         for symbol in net_income_common_stockholders_df.columns:
@@ -1375,7 +1377,7 @@ class Ticker:
                                  symbols=", ".join(f"'{s}'" for s in symbols))
         gross_profit_and_revenue_table = self.duckdb_client.query(gross_profit_and_revenue_table_sql)
 
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         gross_profit_df = (gross_profit_and_revenue_table[['report_date'] + [
             col for col in gross_profit_and_revenue_table.columns
             if col.endswith('_gross_profit')
@@ -1494,7 +1496,7 @@ class Ticker:
                                  symbols=", ".join(f"'{s}'" for s in symbols))
         ebitda_and_revenue_table = self.duckdb_client.query(ebitda_and_revenue_table_sql)
 
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         ebitda_df = (ebitda_and_revenue_table[['report_date'] + [
             col for col in ebitda_and_revenue_table.columns
             if col.endswith('_ebitda')
@@ -1614,7 +1616,7 @@ class Ticker:
                                  symbols=", ".join(f"'{s}'" for s in symbols))
         net_income_and_revenue_table = self.duckdb_client.query(net_income_and_revenue_table_sql)
 
-        currency_dict = load_financial_currency()
+        currency_dict = self.company_meta.get_financial_currency_map()
         net_income_df = (net_income_and_revenue_table[['report_date'] + [
             col for col in net_income_and_revenue_table.columns
             if col.endswith('_net_income_common_stockholders')
