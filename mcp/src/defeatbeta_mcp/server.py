@@ -6,7 +6,6 @@ from .tools.util import get_http_proxy
 from .tools.officers import get_stock_officers
 from .tools.profile import get_stock_profile
 from .tools.meta import get_latest_data_update_date
-from .tools.symbols import get_supported_stocks
 from .tools.price import get_stock_price
 from .tools.transcripts import get_stock_earning_call_transcripts_list, get_stock_earning_call_transcript
 from .tools.news import get_stock_news
@@ -58,7 +57,6 @@ mcp = FastMCP(
 
 # Meta / system tools
 mcp.tool()(get_latest_data_update_date)
-mcp.tool()(get_supported_stocks)
 
 # Market / Economy
 mcp.tool()(get_sp500_historical_annual_returns)
