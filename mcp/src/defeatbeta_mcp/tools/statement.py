@@ -1,6 +1,5 @@
 import pandas as pd
-from .util import create_ticker
-from defeatbeta_api.utils.util import load_financial_currency
+from .util import create_ticker, get_currency
 
 
 def get_stock_quarterly_income_statement(symbol: str):
@@ -31,9 +30,7 @@ def get_stock_quarterly_income_statement(symbol: str):
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
-    currency = load_financial_currency().get(symbol)
-    if currency is None:
-        currency = 'USD'
+    currency = get_currency(symbol)
 
     df = ticker.quarterly_income_statement().df()
 
@@ -77,9 +74,7 @@ def get_stock_annual_income_statement(symbol: str):
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
-    currency = load_financial_currency().get(symbol)
-    if currency is None:
-        currency = 'USD'
+    currency = get_currency(symbol)
 
     df = ticker.annual_income_statement().df()
 
@@ -123,9 +118,7 @@ def get_stock_quarterly_balance_sheet(symbol: str):
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
-    currency = load_financial_currency().get(symbol)
-    if currency is None:
-        currency = 'USD'
+    currency = get_currency(symbol)
 
     df = ticker.quarterly_balance_sheet().df()
 
@@ -169,9 +162,7 @@ def get_stock_annual_balance_sheet(symbol: str):
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
-    currency = load_financial_currency().get(symbol)
-    if currency is None:
-        currency = 'USD'
+    currency = get_currency(symbol)
 
     df = ticker.annual_balance_sheet().df()
 
@@ -215,9 +206,7 @@ def get_stock_quarterly_cash_flow(symbol: str):
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
-    currency = load_financial_currency().get(symbol)
-    if currency is None:
-        currency = 'USD'
+    currency = get_currency(symbol)
 
     df = ticker.quarterly_cash_flow().df()
 
@@ -261,9 +250,7 @@ def get_stock_annual_cash_flow(symbol: str):
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
-    currency = load_financial_currency().get(symbol)
-    if currency is None:
-        currency = 'USD'
+    currency = get_currency(symbol)
 
     df = ticker.annual_cash_flow().df()
 
