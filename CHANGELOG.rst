@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.33
+-------
+
 0.0.32
 -------
 - Add CompanyMeta for centralized company metadata access[`#134 <https://github.com/defeat-beta/defeatbeta-api/issues/134>`_]
