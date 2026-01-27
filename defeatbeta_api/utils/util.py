@@ -82,13 +82,6 @@ def load_item_dictionary() -> Dict[str, str]:
     data = json.loads(text)
     return {key: str(value) for key, value in data.items()}
 
-def load_financial_currency() -> Dict[str, str]:
-    url = "https://huggingface.co/datasets/bwzheng2010/yahoo-finance-data/resolve/main/data/financial_currency.json"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    data = response.json()
-    return {key: str(value) for key, value in data.items()}
-
 def income_statement_template_type(df: DataFrame) -> str:
     if not df.query("item_name == 'non_interest_income'").empty:
         return "bank"
