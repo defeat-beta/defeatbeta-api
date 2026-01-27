@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.34
+-------
+
 0.0.33
 -------
 - Switch datasets to defeatbeta/yahoo-finance-data[`#136 <https://github.com/defeat-beta/defeatbeta-api/issues/136>`_]
