@@ -59,7 +59,7 @@ def get_stock_sec_filings(symbol: str):
             - NPORT-P: Monthly portfolio holdings
 
     Notes:
-        - Filings are returned in reverse chronological order (most recent first).
+        - Filings are returned in chronological order (oldest first).
         - For insider trading analysis, look for form type "4" to see stock transactions.
         - For annual financials, look for "10-K" (US) or "20-F" (foreign).
         - If no filings are found, an empty list is returned.
@@ -75,8 +75,8 @@ def get_stock_sec_filings(symbol: str):
             "filings": []
         }
 
-    # Sort by filing_date descending (most recent first)
-    df = df.sort_values("filing_date", ascending=False)
+    # Sort by filing_date ascending (oldest first)
+    df = df.sort_values("filing_date", ascending=True)
 
     # Select and normalize fields for LLM-friendly JSON output
     columns = [
