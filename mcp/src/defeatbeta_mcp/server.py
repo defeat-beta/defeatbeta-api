@@ -5,6 +5,7 @@ import sys
 from .tools.util import get_http_proxy
 from .tools.officers import get_stock_officers
 from .tools.profile import get_stock_profile
+from .tools.sec_filing import get_stock_sec_filings
 from .tools.meta import get_latest_data_update_date
 from .tools.price import get_stock_price
 from .tools.transcripts import get_stock_earning_call_transcripts_list, get_stock_earning_call_transcript
@@ -68,6 +69,7 @@ mcp.tool()(get_daily_treasury_yield)
 mcp.tool()(get_stock_profile)
 mcp.tool()(get_stock_price)
 mcp.tool()(get_stock_officers)
+mcp.tool()(get_stock_sec_filings)
 
 # Earnings
 mcp.tool()(get_stock_earning_call_transcripts_list)
