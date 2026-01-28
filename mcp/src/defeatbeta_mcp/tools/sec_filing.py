@@ -2,6 +2,9 @@ import pandas as pd
 
 from .util import create_ticker
 
+# SEC EDGAR requires a valid User-Agent with company name and email
+SEC_USER_AGENT = "DefeatBeta contact@defeatbeta.com"
+
 
 def get_stock_sec_filings(symbol: str, start_date: str = None, end_date: str = None):
     """
@@ -27,6 +30,8 @@ def get_stock_sec_filings(symbol: str, start_date: str = None, end_date: str = N
                 "date_range": "2010-02-01 to 2024-12-31",
                 "rows_returned": 500,
                 "truncated": false,
+                "sec_user_agent": "DefeatBeta contact@defeatbeta.com",
+                "sec_access_note": "To access filing_url, use the User-Agent header: ...",
                 "filings": [
                     {
                         "form_type": "10-K",
@@ -82,6 +87,8 @@ def get_stock_sec_filings(symbol: str, start_date: str = None, end_date: str = N
         - For insider trading analysis, look for form type "4" to see stock transactions.
         - For annual financials, look for "10-K" (US) or "20-F" (foreign).
         - If no filings are found, an empty list is returned.
+        - IMPORTANT: To access filing_url, you MUST set the User-Agent header to the value
+          provided in sec_user_agent. SEC blocks requests without a valid User-Agent.
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
@@ -92,6 +99,7 @@ def get_stock_sec_filings(symbol: str, start_date: str = None, end_date: str = N
             "symbol": symbol,
             "rows_returned": 0,
             "truncated": False,
+            "sec_user_agent": SEC_USER_AGENT,
             "filings": []
         }
 
@@ -119,7 +127,8 @@ def get_stock_sec_filings(symbol: str, start_date: str = None, end_date: str = N
     if df.empty:
         return {
             "symbol": symbol,
-            "message": "No filings found for the specified date range."
+            "message": "No filings found for the specified date range.",
+            "sec_user_agent": SEC_USER_AGENT
         }
 
     # Safety cap to avoid token overflow in LLM context
@@ -160,5 +169,7 @@ def get_stock_sec_filings(symbol: str, start_date: str = None, end_date: str = N
         "date_range": f"{df['filing_date'].min().date()} to {df['filing_date'].max().date()}",
         "rows_returned": len(filings_df),
         "truncated": truncated,
+        "sec_user_agent": SEC_USER_AGENT,
+        "sec_access_note": "To access filing_url, use the User-Agent header: " + SEC_USER_AGENT,
         "filings": filings_df.to_dict(orient="records")
     }
