@@ -1,7 +1,9 @@
+import pandas as pd
+
 from .util import create_ticker
 
 
-def get_stock_sec_filings(symbol: str):
+def get_stock_sec_filings(symbol: str, start_date: str = None, end_date: str = None):
     """
     Retrieve SEC (U.S. Securities and Exchange Commission) filing records
     for a given publicly traded company.
@@ -13,12 +15,18 @@ def get_stock_sec_filings(symbol: str):
     Args:
         symbol (str): Stock ticker symbol (e.g., "TSLA", "AAPL").
                       Case-insensitive and will be converted to uppercase.
+        start_date: Optional start date in YYYY-MM-DD format (e.g., "2020-01-01").
+                    If None, data starts from the earliest available date.
+        end_date: Optional end date in YYYY-MM-DD format (e.g., "2024-12-31").
+                  If None, data goes up to the most recent filing.
 
     Returns:
         dict: A dictionary with the following structure:
             {
                 "symbol": "TSLA",
-                "rows_returned": 1411,
+                "date_range": "2010-02-01 to 2024-12-31",
+                "rows_returned": 500,
+                "truncated": false,
                 "filings": [
                     {
                         "form_type": "10-K",
@@ -58,6 +66,17 @@ def get_stock_sec_filings(symbol: str):
             - N-CSR, N-CSRS: Shareholder reports
             - NPORT-P: Monthly portfolio holdings
 
+    Important note on data limits:
+        To prevent responses from becoming too large for the language model to process
+        (which can cause errors or token limit exceeded issues), this tool caps the
+        maximum number of rows returned at 500 (MAX_ROWS = 500).
+        When the requested range contains more than 500 rows, only the most recent
+        500 filings are returned, and "truncated": true is set.
+
+        If you need data further back:
+        - Make multiple calls with different (earlier) date ranges
+        - Or call with a narrower start_date/end_date to stay under the limit
+
     Notes:
         - Filings are returned in chronological order (oldest first).
         - For insider trading analysis, look for form type "4" to see stock transactions.
@@ -72,11 +91,44 @@ def get_stock_sec_filings(symbol: str):
         return {
             "symbol": symbol,
             "rows_returned": 0,
+            "truncated": False,
             "filings": []
         }
 
+    # Convert filing_date to datetime for filtering and sorting
+    df["filing_date"] = pd.to_datetime(df["filing_date"])
+
     # Sort by filing_date ascending (oldest first)
-    df = df.sort_values("filing_date", ascending=True)
+    df = df.sort_values("filing_date", ascending=True).reset_index(drop=True)
+
+    # Apply date filters
+    if start_date:
+        try:
+            start_dt = pd.to_datetime(start_date)
+            df = df[df["filing_date"] >= start_dt]
+        except ValueError:
+            return {"error": f"Invalid start_date format: '{start_date}'. Use YYYY-MM-DD."}
+
+    if end_date:
+        try:
+            end_dt = pd.to_datetime(end_date)
+            df = df[df["filing_date"] <= end_dt]
+        except ValueError:
+            return {"error": f"Invalid end_date format: '{end_date}'. Use YYYY-MM-DD."}
+
+    if df.empty:
+        return {
+            "symbol": symbol,
+            "message": "No filings found for the specified date range."
+        }
+
+    # Safety cap to avoid token overflow in LLM context
+    MAX_ROWS = 500
+    if len(df) > MAX_ROWS:
+        df = df.tail(MAX_ROWS)  # Keep the newest filings
+        truncated = True
+    else:
+        truncated = False
 
     # Select and normalize fields for LLM-friendly JSON output
     columns = [
@@ -96,7 +148,7 @@ def get_stock_sec_filings(symbol: str):
 
     # Convert date columns to string format
     if "filing_date" in filings_df.columns:
-        filings_df["filing_date"] = filings_df["filing_date"].astype(str)
+        filings_df["filing_date"] = filings_df["filing_date"].dt.strftime("%Y-%m-%d")
     if "report_date" in filings_df.columns:
         filings_df["report_date"] = filings_df["report_date"].astype(str)
 
@@ -105,6 +157,8 @@ def get_stock_sec_filings(symbol: str):
 
     return {
         "symbol": symbol,
+        "date_range": f"{df['filing_date'].min().date()} to {df['filing_date'].max().date()}",
         "rows_returned": len(filings_df),
+        "truncated": truncated,
         "filings": filings_df.to_dict(orient="records")
     }
