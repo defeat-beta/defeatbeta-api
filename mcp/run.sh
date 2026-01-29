@@ -7,4 +7,4 @@ source "$DIR/../.venv/bin/activate"
 
 export PYTHONPATH="$DIR/src:$PYTHONPATH"
 
-exec python -m defeatbeta_mcp.server
+exec python -m defeatbeta_mcp
