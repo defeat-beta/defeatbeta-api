@@ -109,10 +109,15 @@ class TestTicker(unittest.TestCase):
 
     def test_news(self):
         news = self.ticker.news()
-        print(news)
-        print(news.get_news_list().to_string())
-        print(news.get_news("b67526eb-581a-35b2-8357-b4f282fe876f"))
-        news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
+
+        df = news.get_news_list()
+        print(df.to_string())
+
+        first_uuid = df.iloc[0]["uuid"]
+
+        print(first_uuid)
+        print(news.get_news(first_uuid))
+        news.print_pretty_table(first_uuid)
 
     def test_revenue_by_segment(self):
         result = self.ticker.revenue_by_segment()

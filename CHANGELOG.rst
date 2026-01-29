@@ -3,6 +3,7 @@ Change Log
 
 0.0.34
 -------
+- Optimize the perf of fetching stock news by symbol[`#138 <https://github.com/defeat-beta/defeatbeta-api/issues/138>`_]
 
 0.0.33
 -------

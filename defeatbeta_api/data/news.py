@@ -47,7 +47,7 @@ class News:
 
         main_table = Table(show_header=False, title=title, box=ROUNDED, padding=(0, 0))
         main_table.add_row(Text(textwrap.fill(publisher + " / " + report_date + " / " + news_type, int(length * 0.9)), justify="center"))
-        main_table.add_row(Text(textwrap.fill("[" + ', '.join(related_symbols) + "]", int(length * 0.9)), justify="center"))
+        main_table.add_row(Text(textwrap.fill("[" + related_symbols + "]", int(length * 0.9)), justify="center"))
         main_table.add_row(Text(textwrap.fill(link, int(length * 0.9)), justify="center"))
         main_table.add_row("")
         for item in news:

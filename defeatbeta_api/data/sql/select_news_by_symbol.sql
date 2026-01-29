@@ -1,1 +1,1 @@
-SELECT * FROM '{url}' WHERE ARRAY_CONTAINS(related_symbols, '{ticker}') ORDER BY report_date ASC
+SELECT * FROM '{url}' WHERE related_symbols = '{ticker}' ORDER BY report_date ASC
