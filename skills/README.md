@@ -20,8 +20,8 @@ Skills are folders containing instructions and resources that teach AI how to co
 ```
 defeatbeta-analyst.zip
   └── defeatbeta-analyst/
-      ├── SKILL.md
-      └── references/                           # Main skill instructions
+      ├── SKILL.md                              # Main skill instructions
+      └── references/
           ├── analysis-templates.md             # Workflow templates
           └── defeatbeta-api-reference.md       # Complete API documentation
 ```
