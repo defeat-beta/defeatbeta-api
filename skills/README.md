@@ -1,6 +1,6 @@
 # DefeatBeta Skills
 
-This directory contains skills that enhance AI's financial analysis capabilities when used with [defeatbeta-api](https://github.com/defeat-beta/defeatbeta-api) data. Compatible with Claude.ai, Manus, and other AI platforms that support skills.
+This directory contains skills that enhance AI's financial analysis capabilities when used with [defeatbeta-api-mcp](https://github.com/defeat-beta/defeatbeta-api/mcp) data. Compatible with Claude.ai, Manus, and other AI platforms that support skills.
 
 ## What are Skills?
 
