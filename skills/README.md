@@ -27,7 +27,7 @@ defeatbeta-analyst.zip
 ```
 
 
-### Use in [Claude.ai](https://claude.ai/desktop/directory)
+### Use in [Claude Desktop](https://claude.ai/desktop/directory)
 
 #### 1. Configure MCP Server
 
