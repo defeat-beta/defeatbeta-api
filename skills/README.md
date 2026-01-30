@@ -1,10 +1,10 @@
 # DefeatBeta Skills
 
-This directory contains skills that enhance Claude's financial analysis capabilities when used with [defeatbeta-api](https://github.com/defeat-beta/defeatbeta-api) data.
+This directory contains skills that enhance AI's financial analysis capabilities when used with [defeatbeta-api](https://github.com/defeat-beta/defeatbeta-api) data. Compatible with Claude.ai, Manus, and other AI platforms that support skills.
 
 ## What are Skills?
 
-Skills are folders containing instructions and resources that teach Claude how to complete specific tasks in a repeatable way. Each skill includes a `SKILL.md` file with YAML frontmatter and detailed guidance.
+Skills are folders containing instructions and resources that teach AI how to complete specific tasks in a repeatable way. Each skill includes a `SKILL.md` file with YAML frontmatter and detailed guidance.
 
 ## Available Skills
 
