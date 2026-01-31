@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import LinearLocator, FormatStrFormatter, Formatter, PercentFormatter
 
-from defeatbeta_api import __version__, data_update_time
+from defeatbeta_api import __version__, HuggingFaceClient
 from defeatbeta_api.data.ticker import Ticker
 from defeatbeta_api.utils import util
 from defeatbeta_api.utils.util import html_table, human_format
@@ -464,7 +464,7 @@ def fill_headline(ticker, tpl):
     tpl = tpl.replace("{{city}}", info['city'].iloc[0])
     tpl = tpl.replace("{{country}}", info['country'].iloc[0])
     tpl = tpl.replace("{{address}}", info['address'].iloc[0])
-    tpl = tpl.replace("{{date_range}}", data_update_time)
+    tpl = tpl.replace("{{date_range}}", HuggingFaceClient().get_data_update_time())
     tpl = tpl.replace("{{v}}", __version__)
     return tpl
 

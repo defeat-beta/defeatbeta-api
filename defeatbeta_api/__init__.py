@@ -9,14 +9,11 @@ from defeatbeta_api.utils.util import validate_nltk_directory
 nltk.download('punkt_tab', download_dir=validate_nltk_directory("nltk"))
 
 _welcome_printed = False
-data_update_time = ""
 
 def _print_welcome():
     global _welcome_printed
-    global data_update_time
     if not _welcome_printed:
-        client = HuggingFaceClient()
-        data_update_time = client.get_data_update_time()
+        data_update_time = HuggingFaceClient().get_data_update_time()
         text = "Defeat Beta"
         ascii_lines = pyfiglet.figlet_format(text, font="doom").split('\n')
         ascii_art = '\n'.join(line for line in ascii_lines if line.strip())

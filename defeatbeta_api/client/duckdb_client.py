@@ -8,8 +8,8 @@ from typing import Optional
 import duckdb
 import pandas as pd
 
-from defeatbeta_api import data_update_time
 from defeatbeta_api.client.duckdb_conf import Configuration
+from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 
 _instance = None
 _lock = Lock()
@@ -59,24 +59,32 @@ class DuckDBClient:
             raise
 
     def _validate_httpfs_cache(self):
+        """Validate httpfs cache against remote data, clear cache if outdated."""
+        spec_url = "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json"
+
         try:
-            current_spec = self.query(
-                "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json'"
-            )
-            current_update_time = current_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
-            if current_update_time != data_update_time:
-                self.logger.info(f"Cache update time: {current_update_time}, Remote update time: {data_update_time}")
-                self.query("SELECT cache_httpfs_clear_cache()")
-                # Verify cache is cleared
-                verified_spec = self.query(
-                    "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json'"
+            # Get remote update_time via HTTP request (bypasses cache)
+            remote_update_time = HuggingFaceClient().get_data_update_time()
+
+            # Get cached update_time via DuckDB (may use httpfs cache)
+            cached_spec = self.query(f"SELECT * FROM '{spec_url}'")
+            cached_update_time = cached_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
+
+            # Compare and clear cache if outdated
+            if cached_update_time != remote_update_time:
+                self.logger.info(
+                    f"Cache outdated. Cached: {cached_update_time}, Remote: {remote_update_time}"
                 )
-                verified_update_time = verified_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
-                if verified_update_time != data_update_time:
-                    raise RuntimeError(f"Cache clear failed. Expected: {data_update_time}, Got: {verified_update_time}")
+                self._clear_cache()
+
         except Exception as e:
             self.logger.error(f"Failed to validate httpfs cache: {str(e)}")
             raise
+
+    def _clear_cache(self):
+        """Clear httpfs cache."""
+        self.query("SELECT cache_httpfs_clear_cache()")
+        self.logger.info("httpfs cache cleared")
 
     @contextmanager
     def _get_cursor(self):

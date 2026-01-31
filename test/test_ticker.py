@@ -1,7 +1,6 @@
 import logging
 import unittest
 
-from defeatbeta_api import data_update_time
 from defeatbeta_api.data.ticker import Ticker
 
 class TestTicker(unittest.TestCase):
@@ -13,10 +12,6 @@ class TestTicker(unittest.TestCase):
     def tearDownClass(cls):
         result = cls.ticker.download_data_performance()
         print(result)
-
-    def test_data_time(self):
-        result = data_update_time
-        print("data_time=>" + result)
 
     def test_info(self):
         result = self.ticker.info()
