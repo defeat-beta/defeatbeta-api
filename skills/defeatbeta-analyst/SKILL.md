@@ -163,17 +163,97 @@ User: "What's the growth trajectory for AMD?"
 → get_quarterly_revenue_by_segment (growth drivers)
 ```
 
-### 6. DCF Model Preparation
+### 6. DCF (Discounted Cash Flow) Valuation Model
 ```
-User: "Prepare data for MSFT DCF model"
-→ get_latest_data_update_date
-→ get_stock_quarterly_cash_flow (historical FCF)
-→ get_stock_quarterly_revenue_yoy_growth (growth rate)
-→ get_stock_wacc (discount rate)
-→ get_sp500_cagr_returns (market return, 10y)
-→ get_daily_treasury_yield (risk-free rate)
-→ get_stock_quarterly_balance_sheet (terminal value inputs)
-→ get_stock_market_capitalization (current valuation)
+User: "Build a DCF model for TSLA" or "What's the fair value of AAPL using DCF?"
+
+PHASE 1: Data Collection
+→ get_latest_data_update_date (reference date)
+→ get_stock_profile (company background)
+→ get_stock_price (latest close price for Current Price, last 30 days)
+→ get_stock_quarterly_cash_flow (get TTM Free Cash Flow)
+→ get_stock_quarterly_income_statement (get TTM Revenue)
+
+PHASE 2: Historical Growth Analysis (for Growth Estimates)
+→ get_stock_annual_fcf_yoy_growth (show FCF growth trends, last 5-10 years)
+→ get_stock_quarterly_revenue_yoy_growth (show Revenue growth trends, last 8-12 quarters)
+→ Display both datasets in detail so user can see historical growth patterns
+
+PHASE 3: Management Outlook & Market Intelligence
+→ get_stock_earning_call_transcripts_list (find recent earnings calls)
+→ get_stock_earning_call_transcript (latest call - management's forward guidance)
+→ get_stock_news (recent 3-6 months news for business developments)
+→ Summarize: management's growth expectations, new products/markets, risks
+
+PHASE 4: Growth Rate Estimates (THREE STAGES)
+Based on PHASE 2 + PHASE 3 analysis, propose:
+1. Near-term Growth (Years 1-5):
+   - Synthesize: historical FCF growth + management guidance + news sentiment
+   - Typically higher growth phase
+   
+2. Mid-term Growth (Years 6-10):
+   - Conservative slowdown from near-term
+   - Consider market maturity, competition
+   
+3. Terminal Growth Rate:
+   → get_daily_treasury_yield (use latest 10-Year Treasury yield)
+   - Terminal rate = Risk-Free Rate (perpetual growth assumption)
+
+PHASE 5: Discount Rate (WACC)
+→ get_stock_wacc (get latest WACC for discount rate)
+→ Display WACC components: Cost of Equity, Cost of Debt, Capital Structure
+
+PHASE 6: Free Cash Flow Projection (10-Year Forecast)
+Using TTM FCF from PHASE 1 as base:
+- Years 1-5: Apply "Near-term Growth Rate"
+  - Year 1 FCF = TTM FCF × (1 + Near-term Growth Rate)
+  - Year 2 FCF = Year 1 FCF × (1 + Near-term Growth Rate)
+  - ... continue through Year 5
+  
+- Years 6-10: Apply "Mid-term Growth Rate"
+  - Year 6 FCF = Year 5 FCF × (1 + Mid-term Growth Rate)
+  - ... continue through Year 10
+
+PHASE 7: Revenue Projection (for FCF Margin calculation)
+Using TTM Revenue from PHASE 1 as base:
+- Apply same growth rates as FCF projection
+- Years 1-5: Near-term Revenue Growth Rate
+- Years 6-10: Mid-term Revenue Growth Rate
+- Calculate: FCF Margin = Projected FCF / Projected Revenue (for each year)
+
+PHASE 8: Present Value of Projected FCF
+For each year 1-10:
+- PV(Year N FCF) = Year N FCF / (1 + WACC)^N
+- Sum all PV values
+
+PHASE 9: Terminal Value Calculation
+- Terminal FCF = Year 10 FCF × (1 + Terminal Growth Rate)
+- Terminal Value = Terminal FCF / (WACC - Terminal Growth Rate)
+- PV of Terminal Value = Terminal Value / (1 + WACC)^10
+
+PHASE 10: Enterprise Value → Equity Value → Fair Price
+→ get_stock_quarterly_balance_sheet (latest quarter)
+  - Extract: cash_cash_equivalents_and_short_term_investments
+  - Extract: total_debt
+  
+→ get_stock_market_capitalization (latest data)
+  - Extract: shares_outstanding
+
+Calculate:
+1. Enterprise Value (EV) = Sum of PV(FCF Years 1-10) + PV(Terminal Value)
+2. Equity Value = EV + Cash & Equivalents - Total Debt
+3. Fair Price = Equity Value / Outstanding Shares
+
+PHASE 11: Valuation Assessment
+Compare:
+- Fair Price (DCF output)
+- Current Price (latest close from PHASE 1)
+- Margin of Safety = (Fair Price - Current Price) / Fair Price × 100%
+
+Interpretation:
+- If Fair Price > Current Price → potentially undervalued
+- If Fair Price < Current Price → potentially overvalued
+- Margin of Safety > 20-30% → significant upside potential
 ```
 
 ### 7. DuPont Analysis
@@ -405,7 +485,102 @@ Validate the DuPont identity:
 - Consider using 10-year Treasury as risk-free rate
 - Use 10-year S&P 500 CAGR as expected market return
 
-### 12. Combining Multiple Metrics
+### 12. DCF Model Best Practices
+
+#### Growth Rate Estimation
+**Historical Analysis**:
+- Review 5-10 years of annual FCF growth using `get_stock_annual_fcf_yoy_growth`
+- Review 8-12 quarters of revenue growth using `get_stock_quarterly_revenue_yoy_growth`
+- Identify trends: accelerating, stable, or decelerating growth
+- Note: Historical growth ≠ future growth, but provides baseline
+
+**Management Guidance**:
+- Extract forward-looking statements from latest earnings call transcript
+- Look for: revenue targets, margin expansion plans, capex guidance
+- Note risks and headwinds mentioned by management
+- Cross-reference guidance with historical execution
+
+**Growth Rate Stage Design**:
+- **Years 1-5 (Near-term)**: Base on recent trends + management guidance
+  - High-growth companies: 15-25% may be reasonable if supported by data
+  - Mature companies: 5-10% more typical
+  - Consider: new products, market expansion, competitive position
+  
+- **Years 6-10 (Mid-term)**: Apply mean reversion principle
+  - Typically 50-70% of near-term rate
+  - Reflects market maturation, increased competition
+  - More conservative than near-term assumptions
+  
+- **Terminal Rate**: Use 10-Year Treasury yield (risk-free rate)
+  - Reflects long-term GDP growth
+  - Typical range: 2-4%
+  - Should be ≤ long-term economic growth rate
+
+#### TTM Metrics Calculation
+- **TTM Free Cash Flow**: Sum of most recent 4 quarters from cash flow statement
+  - Check: `free_cash_flow` field from `get_stock_quarterly_cash_flow`
+  - Ensure FCF is positive; if negative, DCF may not be appropriate
+  
+- **TTM Revenue**: Sum of most recent 4 quarters from income statement
+  - Check: `total_revenue` field from `get_stock_quarterly_income_statement`
+  - Used for FCF margin calculation
+
+#### Projection Mechanics
+- **Compound Growth Application**: Each year builds on previous year
+  - Avoid: Simple percentage of base year
+  - Use: Year_N = Year_(N-1) × (1 + Growth_Rate)
+  
+- **FCF Margin Tracking**: Monitor projected FCF/Revenue ratio
+  - If margin expands dramatically (e.g., from 15% to 40%), revisit assumptions
+  - Stable or gradually improving margins are more realistic
+  
+- **Sanity Checks**:
+  - Year 10 FCF should be 2-3x TTM FCF for mature companies
+  - Year 10 FCF of 5-10x TTM FCF indicates very aggressive growth
+
+#### Terminal Value Calculation
+- **Formula**: Terminal Value = Year 10 FCF × (1 + Terminal Rate) / (WACC - Terminal Rate)
+- **Sensitivity**: Terminal Value often represents 60-80% of total Enterprise Value
+- **Key Check**: WACC must be > Terminal Rate (otherwise infinite value)
+- **Conservative Approach**: Use lower terminal rate if uncertain
+
+#### Balance Sheet Adjustments
+- **Cash Addition**: Only operating cash; exclude restricted cash if disclosed
+  - Use: `cash_cash_equivalents_and_short_term_investments` from balance sheet
+  
+- **Debt Subtraction**: Use total debt (short-term + long-term)
+  - Use: `total_debt` from balance sheet
+  - Some analysts also subtract pension liabilities, lease obligations
+  
+- **Shares Outstanding**: Use most recent diluted shares outstanding
+  - From: `get_stock_market_capitalization` → `shares_outstanding` field
+  - Use diluted shares, not basic shares
+
+#### Valuation Interpretation
+- **Margin of Safety**:
+  - 10-20%: Minimal buffer, requires high conviction
+  - 20-40%: Reasonable margin, accounts for estimation error
+  - >40%: Significant undervaluation OR overly optimistic assumptions
+  
+- **Sensitivity Analysis**: Test multiple scenarios
+  - Base case: Most likely assumptions
+  - Bull case: Optimistic growth rates (+2-3% higher)
+  - Bear case: Conservative growth rates (-2-3% lower)
+  - See how Fair Price changes with different assumptions
+
+- **Cross-Validation**: DCF should align with other valuation methods
+  - Compare with P/E, P/S, P/B multiples vs industry
+  - If DCF suggests 50% undervaluation but all multiples are at highs, revisit
+
+#### Common Pitfalls to Avoid
+- **Overly optimistic growth**: Don't extrapolate peak growth rates indefinitely
+- **Ignoring capital intensity**: High-growth may require significant capex
+- **Using outdated data**: Always call `get_latest_data_update_date` first
+- **Terminal rate > WACC**: Mathematically impossible, check your inputs
+- **Negative FCF base**: DCF doesn't work well for unprofitable/cash-burning companies
+- **Ignoring macro factors**: Consider industry trends, economic cycle, regulatory changes
+
+### 13. Combining Multiple Metrics
 Strong investment candidates typically show:
 - **Growth**: Revenue/earnings growing faster than industry
 - **Profitability**: Margins improving or above industry avg
@@ -413,7 +588,7 @@ Strong investment candidates typically show:
 - **Valuation**: P/E, P/S below historical average or industry
 - **Cash**: FCF growing and positive
 
-### 13. SEC Filing Access
+### 14. SEC Filing Access
 When analyzing SEC filings:
 - Use `get_stock_sec_filings` to retrieve filing metadata and URLs
 - **CRITICAL**: Always use the `sec_user_agent` field value as User-Agent header when accessing SEC URLs (SEC blocks requests without proper User-Agent)
