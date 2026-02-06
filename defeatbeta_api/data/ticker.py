@@ -5,6 +5,8 @@ from typing import Optional, List, Dict
 
 import numpy as np
 import pandas as pd
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.workbook import Workbook
 
 from defeatbeta_api.client.duckdb_client import get_duckdb_client
 from defeatbeta_api.client.duckdb_conf import Configuration
@@ -29,7 +31,7 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate, \
     stock_sec_filing
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
-    balance_sheet_template_type, cash_flow_template_type, sp500_cagr_returns_rolling
+    balance_sheet_template_type, cash_flow_template_type, sp500_cagr_returns_rolling, validate_defeatbeta_tmp_directory
 
 
 class Ticker:
@@ -863,6 +865,492 @@ class Ticker:
             4
         )
         return result_df
+
+    def dcf(self) -> str:
+        global end_date
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"DCF Value of {self.ticker}"
+        bold = Font(bold=True)
+        orange_fill = PatternFill(start_color="FFE6DB74", end_color="FFE6DB74", fill_type="solid")
+        thin = Side(style='medium', color='FFB1B9F9')
+
+        for col, width in zip(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"],
+                             [1, 48, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18]):
+            ws.column_dimensions[col].width = width
+
+        def add_cell(_col, _row, value, font=None, fill=None, number_format=None, alignment=None):
+            _cell = ws[f"{_col}{_row}"]
+            _cell.value = value
+            if font:
+                _cell.font = font
+            if fill:
+                _cell.fill = fill
+            if number_format:
+                _cell.number_format = number_format
+            if alignment:
+                _cell.alignment = alignment
+
+        def add_border(start_row, end_row, cols, border_side=None):
+            if border_side is None:
+                border_side = thin
+            for _row in range(start_row, end_row + 1):
+                for c in cols:
+                    _cell = ws[f"{c}{_row}"]
+                    left = border_side if c == cols[0] else None
+                    right = border_side if c == cols[-1] else None
+                    top = border_side if _row == start_row else None
+                    bottom = border_side if _row == end_row else None
+                    _cell.border = Border(left=left, right=right, top=top, bottom=bottom)
+
+        row = 0
+        # ========== Discount Rate Estimates Section ==========
+        wacc = self.wacc()
+        last_wacc = wacc.iloc[-1]
+        report_date = pd.to_datetime(last_wacc["report_date"]).strftime("%Y-%m-%d")
+        add_cell("B", (row := row + 1), f"Discount Rate Estimates ({report_date})", font=bold)
+        add_cell("B", (row := row + 1), "Market Cap", font=bold)
+        add_cell("C", row, last_wacc['market_capitalization'], number_format='#,##0')
+        add_cell("B", (row := row + 1), "β(5y)", font=bold)
+        add_cell("C", row, last_wacc['beta_5y'], number_format='0.00')
+        add_cell("B", (row := row + 1), "Total Debt", font=bold)
+        add_cell("C", row, last_wacc['total_debt_usd'], number_format='#,##0')
+        add_cell("B", (row := row + 1), "Interest Expense", font=bold)
+        add_cell("C", row, last_wacc['interest_expense_usd'], number_format='#,##0')
+        add_cell("B", (row := row + 1), "Pre-Tax Income", font=bold)
+        add_cell("C", row, last_wacc['pretax_income_usd'], number_format='#,##0')
+        add_cell("B", (row := row + 1), "Tax Provision", font=bold)
+        add_cell("C", row, last_wacc['tax_provision_usd'], number_format='#,##0')
+        add_cell("B", (row := row + 1), "Risk-Free Rate of Return (10Y Treasury Rate)", font=bold, fill=orange_fill)
+        add_cell("C", row, last_wacc['treasure_10y_yield'], number_format='0.00%')
+        add_cell("B", (row := row + 1), "Expected Market Return (S&P500 Avg Return)", font=bold)
+        add_cell("C", row, last_wacc['sp500_10y_cagr'], number_format='0.00%')
+
+        row = 1
+        add_cell("D", (row := row + 1), "Weight of Debt", font=bold)
+        add_cell("E", row, "=C4/(C2+C4)", number_format='0.00%')
+        add_cell("D", (row := row + 1), "Weight of Equity", font=bold)
+        add_cell("E", row, "=C2/(C2+C4)", number_format='0.00%')
+        add_cell("D", (row := row + 1), "Cost of Debt", font=bold)
+        add_cell("E", row, "=C5/C4", number_format='0.00%')
+        add_cell("D", (row := row + 1), "Cost of Equity", font=bold)
+        add_cell("E", row, "=C8+C3*(C9-C8)", number_format='0.00%')
+        add_cell("D", (row := row + 1), "Tax Rate", font=bold)
+        add_cell("E", row, last_wacc['tax_rate_for_calcs'], number_format='0.00%')
+        add_cell("D", (row := row + 3), "WACC", font=bold, fill=orange_fill)
+        add_cell("E", row, "=E2*E4*(1-E6)+E3*E5", number_format='0.00%')
+
+        add_border(2, 9, ['B', 'C', 'D', 'E'])
+
+        # ========== Growth Estimates Section ==========
+        def get_growth_details(growth_df, years=3):
+            if growth_df.empty:
+                return []
+            recent = growth_df.tail(years)
+            details = []
+            for _, row_data in recent.iterrows():
+                date_str = pd.to_datetime(row_data['report_date']).strftime("%Y-%m-%d")
+                metric_name = [col for col in row_data.index if col not in ['symbol', 'report_date', 'yoy_growth'] and not col.startswith('prev_year_')][0]
+                current_val = row_data.get(metric_name, 0)
+                yoy = row_data.get('yoy_growth', 0)
+                details.append({'date': date_str, 'value': current_val, 'yoy': yoy})
+            while len(details) < years:
+                details.insert(0, {'date': 'N/A', 'value': 0, 'yoy': 0})
+            return details[-years:]
+
+        revenue_growth = self.annual_revenue_yoy_growth()
+        fcf_growth = self.annual_fcf_yoy_growth()
+        ebitda_growth = self.annual_ebitda_yoy_growth()
+        net_income_growth = self.annual_net_income_yoy_growth()
+
+        revenue_details = get_growth_details(revenue_growth, 3)
+        fcf_details = get_growth_details(fcf_growth, 3)
+        ebitda_details = get_growth_details(ebitda_growth, 3)
+        net_income_details = get_growth_details(net_income_growth, 3)
+
+        row = 0
+        add_cell("G", (row := row + 1), f"Growth Estimates", font=bold)
+
+        add_cell("G", (row := row + 1), "Revenue", font=bold)
+        y1_row = row + 1
+        add_cell("G", (row := row + 1), revenue_details[0]['date'])
+        add_cell("H", row, revenue_details[0]['value'], number_format='#,##0')
+        add_cell("I", row, revenue_details[0]['yoy'], number_format='0.00%')
+        add_cell("G", (row := row + 1), revenue_details[1]['date'])
+        add_cell("H", row, revenue_details[1]['value'], number_format='#,##0')
+        add_cell("I", row, revenue_details[1]['yoy'], number_format='0.00%')
+        y3_row = row + 1
+        add_cell("G", (row := row + 1), revenue_details[2]['date'])
+        add_cell("H", row, revenue_details[2]['value'], number_format='#,##0')
+        add_cell("I", row, revenue_details[2]['yoy'], number_format='0.00%')
+        revenue_cagr_row = row + 1
+        add_cell("G", (row := row + 1), "Revenue 3Y CAGR", font=bold)
+        add_cell("H", row, f"=POWER(H{y3_row}/H{y1_row},1/2)-1", number_format='0.00%')
+
+        row += 1
+        add_cell("G", (row := row + 1), "FCF", font=bold)
+        fcf_y1_row = row + 1
+        add_cell("G", (row := row + 1), fcf_details[0]['date'])
+        add_cell("H", row, fcf_details[0]['value'], number_format='#,##0')
+        add_cell("I", row, fcf_details[0]['yoy'], number_format='0.00%')
+        add_cell("G", (row := row + 1), fcf_details[1]['date'])
+        add_cell("H", row, fcf_details[1]['value'], number_format='#,##0')
+        add_cell("I", row, fcf_details[1]['yoy'], number_format='0.00%')
+        fcf_y3_row = row + 1
+        add_cell("G", (row := row + 1), fcf_details[2]['date'])
+        add_cell("H", row, fcf_details[2]['value'], number_format='#,##0')
+        add_cell("I", row, fcf_details[2]['yoy'], number_format='0.00%')
+        fcf_cagr_row = row + 1
+        add_cell("G", (row := row + 1), "FCF 3Y CAGR", font=bold)
+        add_cell("H", row, f"=POWER(H{fcf_y3_row}/H{fcf_y1_row},1/2)-1", number_format='0.00%')
+
+        row += 1
+        add_cell("G", (row := row + 1), "EBITDA", font=bold)
+        ebitda_y1_row = row + 1
+        add_cell("G", (row := row + 1), ebitda_details[0]['date'])
+        add_cell("H", row, ebitda_details[0]['value'], number_format='#,##0')
+        add_cell("I", row, ebitda_details[0]['yoy'], number_format='0.00%')
+        add_cell("G", (row := row + 1), ebitda_details[1]['date'])
+        add_cell("H", row, ebitda_details[1]['value'], number_format='#,##0')
+        add_cell("I", row, ebitda_details[1]['yoy'], number_format='0.00%')
+        ebitda_y3_row = row + 1
+        add_cell("G", (row := row + 1), ebitda_details[2]['date'])
+        add_cell("H", row, ebitda_details[2]['value'], number_format='#,##0')
+        add_cell("I", row, ebitda_details[2]['yoy'], number_format='0.00%')
+        ebitda_cagr_row = row + 1
+        add_cell("G", (row := row + 1), "EBITDA 3Y CAGR", font=bold)
+        add_cell("H", row, f"=POWER(H{ebitda_y3_row}/H{ebitda_y1_row},1/2)-1", number_format='0.00%')
+
+        row += 1
+        add_cell("G", (row := row + 1), "Net Income", font=bold)
+        ni_y1_row = row + 1
+        add_cell("G", (row := row + 1), net_income_details[0]['date'])
+        add_cell("H", row, net_income_details[0]['value'], number_format='#,##0')
+        add_cell("I", row, net_income_details[0]['yoy'], number_format='0.00%')
+        add_cell("G", (row := row + 1), net_income_details[1]['date'])
+        add_cell("H", row, net_income_details[1]['value'], number_format='#,##0')
+        add_cell("I", row, net_income_details[1]['yoy'], number_format='0.00%')
+        ni_y3_row = row + 1
+        add_cell("G", (row := row + 1), net_income_details[2]['date'])
+        add_cell("H", row, net_income_details[2]['value'], number_format='#,##0')
+        add_cell("I", row, net_income_details[2]['yoy'], number_format='0.00%')
+        ni_cagr_row = row + 1
+        add_cell("G", (row := row + 1), "Net Income 3Y CAGR", font=bold)
+        add_cell("H", row, f"=POWER(H{ni_y3_row}/H{ni_y1_row},1/2)-1", number_format='0.00%')
+
+
+        add_border(2, row, ['G', 'H', 'I'])
+
+        # ========== DCF Template Section ==========
+        row = 15
+        add_cell("B", (row := row + 1), "DCF Template", font=bold)
+
+        decay_factor_row = row + 1
+        add_cell("B", (row := row + 1), "Decay Factor (6~10Y)", font=bold, fill=orange_fill)
+        add_cell("C", row, 0.9, number_format='0.00')
+
+        growth_1_5y_row = row + 1
+        add_cell("B", (row := row + 1), "Future Growth Rate (1~5 Years)", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=H{revenue_cagr_row}*0.4+H{fcf_cagr_row}*0.3+H{ebitda_cagr_row}*0.2+H{ni_cagr_row}*0.1",
+                 number_format='0.00%')
+
+        add_cell("B", (row := row + 1), "Future Growth Rate (6~10 Years)", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=MAX(C{growth_1_5y_row}*POWER(C{decay_factor_row},5),C8)", number_format='0.00%')
+
+        add_cell("B", (row := row + 1), "Future Growth Rate (Terminal Stage)", font=bold, fill=orange_fill)
+        add_cell("C", row, "=C8", number_format='0.00%')
+
+        add_cell("B", (row := row + 1), "Discount Rate %", font=bold, fill=orange_fill)
+        add_cell("C", row, "=E9", number_format='0.00%')
+
+        ttm_revenue_df = self.ttm_revenue()
+        if not ttm_revenue_df.empty:
+            latest_ttm = ttm_revenue_df.iloc[-1]
+            ttm_revenue_value = latest_ttm['ttm_total_revenue_usd']
+            import json
+            quarters = json.loads(latest_ttm['report_date_2_revenue'])
+            quarter_dates = sorted(quarters.keys())
+            start_date = pd.to_datetime(quarter_dates[0]).strftime("%Y-%m-%d")
+            end_date = pd.to_datetime(quarter_dates[-1]).strftime("%Y-%m-%d")
+            ttm_revenue_label = f"TTM Revenue ({start_date} ~ {end_date})"
+        else:
+            ttm_revenue_value = 0
+            ttm_revenue_label = "TTM Revenue N/A"
+
+        ttm_revenue_row = row + 1
+        add_cell("B", (row := row + 1), ttm_revenue_label, font=bold, fill=orange_fill)
+        add_cell("C", row, ttm_revenue_value, number_format='#,##0')
+
+        revenue_growth_1_5y_row = row + 1
+        add_cell("B", (row := row + 1), "Future Revenue Growth Rate (1~5 Years)", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=H{revenue_cagr_row}", number_format='0.00%')
+
+        revenue_growth_6_10y_row = row + 1
+        add_cell("B", (row := row + 1), "Future Revenue Growth Rate (6~10 Years)", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=MAX(H{revenue_cagr_row}*POWER(C{decay_factor_row},5),C8)", number_format='0.00%')
+
+        row += 1
+        add_cell("B", (row := row + 1), "Year", font=bold)
+
+        ttm_end_date = pd.to_datetime(end_date)
+        right_align = Alignment(horizontal='right')
+        add_cell("C", row, f"{ttm_end_date.strftime('%Y-%m-%d')} (TTM)", font=bold, alignment=right_align)
+
+        for i, col in enumerate(['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'], start=1):
+            future_date = ttm_end_date + pd.DateOffset(years=i)
+            add_cell(col, row, f"{future_date.year}/{future_date.month}/{future_date.day}", font=bold, alignment=right_align)
+
+        fcf_row = row + 1
+        add_cell("B", (row := row + 1), "Free Cash Flow", font=bold)
+
+        base_fcf = fcf_details[2]['value']
+        add_cell("C", row, base_fcf, number_format='#,##0')
+
+        growth_1_5y = f"C{growth_1_5y_row}"
+        growth_6_10y = f"C{growth_1_5y_row + 1}"
+
+        add_cell("D", row, f"=C{row}*(1+{growth_1_5y})", number_format='#,##0')
+        add_cell("E", row, f"=D{row}*(1+{growth_1_5y})", number_format='#,##0')
+        add_cell("F", row, f"=E{row}*(1+{growth_1_5y})", number_format='#,##0')
+        add_cell("G", row, f"=F{row}*(1+{growth_1_5y})", number_format='#,##0')
+        add_cell("H", row, f"=G{row}*(1+{growth_1_5y})", number_format='#,##0')
+        add_cell("I", row, f"=H{row}*(1+{growth_6_10y})", number_format='#,##0')
+        add_cell("J", row, f"=I{row}*(1+{growth_6_10y})", number_format='#,##0')
+        add_cell("K", row, f"=J{row}*(1+{growth_6_10y})", number_format='#,##0')
+        add_cell("L", row, f"=K{row}*(1+{growth_6_10y})", number_format='#,##0')
+        add_cell("M", row, f"=L{row}*(1+{growth_6_10y})", number_format='#,##0')
+
+        tv_row = row + 1
+        add_cell("B", (row := row + 1), "Terminal Value", font=bold)
+
+        terminal_growth = f"C{growth_1_5y_row + 2}"
+        wacc = f"C{growth_1_5y_row + 3}"
+
+        for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']:
+            add_cell(col, row, 0, number_format='#,##0')
+        add_cell("M", row, f"=M{fcf_row}*(1+{terminal_growth})/({wacc}-{terminal_growth})", number_format='#,##0')
+
+        total_value_row = row + 1
+        add_cell("B", (row := row + 1), "Total Value", font=bold)
+
+        for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']:
+            add_cell(col, row, f"={col}{fcf_row}", number_format='#,##0')
+        add_cell("M", row, f"=M{fcf_row}+M{tv_row}", number_format='#,##0')
+
+        add_cell("B", (row := row + 1), "FCF Margin", font=bold)
+
+        revenue_growth_1_5y = f"C{revenue_growth_1_5y_row}"
+        revenue_growth_6_10y = f"C{revenue_growth_6_10y_row}"
+
+        add_cell("C", row, f"=C{fcf_row}/C{ttm_revenue_row}", number_format='0.00%')
+
+        for i, col in enumerate(['D', 'E', 'F', 'G', 'H'], start=1):
+            add_cell(col, row, f"={col}{fcf_row}/(C{ttm_revenue_row}*POWER(1+{revenue_growth_1_5y},{i}))", number_format='0.00%')
+
+        for i, col in enumerate(['I', 'J', 'K', 'L', 'M'], start=6):
+            add_cell(col, row, f"={col}{fcf_row}/(C{ttm_revenue_row}*POWER(1+{revenue_growth_1_5y},5)*POWER(1+{revenue_growth_6_10y},{i-5}))", number_format='0.00%')
+
+        row += 1
+
+        hist_col_count = 0
+        fcf_margin_df = self.annual_fcf_margin()
+        if not fcf_margin_df.empty:
+            recent_fcf_margin = fcf_margin_df.tail(5).dropna(subset=['fcf_margin'])
+            if not recent_fcf_margin.empty:
+                year_history_row = row + 1
+                add_cell("B", (row := row + 1), "Year (Historical)", font=bold)
+                for i, (_, row_data) in enumerate(recent_fcf_margin.iterrows()):
+                    if i >= 10:
+                        break
+                    col = chr(ord('C') + i)
+                    year = pd.to_datetime(row_data['report_date']).strftime("%Y/%m/%d")
+                    add_cell(col, row, year, font=bold, alignment=right_align)
+                    hist_col_count = i + 1
+
+                add_cell("B", (row := row + 1), "FCF Margin (Historical)", font=bold)
+                for i, (_, row_data) in enumerate(recent_fcf_margin.iterrows()):
+                    if i >= 10:
+                        break
+                    col = chr(ord('C') + i)
+                    add_cell(col, row, row_data['fcf_margin'], number_format='0.00%')
+            else:
+                add_cell("B", (row := row + 1), "Year", font=bold)
+                add_cell("B", (row := row + 1), "Historical FCF Margin", font=bold)
+        else:
+            add_cell("B", (row := row + 1), "Year", font=bold)
+            add_cell("B", (row := row + 1), "Historical FCF Margin", font=bold)
+
+        # Add border to DCF Template Section (irregular shape)
+        dcf_start_row = 17
+        params_end_row = revenue_growth_6_10y_row + 1
+        year_row = params_end_row + 1
+        fcf_margin_row = year_row + 4
+        history_end_row = row
+
+        # Determine historical data columns
+        hist_last_col = chr(ord('C') + hist_col_count - 1) if hist_col_count > 0 else 'B'
+
+        # Top border: B17, C17
+        ws[f'B{dcf_start_row}'].border = Border(top=thin, left=thin)
+        ws[f'C{dcf_start_row}'].border = Border(top=thin, right=thin)
+
+        # Left border: B18-B33
+        for r in range(dcf_start_row + 1, history_end_row):
+            ws[f'B{r}'].border = Border(left=thin)
+
+        # Right border: C18-C25
+        for r in range(dcf_start_row + 1, params_end_row + 1):
+            cell = ws[f'C{r}']
+            cell.border = Border(right=thin, top=cell.border.top, left=cell.border.left)
+
+        # Top border of year row: D26-M26
+        for col in ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
+            cell = ws[f'{col}{year_row}']
+            cell.border = Border(top=thin, left=cell.border.left, right=cell.border.right, bottom=cell.border.bottom)
+
+        # Right border: M26-M30
+        for r in range(year_row, fcf_margin_row + 1):
+            cell = ws[f'M{r}']
+            cell.border = Border(right=thin, top=cell.border.top, bottom=cell.border.bottom, left=cell.border.left)
+
+        # Bottom border of FCF margin row: hist_last_col-M30
+        for col_ord in range(ord(hist_last_col) + 1, ord('M') + 1):
+            col = chr(col_ord)
+            cell = ws[f'{col}{fcf_margin_row}']
+            cell.border = Border(bottom=thin, left=cell.border.left, right=cell.border.right, top=cell.border.top)
+
+        # Historical section borders (if exists)
+        if hist_col_count > 0:
+            cell = ws[f'{hist_last_col}{fcf_margin_row+1}']
+            cell.border = Border(right=thin)
+            history_start_row = fcf_margin_row + 2
+
+            # Right border: hist_last_col
+            for r in range(history_start_row, history_end_row + 1):
+                cell = ws[f'{hist_last_col}{r}']
+                cell.border = Border(right=thin, top=cell.border.top, bottom=cell.border.bottom, left=cell.border.left)
+
+            # Bottom border
+            for i in range(ord('B'), ord(hist_last_col) + 1):
+                col = chr(i)
+                cell = ws[f'{col}{history_end_row}']
+                cell.border = Border(bottom=thin, left=cell.border.left, right=cell.border.right, top=cell.border.top)
+        else:
+            # No historical data, add left and bottom border to the last row
+            ws[f'B{history_end_row}'].border = Border(left=thin, bottom=thin)
+
+        # ========== DCF Value Section ==========
+        row = 35
+        add_cell("B", (row := row + 1), "DCF Value", font=bold)
+
+        ev_row = row + 1
+        add_cell("B", (row := row + 1), "Enterprise Value (EV)", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=NPV(C21,D{total_value_row}:M{total_value_row})", number_format='#,##0')
+
+        cash_row = row + 1
+        add_cell("B", (row := row + 1), "Cash, Cash Equivalents & Short Term Investments", font=bold, fill=orange_fill)
+        bs_df = self.quarterly_balance_sheet().df()
+        cash_value = 0
+        if not bs_df.empty:
+            cash_rows = bs_df[bs_df['Breakdown'].str.contains('Cash, Cash Equivalents & Short Term Investments', na=False)]
+            if not cash_rows.empty:
+                date_columns = [col for col in bs_df.columns if col != 'Breakdown']
+                if date_columns:
+                    cash_value = cash_rows.iloc[0][date_columns[0]]
+                    if pd.isna(cash_value) or cash_value == '*':
+                        cash_value = 0
+        add_cell("C", row, cash_value, number_format='#,##0')
+
+        debt_row = row + 1
+        add_cell("B", (row := row + 1), "Total Debt", font=bold, fill=orange_fill)
+        add_cell("C", row, "=C4", number_format='#,##0')
+
+        equity_row = row + 1
+        add_cell("B", (row := row + 1), "Equity Value", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=C{ev_row}+C{cash_row}-C{debt_row}", number_format='#,##0')
+
+        shares_row = row + 1
+        add_cell("B", (row := row + 1), "Outstanding Shares", font=bold, fill=orange_fill)
+        mc_df = self.market_capitalization()
+        shares_value = 0
+        if not mc_df.empty:
+            shares_value = mc_df.iloc[-1]['shares_outstanding']
+            if pd.isna(shares_value):
+                shares_value = 0
+        add_cell("C", row, shares_value, number_format='#,##0')
+
+        fair_price_row = row + 1
+        add_cell("B", (row := row + 1), "Fair Price", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=C{equity_row}/C{shares_row}", number_format='0.00')
+
+        current_price_row = row + 1
+        add_cell("B", (row := row + 1), "Current Price", font=bold, fill=orange_fill)
+        price_df = self.price()
+        if not price_df.empty:
+            current_price = price_df.iloc[-1]['close']
+        else:
+            current_price = 0
+        add_cell("C", row, current_price, number_format='0.00')
+
+        margin_row = row + 1
+        add_cell("B", (row := row + 1), "Margin of safety", font=bold, fill=orange_fill)
+        add_cell("C", row, f"=(C{fair_price_row}-C{current_price_row})/C{fair_price_row}", number_format='0.00%')
+        add_border(37, row, ['B', 'C'])
+        add_border(44, 44, ['B', 'C'], Side(style='thick', color='FFDD5E56'))
+
+        # Merge cells in column E for key metrics display
+        # Fair Price (E37:E38)
+        ws.merge_cells(f'E{ev_row}:E{cash_row}')
+        cell = ws[f'E{ev_row}']
+        cell.value = f"Fair Price"
+        cell.font = Font(size=15, bold=True)
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+        cell.number_format = '0.00'
+        add_border(37, 38, ['E'], Side(style='thick', color='FF51A39A'))
+        # Fair Price (F37:F38)
+        ws.merge_cells(f'F{ev_row}:F{cash_row}')
+        cell = ws[f'F{ev_row}']
+        cell.value = f"=C{fair_price_row}"
+        cell.font = Font(size=15, bold=True)
+        cell.alignment = Alignment(horizontal='right', vertical='center')
+        cell.number_format = '0.00'
+        add_border(37, 38, ['F'], Side(style='thick', color='FF51A39A'))
+
+        # Current Price (E40:E41)
+        ws.merge_cells(f'E{equity_row}:E{shares_row}')
+        cell = ws[f'E{equity_row}']
+        cell.value = f"Current Price"
+        cell.font = Font(size=15, bold=True)
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+        cell.number_format = '0.00'
+        add_border(40, 41, ['E'], Side(style='thick', color='FF51A39A'))
+        # Current Price (F40:F41)
+        ws.merge_cells(f'F{equity_row}:F{shares_row}')
+        cell = ws[f'F{equity_row}']
+        cell.value = f"=C{current_price_row}"
+        cell.font = Font(size=15, bold=True)
+        cell.alignment = Alignment(horizontal='right', vertical='center')
+        cell.number_format = '0.00'
+        add_border(40, 41, ['F'], Side(style='thick', color='FF51A39A'))
+
+        # Buy/Sell (E43:E44)
+        ws.merge_cells(f'E{current_price_row}:E{margin_row}')
+        cell = ws[f'E{current_price_row}']
+        cell.value = f'Buy / Sell'
+        cell.font = Font(size=15, bold=True)
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+        add_border(43, 44, ['E'], Side(style='thick', color='FF51A39A'))
+        # Buy/Sell (F43:F44)
+        ws.merge_cells(f'F{current_price_row}:F{margin_row}')
+        cell = ws[f'F{current_price_row}']
+        cell.value = f'=IF(C{fair_price_row}>C{current_price_row},"Buy","Sell")'
+        cell.font = Font(size=15, bold=True)
+        cell.alignment = Alignment(horizontal='right', vertical='center')
+        add_border(43, 44, ['F'], Side(style='thick', color='FF51A39A'))
+
+        output = f"{validate_defeatbeta_tmp_directory()}/{self.ticker}.xlsx"
+        wb.save(output)
+        return output
 
     def industry_ttm_pe(self) -> pd.DataFrame:
         info = self.info()

@@ -77,6 +77,15 @@ def validate_httpfs_cache_directory(name: str) -> str:
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
+def validate_defeatbeta_tmp_directory() -> str:
+    if platform.system() in ("Darwin", "Linux"):
+        temp_dir = "/tmp"
+    else:
+        temp_dir = tempfile.gettempdir()
+    cache_dir = os.path.join(temp_dir, "defeatbeta_tmp")
+    os.makedirs(cache_dir, exist_ok=True)
+    return cache_dir
+
 def load_item_dictionary() -> Dict[str, str]:
     text = files("defeatbeta_api.data.template").joinpath('dictionary.json').read_text(encoding="utf-8")
     data = json.loads(text)
