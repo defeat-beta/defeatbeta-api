@@ -1401,7 +1401,7 @@ class Ticker:
         ws.merge_cells(f'F{ev_row}:F{cash_row}')
         cell = ws[f'F{ev_row}']
         cell.value = f"=C{fair_price_row}"
-        cell.font = Font(color='FF51A39A', size=15, bold=True)
+        cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
         cell.number_format = '0.00'
         add_border(37, 38, ['F'], Side(style='thick', color='FF51A39A'))
@@ -1418,7 +1418,7 @@ class Ticker:
         ws.merge_cells(f'F{equity_row}:F{shares_row}')
         cell = ws[f'F{equity_row}']
         cell.value = f"=C{current_price_row}"
-        cell.font = Font(color='FF51A39A', size=15, bold=True)
+        cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
         cell.number_format = '0.00'
         add_border(40, 41, ['F'], Side(style='thick', color='FF51A39A'))
