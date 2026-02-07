@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.36
+-------
+Fix missing openpyxl dependency in version 0.0.35 [`#142 <https://github.com/defeat-beta/defeatbeta-api/issues/142>`_]
+
 0.0.35
 -------
 - Httpfs cache not revalidated when remote spec.json updates during long-running process[`#139 <https://github.com/defeat-beta/defeatbeta-api/issues/139>`_]

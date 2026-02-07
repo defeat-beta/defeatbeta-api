@@ -30,7 +30,8 @@ dependencies = [
     "ipython>=8.0.0,<=8.37.0",
     "matplotlib>=3.10.7",
     "seaborn>=0.13.2",
-    "mcp>=1.25.0"
+    "mcp>=1.25.0",
+    "openpyxl>=3.1.5"
 ]
 
 [tool.setuptools.dynamic]
