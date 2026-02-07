@@ -1,9 +1,12 @@
 Change Log
 ===========
 
+0.0.37
+-------
+
 0.0.36
 -------
-Fix missing openpyxl dependency in version 0.0.35 [`#142 <https://github.com/defeat-beta/defeatbeta-api/issues/142>`_]
+- Fix missing openpyxl dependency in version 0.0.35 [`#142 <https://github.com/defeat-beta/defeatbeta-api/issues/142>`_]
 
 0.0.35
 -------
