@@ -1,3 +1,40 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [DCF Valuation Analysis](#dcf-valuation-analysis)
+  - [Overview](#overview)
+  - [Features](#features)
+  - [Usage](#usage)
+    - [Basic Usage](#basic-usage)
+    - [Output](#output)
+    - [File Location](#file-location)
+  - [Excel Output Example](#excel-output-example)
+    - [Key Sections Explained](#key-sections-explained)
+      - [1. Discount Rate Estimates (Top Left)](#1-discount-rate-estimates-top-left)
+      - [2. Growth Estimates (Middle Left)](#2-growth-estimates-middle-left)
+      - [3. DCF Template (Center)](#3-dcf-template-center)
+      - [4. DCF Value (Top Right)](#4-dcf-value-top-right)
+      - [5. Investment Decision (Right)](#5-investment-decision-right)
+  - [Customization in Excel](#customization-in-excel)
+  - [Use Cases](#use-cases)
+    - [Investment Analysis](#investment-analysis)
+    - [Portfolio Management](#portfolio-management)
+    - [Due Diligence](#due-diligence)
+    - [Sensitivity Analysis](#sensitivity-analysis)
+    - [Educational Purposes](#educational-purposes)
+  - [Best Practices](#best-practices)
+  - [Technical Details](#technical-details)
+    - [Data Sources](#data-sources)
+    - [Calculations](#calculations)
+    - [Currency](#currency)
+  - [Limitations](#limitations)
+  - [Related Methods](#related-methods)
+  - [Example Workflow](#example-workflow)
+  - [FAQ](#faq)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # DCF Valuation Analysis
 
 The `dcf()` method generates a comprehensive Discounted Cash Flow (DCF) valuation Excel spreadsheet for detailed stock valuation analysis. This tool automates the complex DCF calculation process and presents results in a professional, easy-to-understand format.
