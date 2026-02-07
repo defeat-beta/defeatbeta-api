@@ -1681,17 +1681,34 @@ class Ticker:
         wb.save(output)
         wb.close()
 
-        # Display download link in notebook if in notebook environment
+        # Display download link and Google Drive button in notebook environment
         if in_notebook():
             from IPython.display import HTML, display
+            import os
 
-            download_link = f"""
-            <a href="{output}" download="{self.ticker} DCF.xlsx"
-               style="font-size:16px; margin-top:12px; display:inline-block;">
-               ⬇️ Download {self.ticker}_DCF.xlsx
-            </a>
+            # Get the filename for the URL
+            filename = os.path.basename(output)
+
+            # For notebook, we need to construct the URL to access the file
+            # Jupyter serves files from the working directory via /files/<filename>
+            file_url = f"/files/{filename}"
+
+            download_and_drive_buttons = f"""
+            <script src="https://apis.google.com/js/platform.js" async defer></script>
+            <div style="margin-top: 12px;">
+                <a href="{output}" download="{self.ticker}_DCF.xlsx"
+                   style="font-size:16px; margin-right:20px; display:inline-block;">
+                   ⬇️ Download {self.ticker} DCF.xlsx
+                </a>
+                <div class="g-savetodrive"
+                     data-src="{file_url}"
+                     data-filename="{self.ticker}_DCF.xlsx"
+                     data-sitename="DefeatBeta DCF Analysis"
+                     style="display:inline-block;">
+                </div>
+            </div>
             """
-            display(HTML(download_link))
+            display(HTML(download_and_drive_buttons))
 
         # Return file path and description
         return {
