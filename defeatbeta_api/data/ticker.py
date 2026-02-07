@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.formatting.rule import CellIsRule
+from openpyxl.cell.text import InlineFont
+from openpyxl.cell.rich_text import TextBlock, CellRichText
 from openpyxl.workbook import Workbook
 
 from defeatbeta_api.client.duckdb_client import get_duckdb_client
@@ -1121,7 +1123,15 @@ class Ticker:
         add_cell("B", (row := row + 1), "Future Growth Rate (Terminal Stage)", font=bold, fill=orange_fill)
         add_cell("C", row, "=C8", number_format='0.00%')
 
-        add_cell("B", (row := row + 1), "Discount Rate %", font=bold, fill=orange_fill)
+        row = row + 1
+        cell = ws[f"B{row}"]
+        # Create rich text with normal and italic parts
+        normal_text = TextBlock(InlineFont(b=True), "Discount Rate (%) (Default: WACC)\n")
+        italic_text = TextBlock(InlineFont(b=True, i=True), "or S&P 500 Average Return")
+        cell.value = CellRichText(normal_text, italic_text)
+        cell.fill = orange_fill
+        cell.alignment = Alignment(wrap_text=True)
+
         add_cell("C", row, "=E9", number_format='0.00%')
 
         ttm_revenue_df = self.ttm_revenue()
@@ -1189,12 +1199,9 @@ class Ticker:
         tv_row = row + 1
         add_cell("B", (row := row + 1), "Terminal Value (USD)", font=bold)
 
-        terminal_growth = f"C{growth_1_5y_row + 2}"
-        wacc = f"C{growth_1_5y_row + 3}"
-
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']:
             add_cell(col, row, 0, number_format='#,##0')
-        add_cell("M", row, f"=M{fcf_row}*(1+{terminal_growth})/({wacc}-{terminal_growth})", number_format='#,##0')
+        add_cell("M", row, f"=M{fcf_row}*(1 + C20) / (C9 - C20)", number_format='#,##0')
 
         total_value_row = row + 1
         add_cell("B", (row := row + 1), "Total Value (USD)", font=bold)
