@@ -1690,23 +1690,40 @@ class Ticker:
             filename = os.path.basename(output)
 
             # For notebook, we need to construct the URL to access the file
-            # Jupyter serves files from the working directory via /files/<filename>
-            file_url = f"/files/{filename}"
-
+            # Use JavaScript to get the full URL dynamically
             download_and_drive_buttons = f"""
             <script src="https://apis.google.com/js/platform.js" async defer></script>
             <div style="margin-top: 12px;">
-                <a href="{output}" download="{self.ticker}_DCF.xlsx"
+                <a href="{filename}" download="{self.ticker}_DCF.xlsx"
                    style="font-size:16px; margin-right:20px; display:inline-block;">
                    ⬇️ Download {self.ticker} DCF.xlsx
                 </a>
-                <div class="g-savetodrive"
-                     data-src="{file_url}"
-                     data-filename="{self.ticker}_DCF.xlsx"
-                     data-sitename="DefeatBeta DCF Analysis"
-                     style="display:inline-block;">
+                <div id="drive-button-{self.ticker}" style="display:inline-block;">
+                    <div class="g-savetodrive"
+                         data-src=""
+                         data-filename="{self.ticker}_DCF.xlsx"
+                         data-sitename="DefeatBeta DCF Analysis">
+                    </div>
                 </div>
             </div>
+            <script>
+            (function() {{
+                // Get the current page URL and construct the full file URL
+                var baseUrl = window.location.origin + window.location.pathname.replace(/\\/[^/]*$/, '');
+                var fileUrl = baseUrl + '/files/{filename}';
+
+                // Update the data-src attribute with the full URL
+                var saveButton = document.querySelector('#drive-button-{self.ticker} .g-savetodrive');
+                if (saveButton) {{
+                    saveButton.setAttribute('data-src', fileUrl);
+
+                    // Reload the Google Drive button to apply the new URL
+                    if (typeof gapi !== 'undefined' && gapi.savetodrive) {{
+                        gapi.savetodrive.go('#drive-button-{self.ticker}');
+                    }}
+                }}
+            }})();
+            </script>
             """
             display(HTML(download_and_drive_buttons))
 
