@@ -6,6 +6,7 @@ from typing import Optional, List, Dict
 import numpy as np
 import pandas as pd
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.formatting.rule import CellIsRule
 from openpyxl.workbook import Workbook
 
 from defeatbeta_api.client.duckdb_client import get_duckdb_client
@@ -543,6 +544,60 @@ class Ticker:
 
         return result_df
 
+    def ttm_fcf(self) -> pd.DataFrame:
+        ttm_fcf_url = self.huggingface_client.get_url_path(stock_statement)
+        ttm_fcf_sql = load_sql("select_ttm_fcf_by_symbol",
+                              ticker=self.ticker,
+                              ttm_fcf_url=ttm_fcf_url)
+        ttm_fcf_df = self.duckdb_client.query(ttm_fcf_sql)
+
+        company_info = self.company_meta.get_company_info(self.ticker)
+        currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
+        if currency == 'USD':
+            currency_df = pd.DataFrame()
+            currency_df['report_date'] = pd.to_datetime(
+                ttm_fcf_df['report_date'])
+            currency_df['symbol'] = currency + '=X'
+            currency_df['open'] = 1.0
+            currency_df['close'] = 1.0
+            currency_df['high'] = 1.0
+            currency_df['low'] = 1.0
+        else:
+            currency_df = self.currency(symbol=currency + '=X')
+
+        ttm_fcf_df['report_date'] = pd.to_datetime(ttm_fcf_df['report_date'])
+        currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+        result_df = ttm_fcf_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'ttm_fcf_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('ttm_fcf_report_date'),
+            currency_df.sort_values('report_date'),
+            left_on='ttm_fcf_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['ttm_free_cash_flow_usd'] = round(result_df['ttm_free_cash_flow'] / result_df['close'], 2)
+
+        result_df = result_df[[
+            'ttm_fcf_report_date',
+            'ttm_free_cash_flow',
+            'report_date_2_fcf',
+            'report_date',
+            'close',
+            'ttm_free_cash_flow_usd'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'ttm_fcf_report_date': 'report_date',
+            'report_date': 'exchange_report_date',
+            'close': 'exchange_to_usd_rate'
+        })
+
+        return result_df
+
     def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
         ttm_net_income_url = self.huggingface_client.get_url_path(stock_statement)
         ttm_net_income_sql = load_sql("select_ttm_net_income_common_stockholders_by_symbol",
@@ -874,6 +929,12 @@ class Ticker:
         bold = Font(bold=True)
         orange_fill = PatternFill(start_color="FFE6DB74", end_color="FFE6DB74", fill_type="solid")
         thin = Side(style='medium', color='FFB1B9F9')
+        company_info = self.company_meta.get_company_info(self.ticker)
+        finance_currency = (
+            company_info.get("financial_currency")
+            if company_info
+            else "USD"
+        )
 
         for col, width in zip(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"],
                              [1, 48, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18]):
@@ -909,15 +970,15 @@ class Ticker:
         last_wacc = wacc.iloc[-1]
         report_date = pd.to_datetime(last_wacc["report_date"]).strftime("%Y-%m-%d")
         add_cell("B", (row := row + 1), f"Discount Rate Estimates ({report_date})", font=bold)
-        add_cell("B", (row := row + 1), "Market Cap", font=bold)
+        add_cell("B", (row := row + 1), "Market Cap (USD)", font=bold)
         add_cell("C", row, last_wacc['market_capitalization'], number_format='#,##0')
         add_cell("B", (row := row + 1), "β(5y)", font=bold)
         add_cell("C", row, last_wacc['beta_5y'], number_format='0.00')
-        add_cell("B", (row := row + 1), "Total Debt", font=bold)
+        add_cell("B", (row := row + 1), "Total Debt (USD)", font=bold)
         add_cell("C", row, last_wacc['total_debt_usd'], number_format='#,##0')
-        add_cell("B", (row := row + 1), "Interest Expense", font=bold)
+        add_cell("B", (row := row + 1), "Interest Expense (USD)", font=bold)
         add_cell("C", row, last_wacc['interest_expense_usd'], number_format='#,##0')
-        add_cell("B", (row := row + 1), "Pre-Tax Income", font=bold)
+        add_cell("B", (row := row + 1), "Pre-Tax Income (USD)", font=bold)
         add_cell("C", row, last_wacc['pretax_income_usd'], number_format='#,##0')
         add_cell("B", (row := row + 1), "Tax Provision", font=bold)
         add_cell("C", row, last_wacc['tax_provision_usd'], number_format='#,##0')
@@ -971,7 +1032,7 @@ class Ticker:
         row = 0
         add_cell("G", (row := row + 1), f"Growth Estimates", font=bold)
 
-        add_cell("G", (row := row + 1), "Revenue", font=bold)
+        add_cell("G", (row := row + 1), f"Revenue ({finance_currency})", font=bold)
         y1_row = row + 1
         add_cell("G", (row := row + 1), revenue_details[0]['date'])
         add_cell("H", row, revenue_details[0]['value'], number_format='#,##0')
@@ -988,7 +1049,7 @@ class Ticker:
         add_cell("H", row, f"=POWER(H{y3_row}/H{y1_row},1/2)-1", number_format='0.00%')
 
         row += 1
-        add_cell("G", (row := row + 1), "FCF", font=bold)
+        add_cell("G", (row := row + 1), f"FCF ({finance_currency})", font=bold)
         fcf_y1_row = row + 1
         add_cell("G", (row := row + 1), fcf_details[0]['date'])
         add_cell("H", row, fcf_details[0]['value'], number_format='#,##0')
@@ -1005,7 +1066,7 @@ class Ticker:
         add_cell("H", row, f"=POWER(H{fcf_y3_row}/H{fcf_y1_row},1/2)-1", number_format='0.00%')
 
         row += 1
-        add_cell("G", (row := row + 1), "EBITDA", font=bold)
+        add_cell("G", (row := row + 1), f"EBITDA ({finance_currency})", font=bold)
         ebitda_y1_row = row + 1
         add_cell("G", (row := row + 1), ebitda_details[0]['date'])
         add_cell("H", row, ebitda_details[0]['value'], number_format='#,##0')
@@ -1022,7 +1083,7 @@ class Ticker:
         add_cell("H", row, f"=POWER(H{ebitda_y3_row}/H{ebitda_y1_row},1/2)-1", number_format='0.00%')
 
         row += 1
-        add_cell("G", (row := row + 1), "Net Income", font=bold)
+        add_cell("G", (row := row + 1), f"Net Income ({finance_currency})", font=bold)
         ni_y1_row = row + 1
         add_cell("G", (row := row + 1), net_income_details[0]['date'])
         add_cell("H", row, net_income_details[0]['value'], number_format='#,##0')
@@ -1072,7 +1133,7 @@ class Ticker:
             quarter_dates = sorted(quarters.keys())
             start_date = pd.to_datetime(quarter_dates[0]).strftime("%Y-%m-%d")
             end_date = pd.to_datetime(quarter_dates[-1]).strftime("%Y-%m-%d")
-            ttm_revenue_label = f"TTM Revenue ({start_date} ~ {end_date})"
+            ttm_revenue_label = f"TTM Revenue (USD | {start_date} ~ {end_date})"
         else:
             ttm_revenue_value = 0
             ttm_revenue_label = "TTM Revenue N/A"
@@ -1101,10 +1162,15 @@ class Ticker:
             add_cell(col, row, f"{future_date.year}/{future_date.month}/{future_date.day}", font=bold, alignment=right_align)
 
         fcf_row = row + 1
-        add_cell("B", (row := row + 1), "Free Cash Flow", font=bold)
+        add_cell("B", (row := row + 1), "Free Cash Flow (USD)", font=bold)
 
-        base_fcf = fcf_details[2]['value']
-        add_cell("C", row, base_fcf, number_format='#,##0')
+        ttm_fcf_df = self.ttm_fcf()
+        if not ttm_fcf_df.empty:
+            latest_ttm = ttm_fcf_df.iloc[-1]
+            ttm_fcf_value = latest_ttm['ttm_free_cash_flow_usd']
+        else:
+            ttm_fcf_value = 0
+        add_cell("C", row, ttm_fcf_value, number_format='#,##0')
 
         growth_1_5y = f"C{growth_1_5y_row}"
         growth_6_10y = f"C{growth_1_5y_row + 1}"
@@ -1121,7 +1187,7 @@ class Ticker:
         add_cell("M", row, f"=L{row}*(1+{growth_6_10y})", number_format='#,##0')
 
         tv_row = row + 1
-        add_cell("B", (row := row + 1), "Terminal Value", font=bold)
+        add_cell("B", (row := row + 1), "Terminal Value (USD)", font=bold)
 
         terminal_growth = f"C{growth_1_5y_row + 2}"
         wacc = f"C{growth_1_5y_row + 3}"
@@ -1131,7 +1197,7 @@ class Ticker:
         add_cell("M", row, f"=M{fcf_row}*(1+{terminal_growth})/({wacc}-{terminal_growth})", number_format='#,##0')
 
         total_value_row = row + 1
-        add_cell("B", (row := row + 1), "Total Value", font=bold)
+        add_cell("B", (row := row + 1), "Total Value (USD)", font=bold)
 
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']:
             add_cell(col, row, f"={col}{fcf_row}", number_format='#,##0')
@@ -1241,14 +1307,17 @@ class Ticker:
 
         # ========== DCF Value Section ==========
         row = 35
-        add_cell("B", (row := row + 1), "DCF Value", font=bold)
+        report_date = pd.to_datetime(last_wacc["report_date"]).strftime("%Y-%m-%d")
+        add_cell("B", (row := row + 1), f"DCF Value ({report_date})", font=bold)
 
         ev_row = row + 1
-        add_cell("B", (row := row + 1), "Enterprise Value (EV)", font=bold, fill=orange_fill)
+        add_cell("B", (row := row + 1), "Enterprise Value (USD)", font=bold, fill=orange_fill)
         add_cell("C", row, f"=NPV(C21,D{total_value_row}:M{total_value_row})", number_format='#,##0')
 
         cash_row = row + 1
-        add_cell("B", (row := row + 1), "Cash, Cash Equivalents & Short Term Investments", font=bold, fill=orange_fill)
+        add_cell("B", (row := row + 1), "Cash, Cash Equivalents & Short Term Investments (USD)", font=bold, fill=orange_fill)
+
+        # Get cash value and convert to USD
         bs_df = self.quarterly_balance_sheet().df()
         cash_value = 0
         if not bs_df.empty:
@@ -1256,9 +1325,30 @@ class Ticker:
             if not cash_rows.empty:
                 date_columns = [col for col in bs_df.columns if col != 'Breakdown']
                 if date_columns:
-                    cash_value = cash_rows.iloc[0][date_columns[0]]
-                    if pd.isna(cash_value) or cash_value == '*':
+                    cash_value_original = cash_rows.iloc[0][date_columns[0]]
+                    if pd.isna(cash_value_original) or cash_value_original == '*':
                         cash_value = 0
+                    else:
+                        # Get exchange rate for currency conversion
+
+                        if finance_currency == 'USD':
+                            cash_value = cash_value_original
+                        else:
+                            # Get latest quarter date from balance sheet
+                            latest_bs_date = pd.to_datetime(date_columns[0])
+
+                            # Get exchange rate
+                            currency_df = self.currency(finance_currency + '=X')
+                            currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+                            # Find exchange rate closest to balance sheet date
+                            exchange_rate_row = currency_df[currency_df['report_date'] <= latest_bs_date].tail(1)
+                            if not exchange_rate_row.empty:
+                                _exchange_rate = exchange_rate_row.iloc[0]['close']
+                                cash_value = round(float(cash_value_original) / float(_exchange_rate), 2)
+                            else:
+                                cash_value = float(cash_value_original)  # Fallback to original if no exchange rate found
+
         add_cell("C", row, cash_value, number_format='#,##0')
 
         debt_row = row + 1
@@ -1311,7 +1401,7 @@ class Ticker:
         ws.merge_cells(f'F{ev_row}:F{cash_row}')
         cell = ws[f'F{ev_row}']
         cell.value = f"=C{fair_price_row}"
-        cell.font = Font(size=15, bold=True)
+        cell.font = Font(color='FF51A39A', size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
         cell.number_format = '0.00'
         add_border(37, 38, ['F'], Side(style='thick', color='FF51A39A'))
@@ -1328,7 +1418,7 @@ class Ticker:
         ws.merge_cells(f'F{equity_row}:F{shares_row}')
         cell = ws[f'F{equity_row}']
         cell.value = f"=C{current_price_row}"
-        cell.font = Font(size=15, bold=True)
+        cell.font = Font(color='FF51A39A', size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
         cell.number_format = '0.00'
         add_border(40, 41, ['F'], Side(style='thick', color='FF51A39A'))
@@ -1347,6 +1437,17 @@ class Ticker:
         cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
         add_border(43, 44, ['F'], Side(style='thick', color='FF51A39A'))
+
+        # Add conditional formatting for Buy/Sell font color
+        # Green font for "Buy"
+        green_font = Font(color='FF51A39A', size=15, bold=True)
+        buy_rule = CellIsRule(operator='equal', formula=['"Buy"'], font=green_font)
+        ws.conditional_formatting.add(f'F{current_price_row}:F{margin_row}', buy_rule)
+
+        # Red font for "Sell"
+        red_font = Font(color='FFDD5E56', size=15, bold=True)
+        sell_rule = CellIsRule(operator='equal', formula=['"Sell"'], font=red_font)
+        ws.conditional_formatting.add(f'F{current_price_row}:F{margin_row}', sell_rule)
 
         output = f"{validate_defeatbeta_tmp_directory()}/{self.ticker}.xlsx"
         wb.save(output)
