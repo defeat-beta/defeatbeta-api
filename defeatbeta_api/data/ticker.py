@@ -923,54 +923,24 @@ class Ticker:
         )
         return result_df
 
-    def dcf(self) -> str:
-        global end_date
-        wb = Workbook()
-        ws = wb.active
-        ws.title = f"DCF Value of {self.ticker}"
-        bold = Font(bold=True)
-        orange_fill = PatternFill(start_color="FFE6DB74", end_color="FFE6DB74", fill_type="solid")
-        thin = Side(style='medium', color='FFB1B9F9')
-        company_info = self.company_meta.get_company_info(self.ticker)
-        finance_currency = (
-            company_info.get("financial_currency")
-            if company_info
-            else "USD"
-        )
+    def _add_discount_rate_section(self, ws, last_wacc, add_cell, add_border, bold, orange_fill, thin):
+        """Create Discount Rate Estimates Section (rows 1-9).
 
-        for col, width in zip(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"],
-                             [1, 45, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18]):
-            ws.column_dimensions[col].width = width
+        Populates the discount rate estimates including market cap, beta, debt,
+        interest expense, pre-tax income, tax provision, risk-free rate, and
+        expected market return. Also calculates WACC components.
 
-        def add_cell(_col, _row, value, font=None, fill=None, number_format=None, alignment=None):
-            _cell = ws[f"{_col}{_row}"]
-            _cell.value = value
-            if font:
-                _cell.font = font
-            if fill:
-                _cell.fill = fill
-            if number_format:
-                _cell.number_format = number_format
-            if alignment:
-                _cell.alignment = alignment
-
-        def add_border(start_row, end_row, cols, border_side=None):
-            if border_side is None:
-                border_side = thin
-            for _row in range(start_row, end_row + 1):
-                for c in cols:
-                    _cell = ws[f"{c}{_row}"]
-                    left = border_side if c == cols[0] else None
-                    right = border_side if c == cols[-1] else None
-                    top = border_side if _row == start_row else None
-                    bottom = border_side if _row == end_row else None
-                    _cell.border = Border(left=left, right=right, top=top, bottom=bottom)
-
-        row = 0
-        # ========== Discount Rate Estimates Section ==========
-        wacc = self.wacc()
-        last_wacc = wacc.iloc[-1]
+        Args:
+            ws: The openpyxl worksheet object.
+            last_wacc: Dictionary containing the latest WACC data.
+            add_cell: Helper function to add cell values with formatting.
+            add_border: Helper function to add borders to cells.
+            bold: Bold font style.
+            orange_fill: Orange fill pattern for highlighted cells.
+            thin: Border side style.
+        """
         report_date = pd.to_datetime(last_wacc["report_date"]).strftime("%Y-%m-%d")
+        row = 0
         add_cell("B", (row := row + 1), f"Discount Rate Estimates ({report_date})", font=bold)
         add_cell("B", (row := row + 1), "Market Cap (USD)", font=bold)
         add_cell("C", row, last_wacc['market_capitalization'], number_format='#,##0')
@@ -1005,32 +975,34 @@ class Ticker:
 
         add_border(2, 9, ['B', 'C', 'D', 'E'])
 
-        # ========== Growth Estimates Section ==========
-        def get_growth_details(growth_df, years=3):
-            if growth_df.empty:
-                return []
-            recent = growth_df.tail(years)
-            details = []
-            for _, row_data in recent.iterrows():
-                date_str = pd.to_datetime(row_data['report_date']).strftime("%Y-%m-%d")
-                metric_name = [col for col in row_data.index if col not in ['symbol', 'report_date', 'yoy_growth'] and not col.startswith('prev_year_')][0]
-                current_val = row_data.get(metric_name, 0)
-                yoy = row_data.get('yoy_growth', 0)
-                details.append({'date': date_str, 'value': current_val, 'yoy': yoy})
-            while len(details) < years:
-                details.insert(0, {'date': 'N/A', 'value': 0, 'yoy': 0})
-            return details[-years:]
+    def _add_growth_estimates_section(self, ws, revenue_details, fcf_details, ebitda_details,
+                                       net_income_details, finance_currency, add_cell, add_border,
+                                       bold, orange_fill, thin) -> Dict[str, int]:
+        """Create Growth Estimates Section with revenue, FCF, EBITDA, and net income growth data.
 
-        revenue_growth = self.annual_revenue_yoy_growth()
-        fcf_growth = self.annual_fcf_yoy_growth()
-        ebitda_growth = self.annual_ebitda_yoy_growth()
-        net_income_growth = self.annual_net_income_yoy_growth()
+        Populates the growth estimates section showing 3-year historical data for each metric
+        along with YoY growth rates and 3-year CAGR calculations.
 
-        revenue_details = get_growth_details(revenue_growth, 3)
-        fcf_details = get_growth_details(fcf_growth, 3)
-        ebitda_details = get_growth_details(ebitda_growth, 3)
-        net_income_details = get_growth_details(net_income_growth, 3)
+        Args:
+            ws: The openpyxl worksheet object.
+            revenue_details: List of dicts with revenue data (date, value, yoy).
+            fcf_details: List of dicts with FCF data (date, value, yoy).
+            ebitda_details: List of dicts with EBITDA data (date, value, yoy).
+            net_income_details: List of dicts with net income data (date, value, yoy).
+            finance_currency: Currency code for display labels.
+            add_cell: Helper function to add cell values with formatting.
+            add_border: Helper function to add borders to cells.
+            bold: Bold font style.
+            orange_fill: Orange fill pattern for highlighted cells.
+            thin: Border side style.
 
+        Returns:
+            Dict containing row numbers for CAGR calculations:
+            - 'revenue_cagr_row': Row number of Revenue 3Y CAGR
+            - 'fcf_cagr_row': Row number of FCF 3Y CAGR
+            - 'ebitda_cagr_row': Row number of EBITDA 3Y CAGR
+            - 'ni_cagr_row': Row number of Net Income 3Y CAGR
+        """
         row = 0
         add_cell("G", (row := row + 1), f"Growth Estimates", font=bold)
 
@@ -1101,10 +1073,46 @@ class Ticker:
         add_cell("G", (row := row + 1), "Net Income 3Y CAGR", font=bold)
         add_cell("H", row, f"=POWER(H{ni_y3_row}/H{ni_y1_row},1/2)-1", number_format='0.00%')
 
-
         add_border(2, row, ['G', 'H', 'I'])
 
-        # ========== DCF Template Section ==========
+        return {
+            'revenue_cagr_row': revenue_cagr_row,
+            'fcf_cagr_row': fcf_cagr_row,
+            'ebitda_cagr_row': ebitda_cagr_row,
+            'ni_cagr_row': ni_cagr_row
+        }
+
+    def _add_dcf_template_section(self, ws, base_fcf, end_date, revenue_cagr_row, fcf_cagr_row,
+                                   ebitda_cagr_row, ni_cagr_row, revenue_details, add_cell,
+                                   add_border, bold, orange_fill, thin) -> Dict[str, int]:
+        """Create DCF Template Section with projections and historical FCF margins.
+
+        Populates the DCF template including growth rate parameters, TTM revenue/FCF,
+        projected FCF for years 1-10, terminal value calculation, and historical FCF margins.
+
+        Args:
+            ws: The openpyxl worksheet object.
+            base_fcf: TTM free cash flow value.
+            end_date: End date string for TTM period.
+            revenue_cagr_row: Row number of Revenue 3Y CAGR.
+            fcf_cagr_row: Row number of FCF 3Y CAGR.
+            ebitda_cagr_row: Row number of EBITDA 3Y CAGR.
+            ni_cagr_row: Row number of Net Income 3Y CAGR.
+            revenue_details: List of dicts with revenue data for TTM calculations.
+            add_cell: Helper function to add cell values with formatting.
+            add_border: Helper function to add borders to cells.
+            bold: Bold font style.
+            orange_fill: Orange fill pattern for highlighted cells.
+            thin: Border side style.
+
+        Returns:
+            Dict containing key row numbers:
+            - 'total_value_row': Row number of Total Value
+            - 'fcf_margin_row': Row number of FCF Margin
+            - 'ttm_revenue_row': Row number of TTM Revenue
+            - 'revenue_growth_1_5y_row': Row number of Future Revenue Growth (1-5Y)
+            - 'revenue_growth_6_10y_row': Row number of Future Revenue Growth (6-10Y)
+        """
         row = 15
         add_cell("B", (row := row + 1), "DCF Template", font=bold)
 
@@ -1174,13 +1182,7 @@ class Ticker:
         fcf_row = row + 1
         add_cell("B", (row := row + 1), "Free Cash Flow (USD)", font=bold)
 
-        ttm_fcf_df = self.ttm_fcf()
-        if not ttm_fcf_df.empty:
-            latest_ttm = ttm_fcf_df.iloc[-1]
-            ttm_fcf_value = latest_ttm['ttm_free_cash_flow_usd']
-        else:
-            ttm_fcf_value = 0
-        add_cell("C", row, ttm_fcf_value, number_format='#,##0')
+        add_cell("C", row, base_fcf, number_format='#,##0')
 
         growth_1_5y = f"C{growth_1_5y_row}"
         growth_6_10y = f"C{growth_1_5y_row + 1}"
@@ -1210,6 +1212,7 @@ class Ticker:
             add_cell(col, row, f"={col}{fcf_row}", number_format='#,##0')
         add_cell("M", row, f"=M{fcf_row}+M{tv_row}", number_format='#,##0')
 
+        fcf_margin_row = row + 1
         add_cell("B", (row := row + 1), "FCF Margin", font=bold)
 
         revenue_growth_1_5y = f"C{revenue_growth_1_5y_row}"
@@ -1257,7 +1260,7 @@ class Ticker:
         dcf_start_row = 17
         params_end_row = revenue_growth_6_10y_row + 1
         year_row = params_end_row + 1
-        fcf_margin_row = year_row + 4
+        proj_fcf_margin_row = year_row + 4
         history_end_row = row
 
         # Determine historical data columns
@@ -1282,21 +1285,21 @@ class Ticker:
             cell.border = Border(top=thin, left=cell.border.left, right=cell.border.right, bottom=cell.border.bottom)
 
         # Right border: M26-M30
-        for r in range(year_row, fcf_margin_row + 1):
+        for r in range(year_row, proj_fcf_margin_row + 1):
             cell = ws[f'M{r}']
             cell.border = Border(right=thin, top=cell.border.top, bottom=cell.border.bottom, left=cell.border.left)
 
         # Bottom border of FCF margin row: hist_last_col-M30
         for col_ord in range(ord(hist_last_col) + 1, ord('M') + 1):
             col = chr(col_ord)
-            cell = ws[f'{col}{fcf_margin_row}']
+            cell = ws[f'{col}{proj_fcf_margin_row}']
             cell.border = Border(bottom=thin, left=cell.border.left, right=cell.border.right, top=cell.border.top)
 
         # Historical section borders (if exists)
         if hist_col_count > 0:
-            cell = ws[f'{hist_last_col}{fcf_margin_row+1}']
+            cell = ws[f'{hist_last_col}{proj_fcf_margin_row+1}']
             cell.border = Border(right=thin)
-            history_start_row = fcf_margin_row + 2
+            history_start_row = proj_fcf_margin_row + 2
 
             # Right border: hist_last_col
             for r in range(history_start_row, history_end_row + 1):
@@ -1312,7 +1315,44 @@ class Ticker:
             # No historical data, add left and bottom border to the last row
             ws[f'B{history_end_row}'].border = Border(left=thin, bottom=thin)
 
-        # ========== DCF Value Section ==========
+        return {
+            'total_value_row': total_value_row,
+            'fcf_margin_row': fcf_margin_row,
+            'ttm_revenue_row': ttm_revenue_row,
+            'revenue_growth_1_5y_row': revenue_growth_1_5y_row,
+            'revenue_growth_6_10y_row': revenue_growth_6_10y_row
+        }
+
+    def _add_dcf_value_section(self, ws, total_value_row, last_wacc, finance_currency,
+                                add_cell, add_border, bold, orange_fill, thin) -> Dict[str, int]:
+        """Create DCF Value Section with enterprise value, equity value, and fair price calculations.
+
+        Populates the DCF value section including enterprise value (NPV of projected cash flows),
+        cash and short-term investments, total debt, equity value, outstanding shares,
+        fair price, current price, and margin of safety.
+
+        Args:
+            ws: The openpyxl worksheet object.
+            total_value_row: Row number of Total Value in DCF template.
+            last_wacc: Dictionary containing the latest WACC data.
+            finance_currency: Currency code for balance sheet conversion.
+            add_cell: Helper function to add cell values with formatting.
+            add_border: Helper function to add borders to cells.
+            bold: Bold font style.
+            orange_fill: Orange fill pattern for highlighted cells.
+            thin: Border side style.
+
+        Returns:
+            Dict containing key row numbers:
+            - 'ev_row': Row number of Enterprise Value
+            - 'cash_row': Row number of Cash & ST Investments
+            - 'debt_row': Row number of Total Debt
+            - 'equity_row': Row number of Equity Value
+            - 'shares_row': Row number of Outstanding Shares
+            - 'fair_price_row': Row number of Fair Price
+            - 'current_price_row': Row number of Current Price
+            - 'margin_row': Row number of Margin of Safety
+        """
         row = 35
         report_date = pd.to_datetime(last_wacc["report_date"]).strftime("%Y-%m-%d")
         add_cell("B", (row := row + 1), f"DCF Value ({report_date})", font=bold)
@@ -1395,6 +1435,36 @@ class Ticker:
         add_border(37, row, ['B', 'C'])
         add_border(44, 44, ['B', 'C'], Side(style='thick', color='FFDD5E56'))
 
+        return {
+            'ev_row': ev_row,
+            'cash_row': cash_row,
+            'debt_row': debt_row,
+            'equity_row': equity_row,
+            'shares_row': shares_row,
+            'fair_price_row': fair_price_row,
+            'current_price_row': current_price_row,
+            'margin_row': margin_row
+        }
+
+    def _add_key_metrics_display(self, ws, ev_row, cash_row, equity_row, shares_row,
+                                  fair_price_row, current_price_row, margin_row, add_border):
+        """Create Key Metrics Display with merged cells for fair price, current price, and buy/sell signal.
+
+        Creates a visual summary section with merged cells displaying the fair price,
+        current price, and a buy/sell recommendation based on comparing fair vs current price.
+        Also adds conditional formatting to color the buy/sell signal.
+
+        Args:
+            ws: The openpyxl worksheet object.
+            ev_row: Row number of Enterprise Value.
+            cash_row: Row number of Cash & ST Investments.
+            equity_row: Row number of Equity Value.
+            shares_row: Row number of Outstanding Shares.
+            fair_price_row: Row number of Fair Price.
+            current_price_row: Row number of Current Price.
+            margin_row: Row number of Margin of Safety.
+            add_border: Helper function to add borders to cells.
+        """
         # Merge cells in column E for key metrics display
         # Fair Price (E37:E38)
         ws.merge_cells(f'E{ev_row}:E{cash_row}')
@@ -1456,6 +1526,148 @@ class Ticker:
         sell_rule = CellIsRule(operator='equal', formula=['"Sell"'], font=red_font)
         ws.conditional_formatting.add(f'F{current_price_row}:F{margin_row}', sell_rule)
 
+    def dcf(self) -> str:
+        """Generate a Discounted Cash Flow (DCF) valuation Excel spreadsheet.
+
+        Creates a comprehensive DCF analysis workbook containing:
+        - Discount Rate Estimates section with WACC calculation
+        - Growth Estimates section with historical CAGR for revenue, FCF, EBITDA, and net income
+        - DCF Template section with 10-year cash flow projections
+        - DCF Value section with enterprise value, equity value, and fair price
+        - Key metrics display with buy/sell recommendation
+
+        Returns:
+            str: File path to the generated Excel workbook.
+        """
+        import json
+
+        # Initialize workbook and styles
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"DCF Value of {self.ticker}"
+        bold = Font(bold=True)
+        orange_fill = PatternFill(start_color="FFE6DB74", end_color="FFE6DB74", fill_type="solid")
+        thin = Side(style='medium', color='FFB1B9F9')
+
+        # Get company info and finance currency
+        company_info = self.company_meta.get_company_info(self.ticker)
+        finance_currency = (
+            company_info.get("financial_currency")
+            if company_info
+            else "USD"
+        )
+
+        # Set column widths
+        for col, width in zip(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"],
+                             [1, 45, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18]):
+            ws.column_dimensions[col].width = width
+
+        # Helper function to add cell with formatting
+        def add_cell(_col, _row, value, font=None, fill=None, number_format=None, alignment=None):
+            _cell = ws[f"{_col}{_row}"]
+            _cell.value = value
+            if font:
+                _cell.font = font
+            if fill:
+                _cell.fill = fill
+            if number_format:
+                _cell.number_format = number_format
+            if alignment:
+                _cell.alignment = alignment
+
+        # Helper function to add borders
+        def add_border(start_row, end_row, cols, border_side=None):
+            if border_side is None:
+                border_side = thin
+            for _row in range(start_row, end_row + 1):
+                for c in cols:
+                    _cell = ws[f"{c}{_row}"]
+                    left = border_side if c == cols[0] else None
+                    right = border_side if c == cols[-1] else None
+                    top = border_side if _row == start_row else None
+                    bottom = border_side if _row == end_row else None
+                    _cell.border = Border(left=left, right=right, top=top, bottom=bottom)
+
+        # Helper function to extract growth details from dataframe
+        def get_growth_details(growth_df, years=3):
+            if growth_df.empty:
+                return []
+            recent = growth_df.tail(years)
+            details = []
+            for _, row_data in recent.iterrows():
+                date_str = pd.to_datetime(row_data['report_date']).strftime("%Y-%m-%d")
+                metric_name = [col for col in row_data.index if col not in ['symbol', 'report_date', 'yoy_growth'] and not col.startswith('prev_year_')][0]
+                current_val = row_data.get(metric_name, 0)
+                yoy = row_data.get('yoy_growth', 0)
+                details.append({'date': date_str, 'value': current_val, 'yoy': yoy})
+            while len(details) < years:
+                details.insert(0, {'date': 'N/A', 'value': 0, 'yoy': 0})
+            return details[-years:]
+
+        # ========== Fetch Required Data ==========
+        wacc = self.wacc()
+        last_wacc = wacc.iloc[-1]
+
+        revenue_growth = self.annual_revenue_yoy_growth()
+        fcf_growth = self.annual_fcf_yoy_growth()
+        ebitda_growth = self.annual_ebitda_yoy_growth()
+        net_income_growth = self.annual_net_income_yoy_growth()
+
+        revenue_details = get_growth_details(revenue_growth, 3)
+        fcf_details = get_growth_details(fcf_growth, 3)
+        ebitda_details = get_growth_details(ebitda_growth, 3)
+        net_income_details = get_growth_details(net_income_growth, 3)
+
+        # Get TTM FCF for base FCF value
+        ttm_fcf_df = self.ttm_fcf()
+        if not ttm_fcf_df.empty:
+            latest_ttm = ttm_fcf_df.iloc[-1]
+            base_fcf = latest_ttm['ttm_free_cash_flow_usd']
+        else:
+            base_fcf = 0
+
+        # Get end_date from TTM revenue for DCF template
+        ttm_revenue_df = self.ttm_revenue()
+        if not ttm_revenue_df.empty:
+            latest_ttm_rev = ttm_revenue_df.iloc[-1]
+            quarters = json.loads(latest_ttm_rev['report_date_2_revenue'])
+            quarter_dates = sorted(quarters.keys())
+            end_date = pd.to_datetime(quarter_dates[-1]).strftime("%Y-%m-%d")
+        else:
+            end_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+
+        # ========== Add Discount Rate Estimates Section ==========
+        self._add_discount_rate_section(ws, last_wacc, add_cell, add_border, bold, orange_fill, thin)
+
+        # ========== Add Growth Estimates Section ==========
+        growth_rows = self._add_growth_estimates_section(
+            ws, revenue_details, fcf_details, ebitda_details, net_income_details,
+            finance_currency, add_cell, add_border, bold, orange_fill, thin
+        )
+
+        # ========== Add DCF Template Section ==========
+        template_rows = self._add_dcf_template_section(
+            ws, base_fcf, end_date,
+            growth_rows['revenue_cagr_row'], growth_rows['fcf_cagr_row'],
+            growth_rows['ebitda_cagr_row'], growth_rows['ni_cagr_row'],
+            revenue_details, add_cell, add_border, bold, orange_fill, thin
+        )
+
+        # ========== Add DCF Value Section ==========
+        value_rows = self._add_dcf_value_section(
+            ws, template_rows['total_value_row'], last_wacc, finance_currency,
+            add_cell, add_border, bold, orange_fill, thin
+        )
+
+        # ========== Add Key Metrics Display ==========
+        self._add_key_metrics_display(
+            ws, value_rows['ev_row'], value_rows['cash_row'],
+            value_rows['equity_row'], value_rows['shares_row'],
+            value_rows['fair_price_row'], value_rows['current_price_row'],
+            value_rows['margin_row'], add_border
+        )
+
+        # Save and return file path
         output = f"{validate_defeatbeta_tmp_directory()}/{self.ticker}.xlsx"
         wb.save(output)
         return output

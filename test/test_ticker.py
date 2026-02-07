@@ -6,7 +6,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("PDD", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
+        cls.ticker = Ticker("QCOM", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
