@@ -34,7 +34,8 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate, \
     stock_sec_filing
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
-    balance_sheet_template_type, cash_flow_template_type, sp500_cagr_returns_rolling, validate_defeatbeta_tmp_directory
+    balance_sheet_template_type, cash_flow_template_type, sp500_cagr_returns_rolling, validate_defeatbeta_tmp_directory, \
+    in_notebook
 
 
 class Ticker:
@@ -1526,7 +1527,7 @@ class Ticker:
         sell_rule = CellIsRule(operator='equal', formula=['"Sell"'], font=red_font)
         ws.conditional_formatting.add(f'F{current_price_row}:F{margin_row}', sell_rule)
 
-    def dcf(self) -> str:
+    def dcf(self) -> Dict[str, str]:
         """Generate a Discounted Cash Flow (DCF) valuation Excel spreadsheet.
 
         Creates a comprehensive DCF analysis workbook containing:
@@ -1537,7 +1538,9 @@ class Ticker:
         - Key metrics display with buy/sell recommendation
 
         Returns:
-            str: File path to the generated Excel workbook.
+            Dict[str, str]: Dictionary containing:
+                - file_path (str): Path to the generated Excel workbook
+                - description (str): Description of the DCF analysis file
         """
         import json
 
@@ -1668,9 +1671,33 @@ class Ticker:
         )
 
         # Save and return file path
-        output = f"{validate_defeatbeta_tmp_directory()}/{self.ticker}.xlsx"
+        if in_notebook():
+            # In notebook, save to current working directory
+            output = f"{self.ticker}.xlsx"
+        else:
+            # In normal Python, save to temp directory
+            output = f"{validate_defeatbeta_tmp_directory()}/{self.ticker}.xlsx"
+
         wb.save(output)
-        return output
+        wb.close()
+
+        # Display download link in notebook if in notebook environment
+        if in_notebook():
+            from IPython.display import HTML, display
+
+            download_link = f"""
+            <a href="{output}" download="{self.ticker} DCF.xlsx"
+               style="font-size:16px; margin-top:12px; display:inline-block;">
+               ⬇️ Download {self.ticker}_DCF.xlsx
+            </a>
+            """
+            display(HTML(download_link))
+
+        # Return file path and description
+        return {
+            'file_path': output,
+            'description': f'DCF Valuation Analysis for {self.ticker}'
+        }
 
     def industry_ttm_pe(self) -> pd.DataFrame:
         info = self.info()
