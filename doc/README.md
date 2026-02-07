@@ -31,6 +31,15 @@
 
 ---
 
+## 💎 DCF Valuation Analysis
+
+> [!TIP]
+> This project provides automated DCF (Discounted Cash Flow) valuation analysis with Excel output.
+>
+> [DCF Valuation](api/DCF_Examples.md) generates a comprehensive Excel workbook containing `discount rate estimates`, `growth estimates`, `10-year cash flow projections`, `enterprise value`, `equity value`, `fair price`, and `buy/sell recommendations`.
+
+---
+
 ## 📰 Generate Analysis Report
 > [!TIP]
 > This project can also generate an HTML Tearsheets report. See the [linked document](api/Report_Examples.md) for details.
