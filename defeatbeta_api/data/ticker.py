@@ -937,7 +937,7 @@ class Ticker:
         )
 
         for col, width in zip(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"],
-                             [1, 48, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18]):
+                             [1, 45, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18]):
             ws.column_dimensions[col].width = width
 
         def add_cell(_col, _row, value, font=None, fill=None, number_format=None, alignment=None):
@@ -1315,7 +1315,7 @@ class Ticker:
         add_cell("C", row, f"=NPV(C21,D{total_value_row}:M{total_value_row})", number_format='#,##0')
 
         cash_row = row + 1
-        add_cell("B", (row := row + 1), "Cash, Cash Equivalents & Short Term Investments (USD)", font=bold, fill=orange_fill)
+        add_cell("B", (row := row + 1), "Cash & ST Investments (USD)", font=bold, fill=orange_fill)
 
         # Get cash value and convert to USD
         bs_df = self.quarterly_balance_sheet().df()
