@@ -56,33 +56,33 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
 
         # FCF growth (3 years)
         fcf_data = []
-        for i in range(8, 11):  # rows 8-10
+        for i in range(9, 12):  # rows 9-11
             fcf_data.append({
                 "date": ws.range(f"G{i}").value,
                 "value": ws.range(f"H{i}").value,
                 "yoy_growth": ws.range(f"I{i}").value
             })
-        fcf_cagr = ws.range("H11").value
+        fcf_cagr = ws.range("H12").value
 
         # EBITDA growth (3 years)
         ebitda_data = []
-        for i in range(13, 16):  # rows 13-15
+        for i in range(15, 18):  # rows 15-17
             ebitda_data.append({
                 "date": ws.range(f"G{i}").value,
                 "value": ws.range(f"H{i}").value,
                 "yoy_growth": ws.range(f"I{i}").value
             })
-        ebitda_cagr = ws.range("H16").value
+        ebitda_cagr = ws.range("H18").value
 
         # Net Income growth (3 years)
         net_income_data = []
-        for i in range(18, 21):  # rows 18-20
+        for i in range(21, 24):  # rows 21-23
             net_income_data.append({
                 "date": ws.range(f"G{i}").value,
                 "value": ws.range(f"H{i}").value,
                 "yoy_growth": ws.range(f"I{i}").value
             })
-        net_income_cagr = ws.range("H21").value
+        net_income_cagr = ws.range("H24").value
 
         growth_estimates = {
             "revenue": {
@@ -104,9 +104,6 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
         }
 
         # ========== Section 3: DCF Template ==========
-        # Get TTM label to extract date range
-        ttm_revenue_label = ws.range("B23").value
-
         # Extract projection years from row 26
         projection_years = []
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
@@ -114,39 +111,29 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
             if year_value:
                 projection_years.append(str(year_value))
 
-        # Extract FCF projections
+        # Extract FCF projections (row 27)
         fcf_projections = []
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
             fcf_value = ws.range(f"{col}27").value
             if fcf_value is not None:
                 fcf_projections.append(fcf_value)
 
-        # Extract Revenue projections
-        revenue_projections = []
-        for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
-            rev_value = ws.range(f"{col}28").value
-            if rev_value is not None:
-                revenue_projections.append(rev_value)
+        # Extract Terminal Value (row 28, only column M has value)
+        terminal_value = ws.range("M28").value
 
-        # Extract FCF Margin projections
+        # Extract Total Value projections (row 29)
+        total_value_projections = []
+        for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
+            total_val = ws.range(f"{col}29").value
+            if total_val is not None:
+                total_value_projections.append(total_val)
+
+        # Extract FCF Margin projections (row 30)
         fcf_margin_projections = []
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
-            margin_value = ws.range(f"{col}29").value
+            margin_value = ws.range(f"{col}30").value
             if margin_value is not None:
                 fcf_margin_projections.append(margin_value)
-
-        # Extract Terminal Value and Present Value
-        terminal_values = []
-        for col in ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
-            tv_value = ws.range(f"{col}30").value
-            if tv_value is not None:
-                terminal_values.append(tv_value)
-
-        present_values = []
-        for col in ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
-            pv_value = ws.range(f"{col}31").value
-            if pv_value is not None:
-                present_values.append(pv_value)
 
         dcf_template = {
             "decay_factor": ws.range("C17").value,
@@ -154,19 +141,17 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
             "future_growth_rate_6_10y": ws.range("C19").value,
             "future_growth_rate_terminal": ws.range("C20").value,
             "discount_rate": ws.range("C21").value,
-            "ttm_revenue": ws.range("C23").value,
-            "ttm_revenue_label": ttm_revenue_label,
-            "future_revenue_growth_1_5y": ws.range("C24").value,
-            "future_revenue_growth_6_10y": ws.range("C25").value,
+            "ttm_revenue": ws.range("C22").value,
+            "ttm_revenue_label": ws.range("B22").value,
+            "future_revenue_growth_1_5y": ws.range("C23").value,
+            "future_revenue_growth_6_10y": ws.range("C24").value,
             "projections": {
                 "years": projection_years,
                 "fcf": fcf_projections,
-                "revenue": revenue_projections,
-                "fcf_margin": fcf_margin_projections,
-                "terminal_value": terminal_values,
-                "present_value": present_values
-            },
-            "total_value": ws.range("M32").value
+                "terminal_value": terminal_value,
+                "total_value": total_value_projections,
+                "fcf_margin": fcf_margin_projections
+            }
         }
 
         # ========== Section 4: DCF Value ==========
