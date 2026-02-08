@@ -11,7 +11,7 @@
 An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
 
 See the [example guide](doc/README.md) for detailed usage instructions, and try it out directly in an interactive environment using
-[![JupyterLab](https://img.shields.io/badge/JupyterLab-blue?logo=jupyter&logoColor=white)](https://mybinder.org/v2/gh/defeat-beta/defeatbeta-api/main?urlpath=lab/tree/notebooks/05_tutorial_report.ipynb).
+[![JupyterLab](https://img.shields.io/badge/JupyterLab-blue?logo=jupyter&logoColor=white)](https://mybinder.org/v2/gh/defeat-beta/defeatbeta-api/main?urlpath=lab/tree/notebooks/06_tutorial_dcf.ipynb).
 
 The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
