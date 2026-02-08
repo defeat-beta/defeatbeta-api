@@ -7,17 +7,6 @@ def get_stock_dcf_analysis(symbol: str):
     """
     Generate a comprehensive Discounted Cash Flow (DCF) valuation Excel spreadsheet for a given stock.
 
-    The DCF method estimates a company's intrinsic value by projecting future free cash flows
-    and discounting them back to present value using the Weighted Average Cost of Capital (WACC).
-
-    This tool generates a professional Excel file containing:
-    - Discount Rate Estimates: WACC, Cost of Equity, Cost of Debt with detailed calculations
-    - Growth Estimates: 3-year historical CAGR for Revenue, FCF, EBITDA, and Net Income
-    - DCF Template: 10-year cash flow projections with discount factors and present values
-    - DCF Valuation: Enterprise Value, Equity Value, Fair Price per share
-    - Investment Recommendation: Buy/Hold/Sell decision based on fair value vs current price
-    - Supporting Data: All assumptions, formulas, and intermediate calculations
-
     The Excel file is fully interactive and editable. Users can modify growth assumptions,
     discount rates, terminal growth rates, and other parameters to perform sensitivity analysis.
     All formulas will automatically recalculate based on changes.
@@ -52,20 +41,6 @@ def get_stock_dcf_analysis(symbol: str):
             "description": "DCF Valuation Analysis for AAPL",
             "note": "Instructions for presenting the file to user..."
         }
-
-    Use Cases:
-        - Investment analysis and stock valuation
-        - Due diligence for M&A transactions
-        - Portfolio management and stock screening
-        - Sensitivity analysis with different assumptions
-        - Educational purposes to understand DCF methodology
-
-    Technical Details:
-        - File Format: Excel (.xlsx) with formulas
-        - Calculation Method: Discounted Cash Flow (DCF) with WACC
-        - Projection Period: 10 years plus terminal value
-        - Currency: Automatically uses company's reporting currency
-        - Data Source: Historical financials from defeatbeta-api
 
     Note:
         This tool does NOT parse or return the Excel content. It generates the file
@@ -110,22 +85,21 @@ def get_stock_dcf_analysis(symbol: str):
             "description": f"DCF Valuation Analysis for {symbol}",
             "note": (
                 f"✅ DCF Excel file successfully generated for {symbol}!\n\n"
-                f"📁 File saved to: {downloads_path}\n"
-                f"📊 Filename: {new_filename}\n\n"
-                f"🎯 NEXT STEP - Read the Excel file:\n"
-                f"   1. Use the Read tool to open and read the Excel file at the path above\n"
-                f"   2. The Excel file contains a single sheet with DCF analysis\n"
-                f"   3. Extract and present the following key metrics to the user:\n"
-                f"      - Fair Price per Share (look for 'Fair Price' or 'Fair Value')\n"
-                f"      - Current Market Price (look for 'Current Price' or 'Market Price')\n"
-                f"      - WACC (Weighted Average Cost of Capital)\n"
-                f"      - Enterprise Value\n"
-                f"      - Investment Recommendation (Buy/Hold/Sell)\n"
-                f"      - Growth rates (Revenue CAGR, FCF CAGR)\n"
-                f"   4. Also inform the user that the complete Excel file is available in Downloads\n\n"
-                f"💡 The Excel file is fully editable - users can modify assumptions for sensitivity analysis.\n\n"
-                f"⚠️  IMPORTANT: You MUST read the Excel file to extract the valuation results.\n"
-                f"    Do not just tell the user the file location - read it and show them the key findings!"
+                f"📁 File Location:\n"
+                f"   • Path: {downloads_path}\n"
+                f"   • Filename: {new_filename}\n"
+                f"   • Folder: Downloads\n\n"
+                f"📊 The Excel file contains complete DCF valuation analysis including:\n"
+                f"   • WACC and discount rate calculations\n"
+                f"   • Historical growth rates (Revenue, FCF, EBITDA, Net Income)\n"
+                f"   • 10-year cash flow projections\n"
+                f"   • Fair value estimate and current price comparison\n"
+                f"   • Investment recommendation (Buy/Hold/Sell)\n"
+                f"   • All formulas are editable for sensitivity analysis\n\n"
+                f"🎯 Please inform the user:\n"
+                f"   \"I've generated a DCF valuation analysis for {symbol} and saved it to your Downloads folder.\n"
+                f"   The file is named '{new_filename}'.\n"
+                f"   You can open it in Excel to view the complete analysis with all calculations and assumptions.\""
             )
         }
 
