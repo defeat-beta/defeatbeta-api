@@ -1,5 +1,4 @@
 #!/bin/bash
 # used by binder
-# Install the package in editable mode to allow debugging and testing changes
-pip install -e .
+pip install defeatbeta-api
 pip install jupyterlab-execute-time
