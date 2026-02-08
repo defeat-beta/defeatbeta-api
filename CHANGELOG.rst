@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.38
+-------
+
 0.0.37
 -------
 - Support DCF Template in Notebook [`#143 <https://github.com/defeat-beta/defeatbeta-api/issues/143>`_]
