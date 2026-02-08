@@ -40,6 +40,7 @@ from .tools.growth import get_stock_quarterly_revenue_yoy_growth, get_stock_annu
     get_stock_quarterly_net_income_yoy_growth, get_stock_annual_net_income_yoy_growth, \
     get_stock_quarterly_fcf_yoy_growth, get_stock_annual_fcf_yoy_growth, \
     get_stock_quarterly_diluted_eps_yoy_growth, get_stock_quarterly_ttm_diluted_eps_yoy_growth
+from .tools.dcf import get_stock_dcf_analysis
 
 mcp = FastMCP(
     name="Defeat Beta API",
@@ -113,6 +114,7 @@ mcp.tool()(get_stock_ps_ratio)
 mcp.tool()(get_stock_pb_ratio)
 mcp.tool()(get_stock_peg_ratio)
 mcp.tool()(get_stock_wacc)
+mcp.tool()(get_stock_dcf_analysis)
 mcp.tool()(get_stock_quarterly_roe)
 mcp.tool()(get_stock_quarterly_roa)
 mcp.tool()(get_stock_quarterly_roic)
