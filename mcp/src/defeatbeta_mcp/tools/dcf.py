@@ -1,5 +1,3 @@
-import shutil
-from pathlib import Path
 from typing import Dict, Any, Optional, List
 import xlwings as xw
 from .util import create_ticker
@@ -135,6 +133,26 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
             if margin_value is not None:
                 fcf_margin_projections.append(margin_value)
 
+        # Extract Historical FCF Margin data (rows 32-33, dynamically)
+        # Check if historical data exists by looking for "Year (Historical)" label
+        historical_fcf_margin = {}
+        year_historical_label = ws.range("B32").value
+
+        if year_historical_label and "Historical" in str(year_historical_label):
+            # Read historical years and FCF margins
+            col_index = 0
+            for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
+                year_value = ws.range(f"{col}32").value
+                margin_value = ws.range(f"{col}33").value
+
+                # Stop when we hit empty cells
+                if year_value is None or year_value == "":
+                    break
+
+                # Store as key-value pair: year -> margin
+                historical_fcf_margin[str(year_value)] = margin_value
+                col_index += 1
+
         dcf_template = {
             "decay_factor": ws.range("C17").value,
             "future_growth_rate_1_5y": ws.range("C18").value,
@@ -151,7 +169,8 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
                 "terminal_value": terminal_value,
                 "total_value": total_value_projections,
                 "fcf_margin": fcf_margin_projections
-            }
+            },
+            "historical_fcf_margin": historical_fcf_margin
         }
 
         # ========== Section 4: DCF Value ==========
@@ -209,11 +228,10 @@ def get_stock_dcf_analysis(symbol: str):
     Returns:
         dict: Comprehensive DCF analysis containing:
             - symbol (str): Normalized ticker symbol (uppercase)
-            - file_path (str): Absolute path to Excel file in Downloads folder
-            - file_name (str): Filename (e.g., "AAPL_DCF_Analysis.xlsx")
+            - file_path (str): Absolute path to generated Excel file
             - discount_rate_estimates (dict): WACC calculation components
             - growth_estimates (dict): Historical growth rates for Revenue, FCF, EBITDA, Net Income
-            - dcf_template (dict): Growth assumptions and 10-year cash flow projections
+            - dcf_template (dict): Growth assumptions, 10-year cash flow projections, and historical FCF margin
             - dcf_value (dict): Enterprise value, equity value, fair price calculations
             - buy_sell (dict): Investment recommendation and upside potential
 
@@ -226,11 +244,19 @@ def get_stock_dcf_analysis(symbol: str):
     Example Success Response:
         {
             "symbol": "AAPL",
-            "file_path": "/Users/username/Downloads/AAPL_DCF_Analysis.xlsx",
-            "file_name": "AAPL_DCF_Analysis.xlsx",
+            "file_path": "/tmp/defeatbeta/AAPL.xlsx",
             "discount_rate_estimates": {...},
             "growth_estimates": {...},
-            "dcf_template": {...},
+            "dcf_template": {
+                "projections": {...},
+                "historical_fcf_margin": {
+                    "2020/12/31": 0.245,
+                    "2021/12/31": 0.267,
+                    "2022/12/31": 0.289,
+                    "2023/12/31": 0.301,
+                    "2024/12/31": 0.285
+                }
+            },
             "dcf_value": {...},
             "buy_sell": {
                 "fair_price": 175.50,
@@ -257,27 +283,15 @@ def get_stock_dcf_analysis(symbol: str):
                 )
             }
 
-        original_path = result["file_path"]
-
-        # Create descriptive filename
-        new_filename = f"{symbol}_DCF_Analysis.xlsx"
-
-        # Copy to Downloads folder
-        downloads_dir = Path.home() / "Downloads"
-        downloads_dir.mkdir(exist_ok=True)
-        downloads_path = downloads_dir / new_filename
-
-        # Copy file (overwrite if exists)
-        shutil.copy2(original_path, downloads_path)
+        file_path = result["file_path"]
 
         # Read and extract all data from Excel file
-        excel_data = _read_excel_data(str(downloads_path))
+        excel_data = _read_excel_data(file_path)
 
         # Return comprehensive analysis data
         return {
             "symbol": symbol,
-            "file_path": str(downloads_path),
-            "file_name": new_filename,
+            "file_path": file_path,
             **excel_data
         }
 
