@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.39
+-------
+
 0.0.38
 -------
 - [MCP] Support DCF tool [`#144 <https://github.com/defeat-beta/defeatbeta-api/issues/144>`_]
