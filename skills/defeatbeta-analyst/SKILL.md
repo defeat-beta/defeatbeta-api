@@ -5,7 +5,7 @@ description: "Comprehensive financial analysis using 60+ data endpoints. Analyze
 
 # Financial Analyst
 
-Professional-grade financial analysis using historical market data and comprehensive financial metrics from the defeatbeta dataset.
+Professional-grade financial analysis using historical market data and comprehensive financial metrics from the [defeatbeta dataset](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data).
 
 ## Core Capabilities
 
