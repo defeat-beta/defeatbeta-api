@@ -155,11 +155,53 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
                 historical_fcf_margin[str(year_value)] = margin_value
                 col_index += 1
 
+        # Read growth rate values and their components
+        future_growth_1_5y = ws.range("C18").value
+        future_growth_6_10y = ws.range("C19").value
+        future_growth_terminal = ws.range("C20").value
+
+        revenue_cagr_val = ws.range("H6").value
+        fcf_cagr_val = ws.range("H12").value
+        ebitda_cagr_val = ws.range("H18").value
+        ni_cagr_val = ws.range("H24").value
+        decay_factor_val = ws.range("C17").value
+        risk_free_rate_val = ws.range("C8").value
+
         dcf_template = {
-            "decay_factor": ws.range("C17").value,
-            "future_growth_rate_1_5y": ws.range("C18").value,
-            "future_growth_rate_6_10y": ws.range("C19").value,
-            "future_growth_rate_terminal": ws.range("C20").value,
+            "decay_factor": decay_factor_val,
+            "future_growth_rate_1_5y": future_growth_1_5y,
+            "future_growth_rate_1_5y_explanation": {
+                "formula": "Revenue_CAGR × 0.4 + FCF_CAGR × 0.3 + EBITDA_CAGR × 0.2 + NI_CAGR × 0.1",
+                "description": "Weighted average of historical 3-year CAGRs",
+                "components": {
+                    "revenue_cagr": {"value": revenue_cagr_val, "weight": 0.4, "rationale": "Primary growth driver"},
+                    "fcf_cagr": {"value": fcf_cagr_val, "weight": 0.3, "rationale": "Cash generation sustainability"},
+                    "ebitda_cagr": {"value": ebitda_cagr_val, "weight": 0.2, "rationale": "Operational efficiency"},
+                    "net_income_cagr": {"value": ni_cagr_val, "weight": 0.1, "rationale": "Profitability trend"}
+                }
+            },
+            "future_growth_rate_6_10y": future_growth_6_10y,
+            "future_growth_rate_6_10y_explanation": {
+                "formula": "MAX(Growth_1_5Y × Decay_Factor ^ 5, Risk_Free_Rate)",
+                "description": "Decayed growth rate with risk-free rate floor",
+                "components": {
+                    "base_growth": future_growth_1_5y,
+                    "decay_factor": decay_factor_val,
+                    "years_decayed": 5,
+                    "decayed_growth": future_growth_1_5y * (decay_factor_val ** 5) if decay_factor_val else None,
+                    "risk_free_rate_floor": risk_free_rate_val
+                },
+                "rationale": "Growth naturally slows over time. Floor at risk-free rate ensures minimum growth matches economic baseline"
+            },
+            "future_growth_rate_terminal": future_growth_terminal,
+            "future_growth_rate_terminal_explanation": {
+                "formula": "Risk_Free_Rate (10Y Treasury)",
+                "description": "Perpetual growth rate set to risk-free rate",
+                "components": {
+                    "risk_free_rate": risk_free_rate_val
+                },
+                "rationale": "Conservative assumption: mature companies cannot grow faster than the economy indefinitely. 10Y Treasury rate represents long-term economic growth expectation"
+            },
             "discount_rate": ws.range("C21").value,
             "ttm_revenue": ws.range("C22").value,
             "ttm_revenue_label": ws.range("B22").value,
@@ -260,14 +302,26 @@ def get_stock_dcf_analysis(symbol: str):
             "discount_rate_estimates": {...},
             "growth_estimates": {...},
             "dcf_template": {
+                "future_growth_rate_1_5y": 0.0842,
+                "future_growth_rate_1_5y_explanation": {
+                    "formula": "Revenue_CAGR × 0.4 + FCF_CAGR × 0.3 + EBITDA_CAGR × 0.2 + NI_CAGR × 0.1",
+                    "description": "Weighted average of historical 3-year CAGRs",
+                    "components": {...}
+                },
+                "future_growth_rate_6_10y": 0.0422,
+                "future_growth_rate_6_10y_explanation": {
+                    "formula": "MAX(Growth_1_5Y × Decay_Factor ^ 5, Risk_Free_Rate)",
+                    "description": "Decayed growth rate with risk-free rate floor",
+                    "components": {...}
+                },
+                "future_growth_rate_terminal": 0.0422,
+                "future_growth_rate_terminal_explanation": {
+                    "formula": "Risk_Free_Rate (10Y Treasury)",
+                    "description": "Perpetual growth rate set to risk-free rate",
+                    "rationale": "Conservative assumption: mature companies cannot grow faster than the economy indefinitely"
+                },
                 "projections": {...},
-                "historical_fcf_margin": {
-                    "2020/12/31": 0.245,
-                    "2021/12/31": 0.267,
-                    "2022/12/31": 0.289,
-                    "2023/12/31": 0.301,
-                    "2024/12/31": 0.285
-                }
+                "historical_fcf_margin": {...}
             },
             "dcf_value": {...},
             "buy_sell": {
