@@ -201,6 +201,10 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
             "upside_potential": ((fair_price_display / current_price_display) - 1) if (fair_price_display and current_price_display and current_price_display != 0) else None
         }
 
+        # Re-enable screen updating and activate the workbook for user viewing
+        app.screen_updating = True
+        wb.activate()
+
         return {
             "discount_rate_estimates": discount_rate_estimates,
             "growth_estimates": growth_estimates,
@@ -212,6 +216,7 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
     except Exception as e:
         # If reading fails, close the app to avoid leaving Excel open
         try:
+            app.screen_updating = True  # Re-enable before closing
             wb.close()
             app.quit()
         except:
