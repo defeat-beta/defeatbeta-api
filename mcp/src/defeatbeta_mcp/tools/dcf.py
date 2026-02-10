@@ -7,19 +7,21 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
     """
     Read Excel file content using xlwings and extract all DCF analysis sections.
 
+    The Excel file will remain open after reading, allowing users to view and edit it directly.
+
     Args:
         file_path: Path to the Excel file
 
     Returns:
         Dictionary containing all extracted data from 5 sections
     """
-    # Open workbook in read-only mode (no Excel app window)
-    app = xw.App(visible=False, add_book=False)
+    # Open workbook with visible Excel window
+    app = xw.App(visible=True, add_book=False)
     app.display_alerts = False
     app.screen_updating = False
 
     try:
-        wb = app.books.open(file_path, read_only=True, update_links=False)
+        wb = app.books.open(file_path, read_only=False, update_links=False)
         ws = wb.sheets[0]
 
         # ========== Section 1: Discount Rate Estimates ==========
@@ -207,9 +209,14 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
             "buy_sell": buy_sell
         }
 
-    finally:
-        wb.close()
-        app.quit()
+    except Exception as e:
+        # If reading fails, close the app to avoid leaving Excel open
+        try:
+            wb.close()
+            app.quit()
+        except:
+            pass
+        raise e
 
 
 def get_stock_dcf_analysis(symbol: str):
