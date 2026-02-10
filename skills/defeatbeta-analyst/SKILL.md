@@ -37,11 +37,11 @@ Professional-grade financial analysis using historical market data and comprehen
 - Industry Benchmarking (compare vs industry averages)
 - Segment Analysis (revenue by segment/geography)
 
-**For complete API list with parameters and schemas**, see [defeatbeta-api-reference.md](references/defeatbeta-api-reference.md)
+**→ For complete API details** (parameters, response schemas, data types), see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md)
 
 ## Common Workflows
 
-For detailed analysis workflows, see [analysis-templates.md](references/analysis-templates.md):
+For detailed analysis workflows, see [analysis-templates.md](./references/analysis-templates.md):
 
 1. **Quick Investment Screening** - Fast evaluation (profile, price, financials, valuation)
 2. **Full Fundamental Analysis** - Comprehensive 6-phase analysis (business, financials, profitability, growth, valuation)
@@ -66,7 +66,7 @@ For detailed analysis workflows, see [analysis-templates.md](references/analysis
 
 **Date format**: "YYYY-MM-DD" (e.g., "2020-01-01")
 
-**For detailed parameters, response schemas, and data definitions**, see [defeatbeta-api-reference.md](references/defeatbeta-api-reference.md)
+**→ For detailed API documentation**, see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md) (parameters, schemas, examples for all 60+ APIs)
 
 ## When to Use This Skill
 
@@ -112,7 +112,16 @@ For detailed analysis workflows, see [analysis-templates.md](references/analysis
 - "Recent news", "latest developments"
 - "SEC filing", "10-K", "10-Q", "8-K"
 
-## Templates & Examples
+## Reference Documentation
 
-Detailed workflow templates for common analysis tasks:
-- [analysis-templates.md](references/analysis-templates.md)
+**When you need detailed workflows**, see [analysis-templates.md](./references/analysis-templates.md):
+- 11 detailed templates with step-by-step instructions
+- Template 1: Quick Investment Screening
+- Template 2: Full Fundamental Analysis
+- Template 3-10: Specialized analyses (valuation, growth, margins, earnings, etc.)
+- Template 11: DCF Valuation with 8-section professional report structure
+
+**When you need API parameters and schemas**, see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md):
+- Complete API documentation with parameters, response schemas, examples
+- 60+ APIs organized by category
+- Data types, validation rules, error handling

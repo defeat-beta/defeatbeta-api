@@ -607,25 +607,87 @@ Price per share = Equity Value / Shares Outstanding
 
 ## Template 11: DCF (Discounted Cash Flow) Valuation
 
-**Use case**: Calculate intrinsic value using discounted free cash flow projections
+**Use case**: Calculate intrinsic value and generate comprehensive DCF valuation report
 
-**Quick Workflow**:
+### Workflow
+
+**Step 1: Get Data**
 ```
 1. get_latest_data_update_date
 2. get_stock_dcf_analysis(symbol)
-   → Returns complete DCF model with WACC, growth rates, projections, and fair value
-3. Validate key assumptions:
-   - Beta reasonableness (watch for Chinese ADRs with Beta < 0.5)
-   - Growth rates alignment with business fundamentals
-   - FCF margin trends (compare projected vs historical)
-   - Terminal Rate < WACC (must be true)
-4. Cross-validate with P/E, P/S multiples
-5. Present results with clear assumptions and sensitivity analysis
+   → Returns: discount_rate_estimates, growth_estimates, dcf_template, dcf_value, buy_sell
 ```
+
+**Step 2: Validate Assumptions**
+- Beta reasonableness (watch for Chinese ADRs with Beta < 0.5 - likely underestimates risk)
+- Growth rates alignment with business fundamentals
+- FCF margin trends (compare projected vs historical)
+- Terminal Rate < WACC (must be true, otherwise invalid)
+
+**Step 3: Cross-Validate**
+- get_stock_ttm_pe / get_industry_ttm_pe (compare P/E implied by DCF vs current/industry)
+- If DCF suggests 50%+ undervaluation but multiples at highs → revisit assumptions
+
+**Step 4: Generate Professional DCF Report**
+
+Present a comprehensive 8-section report:
+
+#### **Section I: Valuation Conclusion**
+Clear summary table with:
+- Current Price
+- DCF Fair Value
+- Upside/Downside Potential (%)
+- Investment Recommendation (Buy/Hold/Sell)
+- Margin of Safety (%)
+
+#### **Section II: Discount Rate (WACC) Analysis**
+- WACC value and components table (Cost of Equity, Cost of Debt after-tax, Weights)
+- Key parameters (Beta, Risk-Free Rate, Market Return, Tax Rate, Market Cap, Debt)
+- WACC reasonableness commentary
+
+#### **Section III: Historical Growth Analysis**
+- 3-Year CAGR table for Revenue, FCF, EBITDA, Net Income (with weights used)
+- Key observations (recovery trends, cash flow quality, efficiency improvements, profit concerns)
+- 5-year FCF Margin trend table
+
+#### **Section IV: Future Growth Assumptions**
+- Growth rate framework table (Years 1-5, Years 6-10, Terminal - with rates and logic)
+- Detailed growth rate calculation with weighted formula
+- Reasonableness analysis vs industry/strategy/market trends
+
+#### **Section V: 10-Year FCF Projection**
+- Annual projection table (TTM baseline + Years 1-10):
+  - Projected Revenue (billions)
+  - Projected FCF (billions)
+  - FCF Margin (%)
+- Terminal Value calculation formula and result
+
+#### **Section VI: Valuation Calculation**
+- Present Value breakdown:
+  - Sum of PV(Years 1-10 FCF)
+  - PV(Terminal Value)
+  - Enterprise Value (EV)
+- Equity Value adjustment (EV + Cash - Debt)
+- Fair Price per share calculation
+
+#### **Section VII: Investment Recommendation & Risks**
+- **Bull Case**: 5 specific reasons (valuation gap, cash quality, growth drivers, financial strength, competitive moats)
+- **Key Risks**: 5 concrete risks (profit volatility, cyclicality, competition, regulatory, customer concentration)
+- **Sensitivity Analysis**: Suggested ranges for WACC, growth rates, terminal rate, FCF margins
+
+#### **Section VIII: Next Steps for Analysis**
+- 4-6 specific follow-up analyses (investigate anomalies, verify quarterly reports, review management guidance, peer comparison, segment deep dive)
+
+**Report formatting:**
+- Use clear tables with proper alignment
+- Include formulas for transparency
+- Add visual indicators (✅/⚠️/⬆️/⬇️) where helpful
+- Provide Excel model file path at end
+- End with open-ended questions to encourage deeper exploration
+
+---
 
 **When DCF Works Best**:
 - ✅ Mature, profitable companies with positive FCF
 - ✅ Predictable business models with clear growth drivers
 - ❌ Avoid for unprofitable, highly cyclical, or financial companies
-
-**For detailed DCF workflow**, see **SKILL.md Workflow #6** (12-phase manual DCF process)
