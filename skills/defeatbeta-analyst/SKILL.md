@@ -100,231 +100,30 @@ Professional-grade financial analysis using historical market data and comprehen
 
 ## Common Workflows
 
-### 1. Quick Company Overview
-```
-User: "Give me a quick overview of TSLA"
-→ get_latest_data_update_date (get reference date)
-→ get_stock_profile (company info)
-→ get_stock_price (recent performance, last 90 days)
-→ get_stock_quarterly_income_statement (latest revenue/earnings)
-→ get_stock_ttm_pe (current valuation)
-```
+For detailed analysis workflows, see [analysis-templates.md](references/analysis-templates.md):
 
-### 2. Comprehensive Fundamental Analysis
-```
-User: "Perform fundamental analysis on AAPL"
-→ get_latest_data_update_date
-→ get_stock_profile (business context)
-→ get_stock_quarterly_income_statement (revenue trends)
-→ get_stock_quarterly_balance_sheet (financial position)
-→ get_stock_quarterly_cash_flow (cash generation)
-→ get_stock_quarterly_gross_margin (profitability)
-→ get_stock_quarterly_roe (return metrics)
-→ get_stock_quarterly_revenue_yoy_growth (growth trajectory)
-→ get_stock_ttm_pe (valuation)
-→ get_industry_ttm_pe (peer comparison)
-```
+1. **Quick Investment Screening** - Fast evaluation (profile, price, financials, valuation)
+2. **Full Fundamental Analysis** - Comprehensive 6-phase analysis (business, financials, profitability, growth, valuation)
+3. **Valuation-Focused Analysis** - Determine over/undervaluation (P/E, P/S, P/B, PEG, industry comparison)
+4. **Growth Quality Assessment** - Evaluate revenue/earnings sustainability (margins, cash conversion, ROIC)
+5. **DuPont Analysis Deep Dive** - Decompose ROE drivers (margin, turnover, leverage)
+6. **DCF Model Data Preparation** - Gather inputs for discounted cash flow valuation
+7. **Margin Analysis & Peer Comparison** - Operational efficiency and competitive positioning
+8. **Earnings Quality Assessment** - Cash vs accrual earnings, FCF quality, working capital
+9. **Industry Positioning Analysis** - Company position relative to peers
+10. **Quarterly Earnings Analysis** - Deep dive into latest earnings release
+11. **DCF Valuation** - Use `get_stock_dcf_analysis` for automated intrinsic value calculation
 
-### 3. Valuation Analysis
-```
-User: "Is NVDA overvalued?"
-→ get_latest_data_update_date
-→ get_stock_ttm_pe (historical P/E trend)
-→ get_stock_ps_ratio (P/S analysis)
-→ get_stock_pb_ratio (P/B analysis)
-→ get_stock_peg_ratio (growth-adjusted valuation)
-→ get_industry_ttm_pe (industry benchmark)
-→ get_industry_ps_ratio (industry P/S)
-→ get_stock_quarterly_revenue_yoy_growth (growth justification)
-→ get_stock_quarterly_net_margin (profitability check)
-```
+## Using the APIs
 
-### 4. Profitability & Efficiency Analysis
-```
-User: "Analyze AMZN's profitability trends"
-→ get_latest_data_update_date
-→ get_stock_quarterly_gross_margin (margin expansion/contraction)
-→ get_stock_quarterly_operating_margin (operational efficiency)
-→ get_stock_quarterly_net_margin (bottom-line profitability)
-→ get_stock_quarterly_fcf_margin (cash generation)
-→ get_stock_quarterly_roe (shareholder returns)
-→ get_stock_quarterly_roa (asset efficiency)
-→ get_industry_quarterly_gross_margin (vs industry)
-→ get_industry_quarterly_net_margin (vs industry)
-```
+**Key considerations:**
+- **Always call `get_latest_data_update_date` first** - establishes data cutoff for relative queries
+- Date parameters use "YYYY-MM-DD" format (e.g., "2020-01-01")
+- Stock price/valuation APIs limited to **1000 rows** (use date ranges for more data)
+- **ROIC and Equity Multiplier not applicable to banks** (check sector in profile)
+- Fiscal periods (earnings transcripts) may differ from calendar periods
 
-### 5. Growth Assessment
-```
-User: "What's the growth trajectory for AMD?"
-→ get_latest_data_update_date
-→ get_stock_quarterly_revenue_yoy_growth (top-line growth)
-→ get_stock_quarterly_operating_income_yoy_growth (operational leverage)
-→ get_stock_quarterly_net_income_yoy_growth (earnings growth)
-→ get_stock_quarterly_fcf_yoy_growth (cash flow growth)
-→ get_stock_quarterly_ttm_diluted_eps_yoy_growth (EPS momentum)
-→ get_quarterly_revenue_by_segment (growth drivers)
-```
-
-### 6. DCF (Discounted Cash Flow) Valuation
-```
-User: "Build a DCF model for TSLA" or "What's the fair value of AAPL using DCF?"
-
-→ get_latest_data_update_date
-→ get_stock_dcf_analysis (symbol)
-  - Returns complete DCF model with:
-    • WACC and discount rate components
-    • Historical growth analysis (Revenue, FCF, EBITDA, Net Income)
-    • Three-stage growth assumptions (Years 1-5, 6-10, Terminal)
-    • 10-year FCF projections
-    • Terminal value calculation
-    • Fair price estimation and buy/sell recommendation
-    • Excel model file path
-
-→ Validate key assumptions:
-  - Beta reasonableness (watch for Chinese ADRs with Beta < 0.5)
-  - Growth rates alignment with business fundamentals
-  - FCF margin trends (compare projected vs historical)
-  - Terminal Rate < WACC (must be true)
-
-→ Cross-validate results:
-  - get_stock_ttm_pe (compare P/E implied by DCF vs current)
-  - get_industry_ttm_pe (compare vs industry multiples)
-  - If DCF suggests 50%+ undervaluation but multiples at highs, revisit assumptions
-
-→ Present results with:
-  - Clear valuation conclusion table (Current Price, Fair Value, Upside, Recommendation)
-  - Key assumptions (WACC, growth rates, terminal value)
-  - 10-year projection table
-  - Bull case (5 reasons) and key risks (5 risks)
-  - Specific follow-up analyses
-  - Excel file path
-
-For custom DCF scenarios, see analysis-templates.md Template 11
-```
-
-### 7. DuPont Analysis
-```
-User: "Perform DuPont analysis on JPM"
-→ get_latest_data_update_date
-→ get_stock_quarterly_roe (ROE = target metric)
-→ get_stock_quarterly_roa (ROA component)
-→ get_stock_quarterly_net_margin (Net Margin component)
-→ get_stock_quarterly_asset_turnover (Asset Turnover component)
-→ get_stock_quarterly_equity_multiplier (Leverage component)
-→ Compare: ROE = Net Margin × Asset Turnover × Equity Multiplier
-```
-
-### 8. Industry Peer Comparison
-```
-User: "Compare TSLA margins to auto industry"
-→ get_latest_data_update_date
-→ get_stock_profile (confirm industry)
-→ get_stock_quarterly_gross_margin (TSLA margins)
-→ get_stock_quarterly_operating_margin
-→ get_stock_quarterly_net_margin
-→ get_industry_quarterly_gross_margin (industry avg)
-→ get_industry_quarterly_net_margin (industry avg)
-→ get_stock_quarterly_roe (TSLA profitability)
-→ get_industry_quarterly_roe (industry profitability)
-```
-
-### 9. Earnings Deep Dive
-```
-User: "Analyze META's latest earnings"
-→ get_latest_data_update_date
-→ get_stock_earning_call_transcripts_list (find latest)
-→ get_stock_earning_call_transcript (read full call)
-→ get_stock_quarterly_income_statement (verify numbers)
-→ get_stock_quarterly_revenue_yoy_growth (growth context)
-→ get_stock_quarterly_operating_margin (margin trends)
-→ get_stock_news (recent developments)
-```
-
-### 10. SEC Filing Analysis
-```
-User: "What did NFLX report in their latest 10-K?"
-→ get_latest_data_update_date
-→ get_stock_sec_filings (find latest 10-K)
-→ access `filing_url` to read actual filing content 
-→ get_stock_quarterly_income_statement (quantitative summary)
-→ get_stock_quarterly_balance_sheet (financial position)
-→ get_quarterly_revenue_by_segment (segment performance)
-```
-
-## Key Parameters
-
-### Date Range Parameters
-- `start_date` / `end_date`: "YYYY-MM-DD" format (e.g., "2020-01-01")
-- **Always reference data cutoff from `get_latest_data_update_date`**
-- For relative queries ("last 10 days"), calculate from data cutoff date
-
-### Symbol Parameters
-- `symbol`: Stock ticker (e.g., "TSLA", "AAPL") - case insensitive
-
-### Fiscal Period Parameters (Earnings Transcripts)
-- `fiscal_year`: Integer (e.g., 2024)
-- `fiscal_quarter`: 1-4
-- **Important**: Fiscal periods may differ from calendar periods
-
-### Data Limits
-- Stock price, market cap, valuation ratios: **MAX 1000 rows** (truncated if exceeded)
-- SEC filings: **MAX 500 rows** (truncated if exceeded)
-- News: **MAX rows configurable via `max_rows` parameter** (default 50)
-- Use multiple calls with date ranges for larger datasets
-
-### Other Parameters
-- `years`: For CAGR calculations (e.g., 10)
-- `max_rows`: For news API (1-∞, default 50)
-
-## Key Data Points
-
-### Profile Data
-- Business summary, industry, sector
-- Full-time employees
-- Address, phone, website
-- Report date
-
-### Financial Statement Data
-- All standard line items (revenue, COGS, operating expenses, etc.)
-- Currency information
-- Period type (quarterly/annual)
-- Null handling for missing data
-
-### Margin Metrics
-- Gross margin = Gross Profit / Revenue
-- Operating margin = Operating Income / Revenue
-- Net margin = Net Income / Revenue
-- EBITDA margin = EBITDA / Revenue
-- FCF margin = Free Cash Flow / Revenue
-
-### Profitability Ratios
-- ROE = Net Income / Average Equity
-- ROA = Net Income / Average Assets
-- ROIC = NOPAT / Average Invested Capital (**Not for banks**)
-- Asset Turnover = ROA / Net Margin
-- Equity Multiplier = ROE / ROA (**Not for banks**)
-
-### Valuation Metrics
-- TTM P/E = Market Cap / TTM Net Income
-- P/S = Market Cap / TTM Revenue
-- P/B = Market Cap / Book Value of Equity
-- PEG = (P/E) / Growth Rate
-
-### WACC Components
-- Weight of Debt, Weight of Equity
-- Cost of Debt, Cost of Equity
-- Tax Rate, Beta (5-year)
-- Risk-Free Rate (10-year Treasury)
-- Expected Market Return (10-year S&P 500 CAGR)
-
-### Growth Metrics
-- YoY Growth = (Current - Prior Year) / Prior Year
-- Available for: Revenue, Operating Income, EBITDA, Net Income, FCF, EPS
-
-### Segment Data
-- Revenue by business segment (quarterly)
-- Revenue by geography (quarterly)
-- Currency: USD
+**For detailed parameters, response schemas, and data definitions**, see [defeatbeta-api-reference.md](references/defeatbeta-api-reference.md)
 
 ## When to Use This Skill
 
