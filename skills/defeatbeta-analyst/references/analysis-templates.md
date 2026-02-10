@@ -615,10 +615,20 @@ Price per share = Equity Value / Shares Outstanding
 ```
 1. get_latest_data_update_date
 2. get_stock_dcf_analysis(symbol)
-   → Returns: discount_rate_estimates, growth_estimates, dcf_template, dcf_value, buy_sell
+   → Returns: file_path, discount_rate_estimates, growth_estimates, dcf_template, dcf_value, buy_sell
 ```
 
-**Step 2: Generate Professional DCF Report**
+**Step 2: Validate Assumptions**
+- Beta reasonableness (watch for Chinese ADRs with Beta < 0.5 - likely underestimates risk)
+- Growth rates alignment with business fundamentals
+- FCF margin trends (compare projected vs historical)
+- Terminal Rate < WACC (must be true, otherwise invalid)
+
+**Step 3: Cross-Validate**
+- get_stock_ttm_pe / get_industry_ttm_pe (compare P/E implied by DCF vs current/industry)
+- If DCF suggests 50%+ undervaluation but multiples at highs → revisit assumptions
+
+**Step 4: Generate Professional DCF Report**
 
 Present a comprehensive 8-section report:
 
@@ -665,8 +675,12 @@ Clear summary table with:
 - **Key Risks**: 5 concrete risks (profit volatility, cyclicality, competition, regulatory, customer concentration)
 - **Sensitivity Analysis**: Suggested ranges for WACC, growth rates, terminal rate, FCF margins
 
-#### **Section VIII: Next Steps for Analysis**
+#### **Section VIII: Excel Model File Path:**
+- Display the value of file_path and indicate that the file can be opened at this path for editing, with all formulas recalculated automatically.
+
+#### **Section IX: Next Steps for Analysis**
 - 4-6 specific follow-up analyses (investigate anomalies, verify quarterly reports, review management guidance, peer comparison, segment deep dive)
+
 
 **Report formatting:**
 - Use clear tables with proper alignment

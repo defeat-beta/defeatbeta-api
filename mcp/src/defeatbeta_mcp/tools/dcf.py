@@ -17,11 +17,9 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
     """
     # Open workbook with visible Excel window
     app = xw.App(visible=True, add_book=False)
-    app.display_alerts = False
-    app.screen_updating = False
+    wb = app.books.open(file_path, read_only=True, update_links=False)
 
     try:
-        wb = app.books.open(file_path, read_only=False, update_links=False)
         ws = wb.sheets[0]
 
         # ========== Section 1: Discount Rate Estimates ==========
@@ -243,10 +241,6 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
             "upside_potential": ((fair_price_display / current_price_display) - 1) if (fair_price_display and current_price_display and current_price_display != 0) else None
         }
 
-        # Re-enable screen updating and activate the workbook for user viewing
-        app.screen_updating = True
-        wb.activate()
-
         return {
             "discount_rate_estimates": discount_rate_estimates,
             "growth_estimates": growth_estimates,
@@ -255,15 +249,9 @@ def _read_excel_data(file_path: str) -> Dict[str, Any]:
             "buy_sell": buy_sell
         }
 
-    except Exception as e:
-        # If reading fails, close the app to avoid leaving Excel open
-        try:
-            app.screen_updating = True  # Re-enable before closing
-            wb.close()
-            app.quit()
-        except:
-            pass
-        raise e
+    finally:
+        wb.close()
+        app.quit()
 
 
 def get_stock_dcf_analysis(symbol: str):
