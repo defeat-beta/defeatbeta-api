@@ -618,17 +618,7 @@ Price per share = Equity Value / Shares Outstanding
    → Returns: discount_rate_estimates, growth_estimates, dcf_template, dcf_value, buy_sell
 ```
 
-**Step 2: Validate Assumptions**
-- Beta reasonableness (watch for Chinese ADRs with Beta < 0.5 - likely underestimates risk)
-- Growth rates alignment with business fundamentals
-- FCF margin trends (compare projected vs historical)
-- Terminal Rate < WACC (must be true, otherwise invalid)
-
-**Step 3: Cross-Validate**
-- get_stock_ttm_pe / get_industry_ttm_pe (compare P/E implied by DCF vs current/industry)
-- If DCF suggests 50%+ undervaluation but multiples at highs → revisit assumptions
-
-**Step 4: Generate Professional DCF Report**
+**Step 2: Generate Professional DCF Report**
 
 Present a comprehensive 8-section report:
 
