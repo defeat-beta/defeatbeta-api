@@ -660,549 +660,143 @@ Revenue
 
 **Use case**: Calculate intrinsic value using discounted free cash flow projections
 
-**Full 11-Phase Workflow**:
+**Recommended Approach: Use Automated DCF API**
 
-### Phase 1: Data Collection & Current State
+
+### Quick Start: Automated DCF Analysis
+
 ```
 1. get_latest_data_update_date
-   → Establish reference date for analysis
+   → Establish reference date
 
-2. get_stock_profile
-   → Company name, business description
-   → Sector and industry (affects growth expectations)
-   → Note if bank/financial institution (DCF may not apply)
-
-3. get_stock_price (last 30 days)
-   → Extract latest close price → "Current Price"
-   → Used for comparison vs Fair Price
-
-4. get_stock_quarterly_cash_flow (last 4 quarters)
-   → Extract: free_cash_flow for each quarter
-   → Calculate: TTM FCF = Sum of last 4 quarters
-   → This is the BASE for projections
-
-5. get_stock_quarterly_income_statement (last 4 quarters)
-   → Extract: total_revenue for each quarter
-   → Calculate: TTM Revenue = Sum of last 4 quarters
-   → Used for FCF Margin calculation
+2. get_stock_dcf_analysis(symbol)
+   → Generates complete DCF model including:
+     • WACC calculation
+     • Historical growth analysis (Revenue, FCF, EBITDA, Net Income)
+     • Three-stage growth assumptions
+     • 10-year FCF projections
+     • Terminal value calculation
+     • Fair price estimation
+     • Buy/Sell recommendation
+     • Excel model export
 ```
 
-**Phase 1 Output Example**:
-```
-Symbol: TSLA
-Current Price: $246.82
-TTM Free Cash Flow: $4,184,800,000
-TTM Revenue: $21,214,300,000
-Current FCF Margin: 19.73%
-```
+**Returns 5 key components**:
+1. `discount_rate_estimates` - WACC and all components
+2. `growth_estimates` - Historical 3-year CAGRs
+3. `dcf_template` - Growth assumptions and 10-year projections
+4. `dcf_value` - Enterprise value, equity value, fair price
+5. `buy_sell` - Investment recommendation and upside potential
 
-### Phase 2: Historical Growth Analysis (Growth Estimates Foundation)
-```
-6. get_stock_annual_fcf_yoy_growth
-   → Show last 5-10 years of FCF growth rates
-   → Identify: accelerating, stable, or decelerating pattern
-   → Calculate: Average FCF growth rate
-   → Note years with negative FCF (risky)
-
-7. get_stock_quarterly_revenue_yoy_growth (last 8-12 quarters)
-   → Show recent revenue growth trends
-   → Calculate: Average revenue growth rate
-   → Assess: consistency vs volatility
-```
-
-**Phase 2 Output Example**:
-```
-Historical FCF Growth (Last 5 Years):
-  2020: -15.3%
-  2021: +48.2%
-  2022: +71.5%
-  2023: +22.1%
-  2024: +12.8%
-  → Average: +27.9% (highly volatile, trending down)
-
-Historical Revenue Growth (Last 8 Quarters):
-  Q1 2023: +24.4%
-  Q2 2023: +47.2%
-  Q3 2023: +18.9%
-  Q4 2023: +5.3%
-  Q1 2024: +3.2%
-  Q2 2024: +6.5%
-  Q3 2024: +4.8%
-  Q4 2024: +9.4%
-  → Average: +15.0% (decelerating from highs)
-```
-
-### Phase 3: Management Outlook & Business Intelligence
-```
-8. get_stock_earning_call_transcripts_list
-   → Identify most recent earnings call
-   → Note fiscal_year and fiscal_quarter
-
-9. get_stock_earning_call_transcript (latest)
-   → Extract management's forward guidance:
-     - Revenue growth targets
-     - Margin expansion plans
-     - New product/market expectations
-     - Capex plans (affects FCF)
-     - Risks and headwinds mentioned
-   → Pay attention to:
-     - CEO's opening remarks (strategic vision)
-     - CFO's guidance (quantitative targets)
-     - Q&A section (analyst concerns)
-
-10. get_stock_news (last 3-6 months, max_rows=20)
-    → Recent business developments:
-      - Product launches
-      - Market expansions
-      - Regulatory changes
-      - Competitive threats
-      - Management changes
-    → Sentiment: positive, neutral, negative
-```
-
-**Phase 3 Output Example**:
-```
-Latest Earnings Call (Q4 2024):
-Management Guidance:
-- Targeting 20-30% vehicle delivery growth in 2025
-- Expect margin improvement from cost reductions
-- Cybertruck production ramping (new growth driver)
-- Energy storage business accelerating (50%+ growth)
-- Concerned about: raw material costs, competition
-
-Recent News Highlights:
-- New manufacturing facility announced in Mexico
-- FSD (Full Self-Driving) beta expanding
-- Price competition intensifying in China
-- IRA tax credits supporting demand
-```
-
-### Phase 4: Growth Rate Estimates (3-Stage Model)
-```
-Based on Phase 2 + Phase 3 synthesis:
-
-STAGE 1: Near-term Growth (Years 1-5)
-→ Synthesize:
-  - Historical growth: FCF averaged 27.9%, Revenue averaged 15.0%
-  - Management guidance: 20-30% delivery growth
-  - Recent trend: Growth decelerating
-  - New drivers: Cybertruck, energy storage
-  - Risks: Price competition, margin pressure
-→ Proposed FCF Growth Rate (1-5 years): 4.83%
-  (Conservative due to deceleration, competitive pressure)
-→ Proposed Revenue Growth Rate (1-5 years): 5.35%
-  (Slightly higher than FCF, modest margin contraction expected)
-
-STAGE 2: Mid-term Growth (Years 6-10)
-→ Apply mean reversion principle
-→ Assume growth slowdown as market matures
-→ Proposed FCF Growth Rate (6-10 years): 3.23%
-  (50-70% of near-term rate)
-→ Proposed Revenue Growth Rate (6-10 years): 4.55%
-
-STAGE 3: Terminal Growth Rate
-11. get_daily_treasury_yield
-    → Extract bc10_year (10-Year Treasury yield)
-    → Example: 4.26%
-→ Terminal Rate = Risk-Free Rate = 4.26%
-  (Long-term GDP growth assumption)
-```
-
-**Phase 4 Output Example**:
-```
-Growth Rate Estimates:
-┌─────────────┬──────────────┬──────────────┐
-│ Period      │ FCF Growth   │ Rev Growth   │
-├─────────────┼──────────────┼──────────────┤
-│ Years 1-5   │ 4.83%        │ 5.35%        │
-│ Years 6-10  │ 3.23%        │ 4.55%        │
-│ Terminal    │ 4.26%        │ 4.26%        │
-└─────────────┴──────────────┴──────────────┘
-
-Justification:
-- Near-term: Conservative vs historical due to deceleration
-- Mid-term: Further slowdown as market matures
-- Terminal: Risk-free rate (long-term sustainable growth)
-```
-
-### Phase 5: Discount Rate (WACC)
-```
-12. get_stock_wacc (latest data point)
-    → Extract: wacc
-    → Typical range: 7-12% for most companies
-    → Display components:
-      - cost_of_equity
-      - cost_of_debt
-      - weight_of_equity
-      - weight_of_debt
-      - beta_5y
-      - risk_free_rate
-      - expected_market_return
-```
-
-**Phase 5 Output Example**:
-```
-Weighted Average Cost of Capital (WACC):
-  WACC: 9.57%
-  
-  Components:
-    Cost of Equity: 9.88%
-    Cost of Debt: 2.87%
-    Weight of Equity: 95.85%
-    Weight of Debt: 4.15%
-    Beta (5Y): 0.86
-    Risk-Free Rate: 4.26%
-    Market Return (10Y S&P 500 CAGR): 10.80%
-```
-
-### Phase 6: Free Cash Flow Projection (10-Year)
-```
-Using TTM FCF as base:
-
-Year 1 FCF = TTM FCF × (1 + Near-term Growth Rate)
-Year 2 FCF = Year 1 FCF × (1 + Near-term Growth Rate)
-Year 3 FCF = Year 2 FCF × (1 + Near-term Growth Rate)
-Year 4 FCF = Year 3 FCF × (1 + Near-term Growth Rate)
-Year 5 FCF = Year 4 FCF × (1 + Near-term Growth Rate)
-
-Year 6 FCF = Year 5 FCF × (1 + Mid-term Growth Rate)
-Year 7 FCF = Year 6 FCF × (1 + Mid-term Growth Rate)
-Year 8 FCF = Year 7 FCF × (1 + Mid-term Growth Rate)
-Year 9 FCF = Year 8 FCF × (1 + Mid-term Growth Rate)
-Year 10 FCF = Year 9 FCF × (1 + Mid-term Growth Rate)
-```
-
-**Phase 6 Output Example** (TTM FCF = $4,184,800,000, Growth 4.83%):
-```
-10-Year Free Cash Flow Projection:
-┌──────┬──────────────────┬───────────────┐
-│ Year │ Projected FCF    │ Growth Rate   │
-├──────┼──────────────────┼───────────────┤
-│ 2025 │ $4,386,925,832   │ 4.83%         │
-│ 2026 │ $4,598,814,341   │ 4.83%         │
-│ 2027 │ $4,820,937,064   │ 4.83%         │
-│ 2028 │ $5,053,788,315   │ 4.83%         │
-│ 2029 │ $5,297,886,280   │ 4.83%         │
-│ 2030 │ $5,469,008,007   │ 3.23%         │
-│ 2031 │ $5,645,656,965   │ 3.23%         │
-│ 2032 │ $5,828,011,685   │ 3.23%         │
-│ 2033 │ $6,016,263,666   │ 3.23%         │
-└──────┴──────────────────┴───────────────┘
-```
-
-### Phase 7: Revenue Projection (for FCF Margin)
-```
-Using TTM Revenue as base, apply same growth logic:
-
-Year 1 Revenue = TTM Revenue × (1 + Near-term Revenue Growth)
-Year 2 Revenue = Year 1 Revenue × (1 + Near-term Revenue Growth)
-... (continue through Year 10)
-
-Then calculate:
-FCF Margin (Year N) = Projected FCF (Year N) / Projected Revenue (Year N)
-```
-
-**Phase 7 Output Example** (TTM Revenue = $21,214,300,000):
-```
-┌──────┬──────────────────┬──────────────────┬────────────┐
-│ Year │ Projected Rev    │ Projected FCF    │ FCF Margin │
-├──────┼──────────────────┼──────────────────┼────────────┤
-│ 2025 │ $22,349,400,000  │ $4,386,925,832   │ 19.63%     │
-│ 2026 │ $23,545,000,000  │ $4,598,814,341   │ 19.53%     │
-│ 2027 │ $24,805,000,000  │ $4,820,937,064   │ 19.44%     │
-│ 2028 │ $26,133,000,000  │ $5,053,788,315   │ 19.34%     │
-│ 2029 │ $27,532,000,000  │ $5,297,886,280   │ 19.24%     │
-│ 2030 │ $28,785,000,000  │ $5,469,008,007   │ 19.00%     │
-│ 2031 │ $30,095,000,000  │ $5,645,656,965   │ 18.76%     │
-│ 2032 │ $31,465,000,000  │ $5,828,011,685   │ 18.52%     │
-│ 2033 │ $32,898,000,000  │ $6,016,263,666   │ 18.29%     │
-└──────┴──────────────────┴──────────────────┴────────────┘
-
-→ FCF Margin declining gradually (revenue growing faster than FCF)
-→ This is realistic for mature growth phase
-```
-
-### Phase 8: Present Value of Projected FCF
-```
-For each year, discount FCF back to present:
-
-PV(Year N) = Projected FCF (Year N) / (1 + WACC)^N
-
-Example with WACC = 9.57%:
-PV(Year 1) = $4,386,925,832 / (1.0957)^1 = $4,003,451,219
-PV(Year 2) = $4,598,814,341 / (1.0957)^2 = $3,829,512,088
-... continue for all 10 years
-
-Sum of PV(Years 1-10) = Enterprise Value from Operations
-```
-
-**Phase 8 Output Example**:
-```
-Present Value of 10-Year FCF:
-┌──────┬──────────────────┬──────────────────┐
-│ Year │ Projected FCF    │ Present Value    │
-├──────┼──────────────────┼──────────────────┤
-│ 2025 │ $4,386,925,832   │ $4,003,451,219   │
-│ 2026 │ $4,598,814,341   │ $3,829,512,088   │
-│ 2027 │ $4,820,937,064   │ $3,663,178,445   │
-│ 2028 │ $5,053,788,315   │ $3,503,894,621   │
-│ 2029 │ $5,297,886,280   │ $3,351,132,509   │
-│ 2030 │ $5,469,008,007   │ $3,164,722,891   │
-│ 2031 │ $5,645,656,965   │ $2,988,441,226   │
-│ 2032 │ $5,828,011,685   │ $2,821,577,334   │
-│ 2033 │ $6,016,263,666   │ $2,663,449,872   │
-├──────┴──────────────────┼──────────────────┤
-│ Sum (PV of 10Y FCF)    │ $29,989,360,205  │
-└────────────────────────┴──────────────────┘
-```
-
-### Phase 9: Terminal Value Calculation
-```
-Terminal FCF = Year 10 FCF × (1 + Terminal Growth Rate)
-
-Terminal Value = Terminal FCF / (WACC - Terminal Growth Rate)
-
-PV of Terminal Value = Terminal Value / (1 + WACC)^10
-
-CRITICAL CHECK: WACC must be > Terminal Rate
-(Otherwise you get infinite/negative value)
-```
-
-**Phase 9 Output Example**:
-```
-Terminal Value Calculation:
-  Year 10 FCF: $6,016,263,666
-  Terminal Growth Rate: 4.26%
-  Terminal FCF (Year 11): $6,272,622,967
-  
-  Terminal Value = $6,272,622,967 / (0.0957 - 0.0426)
-                 = $6,272,622,967 / 0.0531
-                 = $118,127,909,544
-  
-  PV of Terminal Value = $118,127,909,544 / (1.0957)^10
-                       = $118,127,909,544 / 2.4834
-                       = $47,561,346,329
-
-Terminal Value represents 61.3% of Enterprise Value
-(Typical range: 60-80%)
-```
-
-### Phase 10: Enterprise Value → Equity Value → Fair Price
-```
-13. get_stock_quarterly_balance_sheet (latest quarter)
-    → Extract: cash_cash_equivalents_and_short_term_investments
-    → Extract: total_debt
-    → Note reporting date
-
-14. get_stock_market_capitalization (latest date)
-    → Extract: shares_outstanding (use diluted)
-
-Calculate:
-1. Enterprise Value (EV) = Sum of PV(FCF 1-10) + PV(Terminal Value)
-
-2. Equity Value = EV + Cash & Equivalents - Total Debt
-
-3. Fair Price per Share = Equity Value / Shares Outstanding
-```
-
-**Phase 10 Output Example**:
-```
-DCF Valuation Summary:
-
-Enterprise Value Calculation:
-  PV of 10-Year FCF:        $29,989,360,205
-  PV of Terminal Value:     $47,561,346,329
-  ─────────────────────────────────────────
-  Enterprise Value (EV):    $77,550,706,534
-
-Equity Value Adjustments:
-  (+) Cash & Equivalents:    $2,470,400,000
-  (-) Total Debt:            $4,324,000,000
-  ─────────────────────────────────────────
-  Equity Value:             $75,697,106,534
-
-Fair Price Calculation:
-  Shares Outstanding:       404,448,744 (diluted)
-  Fair Price per Share:     $187.18
-  
-  Current Price:            $246.82
-  ─────────────────────────────────────────
-  Fair Price vs Current:    -24.16% (overvalued)
-```
-
-### Phase 11: Valuation Assessment & Sensitivity
-```
-Compare Fair Price to Current Price:
-
-Margin of Safety = (Fair Price - Current Price) / Fair Price × 100%
-
-Interpretation:
-  MoS > +30%:  Significantly undervalued (strong buy signal)
-  MoS +10% to +30%: Moderately undervalued (buy)
-  MoS -10% to +10%: Fairly valued (hold)
-  MoS -30% to -10%: Moderately overvalued (sell)
-  MoS < -30%: Significantly overvalued (strong sell)
-
-CRITICAL: Also perform sensitivity analysis
-Test with different assumptions:
-- Bull case: +2% to all growth rates
-- Base case: As calculated
-- Bear case: -2% to all growth rates
-
-Check if Fair Price is highly sensitive to assumptions
-```
-
-**Phase 11 Output Example**:
-```
-Valuation Assessment:
-
-Current Market Price:     $246.82
-DCF Fair Price:          $187.18
-Margin of Safety:        -24.16%
-Recommendation:          SELL (Overvalued)
-
-Interpretation:
-- Stock trading 32% above DCF fair value
-- Either: (a) Market is too optimistic, OR
-          (b) Our growth assumptions are too conservative
-- Given recent growth deceleration and competitive pressure,
-  current valuation appears stretched
-
-Sensitivity Analysis:
-┌───────────────┬──────────────┬──────────────┬──────────────┐
-│ Scenario      │ Growth Adj   │ Fair Price   │ vs Current   │
-├───────────────┼──────────────┼──────────────┼──────────────┤
-│ Bull Case     │ +2% growth   │ $227.45      │ -7.8%        │
-│ Base Case     │ As above     │ $187.18      │ -24.2%       │
-│ Bear Case     │ -2% growth   │ $152.33      │ -38.3%       │
-└───────────────┴──────────────┴──────────────┴──────────────┘
-
-Key Risks to DCF Model:
-- Assumed 4.83% FCF growth may be optimistic given recent deceleration
-- Terminal rate of 4.26% is high (GDP typically 2-3%)
-- High sensitivity to terminal value (61% of total)
-- Competitive dynamics could pressure margins further
-
-Suggested Actions:
-1. Monitor next 2-3 quarters for growth stabilization
-2. Wait for valuation to mean-revert (target entry: $180-200)
-3. Revisit DCF if management guidance changes materially
-```
+**Output format**: Follow the 8-section bilingual report template (see SKILL.md PHASE 12):
+- Section I: Valuation Conclusion
+- Section II: WACC Analysis
+- Section III: Historical Growth
+- Section IV: Future Growth Assumptions
+- Section V: 10-Year FCF Projection
+- Section VI: Valuation Calculation
+- Section VII: Investment Recommendation & Risks
+- Section VIII: Next Steps for Analysis
 
 ---
 
-### DCF Model Checklist
+### Critical Validation Checks
 
-Before finalizing DCF valuation, verify:
+**Before accepting DCF results, always verify**:
 
-**✓ Data Quality Checks**:
-- [ ] Called `get_latest_data_update_date` first
-- [ ] TTM FCF is positive (if negative, DCF not applicable)
-- [ ] TTM FCF calculated from actual quarterly data (not assumed)
-- [ ] Balance sheet data is from most recent quarter
-- [ ] Shares outstanding is diluted count, not basic
+1. **Beta Reasonableness**
+   - Chinese ADRs often show Beta 0.3-0.4 (too low for actual risk)
+   - High-volatility stocks should have Beta > 1.0
+   - **Action**: Manually review and adjust if necessary
 
-**✓ Growth Rate Reasonableness**:
-- [ ] Near-term growth supported by historical data + management guidance
-- [ ] Mid-term growth < Near-term growth (mean reversion)
-- [ ] Terminal rate = Risk-free rate (10Y Treasury)
-- [ ] Terminal rate < WACC (otherwise infinite value)
-- [ ] Year 10 FCF is 2-5x TTM FCF (sanity check for total growth)
+2. **Growth Rate Alignment**
+   - Do growth assumptions match business fundamentals?
+   - Are they supported by management guidance and industry trends?
+   - **Action**: Cross-check with earnings call transcripts and news
 
-**✓ Calculation Accuracy**:
-- [ ] Each year compounds on previous year (not simple growth from base)
-- [ ] WACC extracted from API (not manually guessed)
-- [ ] Present value formula applied correctly: PV = FV / (1 + r)^n
-- [ ] Terminal Value formula: TV = Year 11 FCF / (WACC - Terminal Rate)
-- [ ] Cash added, Debt subtracted (not reversed)
+3. **FCF Margin Trend**
+   - Review 5-year historical FCF margin
+   - Projected margins should be realistic, not dramatically expanding
+   - **Action**: Compare projected vs historical margins
 
-**✓ Interpretation**:
-- [ ] Terminal Value is 60-80% of EV (typical range)
-- [ ] FCF Margin trend is realistic (not dramatically expanding)
-- [ ] Fair Price is within reasonable range of industry P/FCF multiples
-- [ ] Sensitivity analysis performed (Bull/Base/Bear cases)
-- [ ] Cross-validated with other valuation methods (P/E, P/S, P/B)
+4. **Terminal Rate < WACC**
+   - If Terminal Rate ≥ WACC, model is mathematically invalid
+   - Terminal rate should equal 10Y Treasury (typically 3-5%)
+   - **Action**: Verify WACC > Terminal Rate
 
-**✓ Final Recommendation**:
-- [ ] Clearly state: Buy / Hold / Sell
-- [ ] Provide target entry price if Sell/Hold
-- [ ] List 3-5 key risks to DCF assumptions
-- [ ] Suggest monitoring triggers (earnings, guidance, competition)
+5. **Cross-Validation**
+   - Compare DCF fair value with P/E, P/S, P/B multiples
+   - Check against industry averages
+   - If DCF suggests 50%+ undervaluation but all multiples at highs, revisit assumptions
+   - **Action**: Run `get_stock_ttm_pe()`, `get_industry_ttm_pe()` for comparison
 
 ---
 
-### Common DCF Pitfalls & How to Avoid
+### Manual DCF (If Needed)
 
-**Pitfall 1: Extrapolating Peak Growth**
-❌ BAD: Company grew 50% last year, so I'll use 50% for years 1-5
-✅ GOOD: Growth was 50%, but decelerating. Management guides 20-25%. Industry maturity suggests 15-20% sustainable. Use 18% for years 1-5.
+For custom growth assumptions or special situations, follow the manual workflow in **SKILL.md**:
+- Workflow #6: DCF Valuation Model (PHASES 1-11)
+- Best Practice #12: DCF Model Best Practices
 
-**Pitfall 2: Terminal Rate Too High**
-❌ BAD: Using 5% terminal rate (above long-term GDP growth)
-✅ GOOD: Terminal rate should equal risk-free rate (10Y Treasury ~3-4%). Cannot grow faster than economy forever.
-
-**Pitfall 3: Ignoring Capital Intensity**
-❌ BAD: Projecting 30% FCF growth without considering capex needs
-✅ GOOD: High growth typically requires high capex. If company needs heavy investment, FCF growth will lag revenue growth.
-
-**Pitfall 4: Overfitting to Recent Results**
-❌ BAD: Last quarter FCF was $2B, so TTM = $8B
-✅ GOOD: Always sum actual last 4 quarters. Recent quarter may be anomaly.
-
-**Pitfall 5: Not Stress-Testing**
-❌ BAD: Running DCF once with base assumptions, considering it final
-✅ GOOD: Test Bull (+2% growth), Base, Bear (-2% growth) cases. See how sensitive Fair Price is to assumptions.
-
-**Pitfall 6: Ignoring Debt Quality**
-❌ BAD: Subtracting only long-term debt from EV
-✅ GOOD: Use total_debt (short-term + long-term). Also consider: pension obligations, lease liabilities, preferred stock.
-
-**Pitfall 7: Using Basic Shares**
-❌ BAD: Dividing Equity Value by basic shares outstanding
-✅ GOOD: Always use diluted shares (accounts for options, warrants, convertibles)
-
-**Pitfall 8: Negative FCF Base**
-❌ BAD: Attempting DCF when company has negative TTM FCF
-✅ GOOD: DCF only works for FCF-positive companies. For growth/unprofitable companies, use revenue multiples or wait until profitable.
-
-**Pitfall 9: Not Validating Against Market**
-❌ BAD: DCF says fair value is $500, stock trades at $100, concluding "extreme undervaluation"
-✅ GOOD: If DCF is 5x market price, revisit assumptions. Either market knows something you don't, or your assumptions are too aggressive.
-
-**Pitfall 10: Forgetting Industry Context**
-❌ BAD: Applying same growth rates to all companies
-✅ GOOD: 
-- Tech: 15-30% near-term growth may be reasonable
-- Consumer staples: 3-8% more typical
-- Industrials: 5-12% range
-- Compare to industry average growth rates
+**Key manual steps**:
+1. Calculate TTM FCF and Revenue
+2. Analyze historical growth (5-10 years)
+3. Extract management guidance from earnings calls
+4. Set three-stage growth rates (1-5Y, 6-10Y, Terminal)
+5. Get WACC from `get_stock_wacc()`
+6. Project 10-year FCF with compound growth
+7. Calculate terminal value
+8. Compute present values (discount all cash flows)
+9. Adjust for cash and debt
+10. Derive fair price per share
+11. Compare to current price and perform sensitivity analysis
 
 ---
 
-### DCF Model: Final Thoughts
+### When DCF Works Best
 
-**When DCF Works Best**:
-- Mature, profitable companies with positive FCF
-- Predictable business models (less volatility)
+✅ **Suitable companies**:
+- Mature, profitable with positive FCF
+- Predictable business models
 - Clear visibility into growth drivers
-- Management with track record of execution
+- Consistent cash flow generation
 
-**When DCF Struggles**:
+❌ **Avoid DCF for**:
 - Unprofitable or negative FCF companies
-- Highly cyclical businesses (commodities, construction)
-- Disruptive industries with uncertain futures
+- Highly cyclical businesses (use P/E or P/B instead)
+- Early-stage growth companies (use revenue multiples)
 - Financial institutions (complex balance sheets)
 
-**DCF as Part of Toolbox**:
-DCF should be ONE input to valuation, not the only one:
-1. Run DCF → Fair Price: $187
-2. Check P/E vs industry → Trading at 2x industry average
-3. Check P/S vs history → At 3-year highs
-4. Check momentum → Revenue decelerating
+---
 
-Synthesis: DCF suggests overvaluation, confirmed by high P/E and P/S. Revenue deceleration adds concern. Recommendation: Sell/Avoid.
+### Common Pitfalls
 
-**Remember**: 
-"All models are wrong, but some are useful" - George Box
+1. **Overly optimistic growth** - Don't extrapolate peak growth indefinitely
+2. **Terminal rate too high** - Should match 10Y Treasury, not exceed long-term GDP
+3. **Ignoring capital intensity** - High growth requires high capex
+4. **Not stress-testing** - Always run Bull/Base/Bear scenarios
+5. **Negative FCF base** - DCF doesn't work for cash-burning companies
 
-DCF provides a structured framework for thinking about value. The process of building the model (researching growth drivers, understanding margins, assessing risks) is often more valuable than the final "Fair Price" number itself.
+---
+
+### Additional Resources
+
+**Detailed documentation**:
+- **SKILL.md**: Full DCF workflow (PHASES 1-12) and best practices
+- **defeatbeta-api-reference.md**: `get_stock_dcf_analysis` API specification
+
+**Cross-validation tools**:
+- `get_stock_ttm_pe()` - P/E ratio comparison
+- `get_stock_ps_ratio()` - Price-to-Sales comparison
+- `get_industry_ttm_pe()` - Industry valuation benchmark
+- `get_stock_quarterly_revenue_yoy_growth()` - Growth rate validation
+
+**Example**: See high-quality DCF analysis examples in project documentation (e.g., QCOM DCF analysis)
+
+---
+
+**Remember**: DCF is one tool in the valuation toolkit. Always:
+- Cross-validate with other methods
+- Consider qualitative factors (competitive moats, management quality)
+- Understand the business before trusting any model
+- "All models are wrong, but some are useful" - George Box

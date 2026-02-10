@@ -710,6 +710,234 @@ All margin APIs return similar structure. Using gross margin as example:
 }
 ```
 
+## DCF Valuation
+
+### get_stock_dcf_analysis(symbol: str)
+**Purpose**: Generate comprehensive Discounted Cash Flow (DCF) valuation analysis with Excel model
+
+**Parameters**:
+- `symbol`: Stock ticker (e.g., "QCOM", "AAPL")
+
+**Returns**: Complete DCF analysis with 5 main components
+
+```python
+{
+    "symbol": "QCOM",
+    "file_path": "/tmp/defeatbeta_tmp/QCOM.xlsx",  # Excel model for detailed review
+    
+    # 1. Discount Rate (WACC) Estimates
+    "discount_rate_estimates": {
+        "report_date": "2026-02-06",
+        "market_cap": 146541780000.0,
+        "beta_5y": 1.21,
+        "total_debt": 14817000000.0,
+        "interest_expense": 169000000.0,
+        "pretax_income": 3547000000.0,
+        "tax_provision": 543000000.0,
+        "risk_free_rate": 0.0422,  # 10-year Treasury
+        "expected_market_return": 0.1287,  # 10-year S&P 500 CAGR
+        "weight_of_debt": 0.0918,
+        "weight_of_equity": 0.9082,
+        "cost_of_debt": 0.0114,  # after-tax
+        "cost_of_equity": 0.1469,  # CAPM
+        "tax_rate": 0.15,
+        "wacc": 0.1343  # 13.43%
+    },
+    
+    # 2. Historical Growth Analysis (3-Year CAGR)
+    "growth_estimates": {
+        "revenue": {
+            "historical": [
+                {
+                    "date": "2023-09-30",
+                    "value": 35820000000.0,
+                    "yoy_growth": -0.1896
+                },
+                {
+                    "date": "2024-09-30",
+                    "value": 38962000000.0,
+                    "yoy_growth": 0.0877
+                },
+                {
+                    "date": "2025-09-30",
+                    "value": 44284000000.0,
+                    "yoy_growth": 0.1366
+                }
+            ],
+            "cagr_3y": 0.1119  # 11.19%
+        },
+        "fcf": {
+            "historical": [...],
+            "cagr_3y": 0.1409  # 14.09%
+        },
+        "ebitda": {
+            "historical": [...],
+            "cagr_3y": 0.2252  # 22.52%
+        },
+        "net_income": {
+            "historical": [...],
+            "cagr_3y": -0.1247  # -12.47%
+        }
+    },
+    
+    # 3. DCF Template (Growth Assumptions & Projections)
+    "dcf_template": {
+        # Growth Rate Framework
+        "decay_factor": 0.9,
+        "future_growth_rate_1_5y": 0.1196,  # 11.96%
+        "future_growth_rate_1_5y_explanation": {
+            "formula": "Revenue_CAGR × 0.4 + FCF_CAGR × 0.3 + EBITDA_CAGR × 0.2 + NI_CAGR × 0.1",
+            "description": "Weighted average of historical 3-year CAGRs",
+            "components": {
+                "revenue_cagr": {"value": 0.1119, "weight": 0.4, "rationale": "Primary growth driver"},
+                "fcf_cagr": {"value": 0.1409, "weight": 0.3, "rationale": "Cash generation sustainability"},
+                "ebitda_cagr": {"value": 0.2252, "weight": 0.2, "rationale": "Operational efficiency"},
+                "net_income_cagr": {"value": -0.1247, "weight": 0.1, "rationale": "Profitability trend"}
+            }
+        },
+        "future_growth_rate_6_10y": 0.0706,  # 7.06% (decayed)
+        "future_growth_rate_6_10y_explanation": {
+            "formula": "MAX(Growth_1_5Y × Decay_Factor ^ 5, Risk_Free_Rate)",
+            "description": "Decayed growth rate with risk-free rate floor",
+            "components": {
+                "base_growth": 0.1196,
+                "decay_factor": 0.9,
+                "years_decayed": 5,
+                "decayed_growth": 0.0706,
+                "risk_free_rate_floor": 0.0422
+            },
+            "rationale": "Growth naturally slows over time. Floor at risk-free rate ensures minimum growth matches economic baseline"
+        },
+        "future_growth_rate_terminal": 0.0422,  # 4.22% (10Y Treasury)
+        "future_growth_rate_terminal_explanation": {
+            "formula": "Risk_Free_Rate (10Y Treasury)",
+            "description": "Perpetual growth rate set to risk-free rate",
+            "components": {"risk_free_rate": 0.0422},
+            "rationale": "Conservative assumption: mature companies cannot grow faster than the economy indefinitely"
+        },
+        
+        # Current Baseline
+        "discount_rate": 0.1343,
+        "ttm_revenue": 44867000000.0,
+        "ttm_revenue_label": "TTM Revenue (USD | 2025-03-31 ~ 2025-12-31)",
+        "future_revenue_growth_1_5y": 0.1119,
+        "future_revenue_growth_6_10y": 0.0661,
+        
+        # 10-Year Projections
+        "projections": {
+            "years": [
+                "2025-12-31 (TTM)", "2026/12/31", "2027/12/31", "2028/12/31",
+                "2029/12/31", "2030/12/31", "2031/12/31", "2032/12/31",
+                "2033/12/31", "2034/12/31", "2035/12/31"
+            ],
+            "fcf": [
+                12926000000.0,  # TTM
+                14471790832.52,  # Year 1
+                16202439261.97,  # Year 2
+                18140051986.37,  # Year 3
+                20309379393.31,  # Year 4
+                22738131712.69,  # Year 5
+                24343792867.60,  # Year 6
+                26062838348.76,  # Year 7
+                27903274830.18,  # Year 8
+                29873674379.97,  # Year 9
+                31983214385.83   # Year 10
+            ],
+            "terminal_value": 385351514831.33,  # Year 10 terminal value
+            "total_value": [  # FCF + Terminal Value in Year 10
+                12926000000.0, 14471790832.52, ..., 417334729217.16
+            ],
+            "fcf_margin": [
+                0.2881,  # TTM: 28.81%
+                0.2901,  # Year 1: 29.01%
+                0.2921,  # Year 2: 29.21%
+                0.2941,  # Year 3: 29.41%
+                0.2962,  # Year 4: 29.62%
+                0.2982,  # Year 5: 29.82%
+                0.2995,  # Year 6: 29.95%
+                0.3008,  # Year 7: 30.08%
+                0.3020,  # Year 8: 30.20%
+                0.3033,  # Year 9: 30.33%
+                0.3046   # Year 10: 30.46%
+            ]
+        },
+        
+        # Historical FCF Margin (for validation)
+        "historical_fcf_margin": {
+            "2021/09/30": 0.2576,  # 25.76%
+            "2022/09/30": 0.1546,  # 15.46%
+            "2023/09/30": 0.2750,  # 27.50%
+            "2024/09/30": 0.2865,  # 28.65%
+            "2025/09/30": 0.2895   # 28.95%
+        }
+    },
+    
+    # 4. DCF Valuation Output
+    "dcf_value": {
+        "report_date": "2026-02-06",
+        "enterprise_value": 222573239465.57,  # PV of all FCF
+        "cash_and_st_investments": 11822000000.0,
+        "total_debt": 14817000000.0,
+        "equity_value": 219578239465.57,  # EV + Cash - Debt
+        "outstanding_shares": 1067000000.0,
+        "fair_price": 205.79,  # Equity Value / Shares
+        "current_price": 137.34,
+        "margin_of_safety": 0.3326  # 33.26%
+    },
+    
+    # 5. Investment Recommendation
+    "buy_sell": {
+        "fair_price": 205.79,
+        "current_price": 137.34,
+        "recommendation": "Buy",  # Buy | Hold | Sell
+        "upside_potential": 0.4984  # 49.84%
+    }
+}
+```
+
+**Key Features**:
+1. **Automated Growth Estimation**: Weighted average of Revenue, FCF, EBITDA, Net Income CAGRs
+2. **Three-Stage Growth Model**: Near-term (1-5Y), Mid-term (6-10Y), Terminal (perpetual)
+3. **Decay Factor**: Applies 0.9 annual decay to moderate mid-term growth
+4. **Risk-Free Floor**: Terminal growth rate floors at 10Y Treasury yield
+5. **FCF Margin Tracking**: Projects and validates FCF as % of Revenue
+6. **Excel Model Output**: Full model saved to file_path for custom analysis
+
+**Important Validation Checks**:
+- **Beta Reasonableness**: Beta < 0.5 for high-risk stocks (e.g., Chinese ADRs) likely underestimates risk
+- **Growth Alignment**: Compare growth assumptions against business fundamentals, not just historical averages
+- **FCF Margin Trend**: Ensure projected margins align with 5-year historical trend
+- **Terminal Rate < WACC**: If Terminal Rate ≥ WACC, model is mathematically invalid
+
+**Usage Example**:
+```python
+# Get DCF analysis
+result = get_stock_dcf_analysis("QCOM")
+
+# Access components
+wacc = result["discount_rate_estimates"]["wacc"]  # 0.1343
+fair_price = result["dcf_value"]["fair_price"]  # $205.79
+current_price = result["dcf_value"]["current_price"]  # $137.34
+recommendation = result["buy_sell"]["recommendation"]  # "Buy"
+upside = result["buy_sell"]["upside_potential"]  # 0.4984 (49.84%)
+
+# Review detailed model
+excel_path = result["file_path"]  # "/tmp/defeatbeta_tmp/QCOM.xlsx"
+```
+
+**Special Considerations for Chinese ADRs** (BABA, PDD, JD, etc.):
+- Beta calculations often show 0.3-0.4, but real risk is higher (1.0-1.5 more appropriate)
+- Systematic risks not captured: VIE structure, regulatory, geopolitical
+- Growth assumptions may be overly conservative if based solely on historical data
+- **Recommended approach**: Use tool output as baseline, then manually adjust assumptions
+
+**Cross-Validation Recommended**:
+After generating DCF fair value, compare with:
+- `get_stock_ttm_pe()` - Is P/E ratio reasonable vs industry?
+- `get_stock_ps_ratio()` - Is P/S ratio at historical extremes?
+- `get_stock_quarterly_revenue_yoy_growth()` - Does growth justify valuation?
+- `get_industry_ttm_pe()` - How does fair value compare to industry average?
+
 ## Growth Metrics
 
 All growth APIs return YoY growth rate. Using revenue as example:

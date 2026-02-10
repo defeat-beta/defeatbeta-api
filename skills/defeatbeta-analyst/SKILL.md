@@ -254,6 +254,116 @@ Interpretation:
 - If Fair Price > Current Price → potentially undervalued
 - If Fair Price < Current Price → potentially overvalued
 - Margin of Safety > 20-30% → significant upside potential
+
+ALTERNATIVE: Use Automated DCF Analysis
+→ get_stock_dcf_analysis (generates comprehensive Excel model + structured output)
+  - Returns: discount_rate_estimates, growth_estimates, dcf_template, dcf_value, buy_sell
+  - Excel file path for detailed model
+  - Pre-calculated projections and terminal value
+  - **IMPORTANT**: Always validate assumptions, especially for Chinese ADRs
+    - Beta values may underestimate risk (check if Beta < 0.5 for high-risk stocks)
+    - Growth rates should align with business fundamentals
+    - Compare against manual analysis from PHASES 2-3
+
+PHASE 12: DCF Report Generation (Professional Output Template)
+Structure the DCF analysis as a comprehensive bilingual report (Chinese/English) with the following sections:
+
+**Section I: 估值结论 / Valuation Conclusion**
+- Current Price vs Fair Price comparison table
+- Upside/Downside potential (%)
+- Investment Recommendation (Buy/Hold/Sell)
+- Margin of Safety (%)
+
+**Section II: 折现率分析 / Discount Rate (WACC) Analysis**
+- WACC Components table:
+  - Cost of Equity, Cost of Debt (after-tax)
+  - Weight of Equity, Weight of Debt
+- Key Parameters:
+  - Beta (5-year), Risk-Free Rate, Expected Market Return
+  - Tax Rate, Market Cap, Total Debt
+- WACC Reasonableness Analysis
+
+**Section III: 历史增长分析 / Historical Growth Analysis**
+- 3-Year CAGR table for:
+  - Revenue, Free Cash Flow, EBITDA, Net Income
+  - With weights used in growth calculation
+- Key Observations:
+  - Revenue recovery trends
+  - Cash flow quality (FCF growth vs Revenue growth)
+  - Operating efficiency (EBITDA growth vs Revenue)
+  - Profit volatility concerns
+- Historical FCF Margin Trend (5 years)
+
+**Section IV: 未来增长假设 / Future Growth Assumptions**
+- Growth Rate Framework table:
+  - Years 1-5 (Near-term): Rate + Logic
+  - Years 6-10 (Mid-term): Rate + Logic  
+  - Terminal: Rate + Logic
+- Detailed Growth Rate Calculation:
+  - Weighted formula breakdown
+  - Reasonableness analysis (vs industry, strategy, market trends)
+- Decay Model explanation (if applicable)
+
+**Section V: 10年现金流预测 / 10-Year FCF Projection**
+- Annual projection table (11 rows: TTM + Years 1-10):
+  - Projected Revenue (in billions)
+  - Projected FCF (in billions)
+  - FCF Margin (%)
+- Terminal Value Calculation:
+  - Year 10 FCF × (1 + Terminal Rate) / (WACC - Terminal Rate)
+
+**Section VI: 估值计算 / Valuation Calculation**
+- Present Value Calculation:
+  - Sum of PV(Years 1-10 FCF)
+  - PV(Terminal Value)
+  - Enterprise Value (EV)
+- Equity Value Adjustment:
+  - EV + Cash - Debt = Equity Value
+  - Equity Value / Shares Outstanding = Fair Price per Share
+
+**Section VII: 投资建议与风险 / Investment Recommendation & Risks**
+- Bull Case (5 reasons):
+  - Valuation gap, Cash flow quality, Growth drivers, Financial strength, Competitive moats
+- Key Risks (5 risks):
+  - Profit volatility, Industry cyclicality, Competition, Geopolitical/Regulatory, Customer concentration
+- Sensitivity Analysis Recommendations:
+  - WACC range, Growth rate ranges, Terminal rate range, FCF margin range
+
+**Section VIII: 后续分析建议 / Next Steps for Analysis**
+- 4-6 specific follow-up analyses:
+  - Investigate anomalies (e.g., profit decline reasons)
+  - Quarterly report verification
+  - Management guidance review
+  - Peer valuation comparison
+  - Segment/product deep dive
+
+**Formatting Guidelines:**
+- Use clear bilingual headers (Chinese / English)
+- Present data in clean tables with proper alignment
+- Include formulas for transparency
+- Add ✅/⚠️/⬆️/⬇️ symbols for visual clarity
+- Provide Excel file path at end
+- End with specific questions to guide next analysis
+
+**Example Opening:**
+```
+# [公司名称](SYMBOL) DCF估值分析
+## [Company Name] DCF Valuation Analysis
+
+**数据截至 / Data as of**: [YYYY年MM月DD日 / Month DD, YYYY]
+
+---
+
+## 一、估值结论 / Valuation Conclusion
+
+| 指标 | 数值 | Metric |
+|------|------|--------|
+| **当前股价** | **$XXX.XX** | **Current Price** |
+| **DCF公允价值** | **$XXX.XX** | **DCF Fair Value** |
+| **上涨空间** | **+XX.X%** | **Upside Potential** |
+| **投资建议** | **买入/持有/卖出** | **Recommendation** |
+| **安全边际** | **XX.X%** | **Margin of Safety** |
+```
 ```
 
 ### 7. DuPont Analysis
@@ -579,6 +689,39 @@ Validate the DuPont identity:
 - **Terminal rate > WACC**: Mathematically impossible, check your inputs
 - **Negative FCF base**: DCF doesn't work well for unprofitable/cash-burning companies
 - **Ignoring macro factors**: Consider industry trends, economic cycle, regulatory changes
+
+#### DCF Report Generation Best Practices
+**CRITICAL**: When presenting DCF analysis, always generate a comprehensive bilingual (Chinese/English) report following the template in PHASE 12 (Workflow #6).
+
+**Structure & Content**:
+- **8 Required Sections**: Valuation Conclusion → WACC Analysis → Historical Growth → Future Assumptions → 10-Year Projection → Valuation Calculation → Investment Recommendation & Risks → Next Steps
+- **Data Visualization**: Present all numerical data in clean tables with proper alignment
+- **Formula Transparency**: Show calculation formulas (e.g., "Revenue_CAGR × 0.4 + FCF_CAGR × 0.3...")
+- **Visual Indicators**: Use ✅ (positive), ⚠️ (warning), ⬆️ (increase), ⬇️ (decrease) for clarity
+
+**Critical Validations to Include**:
+- **WACC Reasonableness**: Comment on whether Beta seems appropriate for risk level (e.g., Chinese ADRs with Beta < 0.5 likely underestimate risk)
+- **Growth Rate Justification**: Explain why chosen growth rates align with business fundamentals, not just historical averages
+- **FCF Margin Trend**: Show 5-year historical FCF margin to validate projection assumptions
+- **Anomaly Flags**: Highlight unusual patterns (e.g., "Net income declined 45% in 2025 - requires investigation")
+
+**Investment Framing**:
+- **Bull Case**: Always provide 5 specific reasons supporting the investment (not generic statements)
+- **Key Risks**: Always list 5 concrete risks with business context
+- **Actionable Next Steps**: End with 4-6 specific follow-up analyses the user should consider
+
+**Presentation Quality**:
+- Lead with clear conclusion table (Current Price, Fair Price, Upside, Recommendation, Margin of Safety)
+- Use consistent formatting (bold for emphasis, tables for data, code blocks for formulas)
+- Provide Excel file path at end for detailed model access
+- End with open-ended questions to encourage deeper exploration
+
+**Common Reporting Errors to Avoid**:
+- Don't just dump API results - synthesize into narrative insights
+- Don't skip the "why" behind numbers - always provide business context
+- Don't ignore red flags - explicitly call out concerns (e.g., profit decline)
+- Don't provide recommendation without risk disclosure
+- Don't forget bilingual labels - user expects Chinese + English
 
 ### 13. Combining Multiple Metrics
 Strong investment candidates typically show:
