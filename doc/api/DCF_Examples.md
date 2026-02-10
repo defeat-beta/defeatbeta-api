@@ -237,7 +237,7 @@ Complement your DCF analysis with these other valuation metrics:
 - [`ticker.historical_ps_ratio()`](Value_Examples.md#4-stock-historical-ps-ratio) - Price-to-Sales ratio
 - [`ticker.historical_peg_ratio()`](Value_Examples.md#6-stock-historical-peg-ratio) - PEG ratio
 - [`ticker.wacc()`](Value_Examples.md#12-stock-historical-wacc) - Weighted Average Cost of Capital
-- [`ticker.annual_fcf_yoy_growth()`](Growth_Examples.md) - Free Cash Flow growth
+- [`ticker.annual_fcf_yoy_growth()`](Growth_Examples.md#10-stock-annual-free-cash-flow-yoy-growth) - Free Cash Flow growth
 
 ## Example Workflow
 
