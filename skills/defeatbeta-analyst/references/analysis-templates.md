@@ -1,6 +1,13 @@
 # Financial Analysis Templates
 
-Detailed workflow templates for common financial analysis tasks using defeatbeta-api.
+**Purpose**: Detailed, step-by-step workflow templates for executing specific financial analysis tasks.
+
+**How to use this file**:
+- Use these templates as reference guides for comprehensive analysis workflows
+- Each template provides detailed API call sequences and decision criteria
+- For API reference, best practices, and general guidelines, see **SKILL.md**
+
+---
 
 ## Template 1: Quick Investment Screening
 
@@ -598,205 +605,27 @@ Price per share = Equity Value / Shares Outstanding
 
 ---
 
-## Best Practices Across All Templates
-
-### Data Freshness
-- Always call `get_latest_data_update_date` first
-- Use this date as reference for "current" or "latest"
-- When user says "recent", "latest", or "current", use data cutoff date
-
-### Date Range Selection
-- **Quick check**: 4-8 quarters (1-2 years)
-- **Standard analysis**: 12-16 quarters (3-4 years)
-- **Long-term trends**: 20+ quarters (5+ years)
-- **Valuation history**: 5-10 years for context
-
-### Handling Truncated Data
-When API returns `truncated: true`:
-- Prioritize most recent data
-- Make multiple calls with narrower ranges if needed
-- Use annual data for longer history
-
-### Industry Comparison
-- Always compare key metrics to industry
-- Explains whether outperformance is company-specific or sector-wide
-- Helps assess competitive moat
-
-### DuPont Validation
-When using profitability ratios:
-- Verify: ROE = ROA × Equity Multiplier
-- Verify: ROE = Net Margin × Asset Turnover × Equity Multiplier
-- Check for mathematical consistency
-
-### Growth Rate Interpretation
-- Revenue growing faster than GDP (3%) = above-average
-- Earnings growing faster than revenue = margin expansion
-- FCF growing faster than earnings = high quality
-- Compare to industry growth rates
-
-### Margin Cascade Logic
-```
-Revenue
-- COGS = Gross Profit (→ Gross Margin)
-- Operating Expenses = Operating Income (→ Operating Margin)
-+ D&A = EBITDA (→ EBITDA Margin)
-- Taxes & Interest = Net Income (→ Net Margin)
-- Capex = Free Cash Flow (→ FCF Margin)
-```
-
-### Bank vs Non-Bank
-- Check sector in profile
-- If financial institution: Skip ROIC and Equity Multiplier
-- Banks have different capital structures
-
-### Segment Analysis Priority
-- Revenue by segment: Identifies growth drivers
-- Revenue by geography: Assesses diversification
-- Combine with margin data when available
-
----
-
-## Template 11: DCF (Discounted Cash Flow) Valuation Model
+## Template 11: DCF (Discounted Cash Flow) Valuation
 
 **Use case**: Calculate intrinsic value using discounted free cash flow projections
 
-**Recommended Approach: Use Automated DCF API**
-
-
-### Quick Start: Automated DCF Analysis
-
+**Quick Workflow**:
 ```
 1. get_latest_data_update_date
-   → Establish reference date
-
 2. get_stock_dcf_analysis(symbol)
-   → Generates complete DCF model including:
-     • WACC calculation
-     • Historical growth analysis (Revenue, FCF, EBITDA, Net Income)
-     • Three-stage growth assumptions
-     • 10-year FCF projections
-     • Terminal value calculation
-     • Fair price estimation
-     • Buy/Sell recommendation
-     • Excel model export
+   → Returns complete DCF model with WACC, growth rates, projections, and fair value
+3. Validate key assumptions:
+   - Beta reasonableness (watch for Chinese ADRs with Beta < 0.5)
+   - Growth rates alignment with business fundamentals
+   - FCF margin trends (compare projected vs historical)
+   - Terminal Rate < WACC (must be true)
+4. Cross-validate with P/E, P/S multiples
+5. Present results with clear assumptions and sensitivity analysis
 ```
 
-**Returns 5 key components**:
-1. `discount_rate_estimates` - WACC and all components
-2. `growth_estimates` - Historical 3-year CAGRs
-3. `dcf_template` - Growth assumptions and 10-year projections
-4. `dcf_value` - Enterprise value, equity value, fair price
-5. `buy_sell` - Investment recommendation and upside potential
+**When DCF Works Best**:
+- ✅ Mature, profitable companies with positive FCF
+- ✅ Predictable business models with clear growth drivers
+- ❌ Avoid for unprofitable, highly cyclical, or financial companies
 
-**Output format**: Follow the 8-section bilingual report template (see SKILL.md PHASE 12):
-- Section I: Valuation Conclusion
-- Section II: WACC Analysis
-- Section III: Historical Growth
-- Section IV: Future Growth Assumptions
-- Section V: 10-Year FCF Projection
-- Section VI: Valuation Calculation
-- Section VII: Investment Recommendation & Risks
-- Section VIII: Next Steps for Analysis
-
----
-
-### Critical Validation Checks
-
-**Before accepting DCF results, always verify**:
-
-1. **Beta Reasonableness**
-   - Chinese ADRs often show Beta 0.3-0.4 (too low for actual risk)
-   - High-volatility stocks should have Beta > 1.0
-   - **Action**: Manually review and adjust if necessary
-
-2. **Growth Rate Alignment**
-   - Do growth assumptions match business fundamentals?
-   - Are they supported by management guidance and industry trends?
-   - **Action**: Cross-check with earnings call transcripts and news
-
-3. **FCF Margin Trend**
-   - Review 5-year historical FCF margin
-   - Projected margins should be realistic, not dramatically expanding
-   - **Action**: Compare projected vs historical margins
-
-4. **Terminal Rate < WACC**
-   - If Terminal Rate ≥ WACC, model is mathematically invalid
-   - Terminal rate should equal 10Y Treasury (typically 3-5%)
-   - **Action**: Verify WACC > Terminal Rate
-
-5. **Cross-Validation**
-   - Compare DCF fair value with P/E, P/S, P/B multiples
-   - Check against industry averages
-   - If DCF suggests 50%+ undervaluation but all multiples at highs, revisit assumptions
-   - **Action**: Run `get_stock_ttm_pe()`, `get_industry_ttm_pe()` for comparison
-
----
-
-### Manual DCF (If Needed)
-
-For custom growth assumptions or special situations, follow the manual workflow in **SKILL.md**:
-- Workflow #6: DCF Valuation Model (PHASES 1-11)
-- Best Practice #12: DCF Model Best Practices
-
-**Key manual steps**:
-1. Calculate TTM FCF and Revenue
-2. Analyze historical growth (5-10 years)
-3. Extract management guidance from earnings calls
-4. Set three-stage growth rates (1-5Y, 6-10Y, Terminal)
-5. Get WACC from `get_stock_wacc()`
-6. Project 10-year FCF with compound growth
-7. Calculate terminal value
-8. Compute present values (discount all cash flows)
-9. Adjust for cash and debt
-10. Derive fair price per share
-11. Compare to current price and perform sensitivity analysis
-
----
-
-### When DCF Works Best
-
-✅ **Suitable companies**:
-- Mature, profitable with positive FCF
-- Predictable business models
-- Clear visibility into growth drivers
-- Consistent cash flow generation
-
-❌ **Avoid DCF for**:
-- Unprofitable or negative FCF companies
-- Highly cyclical businesses (use P/E or P/B instead)
-- Early-stage growth companies (use revenue multiples)
-- Financial institutions (complex balance sheets)
-
----
-
-### Common Pitfalls
-
-1. **Overly optimistic growth** - Don't extrapolate peak growth indefinitely
-2. **Terminal rate too high** - Should match 10Y Treasury, not exceed long-term GDP
-3. **Ignoring capital intensity** - High growth requires high capex
-4. **Not stress-testing** - Always run Bull/Base/Bear scenarios
-5. **Negative FCF base** - DCF doesn't work for cash-burning companies
-
----
-
-### Additional Resources
-
-**Detailed documentation**:
-- **SKILL.md**: Full DCF workflow (PHASES 1-12) and best practices
-- **defeatbeta-api-reference.md**: `get_stock_dcf_analysis` API specification
-
-**Cross-validation tools**:
-- `get_stock_ttm_pe()` - P/E ratio comparison
-- `get_stock_ps_ratio()` - Price-to-Sales comparison
-- `get_industry_ttm_pe()` - Industry valuation benchmark
-- `get_stock_quarterly_revenue_yoy_growth()` - Growth rate validation
-
-**Example**: See high-quality DCF analysis examples in project documentation (e.g., QCOM DCF analysis)
-
----
-
-**Remember**: DCF is one tool in the valuation toolkit. Always:
-- Cross-validate with other methods
-- Consider qualitative factors (competitive moats, management quality)
-- Understand the business before trusting any model
-- "All models are wrong, but some are useful" - George Box
+**For detailed DCF workflow**, see **SKILL.md Workflow #6** (12-phase manual DCF process)

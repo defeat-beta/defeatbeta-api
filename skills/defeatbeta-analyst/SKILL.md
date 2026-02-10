@@ -96,6 +96,8 @@ Professional-grade financial analysis using historical market data and comprehen
 - `get_industry_quarterly_equity_multiplier` - Industry leverage
 - `get_industry_quarterly_asset_turnover` - Industry asset efficiency
 
+**For detailed parameters and response schemas**, see [defeatbeta-api-reference.md](references/defeatbeta-api-reference.md)
+
 ## Common Workflows
 
 ### 1. Quick Company Overview
@@ -163,207 +165,41 @@ User: "What's the growth trajectory for AMD?"
 → get_quarterly_revenue_by_segment (growth drivers)
 ```
 
-### 6. DCF (Discounted Cash Flow) Valuation Model
+### 6. DCF (Discounted Cash Flow) Valuation
 ```
 User: "Build a DCF model for TSLA" or "What's the fair value of AAPL using DCF?"
 
-PHASE 1: Data Collection
-→ get_latest_data_update_date (reference date)
-→ get_stock_profile (company background)
-→ get_stock_price (latest close price for Current Price, last 30 days)
-→ get_stock_quarterly_cash_flow (get TTM Free Cash Flow)
-→ get_stock_quarterly_income_statement (get TTM Revenue)
+→ get_latest_data_update_date
+→ get_stock_dcf_analysis (symbol)
+  - Returns complete DCF model with:
+    • WACC and discount rate components
+    • Historical growth analysis (Revenue, FCF, EBITDA, Net Income)
+    • Three-stage growth assumptions (Years 1-5, 6-10, Terminal)
+    • 10-year FCF projections
+    • Terminal value calculation
+    • Fair price estimation and buy/sell recommendation
+    • Excel model file path
 
-PHASE 2: Historical Growth Analysis (for Growth Estimates)
-→ get_stock_annual_fcf_yoy_growth (show FCF growth trends, last 5-10 years)
-→ get_stock_quarterly_revenue_yoy_growth (show Revenue growth trends, last 8-12 quarters)
-→ Display both datasets in detail so user can see historical growth patterns
+→ Validate key assumptions:
+  - Beta reasonableness (watch for Chinese ADRs with Beta < 0.5)
+  - Growth rates alignment with business fundamentals
+  - FCF margin trends (compare projected vs historical)
+  - Terminal Rate < WACC (must be true)
 
-PHASE 3: Management Outlook & Market Intelligence
-→ get_stock_earning_call_transcripts_list (find recent earnings calls)
-→ get_stock_earning_call_transcript (latest call - management's forward guidance)
-→ get_stock_news (recent 3-6 months news for business developments)
-→ Summarize: management's growth expectations, new products/markets, risks
+→ Cross-validate results:
+  - get_stock_ttm_pe (compare P/E implied by DCF vs current)
+  - get_industry_ttm_pe (compare vs industry multiples)
+  - If DCF suggests 50%+ undervaluation but multiples at highs, revisit assumptions
 
-PHASE 4: Growth Rate Estimates (THREE STAGES)
-Based on PHASE 2 + PHASE 3 analysis, propose:
-1. Near-term Growth (Years 1-5):
-   - Synthesize: historical FCF growth + management guidance + news sentiment
-   - Typically higher growth phase
-   
-2. Mid-term Growth (Years 6-10):
-   - Conservative slowdown from near-term
-   - Consider market maturity, competition
-   
-3. Terminal Growth Rate:
-   → get_daily_treasury_yield (use latest 10-Year Treasury yield)
-   - Terminal rate = Risk-Free Rate (perpetual growth assumption)
+→ Present results with:
+  - Clear valuation conclusion table (Current Price, Fair Value, Upside, Recommendation)
+  - Key assumptions (WACC, growth rates, terminal value)
+  - 10-year projection table
+  - Bull case (5 reasons) and key risks (5 risks)
+  - Specific follow-up analyses
+  - Excel file path
 
-PHASE 5: Discount Rate (WACC)
-→ get_stock_wacc (get latest WACC for discount rate)
-→ Display WACC components: Cost of Equity, Cost of Debt, Capital Structure
-
-PHASE 6: Free Cash Flow Projection (10-Year Forecast)
-Using TTM FCF from PHASE 1 as base:
-- Years 1-5: Apply "Near-term Growth Rate"
-  - Year 1 FCF = TTM FCF × (1 + Near-term Growth Rate)
-  - Year 2 FCF = Year 1 FCF × (1 + Near-term Growth Rate)
-  - ... continue through Year 5
-  
-- Years 6-10: Apply "Mid-term Growth Rate"
-  - Year 6 FCF = Year 5 FCF × (1 + Mid-term Growth Rate)
-  - ... continue through Year 10
-
-PHASE 7: Revenue Projection (for FCF Margin calculation)
-Using TTM Revenue from PHASE 1 as base:
-- Apply same growth rates as FCF projection
-- Years 1-5: Near-term Revenue Growth Rate
-- Years 6-10: Mid-term Revenue Growth Rate
-- Calculate: FCF Margin = Projected FCF / Projected Revenue (for each year)
-
-PHASE 8: Present Value of Projected FCF
-For each year 1-10:
-- PV(Year N FCF) = Year N FCF / (1 + WACC)^N
-- Sum all PV values
-
-PHASE 9: Terminal Value Calculation
-- Terminal FCF = Year 10 FCF × (1 + Terminal Growth Rate)
-- Terminal Value = Terminal FCF / (WACC - Terminal Growth Rate)
-- PV of Terminal Value = Terminal Value / (1 + WACC)^10
-
-PHASE 10: Enterprise Value → Equity Value → Fair Price
-→ get_stock_quarterly_balance_sheet (latest quarter)
-  - Extract: cash_cash_equivalents_and_short_term_investments
-  - Extract: total_debt
-  
-→ get_stock_market_capitalization (latest data)
-  - Extract: shares_outstanding
-
-Calculate:
-1. Enterprise Value (EV) = Sum of PV(FCF Years 1-10) + PV(Terminal Value)
-2. Equity Value = EV + Cash & Equivalents - Total Debt
-3. Fair Price = Equity Value / Outstanding Shares
-
-PHASE 11: Valuation Assessment
-Compare:
-- Fair Price (DCF output)
-- Current Price (latest close from PHASE 1)
-- Margin of Safety = (Fair Price - Current Price) / Fair Price × 100%
-
-Interpretation:
-- If Fair Price > Current Price → potentially undervalued
-- If Fair Price < Current Price → potentially overvalued
-- Margin of Safety > 20-30% → significant upside potential
-
-ALTERNATIVE: Use Automated DCF Analysis
-→ get_stock_dcf_analysis (generates comprehensive Excel model + structured output)
-  - Returns: discount_rate_estimates, growth_estimates, dcf_template, dcf_value, buy_sell
-  - Excel file path for detailed model
-  - Pre-calculated projections and terminal value
-  - **IMPORTANT**: Always validate assumptions, especially for Chinese ADRs
-    - Beta values may underestimate risk (check if Beta < 0.5 for high-risk stocks)
-    - Growth rates should align with business fundamentals
-    - Compare against manual analysis from PHASES 2-3
-
-PHASE 12: DCF Report Generation (Professional Output Template)
-Structure the DCF analysis as a comprehensive bilingual report (Chinese/English) with the following sections:
-
-**Section I: 估值结论 / Valuation Conclusion**
-- Current Price vs Fair Price comparison table
-- Upside/Downside potential (%)
-- Investment Recommendation (Buy/Hold/Sell)
-- Margin of Safety (%)
-
-**Section II: 折现率分析 / Discount Rate (WACC) Analysis**
-- WACC Components table:
-  - Cost of Equity, Cost of Debt (after-tax)
-  - Weight of Equity, Weight of Debt
-- Key Parameters:
-  - Beta (5-year), Risk-Free Rate, Expected Market Return
-  - Tax Rate, Market Cap, Total Debt
-- WACC Reasonableness Analysis
-
-**Section III: 历史增长分析 / Historical Growth Analysis**
-- 3-Year CAGR table for:
-  - Revenue, Free Cash Flow, EBITDA, Net Income
-  - With weights used in growth calculation
-- Key Observations:
-  - Revenue recovery trends
-  - Cash flow quality (FCF growth vs Revenue growth)
-  - Operating efficiency (EBITDA growth vs Revenue)
-  - Profit volatility concerns
-- Historical FCF Margin Trend (5 years)
-
-**Section IV: 未来增长假设 / Future Growth Assumptions**
-- Growth Rate Framework table:
-  - Years 1-5 (Near-term): Rate + Logic
-  - Years 6-10 (Mid-term): Rate + Logic  
-  - Terminal: Rate + Logic
-- Detailed Growth Rate Calculation:
-  - Weighted formula breakdown
-  - Reasonableness analysis (vs industry, strategy, market trends)
-- Decay Model explanation (if applicable)
-
-**Section V: 10年现金流预测 / 10-Year FCF Projection**
-- Annual projection table (11 rows: TTM + Years 1-10):
-  - Projected Revenue (in billions)
-  - Projected FCF (in billions)
-  - FCF Margin (%)
-- Terminal Value Calculation:
-  - Year 10 FCF × (1 + Terminal Rate) / (WACC - Terminal Rate)
-
-**Section VI: 估值计算 / Valuation Calculation**
-- Present Value Calculation:
-  - Sum of PV(Years 1-10 FCF)
-  - PV(Terminal Value)
-  - Enterprise Value (EV)
-- Equity Value Adjustment:
-  - EV + Cash - Debt = Equity Value
-  - Equity Value / Shares Outstanding = Fair Price per Share
-
-**Section VII: 投资建议与风险 / Investment Recommendation & Risks**
-- Bull Case (5 reasons):
-  - Valuation gap, Cash flow quality, Growth drivers, Financial strength, Competitive moats
-- Key Risks (5 risks):
-  - Profit volatility, Industry cyclicality, Competition, Geopolitical/Regulatory, Customer concentration
-- Sensitivity Analysis Recommendations:
-  - WACC range, Growth rate ranges, Terminal rate range, FCF margin range
-
-**Section VIII: 后续分析建议 / Next Steps for Analysis**
-- 4-6 specific follow-up analyses:
-  - Investigate anomalies (e.g., profit decline reasons)
-  - Quarterly report verification
-  - Management guidance review
-  - Peer valuation comparison
-  - Segment/product deep dive
-
-**Formatting Guidelines:**
-- Use clear bilingual headers (Chinese / English)
-- Present data in clean tables with proper alignment
-- Include formulas for transparency
-- Add ✅/⚠️/⬆️/⬇️ symbols for visual clarity
-- Provide Excel file path at end
-- End with specific questions to guide next analysis
-
-**Example Opening:**
-```
-# [公司名称](SYMBOL) DCF估值分析
-## [Company Name] DCF Valuation Analysis
-
-**数据截至 / Data as of**: [YYYY年MM月DD日 / Month DD, YYYY]
-
----
-
-## 一、估值结论 / Valuation Conclusion
-
-| 指标 | 数值 | Metric |
-|------|------|--------|
-| **当前股价** | **$XXX.XX** | **Current Price** |
-| **DCF公允价值** | **$XXX.XX** | **DCF Fair Value** |
-| **上涨空间** | **+XX.X%** | **Upside Potential** |
-| **投资建议** | **买入/持有/卖出** | **Recommendation** |
-| **安全边际** | **XX.X%** | **Margin of Safety** |
-```
+For custom DCF scenarios, see analysis-templates.md Template 11
 ```
 
 ### 7. DuPont Analysis
@@ -691,37 +527,13 @@ Validate the DuPont identity:
 - **Ignoring macro factors**: Consider industry trends, economic cycle, regulatory changes
 
 #### DCF Report Generation Best Practices
-**CRITICAL**: When presenting DCF analysis, always generate a comprehensive bilingual (Chinese/English) report following the template in PHASE 12 (Workflow #6).
-
-**Structure & Content**:
-- **8 Required Sections**: Valuation Conclusion → WACC Analysis → Historical Growth → Future Assumptions → 10-Year Projection → Valuation Calculation → Investment Recommendation & Risks → Next Steps
-- **Data Visualization**: Present all numerical data in clean tables with proper alignment
-- **Formula Transparency**: Show calculation formulas (e.g., "Revenue_CAGR × 0.4 + FCF_CAGR × 0.3...")
-- **Visual Indicators**: Use ✅ (positive), ⚠️ (warning), ⬆️ (increase), ⬇️ (decrease) for clarity
-
-**Critical Validations to Include**:
-- **WACC Reasonableness**: Comment on whether Beta seems appropriate for risk level (e.g., Chinese ADRs with Beta < 0.5 likely underestimate risk)
-- **Growth Rate Justification**: Explain why chosen growth rates align with business fundamentals, not just historical averages
-- **FCF Margin Trend**: Show 5-year historical FCF margin to validate projection assumptions
-- **Anomaly Flags**: Highlight unusual patterns (e.g., "Net income declined 45% in 2025 - requires investigation")
-
-**Investment Framing**:
-- **Bull Case**: Always provide 5 specific reasons supporting the investment (not generic statements)
-- **Key Risks**: Always list 5 concrete risks with business context
-- **Actionable Next Steps**: End with 4-6 specific follow-up analyses the user should consider
-
-**Presentation Quality**:
-- Lead with clear conclusion table (Current Price, Fair Price, Upside, Recommendation, Margin of Safety)
-- Use consistent formatting (bold for emphasis, tables for data, code blocks for formulas)
-- Provide Excel file path at end for detailed model access
-- End with open-ended questions to encourage deeper exploration
-
-**Common Reporting Errors to Avoid**:
-- Don't just dump API results - synthesize into narrative insights
-- Don't skip the "why" behind numbers - always provide business context
-- Don't ignore red flags - explicitly call out concerns (e.g., profit decline)
-- Don't provide recommendation without risk disclosure
-- Don't forget bilingual labels - user expects Chinese + English
+- Present valuation conclusion with clear comparison table
+- Validate key assumptions (WACC reasonableness, growth rate justification)
+- Show historical FCF margin trends to support projections
+- Flag anomalies or concerns explicitly
+- Provide 5 bull case reasons and 5 key risks
+- End with specific follow-up analysis recommendations
+- For detailed reporting templates, see `analysis-templates.md`
 
 ### 13. Combining Multiple Metrics
 Strong investment candidates typically show:
@@ -763,11 +575,6 @@ When analyzing SEC filings:
     - `NPORT-P` - Monthly portfolio holdings
     - `N-CEN` - Annual report (fund operations)
     - `N-Q`, `N-Q/A` - Quarterly portfolio (discontinued, historical data exists)
-
-## API Reference
-
-Full parameter specifications and response schemas:
-- [defeatbeta-api-reference.md](references/defeatbeta-api-reference.md)
 
 ## Templates & Examples
 
