@@ -1021,7 +1021,7 @@ class Ticker:
         add_cell("I", row, revenue_details[2]['yoy'], number_format='0.00%')
         revenue_cagr_row = row + 1
         add_cell("G", (row := row + 1), "Revenue 3Y CAGR", font=bold)
-        add_cell("H", row, f"=POWER(H{y3_row}/H{y1_row},1/2)-1", number_format='0.00%')
+        add_cell("H", row, f"=IF(H{y1_row}<=0,IF(H{y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{y3_row}<=0,\"Turned Negative\",POWER(H{y3_row}/H{y1_row},1/2)-1))", number_format='0.00%')
 
         row += 1
         add_cell("G", (row := row + 1), f"FCF ({finance_currency})", font=bold)
@@ -1038,7 +1038,7 @@ class Ticker:
         add_cell("I", row, fcf_details[2]['yoy'], number_format='0.00%')
         fcf_cagr_row = row + 1
         add_cell("G", (row := row + 1), "FCF 3Y CAGR", font=bold)
-        add_cell("H", row, f"=POWER(H{fcf_y3_row}/H{fcf_y1_row},1/2)-1", number_format='0.00%')
+        add_cell("H", row, f"=IF(H{fcf_y1_row}<=0,IF(H{fcf_y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{fcf_y3_row}<=0,\"Turned Negative\",POWER(H{fcf_y3_row}/H{fcf_y1_row},1/2)-1))", number_format='0.00%')
 
         row += 1
         add_cell("G", (row := row + 1), f"EBITDA ({finance_currency})", font=bold)
@@ -1055,7 +1055,7 @@ class Ticker:
         add_cell("I", row, ebitda_details[2]['yoy'], number_format='0.00%')
         ebitda_cagr_row = row + 1
         add_cell("G", (row := row + 1), "EBITDA 3Y CAGR", font=bold)
-        add_cell("H", row, f"=POWER(H{ebitda_y3_row}/H{ebitda_y1_row},1/2)-1", number_format='0.00%')
+        add_cell("H", row, f"=IF(H{ebitda_y1_row}<=0,IF(H{ebitda_y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{ebitda_y3_row}<=0,\"Turned Negative\",POWER(H{ebitda_y3_row}/H{ebitda_y1_row},1/2)-1))", number_format='0.00%')
 
         row += 1
         add_cell("G", (row := row + 1), f"Net Income ({finance_currency})", font=bold)
@@ -1072,7 +1072,7 @@ class Ticker:
         add_cell("I", row, net_income_details[2]['yoy'], number_format='0.00%')
         ni_cagr_row = row + 1
         add_cell("G", (row := row + 1), "Net Income 3Y CAGR", font=bold)
-        add_cell("H", row, f"=POWER(H{ni_y3_row}/H{ni_y1_row},1/2)-1", number_format='0.00%')
+        add_cell("H", row, f"=IF(H{ni_y1_row}<=0,IF(H{ni_y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{ni_y3_row}<=0,\"Turned Negative\",POWER(H{ni_y3_row}/H{ni_y1_row},1/2)-1))", number_format='0.00%')
 
         add_border(2, row, ['G', 'H', 'I'])
 
@@ -1123,7 +1123,7 @@ class Ticker:
 
         growth_1_5y_row = row + 1
         add_cell("B", (row := row + 1), "Future Growth Rate (1~5 Years)", font=bold, fill=orange_fill)
-        add_cell("C", row, f"=H{revenue_cagr_row}*0.4+H{fcf_cagr_row}*0.3+H{ebitda_cagr_row}*0.2+H{ni_cagr_row}*0.1",
+        add_cell("C", row, f"=IFERROR((IF(ISNUMBER(H{revenue_cagr_row}),H{revenue_cagr_row},0)*0.4+IF(ISNUMBER(H{fcf_cagr_row}),H{fcf_cagr_row},0)*0.3+IF(ISNUMBER(H{ebitda_cagr_row}),H{ebitda_cagr_row},0)*0.2+IF(ISNUMBER(H{ni_cagr_row}),H{ni_cagr_row},0)*0.1)/(IF(ISNUMBER(H{revenue_cagr_row}),0.4,0)+IF(ISNUMBER(H{fcf_cagr_row}),0.3,0)+IF(ISNUMBER(H{ebitda_cagr_row}),0.2,0)+IF(ISNUMBER(H{ni_cagr_row}),0.1,0)),\"N/A\")",
                  number_format='0.00%')
 
         add_cell("B", (row := row + 1), "Future Growth Rate (6~10 Years)", font=bold, fill=orange_fill)
