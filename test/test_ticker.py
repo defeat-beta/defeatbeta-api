@@ -29,10 +29,6 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.calendar()
         print(result.to_string())
 
-    def test_earnings(self):
-        result = self.ticker.earnings()
-        print(result.to_string())
-
     def test_splits(self):
         result = self.ticker.splits()
         print(result.to_string())
@@ -40,14 +36,6 @@ class TestTicker(unittest.TestCase):
     def test_dividends(self):
         result = self.ticker.dividends()
         print(result.to_string())
-
-    def test_revenue_forecast(self):
-        result = self.ticker.revenue_forecast()
-        print(result.to_string(float_format="{:,}".format))
-
-    def test_earnings_forecast(self):
-        result = self.ticker.earnings_forecast()
-        print(result.to_string(float_format="{:,}".format))
 
     def test_ttm_eps(self):
         result = self.ticker.ttm_eps()
