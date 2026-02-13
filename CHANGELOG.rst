@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.41
+-------
+
 0.0.40
 -------
 - Remove earnings method and stock_historical_eps references [`#148 <https://github.com/defeat-beta/defeatbeta-api/issues/148>`_]
