@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.42
+-------
+
 0.0.41
 -------
 - Remove revenue_forecast and earnings_forecast methods [`#149 <https://github.com/defeat-beta/defeatbeta-api/issues/149>`_]
