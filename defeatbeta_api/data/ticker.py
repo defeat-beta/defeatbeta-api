@@ -27,7 +27,7 @@ from defeatbeta_api.data.transcripts import Transcripts
 from defeatbeta_api.data.treasure import Treasure
 from defeatbeta_api.data.company_meta import CompanyMeta
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
-from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, \
+from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_officers, \
     stock_split_events, \
     stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
@@ -70,9 +70,6 @@ class Ticker:
 
     def calendar(self) -> pd.DataFrame:
         return self._query_data(stock_earning_calendar)
-
-    def earnings(self) -> pd.DataFrame:
-        return self._query_data(stock_historical_eps)
 
     def splits(self) -> pd.DataFrame:
         return self._query_data(stock_split_events)
