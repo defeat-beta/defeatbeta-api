@@ -77,6 +77,23 @@ class DuckDBClient:
                 )
                 self._clear_cache()
 
+                # Re-fetch data to update cache with latest remote data
+                self.logger.info("Refreshing cache with latest remote data...")
+                refreshed_spec = self.query(f"SELECT * FROM '{spec_url}'")
+                refreshed_update_time = refreshed_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
+
+                # Verify the cache now contains the latest data
+                if refreshed_update_time == remote_update_time:
+                    self.logger.info(
+                        f"Cache refreshed and verified successfully. Update time: {refreshed_update_time}"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Cache refresh verification failed. Expected: {remote_update_time}, Got: {refreshed_update_time}"
+                    )
+            else:
+                self.logger.info(f"Cache is up-to-date. Update time: {cached_update_time}")
+
         except Exception as e:
             self.logger.error(f"Failed to validate httpfs cache: {str(e)}")
             raise
