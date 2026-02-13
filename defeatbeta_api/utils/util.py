@@ -59,30 +59,34 @@ def validate_memory_limit(memory_limit: str) -> str:
 def nltk_sentences(content: str) -> List[str]:
     return nltk.sent_tokenize(content)
 
-def validate_nltk_directory(name: str) -> str:
+def _get_base_temp_dir() -> str:
+    """Get the base temporary directory based on platform."""
     if platform.system() in ("Darwin", "Linux"):
-        temp_dir = "/tmp"
+        return "/tmp"
     else:
-        temp_dir = tempfile.gettempdir()
-    cache_dir = os.path.join(temp_dir, name)
+        return tempfile.gettempdir()
+
+def _get_defeatbeta_root_dir() -> str:
+    """Get the root defeatbeta temporary directory: /tmp/defeatbeta or <tempdir>/defeatbeta"""
+    base_dir = os.path.join(_get_base_temp_dir(), "defeatbeta")
+    os.makedirs(base_dir, exist_ok=True)
+    return base_dir
+
+def validate_nltk_directory() -> str:
+    """Get NLTK data cache directory: /tmp/defeatbeta/nltk"""
+    cache_dir = os.path.join(_get_defeatbeta_root_dir(), "nltk")
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
-def validate_httpfs_cache_directory(name: str) -> str:
-    if platform.system() in ("Darwin", "Linux"):
-        temp_dir = "/tmp"
-    else:
-        temp_dir = tempfile.gettempdir()
-    cache_dir = os.path.join(temp_dir, name, __version__)
+def validate_httpfs_cache_directory() -> str:
+    """Get HTTPFS cache directory: /tmp/defeatbeta/cache/<version>"""
+    cache_dir = os.path.join(_get_defeatbeta_root_dir(), "cache", __version__)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
-def validate_defeatbeta_tmp_directory() -> str:
-    if platform.system() in ("Darwin", "Linux"):
-        temp_dir = "/tmp"
-    else:
-        temp_dir = tempfile.gettempdir()
-    cache_dir = os.path.join(temp_dir, "defeatbeta_tmp")
+def validate_dcf_directory() -> str:
+    """Get DCF output directory: /tmp/defeatbeta/dcf"""
+    cache_dir = os.path.join(_get_defeatbeta_root_dir(), "dcf")
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 

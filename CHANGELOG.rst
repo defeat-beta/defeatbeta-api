@@ -4,6 +4,7 @@ Change Log
 0.0.39
 -------
 - Fix: CAGR #NUM! error for negative starting values and implement dynamic weight reallocation [`#145 <https://github.com/defeat-beta/defeatbeta-api/issues/145>`_]
+- Refactor: Unified temporary directory structure [`#146 <https://github.com/defeat-beta/defeatbeta-api/issues/146>`_]
 
 0.0.38
 -------

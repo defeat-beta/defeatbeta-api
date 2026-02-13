@@ -6,7 +6,7 @@ import nltk
 
 from defeatbeta_api.utils.util import validate_nltk_directory
 
-nltk.download('punkt_tab', download_dir=validate_nltk_directory("nltk"))
+nltk.download('punkt_tab', download_dir=validate_nltk_directory())
 
 _welcome_printed = False
 

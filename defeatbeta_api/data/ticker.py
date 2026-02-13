@@ -34,7 +34,7 @@ from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, st
     stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate, \
     stock_sec_filing
 from defeatbeta_api.utils.util import load_finance_template, parse_all_title_keys, income_statement_template_type, \
-    balance_sheet_template_type, cash_flow_template_type, sp500_cagr_returns_rolling, validate_defeatbeta_tmp_directory, \
+    balance_sheet_template_type, cash_flow_template_type, sp500_cagr_returns_rolling, validate_dcf_directory, \
     in_notebook
 
 
@@ -1675,8 +1675,8 @@ class Ticker:
             # In notebook, save to current working directory
             output = f"{self.ticker}.xlsx"
         else:
-            # In normal Python, save to temp directory
-            output = f"{validate_defeatbeta_tmp_directory()}/{self.ticker}.xlsx"
+            # In normal Python, save to DCF directory
+            output = f"{validate_dcf_directory()}/{self.ticker}.xlsx"
 
         wb.save(output)
         wb.close()
