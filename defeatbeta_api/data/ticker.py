@@ -29,7 +29,7 @@ from defeatbeta_api.data.company_meta import CompanyMeta
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
 from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_officers, \
     stock_split_events, \
-    stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_tailing_eps, \
+    stock_dividend_events, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
     stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate, \
     stock_sec_filing
@@ -76,12 +76,6 @@ class Ticker:
 
     def dividends(self) -> pd.DataFrame:
         return self._query_data(stock_dividend_events)
-
-    def revenue_forecast(self) -> pd.DataFrame:
-        return self._query_data(stock_revenue_estimates)
-
-    def earnings_forecast(self) -> pd.DataFrame:
-        return self._query_data(stock_earning_estimates)
 
     def ttm_eps(self) -> pd.DataFrame:
         return self._query_data(stock_tailing_eps)

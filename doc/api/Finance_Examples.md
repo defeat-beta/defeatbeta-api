@@ -760,22 +760,7 @@ ticker.calendar()
 8   TSLA  2025-01-29  Tesla, Inc.             2024-12-31
 ```
 
-## 3. Stock Earnings
-```python
-ticker.earnings()
-```
-```text
->>> ticker.earnings()
-  symbol eps_actual eps_estimate surprise_percent quarter_name quarter_date
-0   TSLA       0.66         0.72     -0.083000004       3Q2023   2023-09-30
-1   TSLA       0.71      0.74037     -0.040999997       4Q2023   2023-12-31
-2   TSLA       0.45       0.4899      -0.08140001       1Q2024   2024-03-31
-3   TSLA       0.52      0.62013      -0.16149999       2Q2024   2024-06-30
-4   TSLA       0.72      0.59756           0.2049       3Q2024   2024-09-30
-5   TSLA       0.73      0.76703     -0.048299998       4Q2024   2024-12-31
-```
-
-## 4. Stock Splits
+## 3. Stock Splits
 ```python
 ticker.splits()
 ```
@@ -786,7 +771,7 @@ ticker.splits()
 1   TSLA  2022-08-25          3:1
 ```
 
-## 5. Stock Dividends
+## 4. Stock Dividends
 ```python
 ticker.dividends()
 ```
@@ -797,39 +782,11 @@ Columns: [symbol, report_date, amount]
 Index: []
 ```
 
-## 6. Stock Revenue Forecast
-```python
-ticker.revenue_forecast()
-```
-```text
->>> ticker.revenue_forecast()
-  symbol report_date  estimate_revenue_growth  number_of_analysts  estimate_avg_revenue  estimate_high_revenue  estimate_low_revenue  year_ago_estimate_avg_revenue period_type currency
-0   TSLA  2025-03-31                     0.02                  27          2.180617e+10           2.706900e+10          1.896926e+10                   2.130100e+10   quarterly      USD
-1   TSLA  2025-06-30                     0.01                  26          2.577758e+10           2.969100e+10          2.190817e+10                   2.550000e+10   quarterly      USD
-2   TSLA  2025-12-31                     0.10                  48          1.072546e+11           1.280580e+11          8.718903e+10                   9.769000e+10      annual      USD
-3   TSLA  2026-12-31                     0.20                  45          1.284010e+11           1.624250e+11          1.031536e+11                   1.072546e+11      annual      USD
-```
-
-## 7. Stock Earnings Forecast
-```python
-ticker.earnings_forecast()
-```
-```text
->>> ticker.earnings_forecast()
-  symbol report_date  estimate_eps_growth  number_of_analysts  estimate_avg_eps  ...  sixty_days_ago_estimate_avg_eps  ninety_days_ago_estimate_avg_eps  year_ago_estimate_avg_eps  period_type  currency
-0   TSLA  2025-03-31                -0.04                  27              0.43  ...                             0.52                              0.71                       0.45    quarterly       USD
-1   TSLA  2025-06-30                 0.19                  25              0.62  ...                             0.68                              0.80                       0.52    quarterly       USD
-2   TSLA  2025-12-31                 0.06                  38              2.55  ...                             2.91                              3.25                       2.42       annual       USD
-3   TSLA  2026-12-31                 0.35                  36              3.44  ...                             3.83                              4.02                       2.55       annual       USD
-
-[4 rows x 14 columns]
-```
-
-## 8. Stock Beta
+## 5. Stock Beta
 
 Calculate beta (β) to measure a stock's volatility relative to the market. Beta uses monthly returns for periods ≥ 1 year (industry standard) and daily returns for shorter periods.
 
-### 8.1 Basic Usage - 5 Year Beta (Default)
+### 5.1 Basic Usage - 5 Year Beta (Default)
 ```python
 ticker.beta()
 ```
@@ -838,7 +795,7 @@ ticker.beta()
 2.8103
 ```
 
-### 8.2 Different Time Periods
+### 5.2 Different Time Periods
 ```python
 # 1 year beta (12 monthly returns)
 ticker.beta("1y")
@@ -872,7 +829,7 @@ ticker.beta("30d")
 2.4567
 ```
 
-### 8.3 Different Benchmark Index
+### 5.3 Different Benchmark Index
 ```python
 # Compare to S&P 500 (default)
 ticker.beta("5y", benchmark="SPY")
@@ -894,7 +851,7 @@ ticker.beta("5y", benchmark="IWM")
 2.4321
 ```
 
-### 8.4 Understanding Beta Values
+### 5.4 Understanding Beta Values
 - **β = 1.0**: Stock moves with the market
 - **β > 1.0**: Stock is more volatile than the market (higher risk/reward)
 - **β < 1.0**: Stock is less volatile than the market (lower risk/reward)
@@ -905,7 +862,7 @@ ticker.beta("5y", benchmark="IWM")
 - For periods < 1 year: Uses daily returns
 - Formula: `β = Covariance(Stock Returns, Market Returns) / Variance(Market Returns)`
 
-## 9. Accessing Revenue breakdown
+## 6. Accessing Revenue breakdown
 ### 9.1 Stock Revenue by segment
 ```python
 ticker.revenue_by_segment()
@@ -973,7 +930,7 @@ ticker.revenue_by_product()
 Empty DataFrame
 ```
 
-## 10. Stock TTM Revenue
+## 7. Stock TTM Revenue
 ```python
 ticker.ttm_revenue()
 ```
@@ -988,7 +945,7 @@ ticker.ttm_revenue()
 5  2025-06-30       9.272000e+10  {"2024-09-30":25182000000.00,"2024-12-31":25707000000.00,"2025-03-31":19335000000.00,"2025-06-30":22496000000.00}           2025-06-30                   1.0           9.272000e+10
 ```
 
-## 11. Stock TTM Net Income
+## 8. Stock TTM Net Income
 ```python
 ticker.ttm_net_income_common_stockholders()
 ```
