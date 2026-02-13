@@ -286,7 +286,7 @@ def get_stock_dcf_analysis(symbol: str):
     Example Success Response:
         {
             "symbol": "AAPL",
-            "file_path": "/tmp/defeatbeta/AAPL.xlsx",
+            "file_path": "/tmp/defeatbeta/dcf/AAPL.xlsx",
             "discount_rate_estimates": {...},
             "growth_estimates": {...},
             "dcf_template": {
