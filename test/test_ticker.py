@@ -49,10 +49,6 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.earnings_forecast()
         print(result.to_string(float_format="{:,}".format))
 
-    def test_summary(self):
-        result = self.ticker.summary()
-        print(result.to_string(float_format="{:,}".format))
-
     def test_ttm_eps(self):
         result = self.ticker.ttm_eps()
         print(result.to_string(float_format="{:,}".format))
@@ -269,3 +265,18 @@ class TestTicker(unittest.TestCase):
     def test_dcf(self):
         result = self.ticker.dcf()
         print(result)
+
+    def test_beta(self):
+        """Test beta calculation with different time periods"""
+        print("\n=== Testing Beta Calculation ===\n")
+
+        # Test different time periods
+        periods = ["1y", "3y", "5y"]
+
+        for period in periods:
+            try:
+                beta = self.ticker.beta(period)
+                print(f"{self.ticker.ticker} Beta ({period:>4}): {beta:.4f}")
+            except Exception as e:
+                print(f"{self.ticker.ticker} Beta ({period:>4}): ERROR - {e}")
+

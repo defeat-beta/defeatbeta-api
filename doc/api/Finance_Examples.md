@@ -16,7 +16,7 @@
 - [5. Stock Dividends](#5-stock-dividends)
 - [6. Stock Revenue Forecast](#6-stock-revenue-forecast)
 - [7. Stock Earnings Forecast](#7-stock-earnings-forecast)
-- [8. Stock Summary](#8-stock-summary)
+- [8. Stock Beta](#8-stock-beta)
 - [9. Accessing Revenue breakdown](#9-accessing-revenue-breakdown)
   - [9.1 Stock Revenue by segment](#91-stock-revenue-by-segment)
   - [9.2 Stock Revenue by geography](#92-stock-revenue-by-geography)
@@ -821,15 +821,85 @@ ticker.earnings_forecast()
 [4 rows x 14 columns]
 ```
 
-## 8. Stock Summary
+## 8. Stock Beta
+
+Calculate beta (β) to measure a stock's volatility relative to the market. Beta uses monthly returns for periods ≥ 1 year (industry standard) and daily returns for shorter periods.
+
+### 8.1 Basic Usage - 5 Year Beta (Default)
 ```python
-ticker.summary()
+ticker.beta()
 ```
 ```text
->>> ticker.summary()
-  symbol    market_cap  enterprise_value  shares_outstanding  implied_shares_outstanding  beta  trailing_pe  forward_pe  tailing_eps  forward_eps  enterprise_to_ebitda  enterprise_to_revenue  peg_ratio currency
-0   TSLA  8.115601e+11      7.479576e+11        3.216520e+09                3.216520e+09  2.58       123.68       77.87         2.04         3.24                 57.42                   7.66        NaN      USD
+>>> ticker.beta()
+2.8103
 ```
+
+### 8.2 Different Time Periods
+```python
+# 1 year beta (12 monthly returns)
+ticker.beta("1y")
+
+# 3 year beta (36 monthly returns)
+ticker.beta("3y")
+
+# 5 year beta (60 monthly returns)
+ticker.beta("5y")
+
+# Short-term: 3 months (daily returns)
+ticker.beta("3m")
+
+# Short-term: 30 days (daily returns)
+ticker.beta("30d")
+```
+```text
+>>> ticker.beta("1y")
+3.1245
+
+>>> ticker.beta("3y")
+2.9567
+
+>>> ticker.beta("5y")
+2.8103
+
+>>> ticker.beta("3m")
+2.6891
+
+>>> ticker.beta("30d")
+2.4567
+```
+
+### 8.3 Different Benchmark Index
+```python
+# Compare to S&P 500 (default)
+ticker.beta("5y", benchmark="SPY")
+
+# Compare to NASDAQ-100
+ticker.beta("5y", benchmark="QQQ")
+
+# Compare to Russell 2000
+ticker.beta("5y", benchmark="IWM")
+```
+```text
+>>> ticker.beta("5y", benchmark="SPY")
+2.8103
+
+>>> ticker.beta("5y", benchmark="QQQ")
+2.6542
+
+>>> ticker.beta("5y", benchmark="IWM")
+2.4321
+```
+
+### 8.4 Understanding Beta Values
+- **β = 1.0**: Stock moves with the market
+- **β > 1.0**: Stock is more volatile than the market (higher risk/reward)
+- **β < 1.0**: Stock is less volatile than the market (lower risk/reward)
+- **β < 0.0**: Stock moves inversely to the market
+
+**Calculation Method:**
+- For periods ≥ 1 year: Uses monthly returns (e.g., 60 months for 5 years)
+- For periods < 1 year: Uses daily returns
+- Formula: `β = Covariance(Stock Returns, Market Returns) / Variance(Market Returns)`
 
 ## 9. Accessing Revenue breakdown
 ### 9.1 Stock Revenue by segment

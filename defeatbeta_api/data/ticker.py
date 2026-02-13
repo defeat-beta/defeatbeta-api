@@ -29,7 +29,7 @@ from defeatbeta_api.data.company_meta import CompanyMeta
 from defeatbeta_api.utils.case_insensitive_dict import CaseInsensitiveDict
 from defeatbeta_api.utils.const import stock_profile, stock_earning_calendar, stock_historical_eps, stock_officers, \
     stock_split_events, \
-    stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_summary, stock_tailing_eps, \
+    stock_dividend_events, stock_revenue_estimates, stock_earning_estimates, stock_tailing_eps, \
     stock_prices, stock_statement, income_statement, balance_sheet, cash_flow, quarterly, annual, \
     stock_earning_call_transcripts, stock_news, stock_revenue_breakdown, stock_shares_outstanding, exchange_rate, \
     stock_sec_filing
@@ -86,14 +86,102 @@ class Ticker:
     def earnings_forecast(self) -> pd.DataFrame:
         return self._query_data(stock_earning_estimates)
 
-    def summary(self) -> pd.DataFrame:
-        return self._query_data(stock_summary)
-
     def ttm_eps(self) -> pd.DataFrame:
         return self._query_data(stock_tailing_eps)
 
     def price(self) -> pd.DataFrame:
         return self._query_data(stock_prices)
+
+    def beta(self, period: str = "5y", benchmark: str = "SPY") -> float:
+        """
+        Calculate beta for the stock relative to a benchmark index.
+        Uses monthly returns for periods >= 1 year (standard industry practice).
+
+        Args:
+            period: Time period in format like "30d", "3m", "1y", "5y"
+                   d=days, m=months, y=years
+            benchmark: Benchmark symbol (default: SPY for S&P 500)
+
+        Returns:
+            Beta value (float)
+
+        Example:
+            ticker = Ticker("AAPL")
+            beta_1y = ticker.beta("1y")  # 1-year beta (12 monthly returns)
+            beta_5y = ticker.beta("5y")  # 5-year beta (60 monthly returns)
+        """
+        from datetime import datetime, timedelta
+        import re
+
+        # Parse period string
+        match = re.match(r'^(\d+)([dmy])$', period.lower())
+        if not match:
+            raise ValueError(f"Invalid period format: {period}. Use format like '30d', '3m', '1y'")
+
+        value, unit = int(match.group(1)), match.group(2)
+
+        # Use data update time as end date (data may not be current to today)
+        end_date = datetime.strptime(self.huggingface_client.get_data_update_time(), '%Y-%m-%d')
+        if unit == 'd':
+            start_date = end_date - timedelta(days=value)
+        elif unit == 'm':
+            start_date = end_date - timedelta(days=value * 30)
+        elif unit == 'y':
+            start_date = end_date - timedelta(days=value * 365)
+
+        # Get price data for stock and benchmark using SQL file
+        url = self.huggingface_client.get_url_path(stock_prices)
+        sql = load_sql(
+            "select_beta_prices_by_symbol",
+            ticker=self.ticker,
+            benchmark=benchmark,
+            url=url,
+            start_date=start_date.strftime('%Y-%m-%d'),
+            end_date=end_date.strftime('%Y-%m-%d')
+        )
+        merged_df = self.duckdb_client.query(sql)
+
+        if len(merged_df) < 2:
+            raise ValueError(f"Insufficient data for period {period}")
+
+        # Convert report_date to datetime
+        merged_df['report_date'] = pd.to_datetime(merged_df['report_date'])
+
+        # For periods >= 1 year, use monthly returns (industry standard)
+        # For shorter periods, use daily returns
+        if (unit == 'y') or (unit == 'm' and value >= 12):
+            # Resample to month-end and take last closing price of each month
+            merged_df = merged_df.set_index('report_date')
+            monthly_df = merged_df.resample('ME').last().dropna()
+
+            # Calculate monthly returns
+            monthly_df['stock_return'] = monthly_df['stock_close'].pct_change()
+            monthly_df['benchmark_return'] = monthly_df['benchmark_close'].pct_change()
+
+            # Drop first row (NaN returns)
+            monthly_df = monthly_df.dropna()
+
+            if len(monthly_df) < 2:
+                raise ValueError(f"Insufficient monthly data for period {period}")
+
+            # Calculate beta using covariance and variance
+            covariance = np.cov(monthly_df['stock_return'], monthly_df['benchmark_return'])[0, 1]
+            benchmark_variance = np.var(monthly_df['benchmark_return'], ddof=1)
+        else:
+            # Use daily returns for short periods
+            merged_df['stock_return'] = merged_df['stock_close'].pct_change()
+            merged_df['benchmark_return'] = merged_df['benchmark_close'].pct_change()
+
+            # Drop first row (NaN returns)
+            merged_df = merged_df.dropna()
+
+            # Calculate beta using covariance and variance
+            covariance = np.cov(merged_df['stock_return'], merged_df['benchmark_return'])[0, 1]
+            benchmark_variance = np.var(merged_df['benchmark_return'], ddof=1)
+
+        beta = covariance / benchmark_variance
+
+        return round(beta, 4)
 
     def currency(self, symbol: str) -> pd.DataFrame:
         return self._query_data2(exchange_rate, symbol)
@@ -904,8 +992,8 @@ class Ticker:
             'bc10_year': 'treasure_10y_yield',
         })
 
-        summary = self.summary()
-        result_df['beta_5y'] = summary.at[0, "beta"]
+        # Calculate 5-year beta using monthly returns
+        result_df['beta_5y'] = self.beta("5y")
 
         result_df['tax_rate_for_calcs'] = np.where(
             result_df['tax_rate_for_calcs'].notna(),
