@@ -114,7 +114,7 @@ The method returns a dictionary containing:
 ### File Location
 
 - **[In Jupyter Notebook](https://mybinder.org/v2/gh/defeat-beta/defeatbeta-api/main?urlpath=lab/tree/notebooks/06_tutorial_dcf.ipynb)**: The Excel file is saved to your current working directory (e.g., `QCOM.xlsx`)
-- **In Python Script**: The Excel file is saved to the temporary directory (e.g., `/tmp/defeatbeta/QCOM.xlsx`)
+- **In Python Script**: The Excel file is saved to the DCF directory (e.g., `/tmp/defeatbeta/dcf/QCOM.xlsx`)
 
 In Jupyter notebooks, the method also displays an interactive download button for easy access to the file.
 ![img.png](QCOM_DCF_DOWNLOAD.png)
