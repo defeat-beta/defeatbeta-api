@@ -4,6 +4,7 @@ Change Log
 0.0.44
 -------
 
+
 0.0.43
 -------
 - DuckDBClient crashes unrecoverably on corrupted cache_httpfs cache files [`#151 <https://github.com/defeat-beta/defeatbeta-api/issues/151>`_]
