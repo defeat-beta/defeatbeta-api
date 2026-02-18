@@ -4,6 +4,7 @@ Change Log
 0.0.42
 -------
 - Optimize _validate_httpfs_cache(): Add cache refresh verification mechanism [`#150 <https://github.com/defeat-beta/defeatbeta-api/issues/150>`_]
+- DuckDBClient crashes unrecoverably on corrupted cache_httpfs cache files [`#151 <https://github.com/defeat-beta/defeatbeta-api/issues/151>`_]
 
 0.0.41
 -------

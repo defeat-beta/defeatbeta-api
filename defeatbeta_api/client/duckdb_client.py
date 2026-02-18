@@ -1,4 +1,6 @@
 import logging
+import os
+import shutil
 import sys
 import time
 from contextlib import contextmanager
@@ -10,6 +12,7 @@ import pandas as pd
 
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
+from defeatbeta_api.utils.util import validate_httpfs_cache_directory
 
 _instance = None
 _lock = Lock()
@@ -59,15 +62,26 @@ class DuckDBClient:
             raise
 
     def _validate_httpfs_cache(self):
-        """Validate httpfs cache against remote data, clear cache if outdated."""
+        """Validate httpfs cache against remote data, clear cache if outdated or corrupted."""
         spec_url = "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json"
 
         try:
             # Get remote update_time via HTTP request (bypasses cache)
             remote_update_time = HuggingFaceClient().get_data_update_time()
 
-            # Get cached update_time via DuckDB (may use httpfs cache)
-            cached_spec = self.query(f"SELECT * FROM '{spec_url}'")
+            # Get cached update_time via DuckDB (may use httpfs cache).
+            # If the cache is corrupted (e.g. process killed mid-write), clear the
+            # cache directory and retry once so the client is self-healing.
+            try:
+                cached_spec = self.query(f"SELECT * FROM '{spec_url}'")
+            except Exception as cache_err:
+                self.logger.warning(
+                    f"Cache read failed (possibly corrupted): {cache_err}; "
+                    f"clearing cache directory and retrying..."
+                )
+                self._clear_cache_directory()
+                cached_spec = self.query(f"SELECT * FROM '{spec_url}'")
+
             cached_update_time = cached_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
 
             # Compare and clear cache if outdated
@@ -99,9 +113,20 @@ class DuckDBClient:
             raise
 
     def _clear_cache(self):
-        """Clear httpfs cache."""
+        """Clear httpfs cache via DuckDB API."""
         self.query("SELECT cache_httpfs_clear_cache()")
         self.logger.info("httpfs cache cleared")
+
+    def _clear_cache_directory(self):
+        """Clear httpfs cache by deleting and recreating the cache directory.
+
+        Used as a fallback when the cache is corrupted and cannot be cleared
+        via the DuckDB API (e.g. after a process was killed mid-write).
+        """
+        cache_dir = validate_httpfs_cache_directory()
+        shutil.rmtree(cache_dir, ignore_errors=True)
+        os.makedirs(cache_dir, exist_ok=True)
+        self.logger.info(f"httpfs cache directory cleared: {cache_dir}")
 
     @contextmanager
     def _get_cursor(self):
