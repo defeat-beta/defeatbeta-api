@@ -1,6 +1,6 @@
+import json
 import logging
 import os
-import shutil
 import sys
 import time
 from contextlib import contextmanager
@@ -62,71 +62,68 @@ class DuckDBClient:
             raise
 
     def _validate_httpfs_cache(self):
-        """Validate httpfs cache against remote data, clear cache if outdated or corrupted."""
+        """Validate httpfs cache against remote data; clear cache if outdated.
+
+        The remote update_time is fetched via plain HTTP (HuggingFaceClient).
+        The locally cached update_time is read directly from the spec.json file
+        that cache_httpfs already wrote to disk — bypassing DuckDB entirely.
+        This eliminates the cross-process file-lock conflict that occurred when
+        multiple processes shared the same cache_httpfs directory.
+        """
         spec_url = "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json"
 
         try:
-            # Get remote update_time via HTTP request (bypasses cache)
             remote_update_time = HuggingFaceClient().get_data_update_time()
+            cached_update_time = self._read_cached_spec_update_time()
 
-            # Get cached update_time via DuckDB (may use httpfs cache).
-            # If the cache is corrupted (e.g. process killed mid-write), clear the
-            # cache directory and retry once so the client is self-healing.
-            try:
-                cached_spec = self.query(f"SELECT * FROM '{spec_url}'")
-            except Exception as cache_err:
-                self.logger.warning(
-                    f"Cache read failed (possibly corrupted): {cache_err}; "
-                    f"clearing cache directory and retrying..."
-                )
-                self._clear_cache_directory()
-                cached_spec = self.query(f"SELECT * FROM '{spec_url}'")
-
-            cached_update_time = cached_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
-
-            # Compare and clear cache if outdated
-            if cached_update_time != remote_update_time:
+            if cached_update_time == remote_update_time:
+                self.logger.info(f"Cache is up-to-date. Update time: {cached_update_time}")
+            else:
                 self.logger.info(
-                    f"Cache outdated. Cached: {cached_update_time}, Remote: {remote_update_time}"
+                    f"Cache outdated. Cached: {cached_update_time}, Remote: {remote_update_time}. "
+                    f"Clearing cache..."
                 )
                 self._clear_cache()
-
-                # Re-fetch data to update cache with latest remote data
-                self.logger.info("Refreshing cache with latest remote data...")
-                refreshed_spec = self.query(f"SELECT * FROM '{spec_url}'")
-                refreshed_update_time = refreshed_spec['update_time'].dt.strftime('%Y-%m-%d').iloc[0]
-
-                # Verify the cache now contains the latest data
-                if refreshed_update_time == remote_update_time:
-                    self.logger.info(
-                        f"Cache refreshed and verified successfully. Update time: {refreshed_update_time}"
-                    )
-                else:
-                    self.logger.warning(
-                        f"Cache refresh verification failed. Expected: {remote_update_time}, Got: {refreshed_update_time}"
-                    )
-            else:
-                self.logger.info(f"Cache is up-to-date. Update time: {cached_update_time}")
+                # Re-download spec.json via DuckDB so the cache file is repopulated
+                # and the next startup can read it directly again.
+                self.query(f"SELECT * FROM '{spec_url}'")
+                self.logger.info(f"Cache refreshed. Update time: {remote_update_time}")
 
         except Exception as e:
             self.logger.error(f"Failed to validate httpfs cache: {str(e)}")
             raise
 
+    def _read_cached_spec_update_time(self) -> Optional[str]:
+        """Read update_time directly from the spec.json file on disk, bypassing DuckDB.
+
+        cache_httpfs names cached files as:
+            {url_hash}-{filename}-{start_byte}-{end_byte}
+        We scan the cache directory for any file with 'spec.json' in its name
+        and parse it as JSON.  Returns None when the file is absent or unreadable
+        (e.g. first run, or corrupted by a killed write).
+        """
+        cache_dir = validate_httpfs_cache_directory()
+        try:
+            for filename in os.listdir(cache_dir):
+                if 'spec.json' in filename:
+                    try:
+                        with open(os.path.join(cache_dir, filename), 'r') as f:
+                            data = json.loads(f.read())
+                        update_time = data.get('update_time')
+                        if update_time:
+                            self.logger.debug(f"Read cached update_time from {filename}: {update_time}")
+                            return update_time
+                    except Exception as e:
+                        self.logger.debug(f"Could not read cached spec.json ({filename}): {e}")
+                        continue
+        except OSError:
+            pass
+        return None
+
     def _clear_cache(self):
         """Clear httpfs cache via DuckDB API."""
         self.query("SELECT cache_httpfs_clear_cache()")
         self.logger.info("httpfs cache cleared")
-
-    def _clear_cache_directory(self):
-        """Clear httpfs cache by deleting and recreating the cache directory.
-
-        Used as a fallback when the cache is corrupted and cannot be cleared
-        via the DuckDB API (e.g. after a process was killed mid-write).
-        """
-        cache_dir = validate_httpfs_cache_directory()
-        shutil.rmtree(cache_dir, ignore_errors=True)
-        os.makedirs(cache_dir, exist_ok=True)
-        self.logger.info(f"httpfs cache directory cleared: {cache_dir}")
 
     @contextmanager
     def _get_cursor(self):
