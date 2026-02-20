@@ -13,7 +13,7 @@ authors = [
     {name = "zxh2010", email = "5077921+zxh2010@users.noreply.github.com"}
 ]
 dependencies = [
-    "duckdb >= 1.4.1",
+    "duckdb == 1.4.3",
     "pandas >= 2.2.3",
     "requests ~= 2.32.3",
     "psutil >= 7.0.0",
