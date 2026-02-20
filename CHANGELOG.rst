@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.45
+-------
+
 0.0.44
 -------
 - fix: Pin duckdb to 1.4.3 to avoid cache_httpfs O_DIRECT tail-block EINVAL regression in 1.4.4 [`#153 <https://github.com/defeat-beta/defeatbeta-api/issues/153>`_]
