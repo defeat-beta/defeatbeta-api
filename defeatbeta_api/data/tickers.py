@@ -6,6 +6,7 @@ import pandas as pd
 
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.data.news import News
+from defeatbeta_api.data.statement import Statement
 from defeatbeta_api.data.ticker import Ticker
 from defeatbeta_api.data.transcripts import Transcripts
 
@@ -122,3 +123,113 @@ class Tickers:
             ``{'NVDA': Transcripts(...), 'GOOGL': Transcripts(...), ...}``
         """
         return self._run_parallel("earning_call_transcripts")
+
+    # ------------------------------------------------------------------
+    # Category 1 – Finance
+    # ------------------------------------------------------------------
+
+    def price(self) -> pd.DataFrame:
+        """Historical OHLCV prices for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("price")
+
+    def splits(self) -> pd.DataFrame:
+        """Stock split events for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("splits")
+
+    def dividends(self) -> pd.DataFrame:
+        """Dividend events for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("dividends")
+
+    def calendar(self) -> pd.DataFrame:
+        """Earnings calendar for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("calendar")
+
+    def shares(self) -> pd.DataFrame:
+        """Shares outstanding for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("shares")
+
+    def beta(self, period: str = "5y", benchmark: str = "SPY") -> pd.DataFrame:
+        """Beta relative to a benchmark for all tickers, combined into a single DataFrame.
+
+        Args:
+            period:    Time period, e.g. ``'1y'``, ``'3y'``, ``'5y'``.
+            benchmark: Benchmark symbol (default ``'SPY'``).
+        """
+        return self._run_parallel_concat("beta", period=period, benchmark=benchmark)
+
+    def quarterly_income_statement(self) -> Dict[str, Statement]:
+        """Quarterly income statement for each ticker.
+
+        Returns:
+            ``{'NVDA': Statement(...), 'GOOGL': Statement(...), ...}``
+        """
+        return self._run_parallel("quarterly_income_statement")
+
+    def annual_income_statement(self) -> Dict[str, Statement]:
+        """Annual income statement for each ticker.
+
+        Returns:
+            ``{'NVDA': Statement(...), 'GOOGL': Statement(...), ...}``
+        """
+        return self._run_parallel("annual_income_statement")
+
+    def quarterly_balance_sheet(self) -> Dict[str, Statement]:
+        """Quarterly balance sheet for each ticker.
+
+        Returns:
+            ``{'NVDA': Statement(...), 'GOOGL': Statement(...), ...}``
+        """
+        return self._run_parallel("quarterly_balance_sheet")
+
+    def annual_balance_sheet(self) -> Dict[str, Statement]:
+        """Annual balance sheet for each ticker.
+
+        Returns:
+            ``{'NVDA': Statement(...), 'GOOGL': Statement(...), ...}``
+        """
+        return self._run_parallel("annual_balance_sheet")
+
+    def quarterly_cash_flow(self) -> Dict[str, Statement]:
+        """Quarterly cash flow statement for each ticker.
+
+        Returns:
+            ``{'NVDA': Statement(...), 'GOOGL': Statement(...), ...}``
+        """
+        return self._run_parallel("quarterly_cash_flow")
+
+    def annual_cash_flow(self) -> Dict[str, Statement]:
+        """Annual cash flow statement for each ticker.
+
+        Returns:
+            ``{'NVDA': Statement(...), 'GOOGL': Statement(...), ...}``
+        """
+        return self._run_parallel("annual_cash_flow")
+
+    def ttm_eps(self) -> pd.DataFrame:
+        """Trailing-twelve-months EPS for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("ttm_eps")
+
+    def ttm_revenue(self) -> pd.DataFrame:
+        """Trailing-twelve-months revenue for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("ttm_revenue")
+
+    def ttm_fcf(self) -> pd.DataFrame:
+        """Trailing-twelve-months free cash flow for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("ttm_fcf")
+
+    def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
+        """Trailing-twelve-months net income (common stockholders) for all tickers,
+        combined into a single DataFrame."""
+        return self._run_parallel_concat("ttm_net_income_common_stockholders")
+
+    def revenue_by_segment(self) -> pd.DataFrame:
+        """Revenue breakdown by segment for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("revenue_by_segment")
+
+    def revenue_by_geography(self) -> pd.DataFrame:
+        """Revenue breakdown by geography for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("revenue_by_geography")
+
+    def revenue_by_product(self) -> pd.DataFrame:
+        """Revenue breakdown by product for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("revenue_by_product")

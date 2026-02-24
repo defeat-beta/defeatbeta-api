@@ -83,7 +83,7 @@ class Ticker:
     def price(self) -> pd.DataFrame:
         return self._query_data(stock_prices)
 
-    def beta(self, period: str = "5y", benchmark: str = "SPY") -> float:
+    def beta(self, period: str = "5y", benchmark: str = "SPY") -> pd.DataFrame:
         """
         Calculate beta for the stock relative to a benchmark index.
         Uses monthly returns for periods >= 1 year (standard industry practice).
@@ -94,12 +94,12 @@ class Ticker:
             benchmark: Benchmark symbol (default: SPY for S&P 500)
 
         Returns:
-            Beta value (float)
+            DataFrame with columns: symbol, report_date, beta, period, benchmark
 
         Example:
             ticker = Ticker("AAPL")
-            beta_1y = ticker.beta("1y")  # 1-year beta (12 monthly returns)
-            beta_5y = ticker.beta("5y")  # 5-year beta (60 monthly returns)
+            df = ticker.beta("1y")  # 1-year beta (12 monthly returns)
+            df = ticker.beta("5y")  # 5-year beta (60 monthly returns)
         """
         from datetime import datetime, timedelta
         import re
@@ -172,7 +172,13 @@ class Ticker:
 
         beta = covariance / benchmark_variance
 
-        return round(beta, 4)
+        return pd.DataFrame([{
+            'symbol': self.ticker,
+            'report_date': end_date.strftime('%Y-%m-%d'),
+            'beta': round(beta, 4),
+            'period': period,
+            'benchmark': benchmark,
+        }])
 
     def currency(self, symbol: str) -> pd.DataFrame:
         return self._query_data2(exchange_rate, symbol)
@@ -234,6 +240,7 @@ class Ticker:
             'report_date': 'eps_report_date'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def quarterly_gross_margin(self) -> pd.DataFrame:
@@ -355,6 +362,7 @@ class Ticker:
             'market_cap': 'market_capitalization'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def ps_ratio(self) -> pd.DataFrame:
@@ -397,6 +405,7 @@ class Ticker:
             'ttm_total_revenue_usd': 'ttm_revenue_usd'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def pb_ratio(self) -> pd.DataFrame:
@@ -439,6 +448,7 @@ class Ticker:
             'ttm_total_revenue_usd': 'book_value_of_equity_usd'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def peg_ratio(self) -> pd.DataFrame:
@@ -516,6 +526,7 @@ class Ticker:
         })
 
         result_df = result_df[result_df['ttm_pe'].notna()]
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def _quarterly_book_value_of_equity(self) -> pd.DataFrame:
@@ -570,6 +581,7 @@ class Ticker:
             'close': 'exchange_to_usd_rate'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def ttm_revenue(self) -> pd.DataFrame:
@@ -624,6 +636,7 @@ class Ticker:
             'close': 'exchange_to_usd_rate'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def ttm_fcf(self) -> pd.DataFrame:
@@ -678,6 +691,7 @@ class Ticker:
             'close': 'exchange_to_usd_rate'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
@@ -733,6 +747,7 @@ class Ticker:
             'close': 'exchange_to_usd_rate'
         })
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def roe(self) -> pd.DataFrame:
@@ -740,6 +755,7 @@ class Ticker:
         sql = load_sql("select_roe_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
+            'symbol',
             'report_date',
             'net_income_common_stockholders',
             'beginning_stockholders_equity',
@@ -754,6 +770,7 @@ class Ticker:
         sql = load_sql("select_roa_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
+            'symbol',
             'report_date',
             'net_income_common_stockholders',
             'beginning_total_assets',
@@ -768,6 +785,7 @@ class Ticker:
         sql = load_sql("select_roic_by_symbol", ticker = self.ticker, url = url)
         result_df = self.duckdb_client.query(sql)
         result_df = result_df[[
+            'symbol',
             'report_date',
             'ebit',
             'tax_rate_for_calcs',
@@ -802,6 +820,8 @@ class Ticker:
             'roa',
             'equity_multiplier'
         ]]
+
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def asset_turnover(self) -> pd.DataFrame:
@@ -828,6 +848,7 @@ class Ticker:
             'asset_turnover'
         ]]
 
+        result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
     def wacc(self) -> pd.DataFrame:
@@ -872,7 +893,7 @@ class Ticker:
         wacc_df['pretax_income_usd'] = round(wacc_df['pretax_income'] / wacc_df['exchange_rate'], 0)
         wacc_df['tax_provision_usd'] = round(wacc_df['tax_provision'] / wacc_df['exchange_rate'], 0)
 
-        market_cap_df = self.market_capitalization()
+        market_cap_df = self.market_capitalization().drop(columns=['symbol'])
 
         market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
 
@@ -984,7 +1005,7 @@ class Ticker:
         })
 
         # Calculate 5-year beta using monthly returns
-        result_df['beta_5y'] = self.beta("5y")
+        result_df['beta_5y'] = self.beta("5y").iloc[0]['beta']
 
         result_df['tax_rate_for_calcs'] = np.where(
             result_df['tax_rate_for_calcs'].notna(),
@@ -2731,6 +2752,7 @@ class Ticker:
         df_wide = data.pivot(index=['report_date'], columns='item_name', values='item_value').reset_index()
         df_wide.columns.name = None
         df_wide = df_wide.fillna(0)
+        df_wide.insert(0, 'symbol', self.ticker)
         return df_wide
 
     def _generate_margin(self, margin_type: str, period_type: str, numerator_item: str,
