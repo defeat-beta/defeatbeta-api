@@ -3,6 +3,7 @@ Change Log
 
 0.0.45
 -------
+- Support batch operations for multiple tickers via Tickers class [`#154 <https://github.com/defeat-beta/defeatbeta-api/issues/154>`_]
 
 0.0.44
 -------
