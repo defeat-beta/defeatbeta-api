@@ -281,3 +281,55 @@ class Tickers:
     def wacc(self) -> pd.DataFrame:
         """Historical WACC for all tickers, combined into a single DataFrame."""
         return self._run_parallel_concat("wacc")
+
+    # ------------------------------------------------------------------
+    # Category 3 – Growth
+    # ------------------------------------------------------------------
+
+    def quarterly_revenue_yoy_growth(self) -> pd.DataFrame:
+        """Quarterly revenue YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_revenue_yoy_growth")
+
+    def annual_revenue_yoy_growth(self) -> pd.DataFrame:
+        """Annual revenue YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_revenue_yoy_growth")
+
+    def quarterly_operating_income_yoy_growth(self) -> pd.DataFrame:
+        """Quarterly operating income YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_operating_income_yoy_growth")
+
+    def annual_operating_income_yoy_growth(self) -> pd.DataFrame:
+        """Annual operating income YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_operating_income_yoy_growth")
+
+    def quarterly_ebitda_yoy_growth(self) -> pd.DataFrame:
+        """Quarterly EBITDA YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_ebitda_yoy_growth")
+
+    def annual_ebitda_yoy_growth(self) -> pd.DataFrame:
+        """Annual EBITDA YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_ebitda_yoy_growth")
+
+    def quarterly_net_income_yoy_growth(self) -> pd.DataFrame:
+        """Quarterly net income YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_net_income_yoy_growth")
+
+    def annual_net_income_yoy_growth(self) -> pd.DataFrame:
+        """Annual net income YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_net_income_yoy_growth")
+
+    def quarterly_fcf_yoy_growth(self) -> pd.DataFrame:
+        """Quarterly free cash flow YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_fcf_yoy_growth")
+
+    def annual_fcf_yoy_growth(self) -> pd.DataFrame:
+        """Annual free cash flow YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_fcf_yoy_growth")
+
+    def quarterly_eps_yoy_growth(self) -> pd.DataFrame:
+        """Quarterly EPS YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_eps_yoy_growth")
+
+    def quarterly_ttm_eps_yoy_growth(self) -> pd.DataFrame:
+        """Quarterly TTM EPS YoY growth for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_ttm_eps_yoy_growth")

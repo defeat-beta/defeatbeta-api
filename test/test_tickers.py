@@ -333,3 +333,127 @@ class TestTickers(unittest.TestCase):
         symbols_in_result = result['symbol'].str.upper().tolist()
         for s in SYMBOLS:
             self.assertIn(s, symbols_in_result)
+
+    # ------------------------------------------------------------------
+    # Category 3 – Growth
+    # ------------------------------------------------------------------
+
+    def test_quarterly_revenue_yoy_growth(self):
+        result = self.tickers.quarterly_revenue_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_revenue_yoy_growth(self):
+        result = self.tickers.annual_revenue_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_operating_income_yoy_growth(self):
+        result = self.tickers.quarterly_operating_income_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_operating_income_yoy_growth(self):
+        result = self.tickers.annual_operating_income_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_ebitda_yoy_growth(self):
+        result = self.tickers.quarterly_ebitda_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_ebitda_yoy_growth(self):
+        result = self.tickers.annual_ebitda_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_net_income_yoy_growth(self):
+        result = self.tickers.quarterly_net_income_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_net_income_yoy_growth(self):
+        result = self.tickers.annual_net_income_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_fcf_yoy_growth(self):
+        result = self.tickers.quarterly_fcf_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_fcf_yoy_growth(self):
+        result = self.tickers.annual_fcf_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_eps_yoy_growth(self):
+        result = self.tickers.quarterly_eps_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_ttm_eps_yoy_growth(self):
+        result = self.tickers.quarterly_ttm_eps_yoy_growth()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
