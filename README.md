@@ -383,6 +383,57 @@ news.print_pretty_table("b67526eb-581a-35b2-8357-b4f282fe876f")
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+#### Example: Batch Fetching Multiple Tickers
+
+Use `Tickers` to fetch data for multiple symbols in a single parallel call:
+
+```python
+from defeatbeta_api.data.tickers import Tickers
+
+tickers = Tickers(['NVDA', 'SHOP', 'TSLA'])
+```
+
+Methods that return a DataFrame combine all tickers into one result with a `symbol` column:
+
+```python
+tickers.price()
+```
+```text
+>>> tickers.price()
+      symbol report_date     open    close     high      low      volume
+0       NVDA  1999-01-22     0.37     0.40     0.41     0.37  1379400000
+1       NVDA  1999-01-25     0.41     0.43     0.43     0.40   476400000
+...      ...         ...      ...      ...      ...      ...         ...
+10232   TSLA  2025-04-10   260.00   252.40   262.49   239.33   181722600
+10233   TSLA  2025-04-11   251.84   252.31   257.74   241.36   128656900
+```
+
+```python
+tickers.quarterly_gross_margin()
+tickers.roe()
+tickers.wacc()
+tickers.quarterly_revenue_yoy_growth()
+```
+
+Methods that return complex objects (statements, news, transcripts) return a `{symbol: object}` dict:
+
+```python
+statements = tickers.quarterly_income_statement()
+# {'NVDA': Statement(...), 'SHOP': Statement(...), 'TSLA': Statement(...)}
+statements['NVDA'].print_pretty_table()
+
+news = tickers.news()
+# {'NVDA': News(...), 'SHOP': News(...), 'TSLA': News(...)}
+news['NVDA'].get_news_list()
+```
+
+Parallelism can be tuned via `max_workers`:
+
+```python
+# Limit to 2 concurrent threads
+tickers = Tickers(['NVDA', 'SHOP', 'TSLA'], max_workers=2)
+```
+
 ### Advanced Usage
 
 See [Advanced Usage](doc/api/Advanced_Usage.md) for details.
