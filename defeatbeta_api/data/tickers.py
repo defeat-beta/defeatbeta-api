@@ -233,3 +233,51 @@ class Tickers:
     def revenue_by_product(self) -> pd.DataFrame:
         """Revenue breakdown by product for all tickers, combined into a single DataFrame."""
         return self._run_parallel_concat("revenue_by_product")
+
+    # ------------------------------------------------------------------
+    # Category 2 – Value
+    # ------------------------------------------------------------------
+
+    def ttm_pe(self) -> pd.DataFrame:
+        """Trailing-twelve-months P/E ratio for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("ttm_pe")
+
+    def market_capitalization(self) -> pd.DataFrame:
+        """Historical market capitalization for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("market_capitalization")
+
+    def ps_ratio(self) -> pd.DataFrame:
+        """Historical P/S ratio for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("ps_ratio")
+
+    def pb_ratio(self) -> pd.DataFrame:
+        """Historical P/B ratio for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("pb_ratio")
+
+    def peg_ratio(self) -> pd.DataFrame:
+        """Historical PEG ratio for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("peg_ratio")
+
+    def roe(self) -> pd.DataFrame:
+        """Historical return on equity for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("roe")
+
+    def roa(self) -> pd.DataFrame:
+        """Historical return on assets for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("roa")
+
+    def roic(self) -> pd.DataFrame:
+        """Historical return on invested capital for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("roic")
+
+    def equity_multiplier(self) -> pd.DataFrame:
+        """Historical equity multiplier for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("equity_multiplier")
+
+    def asset_turnover(self) -> pd.DataFrame:
+        """Historical asset turnover for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("asset_turnover")
+
+    def wacc(self) -> pd.DataFrame:
+        """Historical WACC for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("wacc")

@@ -219,3 +219,117 @@ class TestTickers(unittest.TestCase):
         result = self.tickers.revenue_by_product()
         print(result.to_string())
         self.assertIsInstance(result, pd.DataFrame)
+
+    # ------------------------------------------------------------------
+    # Category 2 – Value
+    # ------------------------------------------------------------------
+
+    def test_ttm_pe(self):
+        result = self.tickers.ttm_pe()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_market_capitalization(self):
+        result = self.tickers.market_capitalization()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_ps_ratio(self):
+        result = self.tickers.ps_ratio()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_pb_ratio(self):
+        result = self.tickers.pb_ratio()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_peg_ratio(self):
+        result = self.tickers.peg_ratio()
+        print(result)
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_roe(self):
+        result = self.tickers.roe()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_roa(self):
+        result = self.tickers.roa()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_roic(self):
+        result = self.tickers.roic()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_equity_multiplier(self):
+        result = self.tickers.equity_multiplier()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_asset_turnover(self):
+        result = self.tickers.asset_turnover()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_wacc(self):
+        result = self.tickers.wacc()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
