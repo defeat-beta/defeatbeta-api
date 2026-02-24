@@ -333,3 +333,47 @@ class Tickers:
     def quarterly_ttm_eps_yoy_growth(self) -> pd.DataFrame:
         """Quarterly TTM EPS YoY growth for all tickers, combined into a single DataFrame."""
         return self._run_parallel_concat("quarterly_ttm_eps_yoy_growth")
+
+    # ------------------------------------------------------------------
+    # Category 4 – Profitability
+    # ------------------------------------------------------------------
+
+    def quarterly_gross_margin(self) -> pd.DataFrame:
+        """Quarterly gross margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_gross_margin")
+
+    def annual_gross_margin(self) -> pd.DataFrame:
+        """Annual gross margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_gross_margin")
+
+    def quarterly_operating_margin(self) -> pd.DataFrame:
+        """Quarterly operating margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_operating_margin")
+
+    def annual_operating_margin(self) -> pd.DataFrame:
+        """Annual operating margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_operating_margin")
+
+    def quarterly_net_margin(self) -> pd.DataFrame:
+        """Quarterly net margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_net_margin")
+
+    def annual_net_margin(self) -> pd.DataFrame:
+        """Annual net margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_net_margin")
+
+    def quarterly_ebitda_margin(self) -> pd.DataFrame:
+        """Quarterly EBITDA margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_ebitda_margin")
+
+    def annual_ebitda_margin(self) -> pd.DataFrame:
+        """Annual EBITDA margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_ebitda_margin")
+
+    def quarterly_fcf_margin(self) -> pd.DataFrame:
+        """Quarterly free cash flow margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_fcf_margin")
+
+    def annual_fcf_margin(self) -> pd.DataFrame:
+        """Annual free cash flow margin for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("annual_fcf_margin")

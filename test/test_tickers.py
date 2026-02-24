@@ -457,3 +457,107 @@ class TestTickers(unittest.TestCase):
         symbols_in_result = result['symbol'].str.upper().tolist()
         for s in SYMBOLS:
             self.assertIn(s, symbols_in_result)
+
+    # ------------------------------------------------------------------
+    # Category 4 – Profitability
+    # ------------------------------------------------------------------
+
+    def test_quarterly_gross_margin(self):
+        result = self.tickers.quarterly_gross_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_gross_margin(self):
+        result = self.tickers.annual_gross_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_operating_margin(self):
+        result = self.tickers.quarterly_operating_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_operating_margin(self):
+        result = self.tickers.annual_operating_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_net_margin(self):
+        result = self.tickers.quarterly_net_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_net_margin(self):
+        result = self.tickers.annual_net_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_ebitda_margin(self):
+        result = self.tickers.quarterly_ebitda_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_ebitda_margin(self):
+        result = self.tickers.annual_ebitda_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_quarterly_fcf_margin(self):
+        result = self.tickers.quarterly_fcf_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
+
+    def test_annual_fcf_margin(self):
+        result = self.tickers.annual_fcf_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('symbol', result.columns)
+        symbols_in_result = result['symbol'].str.upper().tolist()
+        for s in SYMBOLS:
+            self.assertIn(s, symbols_in_result)
