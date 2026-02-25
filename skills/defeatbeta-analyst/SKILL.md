@@ -55,6 +55,41 @@ For detailed analysis workflows, see [analysis-templates.md](./references/analys
 10. **Quarterly Earnings Analysis** - Deep dive into latest earnings release
 11. **DCF Valuation** - Calculate intrinsic value using discounted cash flow (WACC, growth projections, terminal value)
 
+## Rendering Financial Statements
+
+When displaying results from `get_stock_*_income_statement`, `get_stock_*_balance_sheet`, or `get_stock_*_cash_flow`, you MUST follow these rules. The response contains a `statement` array where each row has `label`, `indent`, `is_section`, and `values` fields.
+
+**Rules:**
+
+1. **Preserve row order** — never reorder, skip, or merge rows
+2. **Indent** — prefix each label with `indent × 2` spaces (`indent=0` → no prefix, `indent=1` → 2 spaces, `indent=2` → 4 spaces, etc.)
+3. **is_section=true** — render the label in **bold**; this row is a section header and the rows immediately below it (with `indent = this.indent + 1`) are its children
+4. **is_section=false** — render the label in normal weight
+5. **values[i]** corresponds to `periods[i]`; `null` means data not available
+6. **Do NOT add calculated rows** (e.g. margin %) that are not present in the data
+
+**Example — given these rows:**
+
+| label | indent | is_section |
+|---|---|---|
+| Total Revenue | 0 | true |
+| Operating Revenue | 1 | false |
+| Cost of Revenue | 0 | false |
+| Operating Expense | 0 | true |
+| SG&A | 1 | false |
+| R&D | 1 | false |
+
+**Correct rendered output:**
+
+| Item | 2025Q4 | 2025Q3 |
+|---|---|---|
+| **Total Revenue** | 10,270 | 9,246 |
+| &nbsp;&nbsp;Operating Revenue | 10,270 | 9,246 |
+| Cost of Revenue | 4,693 | 4,466 |
+| **Operating Expense** | 3,825 | 3,510 |
+| &nbsp;&nbsp;SG&A | 1,198 | 1,069 |
+| &nbsp;&nbsp;R&D | 2,330 | 2,139 |
+
 ## Using the APIs
 
 **Critical requirements:**
