@@ -162,12 +162,7 @@ curl -sSL https://raw.githubusercontent.com/defeat-beta/defeatbeta-api/main/mcp/
 ### Use in [Claude Desktop](https://claude.ai/desktop/directory)
 
 #### 1. Add MCP Server in Claude Desktop
-You can do this by looking for the “Add files, connectors, and more /” ![img_1.png](../doc/mcp/claude_config_2.png) icon:
-![img.png](../doc/mcp/claude_config_1.png)
-
-Then follow the path:
-
-**Connectors → Manage connectors → Developer → Edit Config**
+Navigate to **Settings → Developer → Local MCP servers → Edit Config**
 
 Open the `claude_desktop_config.json` file and add the following MCP server configuration:
 

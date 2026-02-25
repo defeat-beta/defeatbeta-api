@@ -35,7 +35,7 @@ To access financial data, you need to configure the MCP server first. See [MCP i
 
 #### 2. Add Skill Files
 
-Navigate to **Settings → Capabilities → Skills → Add → Upload a skill**
+Navigate to **Customize → Skills → Add → Upload a skill**
 
 Upload the `defeatbeta-analyst.zip` file
 
