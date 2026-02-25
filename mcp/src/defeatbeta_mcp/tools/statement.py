@@ -16,6 +16,7 @@ def get_stock_quarterly_income_statement(symbol: str):
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
             "rows_returned": int,          # number of periods
+            "table": str,                  # pre-formatted text table, render as-is in monospace
             "statement": [
                 {
                     "period": str,         # quarter end date
@@ -32,7 +33,8 @@ def get_stock_quarterly_income_statement(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.quarterly_income_statement().df()
+    stmt = ticker.quarterly_income_statement()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {
@@ -40,10 +42,11 @@ def get_stock_quarterly_income_statement(symbol: str):
             "period_type": "quarterly",
             "periods": [],
             "rows_returned": 0,
+            "table": "",
             "statement": []
         }
 
-    result = _build_statement(df, currency, period_type="quarterly")
+    result = _build_statement(df, stmt.table, currency, period_type="quarterly")
     return result
 
 def get_stock_annual_income_statement(symbol: str):
@@ -60,6 +63,7 @@ def get_stock_annual_income_statement(symbol: str):
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
             "rows_returned": int,          # number of periods
+            "table": str,                  # pre-formatted text table, render as-is in monospace
             "statement": [
                 {
                     "period": str,         # year-end date
@@ -76,7 +80,8 @@ def get_stock_annual_income_statement(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.annual_income_statement().df()
+    stmt = ticker.annual_income_statement()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {
@@ -84,10 +89,11 @@ def get_stock_annual_income_statement(symbol: str):
             "period_type": "annual",
             "periods": [],
             "rows_returned": 0,
+            "table": "",
             "statement": []
         }
 
-    result = _build_statement(df, currency, period_type="annual")
+    result = _build_statement(df, stmt.table, currency, period_type="annual")
     return result
 
 def get_stock_quarterly_balance_sheet(symbol: str):
@@ -104,6 +110,7 @@ def get_stock_quarterly_balance_sheet(symbol: str):
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
             "rows_returned": int,          # number of periods
+            "table": str,                  # pre-formatted text table, render as-is in monospace
             "statement": [
                 {
                     "period": str,         # quarter end date
@@ -120,7 +127,8 @@ def get_stock_quarterly_balance_sheet(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.quarterly_balance_sheet().df()
+    stmt = ticker.quarterly_balance_sheet()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {
@@ -128,10 +136,11 @@ def get_stock_quarterly_balance_sheet(symbol: str):
             "period_type": "quarterly",
             "periods": [],
             "rows_returned": 0,
+            "table": "",
             "statement": []
         }
 
-    result = _build_statement(df, currency, period_type="quarterly")
+    result = _build_statement(df, stmt.table, currency, period_type="quarterly")
     return result
 
 def get_stock_annual_balance_sheet(symbol: str):
@@ -148,6 +157,7 @@ def get_stock_annual_balance_sheet(symbol: str):
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
             "rows_returned": int,          # number of periods
+            "table": str,                  # pre-formatted text table, render as-is in monospace
             "statement": [
                 {
                     "period": str,         # year-end date
@@ -164,7 +174,8 @@ def get_stock_annual_balance_sheet(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.annual_balance_sheet().df()
+    stmt = ticker.annual_balance_sheet()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {
@@ -172,10 +183,11 @@ def get_stock_annual_balance_sheet(symbol: str):
             "period_type": "annual",
             "periods": [],
             "rows_returned": 0,
+            "table": "",
             "statement": []
         }
 
-    result = _build_statement(df, currency, period_type="annual")
+    result = _build_statement(df, stmt.table, currency, period_type="annual")
     return result
 
 def get_stock_quarterly_cash_flow(symbol: str):
@@ -192,6 +204,7 @@ def get_stock_quarterly_cash_flow(symbol: str):
             "period_type": "quarterly",
             "periods": list[str],        # e.g. ["2024-12-31", "2024-09-30", ...]
             "rows_returned": int,          # number of periods
+            "table": str,                  # pre-formatted text table, render as-is in monospace
             "statement": [
                 {
                     "period": str,         # quarter end date
@@ -208,7 +221,8 @@ def get_stock_quarterly_cash_flow(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.quarterly_cash_flow().df()
+    stmt = ticker.quarterly_cash_flow()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {
@@ -216,10 +230,11 @@ def get_stock_quarterly_cash_flow(symbol: str):
             "period_type": "quarterly",
             "periods": [],
             "rows_returned": 0,
+            "table": "",
             "statement": []
         }
 
-    result = _build_statement(df, currency, period_type="quarterly")
+    result = _build_statement(df, stmt.table, currency, period_type="quarterly")
     return result
 
 def get_stock_annual_cash_flow(symbol: str):
@@ -236,6 +251,7 @@ def get_stock_annual_cash_flow(symbol: str):
             "period_type": "annual",
             "periods": list[str],        # e.g. ["2024-12-31", "2023-12-31", ...]
             "rows_returned": int,          # number of periods
+            "table": str,                  # pre-formatted text table, render as-is in monospace
             "statement": [
                 {
                     "period": str,         # year-end date
@@ -252,7 +268,8 @@ def get_stock_annual_cash_flow(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.annual_cash_flow().df()
+    stmt = ticker.annual_cash_flow()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {
@@ -260,13 +277,14 @@ def get_stock_annual_cash_flow(symbol: str):
             "period_type": "annual",
             "periods": [],
             "rows_returned": 0,
+            "table": "",
             "statement": []
         }
 
-    result = _build_statement(df, currency, period_type="annual")
+    result = _build_statement(df, stmt.table, currency, period_type="annual")
     return result
 
-def _build_statement(df: pd.DataFrame, currency:str, period_type: str):
+def _build_statement(df: pd.DataFrame, table: str, currency: str, period_type: str):
     breakdown_col = "Breakdown"
 
     period_cols = [
@@ -292,6 +310,7 @@ def _build_statement(df: pd.DataFrame, currency:str, period_type: str):
         "period_type": period_type,
         "periods": period_cols,
         "rows_returned": len(statement),
+        "table": table,
         "statement": statement
     }
 
