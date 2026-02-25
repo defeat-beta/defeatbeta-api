@@ -39,6 +39,23 @@ Navigate to **Customize → Skills → Add → Upload a skill**
 
 Upload the `defeatbeta-analyst.zip` file
 
+#### 3. Create a Project with Pre-configured Instructions
+
+To avoid specifying the skill and MCP tool in every message, create a dedicated Project:
+
+1. Go to **Projects → New Project**
+2. Open **Project Instructions** and paste the following:
+
+```
+Use the defeatbeta-analyst skill and the defeatbeta-api MCP tool for all financial analysis tasks.
+```
+
+Once set up, you can ask directly without any preamble:
+
+> `Analyze AMD's fundamentals`
+> `Show me Apple's quarterly income statement`
+> `Run a DCF valuation on NVDA`
+
 ---
 
 ### Use in [Manus](https://manus.im/app)
@@ -52,3 +69,20 @@ To access financial data, you need to configure the MCP server first. See [MCP i
 Navigate to **Settings → Skills → Add → Upload a skill**
 
 Upload the `defeatbeta-analyst.zip` file
+
+#### 3. Create a Project with Pre-configured Instructions
+
+To avoid specifying the skill and MCP tool in every message, create a dedicated Project:
+
+1. Go to **Projects → New Project**
+2. In the **Instructions (optional)** field, paste the following:
+
+```
+Use the defeatbeta-analyst skill and the defeatbeta-api MCP tool for all financial analysis tasks.
+```
+
+Once set up, you can ask directly without any preamble:
+
+> `Analyze AMD's fundamentals`
+> `Show me Apple's quarterly income statement`
+> `Run a DCF valuation on NVDA`
