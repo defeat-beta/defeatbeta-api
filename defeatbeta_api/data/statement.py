@@ -13,9 +13,10 @@ except ImportError:
 
 @dataclass
 class Statement:
-    def __init__(self, data : pd.DataFrame, content : str):
+    def __init__(self, data: pd.DataFrame, content: str, row_meta: list = None):
         self.data = data
         self.table = content
+        self.row_meta = row_meta or []  # list of {"indent": int, "is_section": bool}
 
     def print_pretty_table(self):
         if in_notebook():

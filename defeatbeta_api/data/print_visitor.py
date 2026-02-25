@@ -16,6 +16,7 @@ class PrintVisitor(StatementVisitor):
         self.headers = []
         self.parent_index = []
         self.data = pd.DataFrame()
+        self.row_meta = []
 
     def visit_title(self, fields: List[str]) -> None:
         self.headers = fields
@@ -56,9 +57,10 @@ class PrintVisitor(StatementVisitor):
             self.parent_index.append(item)
         self.table_data.append(row_data)
         self.data.loc[len(self.data)] = frame
+        self.row_meta.append({"indent": layer, "is_section": has_children})
 
     def get_statement(self) -> Statement:
-        statement = Statement(self.data, self._get_table_string())
+        statement = Statement(self.data, self._get_table_string(), self.row_meta)
         return statement
 
     def _get_table_string(self) -> str:

@@ -4,6 +4,7 @@ Change Log
 0.0.45
 -------
 - Support batch operations for multiple tickers via Tickers class [`#154 <https://github.com/defeat-beta/defeatbeta-api/issues/154>`_]
+- [MCP] Statement tools: expose row hierarchy metadata (indent, is_section) for structured rendering [`#156 <https://github.com/defeat-beta/defeatbeta-api/issues/156>`_]
 
 0.0.44
 -------

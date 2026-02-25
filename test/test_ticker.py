@@ -53,35 +53,57 @@ class TestTicker(unittest.TestCase):
         print(result)
         self.assertIn('symbol', result.columns)
 
+    def _assert_row_meta(self, result):
+        df = result.df()
+        meta = result.row_meta
+        self.assertEqual(len(meta), len(df), "row_meta length must match DataFrame row count")
+        for i, m in enumerate(meta):
+            self.assertIn("indent", m, f"row {i} missing 'indent'")
+            self.assertIn("is_section", m, f"row {i} missing 'is_section'")
+            self.assertIsInstance(m["indent"], int, f"row {i} indent must be int")
+            self.assertIsInstance(m["is_section"], bool, f"row {i} is_section must be bool")
+            self.assertGreaterEqual(m["indent"], 0, f"row {i} indent must be >= 0")
+        has_section = any(m["is_section"] for m in meta)
+        has_indent = any(m["indent"] > 0 for m in meta)
+        self.assertTrue(has_section, "expected at least one section header row")
+        self.assertTrue(has_indent, "expected at least one indented sub-item row")
+        print(f"  row_meta sample (first 5): {meta[:5]}")
+
     def test_statement_1(self):
         result = self.ticker.quarterly_income_statement()
         result.print_pretty_table()
         print(result.df().to_string())
+        self._assert_row_meta(result)
 
     def test_statement_2(self):
         result = self.ticker.annual_income_statement()
         result.print_pretty_table()
         print(result.df().to_string())
+        self._assert_row_meta(result)
 
     def test_statement_3(self):
         result = self.ticker.quarterly_balance_sheet()
         result.print_pretty_table()
         print(result.df().to_string())
+        self._assert_row_meta(result)
 
     def test_statement_4(self):
         result = self.ticker.annual_balance_sheet()
         result.print_pretty_table()
         print(result.df().to_string())
+        self._assert_row_meta(result)
 
     def test_statement_5(self):
         result = self.ticker.quarterly_cash_flow()
         result.print_pretty_table()
         print(result.df().to_string())
+        self._assert_row_meta(result)
 
     def test_statement_6(self):
         result = self.ticker.annual_cash_flow()
         result.print_pretty_table()
         print(result.df().to_string())
+        self._assert_row_meta(result)
 
     def test_ttm_pe(self):
         result = self.ticker.ttm_pe()

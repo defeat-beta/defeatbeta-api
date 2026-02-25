@@ -57,15 +57,17 @@ def get_stock_quarterly_income_statement(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.quarterly_income_statement().df()
+    stmt = ticker.quarterly_income_statement()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {"currency": currency, "period_type": "quarterly", **_EMPTY_STATEMENT}
 
-    return _build_statement(df, currency, period_type="quarterly")
+    return _build_statement(df, stmt.row_meta, currency, period_type="quarterly")
 
 
 def get_stock_annual_income_statement(symbol: str):
+
     """
     Retrieve the annual income statement for a given stock symbol.
 
@@ -96,12 +98,13 @@ def get_stock_annual_income_statement(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.annual_income_statement().df()
+    stmt = ticker.annual_income_statement()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {"currency": currency, "period_type": "annual", **_EMPTY_STATEMENT}
 
-    return _build_statement(df, currency, period_type="annual")
+    return _build_statement(df, stmt.row_meta, currency, period_type="annual")
 
 
 def get_stock_quarterly_balance_sheet(symbol: str):
@@ -135,12 +138,13 @@ def get_stock_quarterly_balance_sheet(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.quarterly_balance_sheet().df()
+    stmt = ticker.quarterly_balance_sheet()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {"currency": currency, "period_type": "quarterly", **_EMPTY_STATEMENT}
 
-    return _build_statement(df, currency, period_type="quarterly")
+    return _build_statement(df, stmt.row_meta, currency, period_type="quarterly")
 
 
 def get_stock_annual_balance_sheet(symbol: str):
@@ -174,12 +178,13 @@ def get_stock_annual_balance_sheet(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.annual_balance_sheet().df()
+    stmt = ticker.annual_balance_sheet()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {"currency": currency, "period_type": "annual", **_EMPTY_STATEMENT}
 
-    return _build_statement(df, currency, period_type="annual")
+    return _build_statement(df, stmt.row_meta, currency, period_type="annual")
 
 
 def get_stock_quarterly_cash_flow(symbol: str):
@@ -213,12 +218,13 @@ def get_stock_quarterly_cash_flow(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.quarterly_cash_flow().df()
+    stmt = ticker.quarterly_cash_flow()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {"currency": currency, "period_type": "quarterly", **_EMPTY_STATEMENT}
 
-    return _build_statement(df, currency, period_type="quarterly")
+    return _build_statement(df, stmt.row_meta, currency, period_type="quarterly")
 
 
 def get_stock_annual_cash_flow(symbol: str):
@@ -252,28 +258,16 @@ def get_stock_annual_cash_flow(symbol: str):
     ticker = create_ticker(symbol)
     currency = get_currency(symbol)
 
-    df = ticker.annual_cash_flow().df()
+    stmt = ticker.annual_cash_flow()
+    df = stmt.df()
 
     if df is None or df.empty:
         return {"currency": currency, "period_type": "annual", **_EMPTY_STATEMENT}
 
-    return _build_statement(df, currency, period_type="annual")
+    return _build_statement(df, stmt.row_meta, currency, period_type="annual")
 
 
-def _parse_breakdown(raw: str) -> tuple[str, int, bool]:
-    """Extract label, indent level, and section flag from a raw Breakdown cell.
-
-    The underlying print_visitor encodes hierarchy as:
-        " " * layer + ("+" if has_children else "") + label
-    """
-    stripped = raw.lstrip(" ")
-    indent = len(raw) - len(stripped)
-    if stripped.startswith("+"):
-        return stripped[1:], indent, True
-    return stripped, indent, False
-
-
-def _build_statement(df: pd.DataFrame, currency: str, period_type: str) -> dict:
+def _build_statement(df: pd.DataFrame, row_meta: list, currency: str, period_type: str) -> dict:
     breakdown_col = "Breakdown"
 
     period_cols = [
@@ -282,13 +276,13 @@ def _build_statement(df: pd.DataFrame, currency: str, period_type: str) -> dict:
     ]
 
     statement = []
-    for _, row in df.iterrows():
-        label, indent, is_section = _parse_breakdown(str(row[breakdown_col]))
+    for i, (_, row) in enumerate(df.iterrows()):
+        meta = row_meta[i] if i < len(row_meta) else {"indent": 0, "is_section": False}
         values = [_normalize_value(row[p]) for p in period_cols]
         statement.append({
-            "label": label,
-            "indent": indent,
-            "is_section": is_section,
+            "label": str(row[breakdown_col]),
+            "indent": meta["indent"],
+            "is_section": meta["is_section"],
             "values": values,
         })
 
