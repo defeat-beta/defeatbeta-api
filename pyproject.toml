@@ -14,7 +14,7 @@ authors = [
 ]
 dependencies = [
     "duckdb == 1.4.3",
-    "pandas >= 2.2.3",
+    "pandas >= 3.0.1",
     "requests ~= 2.32.3",
     "psutil >= 7.0.0",
     "pyfiglet >= 1.0.2",

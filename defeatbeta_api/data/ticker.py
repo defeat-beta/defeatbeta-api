@@ -456,9 +456,10 @@ class Ticker:
         revenue_yoy_df = self.quarterly_revenue_yoy_growth()
         eps_yoy_df = self.quarterly_eps_yoy_growth()
 
-        ttm_pe_df['report_date'] = pd.to_datetime(ttm_pe_df['report_date']).astype('datetime64[ns]')
-        revenue_yoy_df['report_date'] = pd.to_datetime(revenue_yoy_df['report_date']).astype('datetime64[ns]')
-        eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date']).astype('datetime64[ns]')
+        ttm_pe_df['report_date'] = pd.to_datetime(ttm_pe_df['report_date']).astype('datetime64[us]')
+        ttm_pe_df['eps_report_date'] = pd.to_datetime(ttm_pe_df['eps_report_date']).astype('datetime64[us]')
+        revenue_yoy_df['report_date'] = pd.to_datetime(revenue_yoy_df['report_date']).astype('datetime64[us]')
+        eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date']).astype('datetime64[us]')
 
         result_df = ttm_pe_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_pe_report_date'})

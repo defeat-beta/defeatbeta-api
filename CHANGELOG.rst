@@ -3,6 +3,7 @@ Change Log
 
 0.0.46
 -------
+- fix: peg_ratio() fails with MergeError on pandas 3.x due to inconsistent datetime resolution in merge keys [`#157 <https://github.com/defeat-beta/defeatbeta-api/issues/157>`_]
 
 0.0.45
 -------
