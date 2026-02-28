@@ -6,7 +6,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("SHOP", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
+        cls.ticker = Ticker("MSFT", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -271,7 +271,9 @@ class TestTicker(unittest.TestCase):
 
     def test_peg_ratio(self):
         result = self.ticker.peg_ratio()
-        print(result.to_string())
+        print(result.head(10).to_string())
+        print("....")
+        print(result.tail(10).to_string())
         self.assertIn('symbol', result.columns)
 
     def test_ttm_revenue(self):
