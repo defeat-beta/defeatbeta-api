@@ -28,8 +28,18 @@ To run this example, you need:
 
 > [!TIP]
 > Our tests were conducted using the [Qwen/Qwen3-Omni-30B-A3B-Thinking](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Thinking) model, achieving over 99% recall and 100% accuracy.
-> 
+>
 > For optimal results, it is recommended to use large language models with large parameters.
+
+> [!WARNING]
+> If you have a SOCKS proxy configured in your environment (e.g. `ALL_PROXY=socks5://...`), you may encounter the following error when making API calls:
+> ```
+> ImportError: Using SOCKS proxy, but the 'socksio' package is not installed.
+> ```
+> Fix it by installing `httpx` with SOCKS support:
+> ```bash
+> pip install "httpx[socks]"
+> ```
 
 ## Example Code
 ### Code

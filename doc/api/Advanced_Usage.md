@@ -94,6 +94,15 @@ This feature requires additional packages that are not installed by default. Ins
 pip install datasets huggingface_hub pyarrow
 ```
 
+> **Note:** If you have a SOCKS proxy configured in your environment (e.g. `ALL_PROXY=socks5://...`), you may encounter the following error:
+> ```
+> ImportError: Using SOCKS proxy, but the 'socksio' package is not installed.
+> ```
+> Fix it by installing `httpx` with SOCKS support:
+> ```bash
+> pip install "httpx[socks]"
+> ```
+
 Load a dataset and inspect available splits:
 
 ```python
