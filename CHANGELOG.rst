@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.48
+-------
+
 0.0.47
 -------
 - Slim down core dependencies: remove unused seaborn, move mcp/xlwings to defeatbeta-mcp [`#162 <https://github.com/defeat-beta/defeatbeta-api/issues/162>`_]
