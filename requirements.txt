@@ -9,9 +9,6 @@ numpy >= 2.2.5
 rich >= 14.0.0
 openai >= 1.106.1
 nltk >= 3.9.2
-datasets >= 4.4.1
-huggingface_hub >= 1.1.2
-pyarrow >= 22.0.0
 ipython>=8.0.0,<=8.37.0
 matplotlib>=3.10.7
 seaborn>=0.13.2

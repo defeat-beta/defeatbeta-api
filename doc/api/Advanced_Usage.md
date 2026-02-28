@@ -88,11 +88,32 @@ ticker = Ticker("BABA", config=Configuration())
 
 ## Load from Hugging Face
 
+This feature requires additional packages that are not installed by default. Install them first:
+
+```bash
+pip install datasets huggingface_hub pyarrow
+```
+
+Load a dataset and inspect available splits:
+
 ```python
 from datasets import load_dataset
 import datasets
+
+datasets.utils.logging.set_verbosity_debug()
+
 dataset = load_dataset(
     "defeatbeta/yahoo-finance-data",
     data_files="data/stock_prices.parquet"
 )
+
+# Inspect available splits
+print(dataset)
+
+# Access the 'train' split (or whichever split is available)
+ds = dataset["train"]
+
+# Split train and test 80% / 20%
+split_datasets = ds.train_test_split(test_size=0.2, seed=0xDEADBEAF)
+print(split_datasets)
 ```
