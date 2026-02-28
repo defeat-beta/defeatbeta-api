@@ -56,7 +56,17 @@ The recommended way to run **Defeat Beta API MCP** is using `uvx`. You need to i
 
 This method requires **no manual installation**, **no virtual environment management**, and works seamlessly with MCP-native clients such as **Manus**, **Cherry Studio**, and **Claude Desktop**.
 
-**MCP Configuration:**
+**Step 1: Pre-warm the cache (first time only)**
+
+Before adding the MCP server to your client, run the following command once to download and cache the package locally:
+
+```shell
+uvx --refresh "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
+```
+
+> This step is required because MCP clients have a 60-second initialization timeout. The first download from GitHub may exceed this limit and cause a connection failure. After the cache is warm, subsequent startups take under 2 seconds.
+
+**Step 2: MCP Configuration:**
 
 ```json
 {
@@ -64,7 +74,6 @@ This method requires **no manual installation**, **no virtual environment manage
     "defeatbeta-api": {
       "command": "uvx",
       "args": [
-        "--refresh",
         "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
       ]
     }
@@ -73,8 +82,7 @@ This method requires **no manual installation**, **no virtual environment manage
 ```
 
 Once added, your MCP client will automatically:
-- Fetch the repository
-- Resolve and cache dependencies
+- Load the cached package
 - Launch the MCP server in stdio mode
 No further setup is required.
 
@@ -172,7 +180,6 @@ Open the `claude_desktop_config.json` file and add the following MCP server conf
     "defeatbeta-api": {
       "command": "uvx",
       "args": [
-        "--refresh",
         "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
       ]
     }
@@ -182,9 +189,17 @@ Open the `claude_desktop_config.json` file and add the following MCP server conf
 
 After saving the file, restart **Claude for Desktop** to apply the changes.
 
-Once the configuration is complete, hover over the **“Connectors”** menu to verify that **`defeatbeta-api`** appears in the list.
+Once the configuration is complete, hover over the **"Connectors"** menu to verify that **`defeatbeta-api`** appears in the list.
 
 ![img_2.png](../doc/mcp/claude_config_3.png)
+
+> **Troubleshooting:** If **`defeatbeta-api`** does not appear in the Connectors menu, or shows a **failed** status like below, run the following command to pre-warm the local cache, then restart Claude for Desktop:
+>
+> ![claude_mcp_failed.png](../doc/mcp/claude_mcp_failed.png)
+>
+> ```shell
+> uvx --refresh "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
+> ```
 
 #### 2. Talk to LLM with MCP
 
