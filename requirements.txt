@@ -15,3 +15,4 @@ seaborn>=0.13.2
 mcp>=1.25.0
 openpyxl>=3.1.5
 xlwings>=0.33.20
+httpx[socks]

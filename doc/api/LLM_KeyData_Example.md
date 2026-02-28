@@ -24,8 +24,18 @@ Our tests show that even free, small-parameter models(e.g. [Qwen/Qwen3-8B](https
 
 > [!TIP]
 > You can obtain a free API for small-parameter models from [SiliconFlow's Chinese website](https://www.siliconflow.cn/pricing).
-> 
+>
 > For higher accuracy and performance, consider using larger models from [OpenAI](https://openai.com/index/openai-api/), [DeepSeek](https://api-docs.deepseek.com/), [QWen](https://qwen.ai/apiplatform), or [Gemini](https://ai.google.dev/gemini-api/docs).
+
+> [!WARNING]
+> If you have a SOCKS proxy configured in your environment (e.g. `ALL_PROXY=socks5://...`), you may encounter the following error when making API calls:
+> ```
+> ImportError: Using SOCKS proxy, but the 'socksio' package is not installed.
+> ```
+> Fix it by installing `httpx` with SOCKS support:
+> ```bash
+> pip install "httpx[socks]"
+> ```
 
 ## Example Code
 Below is an example demonstrating how to fetch key financial metrics from earnings call transcripts using LLM model.
