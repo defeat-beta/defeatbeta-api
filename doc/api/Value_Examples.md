@@ -14,13 +14,14 @@
 - [10. Stock Historical Equity Multiplier](#10-stock-historical-equity-multiplier)
 - [11. Stock Historical Assert Turnover](#11-stock-historical-assert-turnover)
 - [12. Stock Historical WACC](#12-stock-historical-wacc)
-- [13. Industry Historical TTM PE](#13-industry-historical-ttm-pe)
-- [14. Industry Historical PS Ratio](#14-industry-historical-ps-ratio)
-- [15. Industry Historical PB Ratio](#15-industry-historical-pb-ratio)
-- [16. Industry Historical ROE](#16-industry-historical-roe)
-- [17. Industry Historical ROA](#17-industry-historical-roa)
-- [18. Industry Historical Equity Multiplier](#18-industry-historical-equity-multiplier)
-- [19. Industry Historical Asset Turnover](#19-industry-historical-asset-turnover)
+- [13. Stock Historical Enterprise Value](#13-stock-historical-enterprise-value)
+- [14. Industry Historical TTM PE](#14-industry-historical-ttm-pe)
+- [15. Industry Historical PS Ratio](#15-industry-historical-ps-ratio)
+- [16. Industry Historical PB Ratio](#16-industry-historical-pb-ratio)
+- [17. Industry Historical ROE](#17-industry-historical-roe)
+- [18. Industry Historical ROA](#18-industry-historical-roa)
+- [19. Industry Historical Equity Multiplier](#19-industry-historical-equity-multiplier)
+- [20. Industry Historical Asset Turnover](#20-industry-historical-asset-turnover)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -417,7 +418,36 @@ ticker.wacc()
 65   TSLA  2025-09-19           1.374267e+12            1.0  1.313400e+10    1.313400e+10        86000000.0            86000000.0   1.549000e+09       1.549000e+09   3.590000e+08       3.590000e+08                0.23            2024          0.1107              0.0414     2.07          0.0095            0.9905        0.0065          0.1849  0.1832
 ```
 
-## 13. Industry Historical TTM PE
+## 13. Stock Historical Enterprise Value
+```markdown
+enterprise_value = market_capitalization + total_debt_usd + minority_interest_usd + preferred_stock_equity_usd - cash_and_cash_equivalents_usd
+
+where:
+  total_debt_usd                  = total_debt / exchange_to_usd_rate
+  minority_interest_usd           = minority_interest / exchange_to_usd_rate  (0 if not present)
+  preferred_stock_equity_usd      = preferred_stock_equity / exchange_to_usd_rate  (0 if not present)
+  cash_and_cash_equivalents_usd   = cash_and_cash_equivalents / exchange_to_usd_rate
+```
+```python
+ticker.enterprise_value()
+```
+```text
+>>> ticker.enterprise_value()
+      symbol report_date  market_capitalization fiscal_quarter  exchange_to_usd_rate    total_debt  total_debt_usd  minority_interest  minority_interest_usd  preferred_stock_equity  preferred_stock_equity_usd  cash_and_cash_equivalents  cash_and_cash_equivalents_usd  enterprise_value
+7853    MSFT  2026-02-13           2.980053e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      3.013364e+12
+7854    MSFT  2026-02-17           2.946935e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      2.980246e+12
+7855    MSFT  2026-02-18           2.967281e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      3.000592e+12
+7856    MSFT  2026-02-19           2.958816e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      2.992127e+12
+7857    MSFT  2026-02-20           2.949683e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      2.982994e+12
+...      ...         ...                    ...            ...                   ...           ...             ...                ...                    ...                     ...                         ...                        ...                            ...               ...
+7858    MSFT  2026-02-23           2.854932e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      2.888243e+12
+7859    MSFT  2026-02-24           2.888570e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      2.921881e+12
+7860    MSFT  2026-02-25           2.974707e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      3.008018e+12
+7861    MSFT  2026-02-26           2.983024e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      3.016335e+12
+7862    MSFT  2026-02-27           2.916342e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      2.949653e+12
+```
+
+## 14. Industry Historical TTM PE
 ```markdown
 total_market_cap          = sum of the market cap of all stocks in the industry  
 
@@ -447,7 +477,7 @@ ticker.industry_ttm_pe()
 
 ```
 
-## 14. Industry Historical PS Ratio
+## 15. Industry Historical PS Ratio
 ```markdown
 total_market_cap       = sum of the market cap of all stocks in the industry  
 
@@ -476,7 +506,7 @@ ticker.industry_ps_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 15. Industry Historical PB Ratio
+## 16. Industry Historical PB Ratio
 ```markdown
 total_market_cap                = sum of the market cap of all stocks in the industry  
 
@@ -505,7 +535,7 @@ ticker.industry_pb_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 16. Industry Historical ROE
+## 17. Industry Historical ROE
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -537,7 +567,7 @@ ticker.industry_roe()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09      5.245579e+11        0.0136
 ```
 
-## 17. Industry Historical ROA
+## 18. Industry Historical ROA
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -569,7 +599,7 @@ ticker.industry_roa()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09       1.685806e+12        0.0042
 ```
 
-## 18. Industry Historical Equity Multiplier
+## 19. Industry Historical Equity Multiplier
 ```markdown
 Industry Equity Multiplier = Industry ROE / Industry ROA
 ```
@@ -592,7 +622,7 @@ ticker.industry_equity_multiplier()
 
 ```
 
-## 19. Industry Historical Asset Turnover
+## 20. Industry Historical Asset Turnover
 ```markdown
 Industry Asset Turnover = Industry ROA / Industry Net Margin
 ```

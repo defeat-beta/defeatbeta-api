@@ -269,6 +269,17 @@ class TestTicker(unittest.TestCase):
         print(result.to_string())
         self.assertIn('symbol', result.columns)
 
+    def test_enterprise_value(self):
+        result = self.ticker.enterprise_value()
+        print(result.tail(10).to_string())
+        self.assertIn('symbol', result.columns)
+        self.assertIn('enterprise_value', result.columns)
+        self.assertIn('market_capitalization', result.columns)
+        self.assertIn('total_debt_usd', result.columns)
+        self.assertIn('cash_and_cash_equivalents_usd', result.columns)
+        self.assertIn('fiscal_quarter', result.columns)
+        self.assertTrue((result['enterprise_value'] > 0).any())
+
     def test_peg_ratio(self):
         result = self.ticker.peg_ratio()
         print(result.head(10).to_string())
