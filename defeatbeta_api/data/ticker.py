@@ -451,6 +451,85 @@ class Ticker:
         result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
+    def enterprise_value(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = load_sql("select_enterprise_value_components_by_symbol", ticker=self.ticker, url=url)
+        ev_components_df = self.duckdb_client.query(sql)
+
+        company_info = self.company_meta.get_company_info(self.ticker)
+        currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
+
+        if currency == 'USD':
+            currency_df = pd.DataFrame()
+            currency_df['report_date'] = pd.to_datetime(ev_components_df['report_date'])
+            currency_df['close'] = 1.0
+        else:
+            currency_df = self.currency(currency + '=X')
+
+        ev_components_df['report_date'] = pd.to_datetime(ev_components_df['report_date'])
+        currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+        ev_components_df = pd.merge_asof(
+            ev_components_df.sort_values('report_date'),
+            currency_df[['report_date', 'close']].sort_values('report_date'),
+            on='report_date',
+            direction='backward'
+        )
+        ev_components_df = ev_components_df.rename(columns={'close': 'exchange_to_usd_rate'})
+
+        for col in ['total_debt', 'minority_interest', 'preferred_stock_equity', 'cash_and_cash_equivalents']:
+            ev_components_df[col] = ev_components_df[col].fillna(0)
+            ev_components_df[f'{col}_usd'] = round(ev_components_df[col] / ev_components_df['exchange_to_usd_rate'], 2)
+
+        market_cap_df = self.market_capitalization().drop(columns=['symbol'])
+        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date'])
+
+        result_df = market_cap_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'market_cap_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('market_cap_report_date'),
+            ev_components_df.sort_values('report_date'),
+            left_on='market_cap_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df = result_df[result_df['report_date'].notna()]
+
+        result_df['enterprise_value'] = round(
+            result_df['market_capitalization']
+            + result_df['total_debt_usd']
+            + result_df['minority_interest_usd']
+            + result_df['preferred_stock_equity_usd']
+            - result_df['cash_and_cash_equivalents_usd'],
+            2
+        )
+
+        result_df = result_df[[
+            'market_cap_report_date',
+            'market_capitalization',
+            'report_date',
+            'exchange_to_usd_rate',
+            'total_debt',
+            'total_debt_usd',
+            'minority_interest',
+            'minority_interest_usd',
+            'preferred_stock_equity',
+            'preferred_stock_equity_usd',
+            'cash_and_cash_equivalents',
+            'cash_and_cash_equivalents_usd',
+            'enterprise_value'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'market_cap_report_date': 'report_date',
+            'report_date': 'fiscal_quarter',
+        })
+
+        result_df.insert(0, 'symbol', self.ticker)
+        return result_df
+
     def peg_ratio(self) -> pd.DataFrame:
         ttm_pe_df = self.ttm_pe()
         revenue_yoy_df = self.quarterly_revenue_yoy_growth()

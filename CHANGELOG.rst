@@ -3,6 +3,7 @@ Change Log
 
 0.0.48
 -------
+- Support Enterprise Value [`#159 <https://github.com/defeat-beta/defeatbeta-api/issues/159>`_]
 
 0.0.47
 -------
