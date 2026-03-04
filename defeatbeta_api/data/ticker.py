@@ -451,6 +451,17 @@ class Ticker:
         result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
+    def debt_to_equity(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = load_sql("select_debt_to_equity_by_symbol", ticker=self.ticker, url=url)
+        result_df = self.duckdb_client.query(sql)
+
+        result_df['stockholders_equity'] = result_df['stockholders_equity'].fillna(0)
+
+        result_df['debt_to_equity'] = (result_df['total_debt'] / result_df['stockholders_equity']).replace([np.inf, -np.inf], np.nan).round(2)
+
+        return result_df
+
     def enterprise_value(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = load_sql("select_enterprise_value_components_by_symbol", ticker=self.ticker, url=url)
