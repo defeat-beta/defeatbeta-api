@@ -530,6 +530,47 @@ class Ticker:
         result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
+    def enterprise_to_revenue(self) -> pd.DataFrame:
+        ev_df = self.enterprise_value().drop(columns=['symbol'])
+        ttm_revenue_df = self.ttm_revenue().drop(columns=['symbol'])
+
+        ev_df['report_date'] = pd.to_datetime(ev_df['report_date'])
+        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
+
+        result_df = ev_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'ev_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('ev_report_date'),
+            ttm_revenue_df[['report_date', 'ttm_total_revenue', 'ttm_total_revenue_usd']].sort_values('report_date'),
+            left_on='ev_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df = result_df[result_df['report_date'].notna()]
+
+        result_df['ev_to_revenue'] = round(result_df['enterprise_value'] / result_df['ttm_total_revenue_usd'], 2)
+
+        result_df = result_df[[
+            'ev_report_date',
+            'enterprise_value',
+            'report_date',
+            'ttm_total_revenue',
+            'ttm_total_revenue_usd',
+            'ev_to_revenue'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'ev_report_date': 'report_date',
+            'report_date': 'fiscal_quarter',
+            'ttm_total_revenue': 'ttm_revenue',
+            'ttm_total_revenue_usd': 'ttm_revenue_usd'
+        })
+
+        result_df.insert(0, 'symbol', self.ticker)
+        return result_df
+
     def peg_ratio(self) -> pd.DataFrame:
         ttm_pe_df = self.ttm_pe()
         revenue_yoy_df = self.quarterly_revenue_yoy_growth()
