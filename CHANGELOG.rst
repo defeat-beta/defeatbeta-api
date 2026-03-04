@@ -4,6 +4,8 @@ Change Log
 0.0.48
 -------
 - Support Enterprise Value [`#159 <https://github.com/defeat-beta/defeatbeta-api/issues/159>`_]
+- Support Enterprise to Revenue (EV/Revenue) [`#161 <https://github.com/defeat-beta/defeatbeta-api/issues/161>`_]
+- Support Enterprise to EBITDA (EV/EBITDA) [`#160 <https://github.com/defeat-beta/defeatbeta-api/issues/160>`_]
 
 0.0.47
 -------
