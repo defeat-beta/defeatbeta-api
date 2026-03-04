@@ -474,7 +474,33 @@ ticker.enterprise_to_revenue()
 918   MSFT  2026-02-27      2.949653e+12     2025-12-31  3.054530e+11     3.054530e+11           9.66
 ```
 
-## 15. Industry Historical TTM PE
+## 15. Stock Historical Enterprise Value to EBITDA (EV/EBITDA)
+```markdown
+ev_to_ebitda = enterprise_value / ttm_ebitda_usd
+
+where:
+  enterprise_value  = market_capitalization + total_debt_usd + minority_interest_usd + preferred_stock_equity_usd - cash_and_cash_equivalents_usd
+  ttm_ebitda_usd    = trailing twelve months EBITDA converted to USD
+```
+```python
+ticker.enterprise_to_ebitda()
+```
+```text
+>>> ticker.enterprise_to_ebitda()
+    symbol report_date  enterprise_value fiscal_quarter   ttm_ebitda  ttm_ebitda_usd  ev_to_ebitda
+909   MSFT  2026-02-13      3.013364e+12     2025-12-31  1.913850e+11    1.913850e+11         15.75
+910   MSFT  2026-02-17      2.980246e+12     2025-12-31  1.913850e+11    1.913850e+11         15.57
+911   MSFT  2026-02-18      3.000592e+12     2025-12-31  1.913850e+11    1.913850e+11         15.68
+912   MSFT  2026-02-19      2.992127e+12     2025-12-31  1.913850e+11    1.913850e+11         15.63
+913   MSFT  2026-02-20      2.982994e+12     2025-12-31  1.913850e+11    1.913850e+11         15.59
+914   MSFT  2026-02-23      2.888243e+12     2025-12-31  1.913850e+11    1.913850e+11         15.09
+915   MSFT  2026-02-24      2.921881e+12     2025-12-31  1.913850e+11    1.913850e+11         15.27
+916   MSFT  2026-02-25      3.008018e+12     2025-12-31  1.913850e+11    1.913850e+11         15.72
+917   MSFT  2026-02-26      3.016335e+12     2025-12-31  1.913850e+11    1.913850e+11         15.76
+918   MSFT  2026-02-27      2.949653e+12     2025-12-31  1.913850e+11    1.913850e+11         15.41
+```
+
+## 16. Industry Historical TTM PE
 ```markdown
 total_market_cap          = sum of the market cap of all stocks in the industry  
 

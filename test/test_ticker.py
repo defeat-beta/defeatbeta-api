@@ -291,6 +291,17 @@ class TestTicker(unittest.TestCase):
         self.assertIn('ev_to_revenue', result.columns)
         self.assertTrue((result['ev_to_revenue'] > 0).any())
 
+    def test_enterprise_to_ebitda(self):
+        result = self.ticker.enterprise_to_ebitda()
+        print(result.tail(10).to_string())
+        self.assertIn('symbol', result.columns)
+        self.assertIn('enterprise_value', result.columns)
+        self.assertIn('ttm_ebitda', result.columns)
+        self.assertIn('ttm_ebitda_usd', result.columns)
+        self.assertIn('fiscal_quarter', result.columns)
+        self.assertIn('ev_to_ebitda', result.columns)
+        self.assertTrue((result['ev_to_ebitda'] > 0).any())
+
     def test_peg_ratio(self):
         result = self.ticker.peg_ratio()
         print(result.head(10).to_string())
