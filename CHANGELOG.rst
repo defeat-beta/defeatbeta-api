@@ -7,6 +7,7 @@ Change Log
 - Support Enterprise to Revenue (EV/Revenue) [`#161 <https://github.com/defeat-beta/defeatbeta-api/issues/161>`_]
 - Support Enterprise to EBITDA (EV/EBITDA) [`#160 <https://github.com/defeat-beta/defeatbeta-api/issues/160>`_]
 - Support Debt to Equity (D/E) Ratio [`#163 <https://github.com/defeat-beta/defeatbeta-api/issues/163>`_]
+- Support Return on Capital Employed (ROCE) [`#155 <https://github.com/defeat-beta/defeatbeta-api/issues/155>`_]
 
 0.0.47
 -------
