@@ -550,7 +550,7 @@ class Ticker:
 
         result_df = result_df[result_df['report_date'].notna()]
 
-        result_df['ev_to_revenue'] = round(result_df['enterprise_value'] / result_df['ttm_total_revenue_usd'], 2)
+        result_df['ev_to_revenue'] = (result_df['enterprise_value'] / result_df['ttm_total_revenue_usd']).replace([np.inf, -np.inf], np.nan).round(2)
 
         result_df = result_df[[
             'ev_report_date',
