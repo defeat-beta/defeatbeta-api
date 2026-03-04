@@ -18,12 +18,12 @@
 - [14. Stock Historical Enterprise Value to Revenue (EV/Revenue)](#14-stock-historical-enterprise-value-to-revenue-evrevenue)
 - [15. Stock Historical Enterprise Value to EBITDA (EV/EBITDA)](#15-stock-historical-enterprise-value-to-ebitda-evebitda)
 - [16. Industry Historical TTM PE](#16-industry-historical-ttm-pe)
-- [15. Industry Historical PS Ratio](#15-industry-historical-ps-ratio)
-- [16. Industry Historical PB Ratio](#16-industry-historical-pb-ratio)
-- [17. Industry Historical ROE](#17-industry-historical-roe)
-- [18. Industry Historical ROA](#18-industry-historical-roa)
-- [19. Industry Historical Equity Multiplier](#19-industry-historical-equity-multiplier)
-- [20. Industry Historical Asset Turnover](#20-industry-historical-asset-turnover)
+- [17. Industry Historical PS Ratio](#17-industry-historical-ps-ratio)
+- [18. Industry Historical PB Ratio](#18-industry-historical-pb-ratio)
+- [19. Industry Historical ROE](#19-industry-historical-roe)
+- [20. Industry Historical ROA](#20-industry-historical-roa)
+- [21. Industry Historical Equity Multiplier](#21-industry-historical-equity-multiplier)
+- [22. Industry Historical Asset Turnover](#22-industry-historical-asset-turnover)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
