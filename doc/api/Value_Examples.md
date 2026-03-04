@@ -447,7 +447,33 @@ ticker.enterprise_value()
 7862    MSFT  2026-02-27           2.916342e+12     2025-12-31                   1.0  5.760700e+10    5.760700e+10                0.0                    0.0                     0.0                         0.0               2.429600e+10                   2.429600e+10      2.949653e+12
 ```
 
-## 14. Industry Historical TTM PE
+## 14. Stock Historical Enterprise Value to Revenue (EV/Revenue)
+```markdown
+ev_to_revenue = enterprise_value / ttm_revenue_usd
+
+where:
+  enterprise_value  = market_capitalization + total_debt_usd + minority_interest_usd + preferred_stock_equity_usd - cash_and_cash_equivalents_usd
+  ttm_revenue_usd   = trailing twelve months total revenue converted to USD
+```
+```python
+ticker.enterprise_to_revenue()
+```
+```text
+>>> ticker.enterprise_to_revenue()
+    symbol report_date  enterprise_value fiscal_quarter   ttm_revenue  ttm_revenue_usd  ev_to_revenue
+909   MSFT  2026-02-13      3.013364e+12     2025-12-31  3.054530e+11     3.054530e+11           9.87
+910   MSFT  2026-02-17      2.980246e+12     2025-12-31  3.054530e+11     3.054530e+11           9.76
+911   MSFT  2026-02-18      3.000592e+12     2025-12-31  3.054530e+11     3.054530e+11           9.82
+912   MSFT  2026-02-19      2.992127e+12     2025-12-31  3.054530e+11     3.054530e+11           9.80
+913   MSFT  2026-02-20      2.982994e+12     2025-12-31  3.054530e+11     3.054530e+11           9.77
+914   MSFT  2026-02-23      2.888243e+12     2025-12-31  3.054530e+11     3.054530e+11           9.46
+915   MSFT  2026-02-24      2.921881e+12     2025-12-31  3.054530e+11     3.054530e+11           9.57
+916   MSFT  2026-02-25      3.008018e+12     2025-12-31  3.054530e+11     3.054530e+11           9.85
+917   MSFT  2026-02-26      3.016335e+12     2025-12-31  3.054530e+11     3.054530e+11           9.87
+918   MSFT  2026-02-27      2.949653e+12     2025-12-31  3.054530e+11     3.054530e+11           9.66
+```
+
+## 15. Industry Historical TTM PE
 ```markdown
 total_market_cap          = sum of the market cap of all stocks in the industry  
 
