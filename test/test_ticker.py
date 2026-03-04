@@ -348,6 +348,17 @@ class TestTicker(unittest.TestCase):
         print(result.to_string())
         self.assertIn('symbol', result.columns)
 
+    def test_roce(self):
+        result = self.ticker.roce()
+        print(result.tail(10).to_string())
+        self.assertIn('symbol', result.columns)
+        self.assertIn('ebit', result.columns)
+        self.assertIn('beginning_capital_employed', result.columns)
+        self.assertIn('ending_capital_employed', result.columns)
+        self.assertIn('avg_capital_employed', result.columns)
+        self.assertIn('roce', result.columns)
+        self.assertTrue(result['roce'].notna().any())
+
     def test_equity_multiplier(self):
         result = self.ticker.equity_multiplier()
         print(result.to_string())

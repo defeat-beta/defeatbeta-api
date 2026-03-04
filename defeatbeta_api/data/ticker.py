@@ -1022,6 +1022,21 @@ class Ticker:
         ]]
         return result_df
 
+    def roce(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = load_sql("select_roce_by_symbol", ticker=self.ticker, url=url)
+        result_df = self.duckdb_client.query(sql)
+        result_df = result_df[[
+            'symbol',
+            'report_date',
+            'ebit',
+            'beginning_capital_employed',
+            'ending_capital_employed',
+            'avg_capital_employed',
+            'roce'
+        ]]
+        return result_df
+
     def equity_multiplier(self) -> pd.DataFrame:
         roe = self.roe()
         roa = self.roa()

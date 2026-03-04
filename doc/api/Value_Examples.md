@@ -522,7 +522,33 @@ ticker.debt_to_equity()
 12   MSFT  2025-12-31  5.760700e+10         3.908750e+11            0.15
 ```
 
-## 17. Industry Historical TTM PE
+## 17. Stock Historical ROCE (Return on Capital Employed)
+```markdown
+roce = ebit / avg_capital_employed
+
+where:
+  capital_employed     = total_assets - current_liabilities
+  avg_capital_employed = (beginning_capital_employed + ending_capital_employed) / 2
+```
+```python
+ticker.roce()
+```
+```text
+>>> ticker.roce()
+  symbol  report_date          ebit  beginning_capital_employed  ending_capital_employed  avg_capital_employed    roce
+0   MSFT  2023-09-30  2.780900e+10                3.078270e+11             3.209930e+11          3.144100e+11  0.0884
+1   MSFT  2023-12-31  2.743500e+10                3.209930e+11             3.495420e+11          3.352675e+11  0.0818
+2   MSFT  2024-03-31  2.752700e+10                3.495420e+11             3.657500e+11          3.576460e+11  0.0770
+3   MSFT  2024-06-30  2.795100e+10                3.657500e+11             3.868770e+11          3.763135e+11  0.0743
+4   MSFT  2024-09-30  3.085100e+10                3.868770e+11             4.078130e+11          3.973450e+11  0.0776
+5   MSFT  2024-12-31  2.995900e+10                4.078130e+11             4.250160e+11          4.164145e+11  0.0719
+6   MSFT  2025-03-31  3.197100e+10                4.250160e+11             4.484180e+11          4.367170e+11  0.0732
+7   MSFT  2025-06-30  3.323100e+10                4.484180e+11             4.777850e+11          4.631015e+11  0.0718
+8   MSFT  2025-09-30  3.499900e+10                4.777850e+11             5.013550e+11          4.895700e+11  0.0715
+9   MSFT  2025-12-31  4.898200e+10                5.013550e+11             5.352970e+11          5.183260e+11  0.0945
+```
+
+## 18. Industry Historical TTM PE
 ```markdown
 total_market_cap          = sum of the market cap of all stocks in the industry  
 
@@ -552,7 +578,7 @@ ticker.industry_ttm_pe()
 
 ```
 
-## 18. Industry Historical PS Ratio
+## 19. Industry Historical PS Ratio
 ```markdown
 total_market_cap       = sum of the market cap of all stocks in the industry  
 
@@ -581,7 +607,7 @@ ticker.industry_ps_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 19. Industry Historical PB Ratio
+## 20. Industry Historical PB Ratio
 ```markdown
 total_market_cap                = sum of the market cap of all stocks in the industry  
 
@@ -610,7 +636,7 @@ ticker.industry_pb_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 20. Industry Historical ROE
+## 21. Industry Historical ROE
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -642,7 +668,7 @@ ticker.industry_roe()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09      5.245579e+11        0.0136
 ```
 
-## 21. Industry Historical ROA
+## 22. Industry Historical ROA
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -674,7 +700,7 @@ ticker.industry_roa()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09       1.685806e+12        0.0042
 ```
 
-## 22. Industry Historical Equity Multiplier
+## 23. Industry Historical Equity Multiplier
 ```markdown
 Industry Equity Multiplier = Industry ROE / Industry ROA
 ```
@@ -697,7 +723,7 @@ ticker.industry_equity_multiplier()
 
 ```
 
-## 23. Industry Historical Asset Turnover
+## 24. Industry Historical Asset Turnover
 ```markdown
 Industry Asset Turnover = Industry ROA / Industry Net Margin
 ```
