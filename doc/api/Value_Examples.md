@@ -501,7 +501,27 @@ ticker.enterprise_to_ebitda()
 918   MSFT  2026-02-27      2.949653e+12     2025-12-31  1.913850e+11    1.913850e+11         15.41
 ```
 
-## 16. Industry Historical TTM PE
+## 16. Stock Historical Debt to Equity (D/E) Ratio
+```markdown
+debt_to_equity = total_debt / stockholders_equity
+
+Both values are from the quarterly balance sheet in the same currency, so no currency conversion is needed.
+```
+```python
+ticker.debt_to_equity()
+```
+```text
+>>> ticker.debt_to_equity()
+   symbol  report_date    total_debt  stockholders_equity  debt_to_equity
+7    MSFT  2024-09-30  6.147800e+10         2.877230e+11            0.21
+8    MSFT  2024-12-31  6.222400e+10         3.026950e+11            0.21
+9    MSFT  2025-03-31  6.056700e+10         3.218910e+11            0.19
+10   MSFT  2025-06-30  6.058800e+10         3.434790e+11            0.18
+11   MSFT  2025-09-30  6.055600e+10         3.630760e+11            0.17
+12   MSFT  2025-12-31  5.760700e+10         3.908750e+11            0.15
+```
+
+## 17. Industry Historical TTM PE
 ```markdown
 total_market_cap          = sum of the market cap of all stocks in the industry  
 
@@ -531,7 +551,7 @@ ticker.industry_ttm_pe()
 
 ```
 
-## 17. Industry Historical PS Ratio
+## 18. Industry Historical PS Ratio
 ```markdown
 total_market_cap       = sum of the market cap of all stocks in the industry  
 
@@ -560,7 +580,7 @@ ticker.industry_ps_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 18. Industry Historical PB Ratio
+## 19. Industry Historical PB Ratio
 ```markdown
 total_market_cap                = sum of the market cap of all stocks in the industry  
 
@@ -589,7 +609,7 @@ ticker.industry_pb_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 19. Industry Historical ROE
+## 20. Industry Historical ROE
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -621,7 +641,7 @@ ticker.industry_roe()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09      5.245579e+11        0.0136
 ```
 
-## 20. Industry Historical ROA
+## 21. Industry Historical ROA
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -653,7 +673,7 @@ ticker.industry_roa()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09       1.685806e+12        0.0042
 ```
 
-## 21. Industry Historical Equity Multiplier
+## 22. Industry Historical Equity Multiplier
 ```markdown
 Industry Equity Multiplier = Industry ROE / Industry ROA
 ```
@@ -676,7 +696,7 @@ ticker.industry_equity_multiplier()
 
 ```
 
-## 22. Industry Historical Asset Turnover
+## 23. Industry Historical Asset Turnover
 ```markdown
 Industry Asset Turnover = Industry ROA / Industry Net Margin
 ```

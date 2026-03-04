@@ -269,6 +269,15 @@ class TestTicker(unittest.TestCase):
         print(result.to_string())
         self.assertIn('symbol', result.columns)
 
+    def test_debt_to_equity(self):
+        result = self.ticker.debt_to_equity()
+        print(result.tail(10).to_string())
+        self.assertIn('symbol', result.columns)
+        self.assertIn('total_debt', result.columns)
+        self.assertIn('stockholders_equity', result.columns)
+        self.assertIn('debt_to_equity', result.columns)
+        self.assertTrue(result['debt_to_equity'].notna().any())
+
     def test_enterprise_value(self):
         result = self.ticker.enterprise_value()
         print(result.tail(10).to_string())
