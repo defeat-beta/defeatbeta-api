@@ -694,4 +694,337 @@ Clear summary table with:
 **When DCF Works Best**:
 - ✅ Mature, profitable companies with positive FCF
 - ✅ Predictable business models with clear growth drivers
+
+---
+
+## Template 12: Extract Key Financial Data from Earnings Call
+
+**Use case**: Directly extract structured key financial metrics (reported results + forward guidance) from an earnings call transcript — no external LLM needed, Claude performs the extraction.
+
+**Triggers**:
+- "Extract key financial data from earnings call"
+- "What were the reported revenue/EPS/margins this quarter?"
+- "What guidance did management give for next quarter / full year?"
+- "Summarize key financial metrics from the transcript"
+- "Get the numbers from the earnings call"
+
+---
+
+### Workflow
+
+```
+1. get_stock_earning_call_transcripts_list(symbol)
+   → Identify target fiscal_year and fiscal_quarter
+   → If user said "latest", use the first (most recent) entry
+
+2. get_stock_earning_call_transcript(symbol, fiscal_year, fiscal_quarter)
+   → Retrieve full transcript paragraphs
+
+3. Extract key financial data per the schema below
+   → Read every paragraph carefully
+   → For each field: find the value, record speaker and paragraph_number
+   → If not mentioned anywhere in the transcript → null
+
+4. Output structured result table (see Output Format below)
+```
+
+---
+
+### Extraction Schema
+
+Extract the following fields from the transcript. For each non-null field, you MUST record which paragraph it came from (`paragraph_number`) and who said it (`speaker`).
+
+#### Current Quarter Results
+
+| Field | Description |
+|---|---|
+| `total_revenue` | Total revenue for the current quarter |
+| `gaap_operating_expense` | GAAP operating expenses (R&D + SG&A etc.) |
+| `non_gaap_operating_expense` | Non-GAAP operating expenses |
+| `gaap_operating_income` | GAAP operating income (profit from operations) |
+| `non_gaap_operating_income` | Non-GAAP operating income |
+| `gaap_net_income` | GAAP net income |
+| `non_gaap_net_income` | Non-GAAP net income |
+| `ebitda` | EBITDA |
+| `adjusted_ebitda` | Adjusted EBITDA |
+| `fcf` | Free cash flow / operating cash flow / net cash from operations |
+| `total_cash_position` | Cash + equivalents + marketable securities + short-term investments |
+| `share_repurchase` | Share buybacks / repurchase program amount |
+| `capex` | Capital expenditures / capital spending / purchases of PP&E |
+| `gaap_gross_margin` | GAAP gross margin % |
+| `non_gaap_gross_margin` | Non-GAAP gross margin % |
+| `gaap_operating_income_margin` | GAAP operating income margin % |
+| `non_gaap_operating_income_margin` | Non-GAAP operating income margin % |
+| `gaap_diluted_eps` | GAAP diluted EPS (earnings per share or per ADS) |
+| `non_gaap_diluted_eps` | Non-GAAP diluted EPS |
+
+#### Next Quarter Guidance
+
+| Field | Description |
+|---|---|
+| `revenue_guidance_next_q` | Revenue forecast for next quarter |
+| `gaap_gross_margin_guidance_next_q` | GAAP gross margin forecast % |
+| `non_gaap_gross_margin_guidance_next_q` | Non-GAAP gross margin forecast % |
+| `gaap_operating_income_margin_guidance_next_q` | GAAP operating income margin forecast % |
+| `non_gaap_operating_income_margin_guidance_next_q` | Non-GAAP operating income margin forecast % |
+| `gaap_opex_guidance_next_q` | GAAP operating expense forecast |
+| `non_gaap_opex_guidance_next_q` | Non-GAAP operating expense forecast |
+| `ebitda_guidance_next_q` | EBITDA forecast |
+| `adjusted_ebitda_guidance_next_q` | Adjusted EBITDA forecast |
+| `gaap_eps_guidance_next_q` | GAAP EPS forecast (per share or per ADS) |
+| `non_gaap_eps_guidance_next_q` | Non-GAAP EPS forecast |
+| `capex_guidance_next_q` | CapEx forecast |
+
+#### Full Fiscal Year Guidance
+
+| Field | Description |
+|---|---|
+| `revenue_guidance_full_year` | Full fiscal year revenue forecast |
+| `gaap_eps_guidance_full_year` | Full fiscal year GAAP EPS forecast |
+| `non_gaap_eps_guidance_full_year` | Full fiscal year Non-GAAP EPS forecast |
+
+---
+
+### Extraction Rules
+
+**For amount fields** (revenue, income, cash, etc.):
+- Extract the number exactly as spoken (do NOT scale it yourself)
+- Record the unit as spoken: `trillion`, `billion`, `million`, `thousand`, or `per_share` for EPS metrics
+- Record `currency_code` (e.g., USD, CNY, EUR)
+- If a range is given (e.g., "$3.5B to $4.0B"), use the **midpoint** (3.75B)
+- Example: "revenue of $25.7 billion" → value=25.7, unit=billion, currency=USD
+
+**For percentage fields** (margins):
+- Extract the percentage value as a number (e.g., 72.5 for "72.5%")
+- unit is always `%`
+- If a range is given, use the midpoint
+
+**For null fields**:
+- If a metric is not mentioned anywhere in the transcript → mark as `null` / "N/A"
+- Do NOT infer or estimate values that were not explicitly stated
+
+**Source tracing**:
+- Always record `paragraph_number` where the data appeared
+- Always record `speaker` (e.g., "CFO", "CEO", "John Smith")
+
+---
+
+### Output Format
+
+Present results in three grouped tables:
+
+**Table 1 — This Quarter Results (FY{year} Q{quarter})**
+
+| Metric | Value | Unit | Currency | Speaker | Para# |
+|---|---|---|---|---|---|
+| Total Revenue | 25.7 | billion | USD | CFO | 12 |
+| GAAP Gross Margin | 72.5 | % | — | CFO | 12 |
+| Non-GAAP Diluted EPS | 2.31 | per_share | USD | CFO | 15 |
+| ... | | | | | |
+
+**Table 2 — Next Quarter Guidance**
+
+| Metric | Value | Unit | Currency | Speaker | Para# |
+|---|---|---|---|---|---|
+| Revenue Guidance | 26.0–27.0 → midpoint 26.5 | billion | USD | CEO | 34 |
+| ... | | | | | |
+
+**Table 3 — Full Fiscal Year Guidance**
+
+| Metric | Value | Unit | Currency | Speaker | Para# |
+|---|---|---|---|---|---|
+| Revenue Guidance | 105 | billion | USD | CFO | 38 |
+| ... | | | | | |
+
+- Omit rows where value is null/not mentioned
+- Add a brief note at the end for any metrics the transcript mentioned ambiguously
+
+---
+
+## Template 13: Analyze Financial Metric Changes from Earnings Call
+
+**Use case**: Extract every sentence from an earnings call transcript that describes a factual change in a financial metric this quarter — compared to the prior quarter (QoQ) or same quarter last year (YoY). No external LLM needed; Claude performs the extraction.
+
+**Triggers**:
+- "What changed this quarter in the earnings call?"
+- "Analyze financial metric changes from the transcript"
+- "What improved or declined compared to last quarter / last year?"
+- "Summarize the business changes mentioned in the earnings call"
+- "What did management say about metric changes?"
+
+---
+
+### Workflow
+
+```
+1. get_stock_earning_call_transcripts_list(symbol)
+   → Identify target fiscal_year and fiscal_quarter
+   → If user said "latest", use the first (most recent) entry
+
+2. get_stock_earning_call_transcript(symbol, fiscal_year, fiscal_quarter)
+   → Retrieve full transcript paragraphs
+
+3. Scan every sentence in every paragraph
+   → For each sentence: does it explicitly describe a financial metric
+     that changed vs prior quarter (QoQ) or same quarter last year (YoY)?
+   → If yes → extract per the schema below
+   → If no  → skip
+
+4. Filter: keep only factual sentences (is_factual = Y)
+   → Discard any sentence that is a projection, guidance, expectation, or forecast
+
+5. Output structured result table (see Output Format below)
+```
+
+---
+
+### Extraction Schema
+
+For each qualifying sentence, extract all of the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `sentence` | string | The exact sentence from the transcript. It MUST explicitly describe a financial metric that changed vs prior quarter (QoQ) or same quarter last year (YoY). Do not paraphrase. |
+| `speaker` | string | Name or role of the speaker (e.g., "CFO", "CEO", "Jane Smith") |
+| `paragraph_number` | integer | Paragraph number in the transcript where this sentence appears |
+| `is_factual` | Y / N | **Y** = the change already occurred (factual result). **N** = projection, guidance, expectation, or forecast. Only keep Y rows in the final output. |
+| `short_summary` | string | One short phrase summarizing the metric change (e.g., "Revenue up 12% YoY", "Gross margin declined QoQ") |
+| `direction` | up / down / unchanged | Direction of the change inferred from the sentence |
+| `reason` | string | The reason behind the change, using management's own wording from the transcript. Empty string if no reason is mentioned. |
+
+---
+
+### Extraction Rules
+
+**What qualifies as a "financial metric change" sentence**:
+- Must mention a specific financial metric (revenue, gross margin, operating income, EPS, FCF, headcount, units shipped, etc.)
+- Must describe a change relative to a prior period: QoQ (sequential, prior quarter, last quarter) or YoY (year-over-year, same quarter last year, prior year)
+- Quantitative comparisons preferred, but qualitative directional statements also qualify (e.g., "margins expanded significantly compared to last year")
+
+**What does NOT qualify**:
+- Forward-looking statements, guidance, outlook, expectations ("we expect revenue to grow…")
+- General business descriptions without a comparison period
+- Sentences that mention a metric level but no change vs a prior period
+
+**is_factual determination**:
+- Y: the change is described as having already happened ("revenue grew", "margin expanded", "we achieved")
+- N: future tense, conditional, or hedged language ("we expect", "we anticipate", "guidance is", "we target")
+- When in doubt, lean toward N
+
+**Direction**:
+- `up`: metric increased, grew, expanded, improved, rose
+- `down`: metric decreased, declined, contracted, fell, dropped
+- `unchanged`: metric was flat, stable, in line with prior period
+
+---
+
+### Output Format
+
+Present results as a single table, sorted by `paragraph_number`:
+
+**Financial Metric Changes — FY{year} Q{quarter} (Factual, QoQ/YoY)**
+
+| # | Summary | Direction | Speaker | Para# | Sentence | Reason |
+|---|---|---|---|---|---|---|
+| 1 | Revenue up 12% YoY | ⬆️ up | CFO | 12 | "Our revenue grew 12% year-over-year to $25.7 billion." | Strong demand in cloud segment |
+| 2 | Gross margin declined QoQ | ⬇️ down | CFO | 14 | "Gross margin came in at 71.2%, down from 73.1% last quarter." | Higher component costs |
+| 3 | Operating income flat YoY | ➡️ unchanged | CEO | 18 | "Operating income was essentially flat compared to the same period last year." | |
+
+**Direction indicators**: ⬆️ up · ⬇️ down · ➡️ unchanged
+
+After the table, add a brief summary:
+- Total changes found: N (up: X, down: Y, unchanged: Z)
+- Key themes (1–3 bullet points highlighting the most significant changes)
+
+---
+
+## Template 14: Analyze Financial Metric Forecasts from Earnings Call
+
+**Use case**: Extract every sentence from an earnings call transcript that contains specific numerical forward-looking statements — guidance, outlook, expectations, or forecasts for future periods. Infer management's attitude (optimistic / pessimistic / neutral) for each. No external LLM needed; Claude performs the extraction.
+
+**Triggers**:
+- "What is management's outlook / guidance from the earnings call?"
+- "Analyze financial forecasts from the transcript"
+- "What did management project or guide for future quarters?"
+- "Extract forward-looking statements with numbers from the transcript"
+- "What is management's attitude toward future performance?"
+
+---
+
+### Workflow
+
+```
+1. get_stock_earning_call_transcripts_list(symbol)
+   → Identify target fiscal_year and fiscal_quarter
+   → If user said "latest", use the first (most recent) entry
+
+2. get_stock_earning_call_transcript(symbol, fiscal_year, fiscal_quarter)
+   → Retrieve full transcript paragraphs
+
+3. Scan every sentence in every paragraph
+   → For each sentence: does it contain specific numerical figures AND
+     describe a projection, guidance, outlook, expectation, or forecast
+     for a future period?
+   → If yes → extract per the schema below
+   → If no  → skip
+
+4. Output structured result table (see Output Format below)
+```
+
+---
+
+### Extraction Schema
+
+For each qualifying sentence, extract all of the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `sentence` | string | The exact sentence from the transcript. It MUST contain specific numerical figures (percentages, basis points, or monetary amounts) AND be forward-looking (projection, guidance, outlook, expectation, or forecast). Do not paraphrase. |
+| `speaker` | string | Name or role of the speaker (e.g., "CFO", "CEO", "Jane Smith") |
+| `paragraph_number` | integer | Paragraph number in the transcript where this sentence appears |
+| `short_summary` | string | One short phrase summarizing the forecast (e.g., "Q2 revenue guidance $26–27B", "Full-year gross margin expected ~72%") |
+| `attitude` | optimistic / pessimistic / neutral | Management's implied attitude toward this forecast, inferred from tone, context, and comparison to prior periods |
+| `reason` | string | The reason or driver behind this forecast, using management's own wording from the transcript. Empty string if no reason is mentioned. |
+
+---
+
+### Extraction Rules
+
+**What qualifies as a "forecast" sentence**:
+- Must contain specific numerical figures: a dollar amount, percentage, basis points, unit count, or EPS value
+- Must be forward-looking: future tense or language like "we expect", "we anticipate", "guidance is", "we project", "we target", "we are on track to", "outlook is"
+- Covers any future time horizon: next quarter, full fiscal year, next few years, long-term targets
+
+**What does NOT qualify**:
+- Factual past results, even if they contain numbers ("revenue was $25.7B last quarter")
+- Vague forward-looking statements without specific numbers ("we remain optimistic about growth")
+- Restatements of already-reported figures
+
+**Attitude determination**:
+- `optimistic`: management signals confidence, improvement, acceleration, or beats ("we are well-positioned", "we expect strong growth", "ahead of our targets")
+- `pessimistic`: management signals concern, deceleration, headwinds, or misses ("we expect pressure", "macro headwinds", "below prior guidance")
+- `neutral`: matter-of-fact guidance without clear positive or negative signal, or guidance that is in line with prior expectations
+
+**When in doubt on attitude**: use `neutral`
+
+---
+
+### Output Format
+
+Present results as a single table, sorted by `paragraph_number`:
+
+**Financial Metric Forecasts — FY{year} Q{quarter}**
+
+| # | Summary | Attitude | Speaker | Para# | Sentence | Reason |
+|---|---|---|---|---|---|---|
+| 1 | Q2 revenue guidance $26–27B | 😊 optimistic | CEO | 34 | "We expect revenue in the range of $26 to $27 billion for the next quarter." | Continued cloud demand and strong pipeline |
+| 2 | Full-year gross margin ~72% | 😐 neutral | CFO | 38 | "We anticipate full-year non-GAAP gross margin of approximately 72%." | |
+| 3 | Q2 operating margin under pressure | 😟 pessimistic | CFO | 41 | "We expect operating margin to decline by roughly 200 basis points sequentially due to increased R&D investment." | Planned headcount additions and infrastructure spend |
+
+**Attitude indicators**: 😊 optimistic · 😐 neutral · 😟 pessimistic
+
+After the table, add a brief summary:
+- Total forecasts found: N (optimistic: X, neutral: Y, pessimistic: Z)
+- Overall management tone: [one sentence characterizing the dominant attitude]
+- Key themes (1–3 bullet points on the most significant forward-looking items)
 - ❌ Avoid for unprofitable, highly cyclical, or financial companies

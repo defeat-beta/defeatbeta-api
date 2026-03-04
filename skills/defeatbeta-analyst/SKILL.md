@@ -147,6 +147,27 @@ When displaying results from `get_stock_*_income_statement`, `get_stock_*_balanc
 - "Recent news", "latest developments"
 - "SEC filing", "10-K", "10-Q", "8-K"
 
+### Key Financial Data Extraction from Earnings Call
+- "Extract key financial data from earnings call"
+- "What were the reported revenue / EPS / margins this quarter?"
+- "What guidance did management give for next quarter or full year?"
+- "Summarize key financial metrics from the transcript"
+- "Get the numbers from the earnings call"
+
+### Financial Metric Change Analysis from Earnings Call
+- "What changed this quarter in the earnings call?"
+- "Analyze financial metric changes from the transcript"
+- "What improved or declined compared to last quarter / last year?"
+- "Summarize business changes mentioned in the earnings call"
+- "What did management say about metric changes?"
+
+### Financial Metric Forecast Analysis from Earnings Call
+- "What is management's outlook / guidance from the earnings call?"
+- "Analyze financial forecasts from the transcript"
+- "What did management project or guide for future quarters?"
+- "Extract forward-looking statements with numbers from the transcript"
+- "What is management's attitude toward future performance?"
+
 ## Reference Documentation
 
 **When you need detailed workflows**, see [analysis-templates.md](./references/analysis-templates.md):
@@ -155,6 +176,9 @@ When displaying results from `get_stock_*_income_statement`, `get_stock_*_balanc
 - Template 2: Full Fundamental Analysis
 - Template 3-10: Specialized analyses (valuation, growth, margins, earnings, etc.)
 - Template 11: DCF Valuation with 8-section professional report structure
+- Template 12: Extract Key Financial Data from Earnings Call (reported results + guidance, no external LLM needed)
+- Template 13: Analyze Financial Metric Changes from Earnings Call (factual QoQ/YoY changes with direction and reason, no external LLM needed)
+- Template 14: Analyze Financial Metric Forecasts from Earnings Call (forward-looking numerical guidance with management attitude, no external LLM needed)
 
 **When you need API parameters and schemas**, see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md):
 - Complete API documentation with parameters, response schemas, examples
