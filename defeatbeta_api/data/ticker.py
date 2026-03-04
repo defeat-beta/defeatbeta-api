@@ -815,6 +815,99 @@ class Ticker:
         result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
+    def ttm_ebitda(self) -> pd.DataFrame:
+        ttm_ebitda_url = self.huggingface_client.get_url_path(stock_statement)
+        ttm_ebitda_sql = load_sql("select_ttm_ebitda_by_symbol",
+                                  ticker=self.ticker,
+                                  ttm_ebitda_url=ttm_ebitda_url)
+        ttm_ebitda_df = self.duckdb_client.query(ttm_ebitda_sql)
+
+        company_info = self.company_meta.get_company_info(self.ticker)
+        currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
+        if currency == 'USD':
+            currency_df = pd.DataFrame()
+            currency_df['report_date'] = pd.to_datetime(ttm_ebitda_df['report_date'])
+            currency_df['symbol'] = currency + '=X'
+            currency_df['open'] = 1.0
+            currency_df['close'] = 1.0
+            currency_df['high'] = 1.0
+            currency_df['low'] = 1.0
+        else:
+            currency_df = self.currency(symbol=currency + '=X')
+
+        ttm_ebitda_df['report_date'] = pd.to_datetime(ttm_ebitda_df['report_date'])
+        currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+
+        result_df = ttm_ebitda_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'ttm_ebitda_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('ttm_ebitda_report_date'),
+            currency_df.sort_values('report_date'),
+            left_on='ttm_ebitda_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df['ttm_ebitda_usd'] = round(result_df['ttm_ebitda'] / result_df['close'], 2)
+
+        result_df = result_df[[
+            'ttm_ebitda_report_date',
+            'ttm_ebitda',
+            'report_date_2_ebitda',
+            'report_date',
+            'close',
+            'ttm_ebitda_usd'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'ttm_ebitda_report_date': 'report_date',
+            'report_date': 'exchange_report_date',
+            'close': 'exchange_to_usd_rate'
+        })
+
+        result_df.insert(0, 'symbol', self.ticker)
+        return result_df
+
+    def enterprise_to_ebitda(self) -> pd.DataFrame:
+        ev_df = self.enterprise_value().drop(columns=['symbol'])
+        ttm_ebitda_df = self.ttm_ebitda().drop(columns=['symbol'])
+
+        ev_df['report_date'] = pd.to_datetime(ev_df['report_date'])
+        ttm_ebitda_df['report_date'] = pd.to_datetime(ttm_ebitda_df['report_date'])
+
+        result_df = ev_df.copy()
+        result_df = result_df.rename(columns={'report_date': 'ev_report_date'})
+
+        result_df = pd.merge_asof(
+            result_df.sort_values('ev_report_date'),
+            ttm_ebitda_df[['report_date', 'ttm_ebitda', 'ttm_ebitda_usd']].sort_values('report_date'),
+            left_on='ev_report_date',
+            right_on='report_date',
+            direction='backward'
+        )
+
+        result_df = result_df[result_df['report_date'].notna()]
+
+        result_df['ev_to_ebitda'] = (result_df['enterprise_value'] / result_df['ttm_ebitda_usd']).replace([np.inf, -np.inf], np.nan).round(2)
+
+        result_df = result_df[[
+            'ev_report_date',
+            'enterprise_value',
+            'report_date',
+            'ttm_ebitda',
+            'ttm_ebitda_usd',
+            'ev_to_ebitda'
+        ]]
+
+        result_df = result_df.rename(columns={
+            'ev_report_date': 'report_date',
+            'report_date': 'fiscal_quarter',
+        })
+
+        result_df.insert(0, 'symbol', self.ticker)
+        return result_df
+
     def ttm_net_income_common_stockholders(self) -> pd.DataFrame:
         ttm_net_income_url = self.huggingface_client.get_url_path(stock_statement)
         ttm_net_income_sql = load_sql("select_ttm_net_income_common_stockholders_by_symbol",
