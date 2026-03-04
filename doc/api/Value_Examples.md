@@ -531,7 +531,7 @@ ticker.industry_ttm_pe()
 
 ```
 
-## 15. Industry Historical PS Ratio
+## 17. Industry Historical PS Ratio
 ```markdown
 total_market_cap       = sum of the market cap of all stocks in the industry  
 
@@ -560,7 +560,7 @@ ticker.industry_ps_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 16. Industry Historical PB Ratio
+## 18. Industry Historical PB Ratio
 ```markdown
 total_market_cap                = sum of the market cap of all stocks in the industry  
 
@@ -589,7 +589,7 @@ ticker.industry_pb_ratio()
 [7793 rows x 5 columns]
 ```
 
-## 17. Industry Historical ROE
+## 19. Industry Historical ROE
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -621,7 +621,7 @@ ticker.industry_roe()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09      5.245579e+11        0.0136
 ```
 
-## 18. Industry Historical ROA
+## 20. Industry Historical ROA
 ```markdown
 total_net_income_common_stockholders  
     = the sum of the net income attributable to common shareholders across all stocks in the industry  
@@ -653,7 +653,7 @@ ticker.industry_roa()
 9  2025-09-30  Auto Manufacturers                          7.128733e+09       1.685806e+12        0.0042
 ```
 
-## 19. Industry Historical Equity Multiplier
+## 21. Industry Historical Equity Multiplier
 ```markdown
 Industry Equity Multiplier = Industry ROE / Industry ROA
 ```
@@ -676,7 +676,7 @@ ticker.industry_equity_multiplier()
 
 ```
 
-## 20. Industry Historical Asset Turnover
+## 22. Industry Historical Asset Turnover
 ```markdown
 Industry Asset Turnover = Industry ROA / Industry Net Margin
 ```
