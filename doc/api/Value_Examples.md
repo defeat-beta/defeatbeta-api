@@ -17,13 +17,14 @@
 - [13. Stock Historical Enterprise Value](#13-stock-historical-enterprise-value)
 - [14. Stock Historical Enterprise Value to Revenue (EV/Revenue)](#14-stock-historical-enterprise-value-to-revenue-evrevenue)
 - [15. Stock Historical Enterprise Value to EBITDA (EV/EBITDA)](#15-stock-historical-enterprise-value-to-ebitda-evebitda)
-- [16. Industry Historical TTM PE](#16-industry-historical-ttm-pe)
-- [17. Industry Historical PS Ratio](#17-industry-historical-ps-ratio)
-- [18. Industry Historical PB Ratio](#18-industry-historical-pb-ratio)
-- [19. Industry Historical ROE](#19-industry-historical-roe)
-- [20. Industry Historical ROA](#20-industry-historical-roa)
-- [21. Industry Historical Equity Multiplier](#21-industry-historical-equity-multiplier)
-- [22. Industry Historical Asset Turnover](#22-industry-historical-asset-turnover)
+- [16. Stock Historical Debt to Equity (D/E) Ratio](#16-stock-historical-debt-to-equity-de-ratio)
+- [17. Industry Historical TTM PE](#17-industry-historical-ttm-pe)
+- [18. Industry Historical PS Ratio](#18-industry-historical-ps-ratio)
+- [19. Industry Historical PB Ratio](#19-industry-historical-pb-ratio)
+- [20. Industry Historical ROE](#20-industry-historical-roe)
+- [21. Industry Historical ROA](#21-industry-historical-roa)
+- [22. Industry Historical Equity Multiplier](#22-industry-historical-equity-multiplier)
+- [23. Industry Historical Asset Turnover](#23-industry-historical-asset-turnover)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
