@@ -592,6 +592,26 @@ All margin APIs return similar structure. Using gross margin as example:
 }
 ```
 
+### get_stock_quarterly_debt_to_equity(symbol: str)
+**Returns**: Debt to Equity (D/E) Ratio (quarterly)
+```python
+{
+    "symbol": "TSLA",
+    "currency": "USD",
+    "period_type": "quarterly",
+    "periods": [...],
+    "rows_returned": 20,
+    "data": [
+        {
+            "period": "2024-12-31",
+            "total_debt": 12000000000,
+            "stockholders_equity": 55566666000,
+            "debt_to_equity": 0.22  # total_debt / stockholders_equity
+        }
+    ]
+}
+```
+
 ## Valuation Ratios
 
 ### get_stock_ttm_pe(symbol: str, start_date: str = None, end_date: str = None)
@@ -705,6 +725,84 @@ All margin APIs return similar structure. Using gross margin as example:
             "cost_of_debt": 0.0150,
             "cost_of_equity": 0.1848,  # CAPM
             "wacc": 0.1820  # 18.20%
+        }
+    ]
+}
+```
+
+### get_stock_enterprise_value(symbol: str, start_date: str = None, end_date: str = None)
+**Returns**: Historical Enterprise Value (MAX 1000 rows)
+
+EV = Market Cap + Total Debt + Minority Interest + Preferred Stock Equity - Cash and Equivalents (all in USD)
+
+```python
+{
+    "symbol": "TSLA",
+    "currency": "USD",
+    "date_range": "2020-01-01 to 2025-01-24",
+    "rows_returned": 1000,
+    "truncated": true,
+    "data": [
+        {
+            "report_date": "2025-01-24",
+            "fiscal_quarter": "2024-12-31",
+            "market_capitalization": 750592000000,
+            "exchange_to_usd_rate": 1.0,
+            "total_debt": 12000000000,
+            "total_debt_usd": 12000000000,
+            "minority_interest": 0,
+            "minority_interest_usd": 0,
+            "preferred_stock_equity": 0,
+            "preferred_stock_equity_usd": 0,
+            "cash_and_cash_equivalents": 36600000000,
+            "cash_and_cash_equivalents_usd": 36600000000,
+            "enterprise_value": 725992000000
+        }
+    ]
+}
+```
+
+### get_stock_enterprise_to_revenue(symbol: str, start_date: str = None, end_date: str = None)
+**Returns**: Historical EV/Revenue ratio (MAX 1000 rows)
+```python
+{
+    "symbol": "TSLA",
+    "currency": "USD",
+    "date_range": "2020-01-01 to 2025-01-24",
+    "rows_returned": 1000,
+    "truncated": true,
+    "data": [
+        {
+            "report_date": "2025-01-24",
+            "fiscal_quarter": "2024-12-31",
+            "enterprise_value": 725992000000,
+            "ttm_revenue": 97690000000,
+            "ttm_revenue_usd": 97690000000,
+            "ev_to_revenue": 7.43
+        }
+    ]
+}
+```
+
+### get_stock_enterprise_to_ebitda(symbol: str, start_date: str = None, end_date: str = None)
+**WARNING**: Not applicable to banks/financial institutions
+
+**Returns**: Historical EV/EBITDA ratio (MAX 1000 rows)
+```python
+{
+    "symbol": "TSLA",
+    "currency": "USD",
+    "date_range": "2020-01-01 to 2025-01-24",
+    "rows_returned": 1000,
+    "truncated": true,
+    "data": [
+        {
+            "report_date": "2025-01-24",
+            "fiscal_quarter": "2024-12-31",
+            "enterprise_value": 725992000000,
+            "ttm_ebitda": 14500000000,
+            "ttm_ebitda_usd": 14500000000,
+            "ev_to_ebitda": 50.07
         }
     ]
 }
