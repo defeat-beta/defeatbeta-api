@@ -202,68 +202,128 @@ ticker.annual_fcf_margin()
 
 ## 11. Industry Quarterly Historical Gross Margin
 ```markdown
-total_gross_profit              = sum of the gross profit of all stocks in the industry  
+Aggregate method (Damodaran): industry gross margin = Σ(TTM gross profit) / Σ(TTM revenue), not
+the mean of individual company gross margins. This gives larger companies more weight, consistent
+with how index providers (MSCI, S&P) compute sector-level profitability metrics.
 
-total_revenue                   = sum of the revenue of all stocks in the industry
+Paired exclusion: a company is included only when BOTH its TTM gross profit AND its TTM revenue
+are available on the same date.
 
-industry_gross_margin           = total_gross_profit / total_revenue
+TTM gross profit: trailing four consecutive quarters of gross_profit, converted to USD at the spot
+FX rate of each fiscal quarter end.
+
+TTM revenue: trailing four consecutive quarters of total_revenue, converted to USD at the spot FX
+rate of each fiscal quarter end.
+
+Date baseline: every month end. Each company's quarterly TTM values are forward-filled to the
+monthly baseline via merge_asof (backward), so companies with different fiscal year ends all
+contribute to every month.
+
+total_ttm_gross_profit = Σ ttm_gross_profit_usd(i)  for companies where both values available
+total_ttm_revenue      = Σ ttm_revenue_usd(i)        for the same set of companies
+
+industry_gross_margin  = total_ttm_gross_profit / total_ttm_revenue
 ```
 
 ```python
 ticker.industry_quarterly_gross_margin()
 ```
 ```text
-  report_date            industry  total_gross_profit  total_revenue  industry_gross_margin
-0  2024-06-30  Auto Manufacturers        3.964851e+10   2.458395e+11                 0.1613
-1  2024-09-30  Auto Manufacturers        4.237159e+10   2.580736e+11                 0.1642
-2  2024-12-31  Auto Manufacturers        3.792915e+10   2.566520e+11                 0.1478
-3  2025-03-31  Auto Manufacturers        3.674957e+10   2.390910e+11                 0.1537
-4  2025-06-30  Auto Manufacturers        3.639969e+10   2.613396e+11                 0.1393
-5  2025-09-30  Auto Manufacturers        3.574678e+10   2.672693e+11                 0.1337
+   report_date        industry  total_ttm_gross_profit  total_ttm_revenue  industry_gross_margin
+0   2024-03-31  Semiconductors            1.482105e+11       3.116670e+11                 0.4755
+1   2024-04-30  Semiconductors            2.449303e+11       4.509029e+11                 0.5432
+2   2024-05-31  Semiconductors            2.473716e+11       4.722735e+11                 0.5238
+3   2024-06-30  Semiconductors            2.478755e+11       4.747234e+11                 0.5221
+4   2024-07-31  Semiconductors            2.626168e+11       4.946217e+11                 0.5309
+5   2024-08-31  Semiconductors            2.657890e+11       4.983616e+11                 0.5333
+6   2024-09-30  Semiconductors            2.666104e+11       5.058975e+11                 0.5270
+7   2024-10-31  Semiconductors            2.815764e+11       5.275066e+11                 0.5338
+8   2024-11-30  Semiconductors            2.849595e+11       5.314892e+11                 0.5362
+9   2024-12-31  Semiconductors            2.900923e+11       5.397324e+11                 0.5375
 ```
 
 
 ## 12. Industry Quarterly Historical Net Income Margin
 ```markdown
-total_net_income                = sum of the net income of all stocks in the industry  
+Aggregate method (Damodaran): industry net margin = Σ(TTM net income) / Σ(TTM revenue), not the
+mean of individual company net margins. This gives larger companies more weight, consistent with
+how index providers (MSCI, S&P) compute sector-level profitability metrics.
 
-total_revenue                   = sum of the revenue of all stocks in the industry
+Paired exclusion: a company is included only when BOTH its TTM net income AND its TTM revenue are
+available on the same date.
 
-industry_net_margin             = total_net_income / total_revenue
+TTM net income: trailing four consecutive quarters of net_income_common_stockholders, converted to
+USD at the spot FX rate of each fiscal quarter end.
+
+TTM revenue: trailing four consecutive quarters of total_revenue, converted to USD at the spot FX
+rate of each fiscal quarter end.
+
+Date baseline: every month end. Each company's quarterly TTM values are forward-filled to the
+monthly baseline via merge_asof (backward), so companies with different fiscal year ends all
+contribute to every month.
+
+total_ttm_net_income = Σ ttm_net_income_usd(i)  for companies where both values available
+total_ttm_revenue    = Σ ttm_revenue_usd(i)      for the same set of companies
+
+industry_net_margin  = total_ttm_net_income / total_ttm_revenue
 ```
 
 ```python
 ticker.industry_quarterly_net_margin()
 ```
 ```text
-  report_date            industry  total_net_income  total_revenue  industry_net_margin
-0  2024-06-30  Auto Manufacturers      1.144196e+10   2.458395e+11               0.0465
-1  2024-09-30  Auto Manufacturers      6.176102e+09   2.580736e+11               0.0239
-2  2024-12-31  Auto Manufacturers      1.273238e+10   2.566520e+11               0.0496
-3  2025-03-31  Auto Manufacturers      4.782458e+09   2.390910e+11               0.0200
-4  2025-06-30  Auto Manufacturers      5.536484e+09   2.613396e+11               0.0212
-5  2025-09-30  Auto Manufacturers      7.111671e+09   2.672693e+11               0.0266
+   report_date        industry  total_ttm_net_income  total_ttm_revenue  industry_net_margin
+0   2024-03-31  Semiconductors          6.231471e+10       3.116672e+11               0.1999
+1   2024-04-30  Semiconductors          1.152309e+11       4.509032e+11               0.2556
+2   2024-05-31  Semiconductors          1.136923e+11       4.722738e+11               0.2407
+3   2024-06-30  Semiconductors          1.104458e+11       4.747235e+11               0.2327
+4   2024-07-31  Semiconductors          1.154221e+11       4.946218e+11               0.2334
+5   2024-08-31  Semiconductors          1.177394e+11       4.983617e+11               0.2363
+6   2024-09-30  Semiconductors          1.046344e+11       5.058976e+11               0.2068
+7   2024-10-31  Semiconductors          1.150011e+11       5.275068e+11               0.2180
+8   2024-11-30  Semiconductors          1.181051e+11       5.314894e+11               0.2222
+9   2024-12-31  Semiconductors          1.176083e+11       5.397324e+11               0.2179
 ```
 
 
 ## 13. Industry Quarterly Historical EBITDA Margin
 ```markdown
-total_ebitda                = sum of the ebitda of all stocks in the industry  
+Aggregate method (Damodaran): industry EBITDA margin = Σ(TTM EBITDA) / Σ(TTM revenue), not the
+mean of individual company EBITDA margins. This gives larger companies more weight, consistent with
+how index providers (MSCI, S&P) compute sector-level profitability metrics.
 
-total_revenue                   = sum of the revenue of all stocks in the industry
+Paired exclusion: a company is included only when BOTH its TTM EBITDA AND its TTM revenue are
+available on the same date.
 
-industry_ebitda_margin             = total_ebitda / total_revenue
+TTM EBITDA: trailing four consecutive quarters of ebitda, converted to USD at the spot FX rate of
+each fiscal quarter end.
+
+TTM revenue: trailing four consecutive quarters of total_revenue, converted to USD at the spot FX
+rate of each fiscal quarter end.
+
+Date baseline: every month end. Each company's quarterly TTM values are forward-filled to the
+monthly baseline via merge_asof (backward), so companies with different fiscal year ends all
+contribute to every month.
+
+total_ttm_ebitda  = Σ ttm_ebitda_usd(i)   for companies where both values available
+total_ttm_revenue = Σ ttm_revenue_usd(i)   for the same set of companies
+
+industry_ebitda_margin = total_ttm_ebitda / total_ttm_revenue
 ```
 
 ```python
 ticker.industry_quarterly_ebitda_margin()
 ```
 ```text
-  report_date            industry  total_ebitda  total_revenue  industry_ebitda_margin
-0  2024-06-30  Auto Manufacturers  3.117391e+10   2.458395e+11                  0.1268
-1  2024-09-30  Auto Manufacturers  2.350209e+10   2.580736e+11                  0.0911
-2  2024-12-31  Auto Manufacturers  3.116696e+10   2.566520e+11                  0.1214
-3  2025-03-31  Auto Manufacturers  2.098070e+10   2.390910e+11                  0.0878
-4  2025-06-30  Auto Manufacturers  2.426165e+10   2.613396e+11                  0.0928
-5  2025-09-30  Auto Manufacturers  2.553228e+10   2.673781e+11                  0.0955
+   report_date        industry  total_ttm_ebitda  total_ttm_revenue  industry_ebitda_margin
+0   2024-03-31  Semiconductors      1.155701e+11       3.116672e+11                  0.3708
+1   2024-04-30  Semiconductors      1.914041e+11       4.509032e+11                  0.4245
+2   2024-05-31  Semiconductors      1.979625e+11       4.722738e+11                  0.4192
+3   2024-06-30  Semiconductors      1.991990e+11       4.747235e+11                  0.4196
+4   2024-07-31  Semiconductors      2.127406e+11       4.946218e+11                  0.4301
+5   2024-08-31  Semiconductors      2.157649e+11       4.983617e+11                  0.4329
+6   2024-09-30  Semiconductors      2.086910e+11       5.058976e+11                  0.4125
+7   2024-10-31  Semiconductors      2.219666e+11       5.275068e+11                  0.4208
+8   2024-11-30  Semiconductors      2.253746e+11       5.314894e+11                  0.4240
+9   2024-12-31  Semiconductors      2.280932e+11       5.397324e+11                  0.4226
 ```

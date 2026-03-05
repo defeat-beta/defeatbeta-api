@@ -241,6 +241,7 @@ class Ticker:
         })
 
         result_df.insert(0, 'symbol', self.ticker)
+        result_df = result_df.dropna(subset=['ttm_eps']).reset_index(drop=True)
         return result_df
 
     def quarterly_gross_margin(self) -> pd.DataFrame:
@@ -2083,33 +2084,31 @@ class Ticker:
             raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
 
         url = self.huggingface_client.get_url_path(stock_profile)
-        sql = load_sql("select_tickers_by_industry", url = url, industry=industry)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
         symbols = self.duckdb_client.query(sql)['symbol']
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
         market_cap_table_sql = load_sql("select_market_cap_by_industry",
-                                        stock_prices = self.huggingface_client.get_url_path(stock_prices),
-                                        stock_shares_outstanding = self.huggingface_client.get_url_path(stock_shares_outstanding),
-                                        symbols = ", ".join(f"'{s}'" for s in symbols))
+                                        stock_prices=self.huggingface_client.get_url_path(stock_prices),
+                                        stock_shares_outstanding=self.huggingface_client.get_url_path(stock_shares_outstanding),
+                                        symbols=", ".join(f"'{s}'" for s in symbols))
 
-        total_market_cap = self.duckdb_client.query(market_cap_table_sql)
-        total_market_cap = total_market_cap.dropna(axis=1, how='all')
-
-        market_cap_cols = [col for col in total_market_cap.columns if col != 'report_date']
-
-        total_market_cap['total_market_cap'] = total_market_cap[market_cap_cols].sum(axis=1, skipna=True)
-        total_market_cap['industry'] = industry
-        total_market_cap = total_market_cap[['report_date', 'industry', 'total_market_cap']]
-        total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
+        # Keep wide format (report_date + one column per symbol) for paired exclusion
+        market_cap_wide = self.duckdb_client.query(market_cap_table_sql)
+        market_cap_wide = market_cap_wide.dropna(axis=1, how='all')
+        market_cap_wide['report_date'] = pd.to_datetime(market_cap_wide['report_date'])
+        market_cap_cols = [col for col in market_cap_wide.columns if col != 'report_date']
 
         ttm_net_income_sql = load_sql("select_ttm_net_income_by_industry",
-                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
-                                      symbols = ", ".join(f"'{s}'" for s in market_cap_cols))
-        ttm_net_income = self.duckdb_client.query(ttm_net_income_sql)
-        ttm_net_income_df = ttm_net_income.copy()
+                                      stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                      symbols=", ".join(f"'{s}'" for s in market_cap_cols))
+        ttm_net_income_df = self.duckdb_client.query(ttm_net_income_sql).copy()
+
+
         currency_dict = self.company_meta.get_financial_currency_map()
         ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date'])
+
         usd_columns = []
         for symbol in ttm_net_income_df.columns:
             if symbol == 'report_date':
@@ -2133,32 +2132,56 @@ class Ticker:
             )
             usd_series = (merged_df['ttm_net_income'] / merged_df['close']).round(2)
             usd_series.name = f"{symbol}_usd"
-
             usd_columns.append(usd_series)
 
-        ttm_net_income_df = pd.concat([ttm_net_income_df] + usd_columns, axis=1)
+        # Keep TTM net income as wide format (report_date + one _usd column per symbol)
+        ttm_net_income_usd_wide = pd.concat([ttm_net_income_df[['report_date']]] + usd_columns, axis=1)
+        ttm_net_income_usd_wide = ttm_net_income_usd_wide.dropna(axis=1, how='all')
+        # Sort by date BEFORE ffill, so values propagate forward in time correctly.
+        # ffill after sort_values would apply in wrong direction if SQL returns rows
+        # in non-chronological order.
+        ttm_net_income_usd_wide = ttm_net_income_usd_wide.sort_values('report_date').reset_index(drop=True)
+        ttm_net_income_usd_wide = ttm_net_income_usd_wide.ffill()
 
-        cols_to_keep = ['report_date'] + [c for c in ttm_net_income_df.columns if c.endswith('_usd')]
-        ttm_net_income_usd_df = ttm_net_income_df[cols_to_keep]
-        ttm_net_income_usd_df = ttm_net_income_usd_df.ffill()
-        ttm_net_income_usd_df = ttm_net_income_usd_df.dropna(axis=1, how='all')
-        valid_idx = ttm_net_income_usd_df.notna().all(axis=1).idxmax()
-        ttm_net_income_usd_df = ttm_net_income_usd_df.loc[valid_idx:].reset_index(drop=True)
+        # Sort market cap by date so row order matches ttm_aligned after merge_asof
+        mc_reset = market_cap_wide.sort_values('report_date').reset_index(drop=True)
 
-        ttm_net_income_usd_cols = [col for col in ttm_net_income_usd_df.columns if col != 'report_date']
-        ttm_net_income_usd_df['total_ttm_net_income'] = ttm_net_income_usd_df[ttm_net_income_usd_cols].sum(axis=1, skipna=True)
-        ttm_net_income_usd_df = ttm_net_income_usd_df[['report_date', 'total_ttm_net_income']]
-        ttm_net_income_usd_df['report_date'] = pd.to_datetime(ttm_net_income_usd_df['report_date'])
-        df = pd.merge_asof(
-                total_market_cap,
-                ttm_net_income_usd_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
+        # Align quarterly TTM data to daily market cap dates
+        ttm_aligned = pd.merge_asof(
+            mc_reset[['report_date']],
+            ttm_net_income_usd_wide.sort_values('report_date'),
+            on='report_date',
+            direction='backward'
+        ).reset_index(drop=True)
 
-        df['industry_pe'] = (df['total_market_cap'] / df['total_ttm_net_income']).replace([np.inf, -np.inf], np.nan).round(2)
-        return df
+        # Paired exclusion: only include a company's market cap when its TTM net
+        # income is also available, so numerator and denominator cover the same set
+        # of companies for every date (MSCI methodology).
+        paired_symbols = [s for s in market_cap_cols if f"{s}_usd" in ttm_aligned.columns]
+
+        total_paired_market_cap = pd.Series(0.0, index=mc_reset.index)
+        total_ttm_net_income = pd.Series(0.0, index=mc_reset.index)
+        count_with_data = pd.Series(0, index=mc_reset.index)
+
+        for s in paired_symbols:
+            mc_col = mc_reset[s]
+            ttm_col = ttm_aligned[f"{s}_usd"]
+            # Exclude companies with negative TTM net income (standard aggregate
+            # PE methodology: negative-earnings constituents are dropped so they
+            # do not distort the industry-level ratio).
+            has_data = ttm_col.notna() & mc_col.notna() & (ttm_col > 0)
+            total_paired_market_cap += mc_col.where(has_data, 0.0)
+            total_ttm_net_income += ttm_col.where(has_data, 0.0)
+            count_with_data += has_data.astype(int)
+
+        result = mc_reset[['report_date']].copy()
+        result['industry'] = industry
+        result['total_market_cap'] = total_paired_market_cap.where(count_with_data > 0)
+        result['total_ttm_net_income'] = total_ttm_net_income.where(count_with_data > 0)
+        result['industry_pe'] = (result['total_market_cap'] / result['total_ttm_net_income']).replace([np.inf, -np.inf], np.nan).round(2)
+        # Drop rows where no company had sufficient data
+        result = result.dropna(subset=['total_market_cap'])
+        return result
 
     def industry_ps_ratio(self) -> pd.DataFrame:
         info = self.info()
@@ -2181,23 +2204,21 @@ class Ticker:
                                             stock_shares_outstanding),
                                         symbols=", ".join(f"'{s}'" for s in symbols))
 
-        total_market_cap = self.duckdb_client.query(market_cap_table_sql)
-
-        market_cap_cols = [col for col in total_market_cap.columns if col != 'report_date']
-
-        total_market_cap['total_market_cap'] = total_market_cap[market_cap_cols].sum(axis=1, skipna=True)
-        total_market_cap['industry'] = industry
-        total_market_cap = total_market_cap[['report_date', 'industry', 'total_market_cap']]
-        total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
+        # Keep wide format (report_date + one column per symbol) for paired exclusion
+        market_cap_wide = self.duckdb_client.query(market_cap_table_sql)
+        market_cap_wide = market_cap_wide.dropna(axis=1, how='all')
+        market_cap_wide['report_date'] = pd.to_datetime(market_cap_wide['report_date'])
+        market_cap_cols = [col for col in market_cap_wide.columns if col != 'report_date']
 
         ttm_revenue_sql = load_sql("select_ttm_revenue_by_industry",
-                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
-                                      symbols = ", ".join(f"'{s}'" for s in symbols))
-        ttm_revenue = self.duckdb_client.query(ttm_revenue_sql)
-        ttm_revenue_df = ttm_revenue.copy()
+                                   stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                   symbols=", ".join(f"'{s}'" for s in market_cap_cols))
+        ttm_revenue_df = self.duckdb_client.query(ttm_revenue_sql).copy()
+
         currency_dict = self.company_meta.get_financial_currency_map()
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
-        new_cols = {}
+
+        usd_columns = []
         for symbol in ttm_revenue_df.columns:
             if symbol == 'report_date':
                 continue
@@ -2218,28 +2239,53 @@ class Ticker:
                 right_on='report_date',
                 direction='backward'
             )
-            new_cols[f'{symbol}_usd'] = (merged_df['ttm_revenue'] / merged_df['close']).round(2)
+            usd_series = (merged_df['ttm_revenue'] / merged_df['close']).round(2)
+            usd_series.name = f"{symbol}_usd"
+            usd_columns.append(usd_series)
 
-        ttm_revenue_df = pd.concat([ttm_revenue_df, pd.DataFrame(new_cols)], axis=1)
+        # Keep TTM revenue as wide format (report_date + one _usd column per symbol)
+        ttm_revenue_usd_wide = pd.concat([ttm_revenue_df[['report_date']]] + usd_columns, axis=1)
+        ttm_revenue_usd_wide = ttm_revenue_usd_wide.dropna(axis=1, how='all')
+        # Sort by date BEFORE ffill so values propagate forward in time correctly
+        ttm_revenue_usd_wide = ttm_revenue_usd_wide.sort_values('report_date').reset_index(drop=True)
+        ttm_revenue_usd_wide = ttm_revenue_usd_wide.ffill()
 
-        cols_to_keep = ['report_date'] + [c for c in ttm_revenue_df.columns if c.endswith('_usd')]
-        ttm_revenue_df = ttm_revenue_df[cols_to_keep]
-        ttm_revenue_df = ttm_revenue_df.ffill()
+        # Sort market cap by date so row order matches ttm_aligned after merge_asof
+        mc_reset = market_cap_wide.sort_values('report_date').reset_index(drop=True)
 
-        ttm_revenue_df_cols = [col for col in ttm_revenue_df.columns if col != 'report_date']
-        ttm_revenue_df['total_ttm_revenue'] = ttm_revenue_df[ttm_revenue_df_cols].sum(axis=1, skipna=True)
-        ttm_revenue_df = ttm_revenue_df[['report_date', 'total_ttm_revenue']].copy()
-        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date'])
-        df = pd.merge_asof(
-                total_market_cap,
-                ttm_revenue_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
+        # Align quarterly TTM data to daily market cap dates
+        ttm_aligned = pd.merge_asof(
+            mc_reset[['report_date']],
+            ttm_revenue_usd_wide.sort_values('report_date'),
+            on='report_date',
+            direction='backward'
+        ).reset_index(drop=True)
 
-        df['industry_ps_ratio'] = (df['total_market_cap'] / df['total_ttm_revenue']).replace([np.inf, -np.inf], np.nan).round(2)
-        return df
+        # Paired exclusion: only include a company's market cap when its TTM revenue
+        # is also available, so numerator and denominator cover the same set of
+        # companies for every date (MSCI methodology).
+        paired_symbols = [s for s in market_cap_cols if f"{s}_usd" in ttm_aligned.columns]
+
+        total_paired_market_cap = pd.Series(0.0, index=mc_reset.index)
+        total_ttm_revenue = pd.Series(0.0, index=mc_reset.index)
+        count_with_data = pd.Series(0, index=mc_reset.index)
+
+        for s in paired_symbols:
+            mc_col = mc_reset[s]
+            ttm_col = ttm_aligned[f"{s}_usd"]
+            has_data = ttm_col.notna() & mc_col.notna()
+            total_paired_market_cap += mc_col.where(has_data, 0.0)
+            total_ttm_revenue += ttm_col.where(has_data, 0.0)
+            count_with_data += has_data.astype(int)
+
+        result = mc_reset[['report_date']].copy()
+        result['industry'] = industry
+        result['total_market_cap'] = total_paired_market_cap.where(count_with_data > 0)
+        result['total_ttm_revenue'] = total_ttm_revenue.where(count_with_data > 0)
+        result['industry_ps_ratio'] = (result['total_market_cap'] / result['total_ttm_revenue']).replace([np.inf, -np.inf], np.nan).round(2)
+        # Drop rows where no company had sufficient data
+        result = result.dropna(subset=['total_market_cap'])
+        return result
 
     def industry_pb_ratio(self) -> pd.DataFrame:
         info = self.info()
@@ -2262,23 +2308,21 @@ class Ticker:
                                             stock_shares_outstanding),
                                         symbols=", ".join(f"'{s}'" for s in symbols))
 
-        total_market_cap = self.duckdb_client.query(market_cap_table_sql)
-
-        market_cap_cols = [col for col in total_market_cap.columns if col != 'report_date']
-
-        total_market_cap['total_market_cap'] = total_market_cap[market_cap_cols].sum(axis=1, skipna=True)
-        total_market_cap['industry'] = industry
-        total_market_cap = total_market_cap[['report_date', 'industry', 'total_market_cap']]
-        total_market_cap['report_date'] = pd.to_datetime(total_market_cap['report_date'])
+        # Keep wide format (report_date + one column per symbol) for paired exclusion
+        market_cap_wide = self.duckdb_client.query(market_cap_table_sql)
+        market_cap_wide = market_cap_wide.dropna(axis=1, how='all')
+        market_cap_wide['report_date'] = pd.to_datetime(market_cap_wide['report_date'])
+        market_cap_cols = [col for col in market_cap_wide.columns if col != 'report_date']
 
         bve_sql = load_sql("select_quarterly_book_value_of_equity_by_industry",
-                                      stock_statement = self.huggingface_client.get_url_path(stock_statement),
-                                      symbols = ", ".join(f"'{s}'" for s in symbols))
-        bve = self.duckdb_client.query(bve_sql)
-        bve_df = bve.copy()
+                           stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                           symbols=", ".join(f"'{s}'" for s in market_cap_cols))
+        bve_df = self.duckdb_client.query(bve_sql).copy()
+
         currency_dict = self.company_meta.get_financial_currency_map()
         bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
-        new_cols = {}
+
+        usd_columns = []
         for symbol in bve_df.columns:
             if symbol == 'report_date':
                 continue
@@ -2299,28 +2343,53 @@ class Ticker:
                 right_on='report_date',
                 direction='backward'
             )
-            new_cols[f'{symbol}_usd'] = (merged_df['bve'] / merged_df['close']).round(2)
+            usd_series = (merged_df['bve'] / merged_df['close']).round(2)
+            usd_series.name = f"{symbol}_usd"
+            usd_columns.append(usd_series)
 
-        bve_df = pd.concat([bve_df, pd.DataFrame(new_cols)], axis=1)
+        # Keep BVE as wide format (report_date + one _usd column per symbol)
+        bve_usd_wide = pd.concat([bve_df[['report_date']]] + usd_columns, axis=1)
+        bve_usd_wide = bve_usd_wide.dropna(axis=1, how='all')
+        # Sort by date BEFORE ffill so values propagate forward in time correctly
+        bve_usd_wide = bve_usd_wide.sort_values('report_date').reset_index(drop=True)
+        bve_usd_wide = bve_usd_wide.ffill()
 
-        cols_to_keep = ['report_date'] + [c for c in bve_df.columns if c.endswith('_usd')]
-        bve_df = bve_df[cols_to_keep]
-        bve_df = bve_df.ffill()
+        # Sort market cap by date so row order matches bve_aligned after merge_asof
+        mc_reset = market_cap_wide.sort_values('report_date').reset_index(drop=True)
 
-        bve_df_cols = [col for col in bve_df.columns if col != 'report_date']
-        bve_df['total_bve'] = bve_df[bve_df_cols].sum(axis=1, skipna=True)
-        bve_df = bve_df[['report_date', 'total_bve']].copy()
-        bve_df['report_date'] = pd.to_datetime(bve_df['report_date'])
-        df = pd.merge_asof(
-                total_market_cap,
-                bve_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
+        # Align quarterly BVE data to daily market cap dates
+        bve_aligned = pd.merge_asof(
+            mc_reset[['report_date']],
+            bve_usd_wide.sort_values('report_date'),
+            on='report_date',
+            direction='backward'
+        ).reset_index(drop=True)
 
-        df['industry_pb_ratio'] = (df['total_market_cap'] / df['total_bve']).replace([np.inf, -np.inf], np.nan).round(2)
-        return df
+        # Paired exclusion: only include a company's market cap when its BVE is also
+        # available and positive. Negative book value distorts the industry-level ratio
+        # (same rationale as excluding negative earnings for PE).
+        paired_symbols = [s for s in market_cap_cols if f"{s}_usd" in bve_aligned.columns]
+
+        total_paired_market_cap = pd.Series(0.0, index=mc_reset.index)
+        total_bve = pd.Series(0.0, index=mc_reset.index)
+        count_with_data = pd.Series(0, index=mc_reset.index)
+
+        for s in paired_symbols:
+            mc_col = mc_reset[s]
+            bve_col = bve_aligned[f"{s}_usd"]
+            has_data = bve_col.notna() & mc_col.notna() & (bve_col > 0)
+            total_paired_market_cap += mc_col.where(has_data, 0.0)
+            total_bve += bve_col.where(has_data, 0.0)
+            count_with_data += has_data.astype(int)
+
+        result = mc_reset[['report_date']].copy()
+        result['industry'] = industry
+        result['total_market_cap'] = total_paired_market_cap.where(count_with_data > 0)
+        result['total_bve'] = total_bve.where(count_with_data > 0)
+        result['industry_pb_ratio'] = (result['total_market_cap'] / result['total_bve']).replace([np.inf, -np.inf], np.nan).round(2)
+        # Drop rows where no company had sufficient data
+        result = result.dropna(subset=['total_market_cap'])
+        return result
 
     def industry_roe(self) -> pd.DataFrame:
         info = self.info()
@@ -2337,97 +2406,80 @@ class Ticker:
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
-        roe_table_sql = load_sql("select_roe_by_industry",
-                                        stock_statement=self.huggingface_client.get_url_path(stock_statement),
-                                        symbols=", ".join(f"'{s}'" for s in symbols))
-        roe_table = self.duckdb_client.query(roe_table_sql)
+        ttm_roe_sql = load_sql("select_ttm_roe_by_industry",
+                               stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                               symbols=", ".join(f"'{s}'" for s in symbols))
+        ttm_roe_table = self.duckdb_client.query(ttm_roe_sql)
 
-        net_income_common_stockholders_df = (roe_table[['report_date'] + [
-            col for col in roe_table.columns
-            if col.endswith('_net_income_common_stockholders')
-        ]]).ffill()
+        ttm_roe_table['report_date'] = pd.to_datetime(ttm_roe_table['report_date'])
+        ttm_roe_table = ttm_roe_table.sort_values('report_date').reset_index(drop=True)
+
         currency_dict = self.company_meta.get_financial_currency_map()
-        net_income_common_stockholders_df['report_date'] = pd.to_datetime(net_income_common_stockholders_df['report_date'])
-        new_cols = {}
-        for symbol in net_income_common_stockholders_df.columns:
-            if symbol == 'report_date':
+
+        ni_suffix = '_ttm_net_income'
+        eq_suffix = '_ttm_avg_equity'
+        ni_symbols = [col[:-len(ni_suffix)] for col in ttm_roe_table.columns if col.endswith(ni_suffix)]
+
+        # Monthly date baseline: every month end from first to last fiscal quarter in the data
+        min_date = ttm_roe_table['report_date'].min()
+        max_date = ttm_roe_table['report_date'].max()
+        baseline = pd.DataFrame({
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+        })
+
+        total_net_income = np.zeros(len(baseline))
+        total_avg_equity = np.zeros(len(baseline))
+        count_with_data = np.zeros(len(baseline), dtype=int)
+
+        for symbol in ni_symbols:
+            ni_col = f"{symbol}{ni_suffix}"
+            eq_col = f"{symbol}{eq_suffix}"
+            if ni_col not in ttm_roe_table.columns or eq_col not in ttm_roe_table.columns:
                 continue
-            currency_symbol = symbol.removesuffix("_net_income_common_stockholders")
-            currency = currency_dict.get(currency_symbol, 'USD')
+
+            currency = currency_dict.get(symbol, 'USD')
             if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': net_income_common_stockholders_df['report_date'],
-                    'close': 1.0
-                })
+                fx_series = pd.Series(1.0, index=ttm_roe_table.index)
             else:
                 currency_df = self.currency(symbol=currency + '=X')
                 currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+                fx_series = pd.merge_asof(
+                    ttm_roe_table[['report_date']],
+                    currency_df,
+                    on='report_date',
+                    direction='backward'
+                )['close']
 
-            merged_df = pd.merge_asof(
-                net_income_common_stockholders_df[['report_date', symbol]].rename(columns={symbol: 'net_income_common_stockholders'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_net_income_common_stockholders_usd'] = (merged_df['net_income_common_stockholders'] / merged_df['close']).round(2)
+            symbol_df = pd.DataFrame({
+                'report_date': ttm_roe_table['report_date'],
+                'ni_usd': (ttm_roe_table[ni_col] / fx_series).values,
+                'eq_usd': (ttm_roe_table[eq_col] / fx_series).values,
+            }).dropna()
 
-        net_income_common_stockholders_df = pd.concat([net_income_common_stockholders_df['report_date'] , pd.DataFrame(new_cols)], axis=1)
-        net_income_common_stockholders_df['total_net_income_common_stockholders'] = net_income_common_stockholders_df[[col for col in net_income_common_stockholders_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
-        net_income_common_stockholders_df = net_income_common_stockholders_df[['report_date', 'total_net_income_common_stockholders']]
+            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
+            ni_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'ni_usd']],
+                on='report_date', direction='backward'
+            )['ni_usd']
+            eq_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'eq_usd']],
+                on='report_date', direction='backward'
+            )['eq_usd']
 
-        avg_equity_df = (roe_table[['report_date'] + [
-            col for col in roe_table.columns
-            if col.endswith('_avg_equity')
-        ]]).ffill()
-        avg_equity_df['report_date'] = pd.to_datetime(
-            avg_equity_df['report_date'])
-        new_cols = {}
-        for symbol in avg_equity_df.columns:
-            if symbol == 'report_date':
-                continue
-            currency_symbol = symbol.removesuffix("_avg_equity")
-            currency = currency_dict.get(currency_symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': avg_equity_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+            # Paired exclusion: only include when both TTM net income and avg equity are available
+            has_data = ni_aligned.notna().values & eq_aligned.notna().values
+            total_net_income += np.where(has_data, ni_aligned.fillna(0).values, 0.0)
+            total_avg_equity += np.where(has_data, eq_aligned.fillna(0).values, 0.0)
+            count_with_data += has_data.astype(int)
 
-            merged_df = pd.merge_asof(
-                avg_equity_df[['report_date', symbol]].rename(
-                    columns={symbol: 'avg_equity'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_avg_equity_usd'] = (
-                        merged_df['avg_equity'] / merged_df['close']).round(2)
-
-        avg_equity_df = pd.concat(
-            [avg_equity_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        avg_equity_df['total_avg_equity'] = avg_equity_df[
-            [col for col in avg_equity_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
-        avg_equity_df = avg_equity_df[
-            ['report_date', 'total_avg_equity']]
-
-        df = (
-            net_income_common_stockholders_df
-            .merge(avg_equity_df, on='report_date', how='outer')
-            .sort_values('report_date')
-            .reset_index(drop=True)
-        )
-        df['industry_roe'] = np.where(
-            (df['total_net_income_common_stockholders'] < 0) | (df['total_avg_equity'] < 0),
-            -np.abs(df['total_net_income_common_stockholders'] / df['total_avg_equity']),
-            df['total_net_income_common_stockholders'] / df['total_avg_equity']
-        ).round(4)
-        df.insert(1, "industry", industry)
-        return df
+        result = baseline.copy()
+        result.insert(1, 'industry', industry)
+        has_any = count_with_data > 0
+        result['total_ttm_net_income'] = np.where(has_any, total_net_income, np.nan)
+        result['total_avg_equity'] = np.where(has_any, total_avg_equity, np.nan)
+        result['industry_roe'] = (result['total_ttm_net_income'] / result['total_avg_equity']).replace([np.inf, -np.inf], np.nan).round(4)
+        result = result.dropna(subset=['total_ttm_net_income'])
+        return result
 
     def industry_roa(self) -> pd.DataFrame:
         info = self.info()
@@ -2444,126 +2496,96 @@ class Ticker:
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
-        roa_table_sql = load_sql("select_roa_by_industry",
-                                        stock_statement=self.huggingface_client.get_url_path(stock_statement),
-                                        symbols=", ".join(f"'{s}'" for s in symbols))
-        roa_table = self.duckdb_client.query(roa_table_sql)
+        ttm_roa_sql = load_sql("select_ttm_roa_by_industry",
+                               stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                               symbols=", ".join(f"'{s}'" for s in symbols))
+        ttm_roa_table = self.duckdb_client.query(ttm_roa_sql)
 
-        net_income_common_stockholders_df = (roa_table[['report_date'] + [
-            col for col in roa_table.columns
-            if col.endswith('_net_income_common_stockholders')
-        ]]).ffill()
+        ttm_roa_table['report_date'] = pd.to_datetime(ttm_roa_table['report_date'])
+        ttm_roa_table = ttm_roa_table.sort_values('report_date').reset_index(drop=True)
+
         currency_dict = self.company_meta.get_financial_currency_map()
-        net_income_common_stockholders_df['report_date'] = pd.to_datetime(net_income_common_stockholders_df['report_date'])
-        new_cols = {}
-        for symbol in net_income_common_stockholders_df.columns:
-            if symbol == 'report_date':
+
+        ni_suffix = '_ttm_net_income'
+        assets_suffix = '_ttm_avg_assets'
+        ni_symbols = [col[:-len(ni_suffix)] for col in ttm_roa_table.columns if col.endswith(ni_suffix)]
+
+        # Monthly date baseline: every month end from first to last fiscal quarter in the data
+        min_date = ttm_roa_table['report_date'].min()
+        max_date = ttm_roa_table['report_date'].max()
+        baseline = pd.DataFrame({
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+        })
+
+        total_net_income = np.zeros(len(baseline))
+        total_avg_assets = np.zeros(len(baseline))
+        count_with_data = np.zeros(len(baseline), dtype=int)
+
+        for symbol in ni_symbols:
+            ni_col = f"{symbol}{ni_suffix}"
+            assets_col = f"{symbol}{assets_suffix}"
+            if ni_col not in ttm_roa_table.columns or assets_col not in ttm_roa_table.columns:
                 continue
-            currency_symbol = symbol.removesuffix("_net_income_common_stockholders")
-            currency = currency_dict.get(currency_symbol, 'USD')
+
+            currency = currency_dict.get(symbol, 'USD')
             if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': net_income_common_stockholders_df['report_date'],
-                    'close': 1.0
-                })
+                fx_series = pd.Series(1.0, index=ttm_roa_table.index)
             else:
                 currency_df = self.currency(symbol=currency + '=X')
                 currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+                fx_series = pd.merge_asof(
+                    ttm_roa_table[['report_date']],
+                    currency_df,
+                    on='report_date',
+                    direction='backward'
+                )['close']
 
-            merged_df = pd.merge_asof(
-                net_income_common_stockholders_df[['report_date', symbol]].rename(columns={symbol: 'net_income_common_stockholders'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_net_income_common_stockholders_usd'] = (merged_df['net_income_common_stockholders'] / merged_df['close']).round(2)
+            symbol_df = pd.DataFrame({
+                'report_date': ttm_roa_table['report_date'],
+                'ni_usd': (ttm_roa_table[ni_col] / fx_series).values,
+                'assets_usd': (ttm_roa_table[assets_col] / fx_series).values,
+            }).dropna()
 
-        net_income_common_stockholders_df = pd.concat([net_income_common_stockholders_df['report_date'] , pd.DataFrame(new_cols)], axis=1)
-        net_income_common_stockholders_df['total_net_income_common_stockholders'] = net_income_common_stockholders_df[[col for col in net_income_common_stockholders_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
-        net_income_common_stockholders_df = net_income_common_stockholders_df[['report_date', 'total_net_income_common_stockholders']]
+            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
+            ni_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'ni_usd']],
+                on='report_date', direction='backward'
+            )['ni_usd']
+            assets_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'assets_usd']],
+                on='report_date', direction='backward'
+            )['assets_usd']
 
-        avg_asserts_df = (roa_table[['report_date'] + [
-            col for col in roa_table.columns
-            if col.endswith('_avg_asserts')
-        ]]).ffill()
-        avg_asserts_df['report_date'] = pd.to_datetime(
-            avg_asserts_df['report_date'])
-        new_cols = {}
-        for symbol in avg_asserts_df.columns:
-            if symbol == 'report_date':
-                continue
-            currency_symbol = symbol.removesuffix("_avg_asserts")
-            currency = currency_dict.get(currency_symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': avg_asserts_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+            # Paired exclusion: only include when both TTM net income and avg assets are available
+            has_data = ni_aligned.notna().values & assets_aligned.notna().values
+            total_net_income += np.where(has_data, ni_aligned.fillna(0).values, 0.0)
+            total_avg_assets += np.where(has_data, assets_aligned.fillna(0).values, 0.0)
+            count_with_data += has_data.astype(int)
 
-            merged_df = pd.merge_asof(
-                avg_asserts_df[['report_date', symbol]].rename(
-                    columns={symbol: 'avg_asserts'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_avg_asserts_usd'] = (
-                        merged_df['avg_asserts'] / merged_df['close']).round(2)
-
-        avg_asserts_df = pd.concat(
-            [avg_asserts_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        avg_asserts_df['total_avg_asserts'] = avg_asserts_df[
-            [col for col in avg_asserts_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
-        avg_asserts_df = avg_asserts_df[
-            ['report_date', 'total_avg_asserts']]
-
-        df = (
-            net_income_common_stockholders_df
-            .merge(avg_asserts_df, on='report_date', how='outer')
-            .sort_values('report_date')
-            .reset_index(drop=True)
-        )
-        df['industry_roa'] = np.where(
-            (df['total_net_income_common_stockholders'] < 0) | (df['total_avg_asserts'] < 0),
-            -np.abs(df['total_net_income_common_stockholders'] / df['total_avg_asserts']),
-            df['total_net_income_common_stockholders'] / df['total_avg_asserts']
-        ).round(4)
-        df.insert(1, "industry", industry)
-        return df
+        result = baseline.copy()
+        result.insert(1, 'industry', industry)
+        has_any = count_with_data > 0
+        result['total_ttm_net_income'] = np.where(has_any, total_net_income, np.nan)
+        result['total_avg_assets'] = np.where(has_any, total_avg_assets, np.nan)
+        result['industry_roa'] = (result['total_ttm_net_income'] / result['total_avg_assets']).replace([np.inf, -np.inf], np.nan).round(4)
+        result = result.dropna(subset=['total_ttm_net_income'])
+        return result
 
     def industry_equity_multiplier(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
         roe = self.industry_roe()
         roa = self.industry_roa()
 
         roe['report_date'] = pd.to_datetime(roe['report_date'])
         roa['report_date'] = pd.to_datetime(roa['report_date'])
 
-        result_df = pd.merge_asof(
-            roe,
-            roa,
-            left_on='report_date',
-            right_on='report_date',
-            direction='backward'
+        # Both use the same monthly baseline, so a regular inner merge aligns perfectly
+        result_df = roe[['report_date', 'industry', 'industry_roe']].merge(
+            roa[['report_date', 'industry_roa']],
+            on='report_date',
+            how='inner'
         )
 
-        result_df['industry_equity_multiplier'] = round(result_df['industry_roe'] / result_df['industry_roa'], 2)
-
-        result_df = result_df[[
-            'report_date',
-            'industry_roe',
-            'industry_roa',
-            'industry_equity_multiplier'
-        ]]
-        result_df.insert(1, "industry", industry)
+        result_df['industry_equity_multiplier'] = (result_df['industry_roe'] / result_df['industry_roa']).replace([np.inf, -np.inf], np.nan).round(2)
         return result_df
 
     def industry_quarterly_gross_margin(self) -> pd.DataFrame:
@@ -2581,109 +2603,80 @@ class Ticker:
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
-        gross_profit_and_revenue_table_sql = load_sql("select_gross_profit_and_revenue_by_industry",
-                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
-                                 symbols=", ".join(f"'{s}'" for s in symbols))
-        gross_profit_and_revenue_table = self.duckdb_client.query(gross_profit_and_revenue_table_sql)
+        ttm_sql = load_sql("select_ttm_gross_margin_by_industry",
+                           stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                           symbols=", ".join(f"'{s}'" for s in symbols))
+        ttm_table = self.duckdb_client.query(ttm_sql)
+
+        ttm_table['report_date'] = pd.to_datetime(ttm_table['report_date'])
+        ttm_table = ttm_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
-        gross_profit_df = (gross_profit_and_revenue_table[['report_date'] + [
-            col for col in gross_profit_and_revenue_table.columns
-            if col.endswith('_gross_profit')
-        ]]).ffill()
-        gross_profit_df = gross_profit_df.dropna(axis=1, how='all')
-        valid_idx = gross_profit_df.notna().all(axis=1).idxmax()
-        gross_profit_df = gross_profit_df.loc[valid_idx:].reset_index(drop=True)
-        gross_profit_df['report_date'] = pd.to_datetime(
-            gross_profit_df['report_date'])
-        new_cols = {}
-        for symbol in gross_profit_df.columns:
-            if symbol == 'report_date':
+
+        gp_suffix = '_ttm_gross_profit'
+        rev_suffix = '_ttm_revenue'
+        gp_symbols = [col[:-len(gp_suffix)] for col in ttm_table.columns if col.endswith(gp_suffix)]
+
+        # Monthly date baseline: every month end from first to last fiscal quarter in the data
+        min_date = ttm_table['report_date'].min()
+        max_date = ttm_table['report_date'].max()
+        baseline = pd.DataFrame({
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+        })
+
+        total_gross_profit = np.zeros(len(baseline))
+        total_revenue = np.zeros(len(baseline))
+        count_with_data = np.zeros(len(baseline), dtype=int)
+
+        for symbol in gp_symbols:
+            gp_col = f"{symbol}{gp_suffix}"
+            rev_col = f"{symbol}{rev_suffix}"
+            if gp_col not in ttm_table.columns or rev_col not in ttm_table.columns:
                 continue
-            currency_symbol = symbol.removesuffix("_gross_profit")
-            currency = currency_dict.get(currency_symbol, 'USD')
+
+            currency = currency_dict.get(symbol, 'USD')
             if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': gross_profit_df['report_date'],
-                    'close': 1.0
-                })
+                fx_series = pd.Series(1.0, index=ttm_table.index)
             else:
                 currency_df = self.currency(symbol=currency + '=X')
                 currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+                fx_series = pd.merge_asof(
+                    ttm_table[['report_date']],
+                    currency_df,
+                    on='report_date',
+                    direction='backward'
+                )['close']
 
-            merged_df = pd.merge_asof(
-                gross_profit_df[['report_date', symbol]].rename(
-                    columns={symbol: 'gross_profit'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_gross_profit_usd'] = (
-                    merged_df['gross_profit'] / merged_df['close']).round(2)
-        gross_profit_df = pd.concat(
-            [gross_profit_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        gross_profit_df['total_gross_profit'] = gross_profit_df[
-            [col for col in gross_profit_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+            symbol_df = pd.DataFrame({
+                'report_date': ttm_table['report_date'],
+                'gp_usd': (ttm_table[gp_col] / fx_series).values,
+                'rev_usd': (ttm_table[rev_col] / fx_series).values,
+            }).dropna()
 
-        gross_profit_df = gross_profit_df[
-            ['report_date', 'total_gross_profit']]
+            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
+            gp_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'gp_usd']],
+                on='report_date', direction='backward'
+            )['gp_usd']
+            rev_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'rev_usd']],
+                on='report_date', direction='backward'
+            )['rev_usd']
 
-        revenue_df = (gross_profit_and_revenue_table[['report_date'] + [
-            col for col in gross_profit_and_revenue_table.columns
-            if col.endswith('_revenue')
-        ]]).ffill()
-        revenue_df = revenue_df.dropna(axis=1, how='all')
-        valid_idx = revenue_df.notna().all(axis=1).idxmax()
-        revenue_df = revenue_df.loc[valid_idx:].reset_index(drop=True)
-        revenue_df['report_date'] = pd.to_datetime(
-            revenue_df['report_date'])
-        new_cols = {}
-        for symbol in revenue_df.columns:
-            if symbol == 'report_date':
-                continue
-            currency_symbol = symbol.removesuffix("_revenue")
-            currency = currency_dict.get(currency_symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': revenue_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+            # Paired exclusion: only include when both TTM gross profit and revenue are available
+            has_data = gp_aligned.notna().values & rev_aligned.notna().values
+            total_gross_profit += np.where(has_data, gp_aligned.fillna(0).values, 0.0)
+            total_revenue += np.where(has_data, rev_aligned.fillna(0).values, 0.0)
+            count_with_data += has_data.astype(int)
 
-            merged_df = pd.merge_asof(
-                revenue_df[['report_date', symbol]].rename(
-                    columns={symbol: 'revenue'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_revenue_usd'] = (
-                    merged_df['revenue'] / merged_df['close']).round(2)
-
-        revenue_df = pd.concat(
-            [revenue_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        revenue_df['total_revenue'] = revenue_df[
-            [col for col in revenue_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
-        revenue_df = revenue_df[
-            ['report_date', 'total_revenue']]
-
-        df = (
-            gross_profit_df
-            .merge(revenue_df, on='report_date', how='outer')
-            .sort_values('report_date')
-            .reset_index(drop=True)
-        )
-        df['industry_gross_margin'] = np.where(
-            (df['total_gross_profit'] < 0) | (df['total_revenue'] < 0),
-            -np.abs(df['total_gross_profit'] / df['total_revenue']),
-            df['total_gross_profit'] / df['total_revenue']
-        ).round(4)
-        df.insert(1, "industry", industry)
-        return df
+        result = baseline.copy()
+        result.insert(1, 'industry', industry)
+        has_any = count_with_data > 0
+        result['total_ttm_gross_profit'] = np.where(has_any, total_gross_profit, np.nan)
+        result['total_ttm_revenue'] = np.where(has_any, total_revenue, np.nan)
+        result['industry_gross_margin'] = (result['total_ttm_gross_profit'] / result['total_ttm_revenue']).replace([np.inf, -np.inf], np.nan).round(4)
+        result = result.dropna(subset=['total_ttm_gross_profit'])
+        return result
 
     def industry_quarterly_ebitda_margin(self) -> pd.DataFrame:
         info = self.info()
@@ -2700,110 +2693,80 @@ class Ticker:
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
-        ebitda_and_revenue_table_sql = load_sql("select_ebitda_and_revenue_by_industry",
-                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
-                                 symbols=", ".join(f"'{s}'" for s in symbols))
-        ebitda_and_revenue_table = self.duckdb_client.query(ebitda_and_revenue_table_sql)
+        ttm_sql = load_sql("select_ttm_ebitda_margin_by_industry",
+                           stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                           symbols=", ".join(f"'{s}'" for s in symbols))
+        ttm_table = self.duckdb_client.query(ttm_sql)
+
+        ttm_table['report_date'] = pd.to_datetime(ttm_table['report_date'])
+        ttm_table = ttm_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
-        ebitda_df = (ebitda_and_revenue_table[['report_date'] + [
-            col for col in ebitda_and_revenue_table.columns
-            if col.endswith('_ebitda')
-        ]]).ffill()
-        ebitda_df = ebitda_df.dropna(axis=1, how='all')
-        valid_idx = ebitda_df.notna().all(axis=1).idxmax()
-        ebitda_df = ebitda_df.loc[valid_idx:].reset_index(drop=True)
-        ebitda_df['report_date'] = pd.to_datetime(
-            ebitda_df['report_date'])
-        new_cols = {}
-        for symbol in ebitda_df.columns:
-            if symbol == 'report_date':
+
+        ebitda_suffix = '_ttm_ebitda'
+        rev_suffix = '_ttm_revenue'
+        ebitda_symbols = [col[:-len(ebitda_suffix)] for col in ttm_table.columns if col.endswith(ebitda_suffix)]
+
+        # Monthly date baseline: every month end from first to last fiscal quarter in the data
+        min_date = ttm_table['report_date'].min()
+        max_date = ttm_table['report_date'].max()
+        baseline = pd.DataFrame({
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+        })
+
+        total_ebitda = np.zeros(len(baseline))
+        total_revenue = np.zeros(len(baseline))
+        count_with_data = np.zeros(len(baseline), dtype=int)
+
+        for symbol in ebitda_symbols:
+            ebitda_col = f"{symbol}{ebitda_suffix}"
+            rev_col = f"{symbol}{rev_suffix}"
+            if ebitda_col not in ttm_table.columns or rev_col not in ttm_table.columns:
                 continue
-            currency_symbol = symbol.removesuffix("_ebitda")
-            currency = currency_dict.get(currency_symbol, 'USD')
+
+            currency = currency_dict.get(symbol, 'USD')
             if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': ebitda_df['report_date'],
-                    'close': 1.0
-                })
+                fx_series = pd.Series(1.0, index=ttm_table.index)
             else:
                 currency_df = self.currency(symbol=currency + '=X')
                 currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+                fx_series = pd.merge_asof(
+                    ttm_table[['report_date']],
+                    currency_df,
+                    on='report_date',
+                    direction='backward'
+                )['close']
 
-            merged_df = pd.merge_asof(
-                ebitda_df[['report_date', symbol]].rename(
-                    columns={symbol: 'ebitda'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_ebitda_usd'] = (
-                    merged_df['ebitda'] / merged_df['close']).round(2)
+            symbol_df = pd.DataFrame({
+                'report_date': ttm_table['report_date'],
+                'ebitda_usd': (ttm_table[ebitda_col] / fx_series).values,
+                'rev_usd': (ttm_table[rev_col] / fx_series).values,
+            }).dropna()
 
-        ebitda_df = pd.concat(
-            [ebitda_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        ebitda_df['total_ebitda'] = ebitda_df[
-            [col for col in ebitda_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
+            ebitda_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'ebitda_usd']],
+                on='report_date', direction='backward'
+            )['ebitda_usd']
+            rev_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'rev_usd']],
+                on='report_date', direction='backward'
+            )['rev_usd']
 
-        ebitda_df = ebitda_df[
-            ['report_date', 'total_ebitda']]
+            # Paired exclusion: only include when both TTM ebitda and revenue are available
+            has_data = ebitda_aligned.notna().values & rev_aligned.notna().values
+            total_ebitda += np.where(has_data, ebitda_aligned.fillna(0).values, 0.0)
+            total_revenue += np.where(has_data, rev_aligned.fillna(0).values, 0.0)
+            count_with_data += has_data.astype(int)
 
-        revenue_df = (ebitda_and_revenue_table[['report_date'] + [
-            col for col in ebitda_and_revenue_table.columns
-            if col.endswith('_revenue')
-        ]]).ffill()
-        revenue_df = revenue_df.dropna(axis=1, how='all')
-        valid_idx = revenue_df.notna().all(axis=1).idxmax()
-        revenue_df = revenue_df.loc[valid_idx:].reset_index(drop=True)
-        revenue_df['report_date'] = pd.to_datetime(
-            revenue_df['report_date'])
-        new_cols = {}
-        for symbol in revenue_df.columns:
-            if symbol == 'report_date':
-                continue
-            currency_symbol = symbol.removesuffix("_revenue")
-            currency = currency_dict.get(currency_symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': revenue_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
-
-            merged_df = pd.merge_asof(
-                revenue_df[['report_date', symbol]].rename(
-                    columns={symbol: 'revenue'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_revenue_usd'] = (
-                    merged_df['revenue'] / merged_df['close']).round(2)
-
-        revenue_df = pd.concat(
-            [revenue_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        revenue_df['total_revenue'] = revenue_df[
-            [col for col in revenue_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
-        revenue_df = revenue_df[
-            ['report_date', 'total_revenue']]
-
-        df = (
-            ebitda_df
-            .merge(revenue_df, on='report_date', how='outer')
-            .sort_values('report_date')
-            .reset_index(drop=True)
-        )
-        df['industry_ebitda_margin'] = np.where(
-            (df['total_ebitda'] < 0) | (df['total_revenue'] < 0),
-            -np.abs(df['total_ebitda'] / df['total_revenue']),
-            df['total_ebitda'] / df['total_revenue']
-        ).round(4)
-        df.insert(1, "industry", industry)
-        return df
+        result = baseline.copy()
+        result.insert(1, 'industry', industry)
+        has_any = count_with_data > 0
+        result['total_ttm_ebitda'] = np.where(has_any, total_ebitda, np.nan)
+        result['total_ttm_revenue'] = np.where(has_any, total_revenue, np.nan)
+        result['industry_ebitda_margin'] = (result['total_ttm_ebitda'] / result['total_ttm_revenue']).replace([np.inf, -np.inf], np.nan).round(4)
+        result = result.dropna(subset=['total_ttm_ebitda'])
+        return result
 
     def industry_quarterly_net_margin(self) -> pd.DataFrame:
         info = self.info()
@@ -2820,140 +2783,96 @@ class Ticker:
         symbols = symbols[symbols != self.ticker]
         symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
 
-        net_income_and_revenue_table_sql = load_sql("select_net_income_and_revenue_by_industry",
-                                 stock_statement=self.huggingface_client.get_url_path(stock_statement),
-                                 symbols=", ".join(f"'{s}'" for s in symbols))
-        net_income_and_revenue_table = self.duckdb_client.query(net_income_and_revenue_table_sql)
+        ttm_sql = load_sql("select_ttm_net_margin_by_industry",
+                           stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                           symbols=", ".join(f"'{s}'" for s in symbols))
+        ttm_table = self.duckdb_client.query(ttm_sql)
+
+        ttm_table['report_date'] = pd.to_datetime(ttm_table['report_date'])
+        ttm_table = ttm_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
-        net_income_df = (net_income_and_revenue_table[['report_date'] + [
-            col for col in net_income_and_revenue_table.columns
-            if col.endswith('_net_income_common_stockholders')
-        ]]).ffill()
-        net_income_df = net_income_df.dropna(axis=1, how='all')
-        valid_idx = net_income_df.notna().all(axis=1).idxmax()
-        net_income_df = net_income_df.loc[valid_idx:].reset_index(drop=True)
-        net_income_df['report_date'] = pd.to_datetime(
-            net_income_df['report_date'])
-        new_cols = {}
-        for symbol in net_income_df.columns:
-            if symbol == 'report_date':
+
+        ni_suffix = '_ttm_net_income'
+        rev_suffix = '_ttm_revenue'
+        ni_symbols = [col[:-len(ni_suffix)] for col in ttm_table.columns if col.endswith(ni_suffix)]
+
+        # Monthly date baseline: every month end from first to last fiscal quarter in the data
+        min_date = ttm_table['report_date'].min()
+        max_date = ttm_table['report_date'].max()
+        baseline = pd.DataFrame({
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+        })
+
+        total_net_income = np.zeros(len(baseline))
+        total_revenue = np.zeros(len(baseline))
+        count_with_data = np.zeros(len(baseline), dtype=int)
+
+        for symbol in ni_symbols:
+            ni_col = f"{symbol}{ni_suffix}"
+            rev_col = f"{symbol}{rev_suffix}"
+            if ni_col not in ttm_table.columns or rev_col not in ttm_table.columns:
                 continue
-            currency_symbol = symbol.removesuffix("_net_income_common_stockholders")
-            currency = currency_dict.get(currency_symbol, 'USD')
+
+            currency = currency_dict.get(symbol, 'USD')
             if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': net_income_df['report_date'],
-                    'close': 1.0
-                })
+                fx_series = pd.Series(1.0, index=ttm_table.index)
             else:
                 currency_df = self.currency(symbol=currency + '=X')
                 currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+                fx_series = pd.merge_asof(
+                    ttm_table[['report_date']],
+                    currency_df,
+                    on='report_date',
+                    direction='backward'
+                )['close']
 
-            merged_df = pd.merge_asof(
-                net_income_df[['report_date', symbol]].rename(
-                    columns={symbol: 'net_income_common_stockholders'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_net_income_usd'] = (
-                    merged_df['net_income_common_stockholders'] / merged_df['close']).round(2)
+            symbol_df = pd.DataFrame({
+                'report_date': ttm_table['report_date'],
+                'ni_usd': (ttm_table[ni_col] / fx_series).values,
+                'rev_usd': (ttm_table[rev_col] / fx_series).values,
+            }).dropna()
 
-        net_income_df = pd.concat(
-            [net_income_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        net_income_df['total_net_income'] = net_income_df[
-            [col for col in net_income_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
+            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
+            ni_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'ni_usd']],
+                on='report_date', direction='backward'
+            )['ni_usd']
+            rev_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'rev_usd']],
+                on='report_date', direction='backward'
+            )['rev_usd']
 
-        net_income_df = net_income_df[
-            ['report_date', 'total_net_income']]
+            # Paired exclusion: only include when both TTM net income and revenue are available
+            has_data = ni_aligned.notna().values & rev_aligned.notna().values
+            total_net_income += np.where(has_data, ni_aligned.fillna(0).values, 0.0)
+            total_revenue += np.where(has_data, rev_aligned.fillna(0).values, 0.0)
+            count_with_data += has_data.astype(int)
 
-        revenue_df = (net_income_and_revenue_table[['report_date'] + [
-            col for col in net_income_and_revenue_table.columns
-            if col.endswith('_revenue')
-        ]]).ffill()
-        revenue_df = revenue_df.dropna(axis=1, how='all')
-        valid_idx = revenue_df.notna().all(axis=1).idxmax()
-        revenue_df = revenue_df.loc[valid_idx:].reset_index(drop=True)
-        revenue_df['report_date'] = pd.to_datetime(
-            revenue_df['report_date'])
-        new_cols = {}
-        for symbol in revenue_df.columns:
-            if symbol == 'report_date':
-                continue
-            currency_symbol = symbol.removesuffix("_revenue")
-            currency = currency_dict.get(currency_symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': revenue_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
-
-            merged_df = pd.merge_asof(
-                revenue_df[['report_date', symbol]].rename(
-                    columns={symbol: 'revenue'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            new_cols[f'{symbol}_revenue_usd'] = (
-                    merged_df['revenue'] / merged_df['close']).round(2)
-
-        revenue_df = pd.concat(
-            [revenue_df['report_date'], pd.DataFrame(new_cols)], axis=1)
-        revenue_df['total_revenue'] = revenue_df[
-            [col for col in revenue_df.columns if col != 'report_date']].sum(axis=1, skipna=True)
-        revenue_df = revenue_df[
-            ['report_date', 'total_revenue']]
-
-        df = (
-            net_income_df
-            .merge(revenue_df, on='report_date', how='outer')
-            .sort_values('report_date')
-            .reset_index(drop=True)
-        )
-        df['industry_net_margin'] = np.where(
-            (df['total_net_income'] < 0) | (df['total_revenue'] < 0),
-            -np.abs(df['total_net_income'] / df['total_revenue']),
-            df['total_net_income'] / df['total_revenue']
-        ).round(4)
-        df.insert(1, "industry", industry)
-        return df
+        result = baseline.copy()
+        result.insert(1, 'industry', industry)
+        has_any = count_with_data > 0
+        result['total_ttm_net_income'] = np.where(has_any, total_net_income, np.nan)
+        result['total_ttm_revenue'] = np.where(has_any, total_revenue, np.nan)
+        result['industry_net_margin'] = (result['total_ttm_net_income'] / result['total_ttm_revenue']).replace([np.inf, -np.inf], np.nan).round(4)
+        result = result.dropna(subset=['total_ttm_net_income'])
+        return result
 
     def industry_asset_turnover(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
         roa = self.industry_roa()
-        quarterly_net_margin = self.industry_quarterly_net_margin()
+        net_margin = self.industry_quarterly_net_margin()
 
         roa['report_date'] = pd.to_datetime(roa['report_date'])
-        quarterly_net_margin['report_date'] = pd.to_datetime(quarterly_net_margin['report_date'])
+        net_margin['report_date'] = pd.to_datetime(net_margin['report_date'])
 
-        result_df = pd.merge_asof(
-            roa,
-            quarterly_net_margin,
-            left_on='report_date',
-            right_on='report_date',
-            direction='backward'
+        # Both use the same monthly baseline, so a regular inner merge aligns perfectly
+        result_df = roa[['report_date', 'industry', 'industry_roa']].merge(
+            net_margin[['report_date', 'industry_net_margin']],
+            on='report_date',
+            how='inner'
         )
 
-        result_df['industry_asset_turnover'] = round(result_df['industry_roa'] / result_df['industry_net_margin'], 2)
-
-        result_df = result_df[[
-            'report_date',
-            'industry_roa',
-            'industry_net_margin',
-            'industry_asset_turnover'
-        ]]
-        result_df.insert(1, "industry", industry)
-
+        result_df['industry_asset_turnover'] = (result_df['industry_roa'] / result_df['industry_net_margin']).replace([np.inf, -np.inf], np.nan).round(2)
         return result_df
 
     def _quarterly_eps_yoy_growth(self, eps_column: str, current_alias: str, prev_alias: str) -> pd.DataFrame:

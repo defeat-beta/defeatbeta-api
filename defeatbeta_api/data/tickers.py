@@ -92,6 +92,44 @@ class Tickers:
             return pd.DataFrame()
         return pd.concat(frames, ignore_index=True)
 
+    def _get_industry_representative_tickers(self) -> Dict[str, "Ticker"]:
+        """Return one Ticker object per unique industry across all tickers.
+
+        Fetches info() for all tickers in parallel, groups by industry, and
+        keeps one representative ticker per industry (the first one encountered).
+        Tickers with an unknown or missing industry are skipped.
+        """
+        info_results = self._run_parallel("info")
+        seen: Dict[str, "Ticker"] = {}
+        for symbol in self.tickers:
+            info = info_results.get(symbol)
+            if info is None or info.empty:
+                continue
+            industry = info["industry"].iloc[0]
+            if not industry or pd.isna(industry):
+                continue
+            if industry not in seen:
+                seen[industry] = self._ticker_map[symbol]
+        return seen
+
+    def _run_industry_parallel_concat(self, method_name: str, **kwargs) -> pd.DataFrame:
+        """Call an industry-level *method_name* on one representative ticker per
+        industry in parallel, then concatenate the results."""
+        rep_tickers = self._get_industry_representative_tickers()
+        frames = []
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_industry = {
+                executor.submit(getattr(ticker_obj, method_name), **kwargs): industry
+                for industry, ticker_obj in rep_tickers.items()
+            }
+            for future in as_completed(future_to_industry):
+                df = future.result()
+                if df is not None and not df.empty:
+                    frames.append(df)
+        if not frames:
+            return pd.DataFrame()
+        return pd.concat(frames, ignore_index=True)
+
     # ------------------------------------------------------------------
     # Category 5 – Info
     # ------------------------------------------------------------------
@@ -377,3 +415,47 @@ class Tickers:
     def annual_fcf_margin(self) -> pd.DataFrame:
         """Annual free cash flow margin for all tickers, combined into a single DataFrame."""
         return self._run_parallel_concat("annual_fcf_margin")
+
+    # ------------------------------------------------------------------
+    # Category 6 – Industry comparisons
+    # ------------------------------------------------------------------
+
+    def industry_ttm_pe(self) -> pd.DataFrame:
+        """Industry-level TTM P/E for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_ttm_pe")
+
+    def industry_ps_ratio(self) -> pd.DataFrame:
+        """Industry-level P/S ratio for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_ps_ratio")
+
+    def industry_pb_ratio(self) -> pd.DataFrame:
+        """Industry-level P/B ratio for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_pb_ratio")
+
+    def industry_roe(self) -> pd.DataFrame:
+        """Industry-level ROE for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_roe")
+
+    def industry_roa(self) -> pd.DataFrame:
+        """Industry-level ROA for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_roa")
+
+    def industry_equity_multiplier(self) -> pd.DataFrame:
+        """Industry-level equity multiplier for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_equity_multiplier")
+
+    def industry_quarterly_gross_margin(self) -> pd.DataFrame:
+        """Industry-level quarterly gross margin for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_quarterly_gross_margin")
+
+    def industry_quarterly_ebitda_margin(self) -> pd.DataFrame:
+        """Industry-level quarterly EBITDA margin for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_quarterly_ebitda_margin")
+
+    def industry_quarterly_net_margin(self) -> pd.DataFrame:
+        """Industry-level quarterly net margin for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_quarterly_net_margin")
+
+    def industry_asset_turnover(self) -> pd.DataFrame:
+        """Industry-level asset turnover for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_asset_turnover")
