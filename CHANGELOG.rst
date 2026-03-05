@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.49
+-------
+
 0.0.48
 -------
 - Support Enterprise Value [`#159 <https://github.com/defeat-beta/defeatbeta-api/issues/159>`_]
@@ -8,6 +11,7 @@ Change Log
 - Support Enterprise to EBITDA (EV/EBITDA) [`#160 <https://github.com/defeat-beta/defeatbeta-api/issues/160>`_]
 - Support Debt to Equity (D/E) Ratio [`#163 <https://github.com/defeat-beta/defeatbeta-api/issues/163>`_]
 - Support Return on Capital Employed (ROCE) [`#155 <https://github.com/defeat-beta/defeatbeta-api/issues/155>`_]
+- Add industry metrics to Tickers class and refactor to TTM + monthly baseline methodology [`#158 <https://github.com/defeat-beta/defeatbeta-api/issues/158>`_]
 
 0.0.47
 -------
