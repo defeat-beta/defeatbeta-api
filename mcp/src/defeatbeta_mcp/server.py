@@ -35,6 +35,7 @@ from .tools.treasure import get_daily_treasury_yield
 from .tools.em import get_stock_quarterly_equity_multiplier, get_industry_quarterly_equity_multiplier
 from .tools.asserts import get_stock_quarterly_asset_turnover, get_industry_quarterly_asset_turnover
 from .tools.de import get_stock_quarterly_debt_to_equity
+from .tools.ev import get_stock_enterprise_value, get_stock_enterprise_to_revenue, get_stock_enterprise_to_ebitda
 from .tools.growth import get_stock_quarterly_revenue_yoy_growth, get_stock_annual_revenue_yoy_growth, \
     get_stock_quarterly_operating_income_yoy_growth, get_stock_annual_operating_income_yoy_growth, \
     get_stock_quarterly_ebitda_yoy_growth, get_stock_annual_ebitda_yoy_growth, \
@@ -122,6 +123,9 @@ mcp.tool()(get_stock_quarterly_roic)
 mcp.tool()(get_stock_quarterly_equity_multiplier)
 mcp.tool()(get_stock_quarterly_asset_turnover)
 mcp.tool()(get_stock_quarterly_debt_to_equity)
+mcp.tool()(get_stock_enterprise_value)
+mcp.tool()(get_stock_enterprise_to_revenue)
+mcp.tool()(get_stock_enterprise_to_ebitda)
 mcp.tool()(get_industry_ttm_pe)
 mcp.tool()(get_industry_ps_ratio)
 mcp.tool()(get_industry_pb_ratio)
