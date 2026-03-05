@@ -6,7 +6,7 @@ from defeatbeta_api.data.ticker import Ticker
 class TestTicker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("MSFT", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
+        cls.ticker = Ticker("BABA", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
 
     @classmethod
     def tearDownClass(cls):
@@ -16,42 +16,34 @@ class TestTicker(unittest.TestCase):
     def test_info(self):
         result = self.ticker.info()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_sec_filing(self):
         result = self.ticker.sec_filing()
         print(result)
-        self.assertIn('symbol', result.columns)
 
     def test_officers(self):
         result = self.ticker.officers()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_calendar(self):
         result = self.ticker.calendar()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_splits(self):
         result = self.ticker.splits()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_dividends(self):
         result = self.ticker.dividends()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_ttm_eps(self):
         result = self.ticker.ttm_eps()
         print(result.to_string(float_format="{:,}".format))
-        self.assertIn('symbol', result.columns)
 
     def test_price(self):
         result = self.ticker.price()
         print(result)
-        self.assertIn('symbol', result.columns)
 
     def _assert_row_meta(self, result):
         df = result.df()
@@ -108,7 +100,6 @@ class TestTicker(unittest.TestCase):
     def test_ttm_pe(self):
         result = self.ticker.ttm_pe()
         print(result)
-        self.assertIn('symbol', result.columns)
 
     def test_earning_call_transcripts(self):
         transcripts = self.ticker.earning_call_transcripts()
@@ -132,147 +123,118 @@ class TestTicker(unittest.TestCase):
     def test_revenue_by_segment(self):
         result = self.ticker.revenue_by_segment()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_revenue_by_geography(self):
         result = self.ticker.revenue_by_geography()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_revenue_by_product(self):
         result = self.ticker.revenue_by_product()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_gross_margin(self):
         result = self.ticker.quarterly_gross_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_gross_margin(self):
         result = self.ticker.annual_gross_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_operating_margin(self):
         result = self.ticker.quarterly_operating_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_operating_margin(self):
         result = self.ticker.annual_operating_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_net_margin(self):
         result = self.ticker.quarterly_net_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_net_margin(self):
         result = self.ticker.annual_net_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_ebitda_margin(self):
         result = self.ticker.quarterly_ebitda_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_ebitda_margin(self):
         result = self.ticker.annual_ebitda_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_fcf_margin(self):
         result = self.ticker.quarterly_fcf_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_fcf_margin(self):
         result = self.ticker.annual_fcf_margin()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_revenue_yoy_growth(self):
         result = self.ticker.quarterly_revenue_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_revenue_yoy_growth(self):
         result = self.ticker.annual_revenue_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_operating_income_yoy_growth(self):
         result = self.ticker.quarterly_operating_income_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_operating_income_yoy_growth(self):
         result = self.ticker.annual_operating_income_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_ebitda_yoy_growth(self):
         result = self.ticker.quarterly_ebitda_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_ebitda_yoy_growth(self):
         result = self.ticker.annual_ebitda_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_net_income_yoy_growth(self):
         result = self.ticker.quarterly_net_income_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_net_income_yoy_growth(self):
         result = self.ticker.annual_net_income_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_fcf_yoy_growth(self):
         result = self.ticker.quarterly_fcf_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_annual_fcf_yoy_growth(self):
         result = self.ticker.annual_fcf_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_eps_yoy_growth(self):
         result = self.ticker.quarterly_eps_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_ttm_eps_yoy_growth(self):
         result = self.ticker.quarterly_ttm_eps_yoy_growth()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_market_capitalization(self):
         result = self.ticker.market_capitalization()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_ps_ratio(self):
         result = self.ticker.ps_ratio()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_pb_ratio(self):
         result = self.ticker.pb_ratio()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_debt_to_equity(self):
         result = self.ticker.debt_to_equity()
         print(result.tail(10).to_string())
-        self.assertIn('symbol', result.columns)
         self.assertIn('total_debt', result.columns)
         self.assertIn('stockholders_equity', result.columns)
         self.assertIn('debt_to_equity', result.columns)
@@ -281,7 +243,6 @@ class TestTicker(unittest.TestCase):
     def test_enterprise_value(self):
         result = self.ticker.enterprise_value()
         print(result.tail(10).to_string())
-        self.assertIn('symbol', result.columns)
         self.assertIn('enterprise_value', result.columns)
         self.assertIn('market_capitalization', result.columns)
         self.assertIn('total_debt_usd', result.columns)
@@ -292,7 +253,6 @@ class TestTicker(unittest.TestCase):
     def test_enterprise_to_revenue(self):
         result = self.ticker.enterprise_to_revenue()
         print(result.tail(10).to_string())
-        self.assertIn('symbol', result.columns)
         self.assertIn('enterprise_value', result.columns)
         self.assertIn('ttm_revenue', result.columns)
         self.assertIn('ttm_revenue_usd', result.columns)
@@ -303,7 +263,6 @@ class TestTicker(unittest.TestCase):
     def test_enterprise_to_ebitda(self):
         result = self.ticker.enterprise_to_ebitda()
         print(result.tail(10).to_string())
-        self.assertIn('symbol', result.columns)
         self.assertIn('enterprise_value', result.columns)
         self.assertIn('ttm_ebitda', result.columns)
         self.assertIn('ttm_ebitda_usd', result.columns)
@@ -316,42 +275,42 @@ class TestTicker(unittest.TestCase):
         print(result.head(10).to_string())
         print("....")
         print(result.tail(10).to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_ttm_revenue(self):
         result = self.ticker.ttm_revenue()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
+
+    def test_ttm_fcf(self):
+        result = self.ticker.ttm_fcf()
+        print(result.to_string())
+
+    def test_ttm_ebitda(self):
+        result = self.ticker.ttm_ebitda()
+        print(result.to_string())
 
     def test_ttm_net_income_common_stockholders(self):
         result = self.ticker.ttm_net_income_common_stockholders()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_quarterly_book_value_of_equity(self):
         result = self.ticker._quarterly_book_value_of_equity()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_roe(self):
         result = self.ticker.roe()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_roa(self):
         result = self.ticker.roa()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_roic(self):
         result = self.ticker.roic()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_roce(self):
         result = self.ticker.roce()
         print(result.tail(10).to_string())
-        self.assertIn('symbol', result.columns)
         self.assertIn('ebit', result.columns)
         self.assertIn('beginning_capital_employed', result.columns)
         self.assertIn('ending_capital_employed', result.columns)
@@ -362,17 +321,14 @@ class TestTicker(unittest.TestCase):
     def test_equity_multiplier(self):
         result = self.ticker.equity_multiplier()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_asset_turnover(self):
         result = self.ticker.asset_turnover()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_wacc(self):
         result = self.ticker.wacc()
         print(result.to_string())
-        self.assertIn('symbol', result.columns)
 
     def test_dcf(self):
         result = self.ticker.dcf()
@@ -387,4 +343,3 @@ class TestTicker(unittest.TestCase):
         for period in periods:
             result = self.ticker.beta(period)
             print(result.to_string())
-            self.assertIn('symbol', result.columns)

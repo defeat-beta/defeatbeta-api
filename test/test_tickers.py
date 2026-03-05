@@ -561,3 +561,78 @@ class TestTickers(unittest.TestCase):
         symbols_in_result = result['symbol'].str.upper().tolist()
         for s in SYMBOLS:
             self.assertIn(s, symbols_in_result)
+
+    # ------------------------------------------------------------------
+    # Category 6 – Industry comparisons
+    # ------------------------------------------------------------------
+
+    def test_industry_ttm_pe(self):
+        result = self.tickers.industry_ttm_pe()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+        self.assertIn('industry_pe', result.columns)
+
+    def test_industry_ps_ratio(self):
+        result = self.tickers.industry_ps_ratio()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_pb_ratio(self):
+        result = self.tickers.industry_pb_ratio()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_roe(self):
+        result = self.tickers.industry_roe()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_roa(self):
+        result = self.tickers.industry_roa()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_equity_multiplier(self):
+        result = self.tickers.industry_equity_multiplier()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_quarterly_gross_margin(self):
+        result = self.tickers.industry_quarterly_gross_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_quarterly_ebitda_margin(self):
+        result = self.tickers.industry_quarterly_ebitda_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_quarterly_net_margin(self):
+        result = self.tickers.industry_quarterly_net_margin()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
+    def test_industry_asset_turnover(self):
+        result = self.tickers.industry_asset_turnover()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)

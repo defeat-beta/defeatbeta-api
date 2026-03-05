@@ -551,11 +551,20 @@ ticker.roce()
 
 ## 18. Industry Historical TTM PE
 ```markdown
-total_market_cap          = sum of the market cap of all stocks in the industry  
+Aggregate method (MSCI methodology): industry PE = total paired market cap / total paired TTM net income.
 
-total_ttm_net_income      = sum of the trailing twelve months (TTM) net income of all stocks in the industry
+Paired exclusion: a company is included only when BOTH its daily market cap AND its TTM net income
+are available on the same date. Companies with negative TTM net income are also excluded, as they
+would otherwise distort the industry-level ratio.
 
-industry_pe               = total_market_cap / total_ttm_net_income
+TTM net income: trailing four consecutive quarters of net_income_common_stockholders, converted to
+USD at the spot FX rate of each fiscal quarter end. Quarterly TTM values are forward-filled to align
+with daily market cap dates via merge_asof (backward).
+
+total_market_cap      = Σ market_cap(i)         for companies where TTM net income > 0 and both values available
+total_ttm_net_income  = Σ ttm_net_income_usd(i) for the same set of companies
+
+industry_pe           = total_market_cap / total_ttm_net_income
 ```
 
 ```python
@@ -581,11 +590,19 @@ ticker.industry_ttm_pe()
 
 ## 19. Industry Historical PS Ratio
 ```markdown
-total_market_cap       = sum of the market cap of all stocks in the industry  
+Aggregate method (MSCI methodology): industry PS = total paired market cap / total paired TTM revenue.
 
-total_ttm_revenue      = sum of the trailing twelve months (TTM) revenue of all stocks in the industry
+Paired exclusion: a company is included only when BOTH its daily market cap AND its TTM revenue are
+available on the same date. Revenue is virtually always positive so no sign-based exclusion is applied.
 
-industry_ps_ratio      = total_market_cap / total_ttm_revenue
+TTM revenue: trailing four consecutive quarters of total_revenue, converted to USD at the spot FX
+rate of each fiscal quarter end. Quarterly TTM values are forward-filled to align with daily market
+cap dates via merge_asof (backward).
+
+total_market_cap  = Σ market_cap(i)        for companies where both values available
+total_ttm_revenue = Σ ttm_revenue_usd(i)   for the same set of companies
+
+industry_ps_ratio = total_market_cap / total_ttm_revenue
 ```
 
 ```python
@@ -610,11 +627,20 @@ ticker.industry_ps_ratio()
 
 ## 20. Industry Historical PB Ratio
 ```markdown
-total_market_cap                = sum of the market cap of all stocks in the industry  
+Aggregate method (MSCI methodology): industry PB = total paired market cap / total paired book value of equity.
 
-total_book_value_of_equity      = sum of the book value of equity of all stocks in the industry
+Paired exclusion: a company is included only when BOTH its daily market cap AND its quarterly book
+value of equity (BVE) are available on the same date. Companies with negative BVE are also excluded,
+as negative book value produces a negative PB ratio that cannot be meaningfully interpreted.
 
-industry_pb_ratio               = total_market_cap / total_book_value_of_equity
+BVE: stockholders_equity from the quarterly balance sheet, converted to USD at the spot FX rate of
+each fiscal quarter end. Quarterly BVE values are forward-filled to align with daily market cap
+dates via merge_asof (backward).
+
+total_market_cap  = Σ market_cap(i)  for companies where BVE > 0 and both values available
+total_bve         = Σ bve_usd(i)     for the same set of companies
+
+industry_pb_ratio = total_market_cap / total_bve
 ```
 
 ```python
@@ -639,66 +665,85 @@ ticker.industry_pb_ratio()
 
 ## 21. Industry Historical ROE
 ```markdown
-total_net_income_common_stockholders  
-    = the sum of the net income attributable to common shareholders across all stocks in the industry  
+Aggregate method (Damodaran methodology): industry ROE = total TTM net income / total TTM avg equity.
 
-total_avg_equity  
-    = for each stock, compute the average shareholders' equity  
-        avg_equity(symbol) = (beginning_stockholders_equity + ending_stockholders_equity) / 2  
-      then sum the average equity of all stocks in the industry  
-        total_avg_equity = Σ avg_equity(symbol)
+Paired exclusion: a company is included only when BOTH its TTM net income AND its TTM avg equity are
+available on the same date.
 
-industry_roe  
-    = total_net_income_common_stockholders / total_avg_equity
+TTM net income: trailing four consecutive quarters of net_income_common_stockholders, converted to
+USD at the spot FX rate of each fiscal quarter end.
+
+TTM avg equity: average of stockholders_equity at the start and end of the TTM window (i.e.,
+equity 3 quarters ago and current equity), converted to USD at the spot FX rate of each fiscal
+quarter end.
+
+Date baseline: every month end. Each company's quarterly TTM values are forward-filled to the
+monthly baseline via merge_asof (backward), so companies with different fiscal year ends all
+contribute to every month.
+
+total_ttm_net_income = Σ ttm_net_income_usd(i)  for companies where both values available
+total_avg_equity     = Σ ttm_avg_equity_usd(i)  for the same set of companies
+
+industry_roe         = total_ttm_net_income / total_avg_equity
 ```
 
 ```python
 ticker.industry_roe()
 ```
 ```text
-  report_date            industry  total_net_income_common_stockholders  total_avg_equity  industry_roe
-0  2023-06-30  Auto Manufacturers                         -1.407448e+07      1.547128e+08       -0.0910
-1  2023-09-30  Auto Manufacturers                          1.224270e+10      4.807896e+11        0.0255
-2  2023-12-31  Auto Manufacturers                          1.574871e+10      5.068826e+11        0.0311
-3  2024-03-31  Auto Manufacturers                          8.833054e+09      4.915669e+11        0.0180
-4  2024-06-30  Auto Manufacturers                          1.143964e+10      4.897561e+11        0.0234
-5  2024-09-30  Auto Manufacturers                          6.302880e+09      5.294544e+11        0.0119
-6  2024-12-31  Auto Manufacturers                          1.273238e+10      4.982886e+11        0.0256
-7  2025-03-31  Auto Manufacturers                          4.782458e+09      5.161979e+11        0.0093
-8  2025-06-30  Auto Manufacturers                          5.536484e+09      5.253515e+11        0.0105
-9  2025-09-30  Auto Manufacturers                          7.128733e+09      5.245579e+11        0.0136
+   report_date            industry  total_ttm_net_income  total_avg_equity  industry_roe
+0   2024-03-31  Auto Manufacturers          1.234567e+10      4.915669e+11        0.0251
+1   2024-04-30  Auto Manufacturers          1.234567e+10      4.915669e+11        0.0251
+2   2024-05-31  Auto Manufacturers          1.234567e+10      4.915669e+11        0.0251
+3   2024-06-30  Auto Manufacturers          1.143964e+10      4.897561e+11        0.0234
+4   2024-07-31  Auto Manufacturers          1.143964e+10      4.897561e+11        0.0234
+5   2024-08-31  Auto Manufacturers          1.143964e+10      4.897561e+11        0.0234
+6   2024-09-30  Auto Manufacturers          6.302880e+09      5.294544e+11        0.0119
+7   2024-10-31  Auto Manufacturers          6.302880e+09      5.294544e+11        0.0119
+8   2024-11-30  Auto Manufacturers          6.302880e+09      5.294544e+11        0.0119
+9   2024-12-31  Auto Manufacturers          1.273238e+10      4.982886e+11        0.0256
 ```
 
 ## 22. Industry Historical ROA
 ```markdown
-total_net_income_common_stockholders  
-    = the sum of the net income attributable to common shareholders across all stocks in the industry  
+Aggregate method (Damodaran): industry ROA = Σ(TTM net income) / Σ(TTM avg assets), not the mean
+of individual company ROAs. This gives larger companies more weight, consistent with how index
+providers (MSCI, S&P) compute sector-level profitability metrics.
 
-total_avg_asserts  
-    = for each stock, compute the average asserts 
-        avg_asserts(symbol) = (beginning_asserts + ending_asserts) / 2  
-      then sum the average asserts of all stocks in the industry  
-        total_avg_asserts = Σ avg_asserts(symbol)
+Paired exclusion: a company is included only when BOTH its TTM net income AND its TTM avg assets are
+available on the same date.
 
-industry_roa  
-    = total_net_income_common_stockholders / total_avg_asserts
+TTM net income: trailing four consecutive quarters of net_income_common_stockholders, converted to
+USD at the spot FX rate of each fiscal quarter end.
+
+TTM avg assets: average of total_assets at the start and end of the TTM window (i.e., assets
+3 quarters ago and current assets), converted to USD at the spot FX rate of each fiscal quarter end.
+
+Date baseline: every month end. Each company's quarterly TTM values are forward-filled to the
+monthly baseline via merge_asof (backward), so companies with different fiscal year ends all
+contribute to every month.
+
+total_ttm_net_income = Σ ttm_net_income_usd(i)  for companies where both values available
+total_avg_assets     = Σ ttm_avg_assets_usd(i)  for the same set of companies
+
+industry_roa         = total_ttm_net_income / total_avg_assets
 ```
 
 ```python
 ticker.industry_roa()
 ```
 ```text
-  report_date            industry  total_net_income_common_stockholders  total_avg_asserts  industry_roa
-0  2023-06-30  Auto Manufacturers                         -1.407448e+07       2.135580e+08       -0.0659
-1  2023-09-30  Auto Manufacturers                          1.224270e+10       1.461015e+12        0.0084
-2  2023-12-31  Auto Manufacturers                          1.574871e+10       1.539417e+12        0.0102
-3  2024-03-31  Auto Manufacturers                          8.833054e+09       1.531480e+12        0.0058
-4  2024-06-30  Auto Manufacturers                          1.143964e+10       1.537488e+12        0.0074
-5  2024-09-30  Auto Manufacturers                          6.302880e+09       1.648691e+12        0.0038
-6  2024-12-31  Auto Manufacturers                          1.273238e+10       1.581029e+12        0.0081
-7  2025-03-31  Auto Manufacturers                          4.782458e+09       1.641880e+12        0.0029
-8  2025-06-30  Auto Manufacturers                          5.536484e+09       1.678078e+12        0.0033
-9  2025-09-30  Auto Manufacturers                          7.128733e+09       1.685806e+12        0.0042
+   report_date            industry  total_ttm_net_income  total_avg_assets  industry_roa
+0   2024-03-31  Auto Manufacturers          1.234567e+10      1.531480e+12        0.0081
+1   2024-04-30  Auto Manufacturers          1.234567e+10      1.531480e+12        0.0081
+2   2024-05-31  Auto Manufacturers          1.234567e+10      1.531480e+12        0.0081
+3   2024-06-30  Auto Manufacturers          1.143964e+10      1.537488e+12        0.0074
+4   2024-07-31  Auto Manufacturers          1.143964e+10      1.537488e+12        0.0074
+5   2024-08-31  Auto Manufacturers          1.143964e+10      1.537488e+12        0.0074
+6   2024-09-30  Auto Manufacturers          6.302880e+09      1.648691e+12        0.0038
+7   2024-10-31  Auto Manufacturers          6.302880e+09      1.648691e+12        0.0038
+8   2024-11-30  Auto Manufacturers          6.302880e+09      1.648691e+12        0.0038
+9   2024-12-31  Auto Manufacturers          1.273238e+10      1.581029e+12        0.0081
 ```
 
 ## 23. Industry Historical Equity Multiplier

@@ -16,53 +16,11 @@ WITH quarterly_data AS (
         AND item_value IS NOT NULL
         AND report_date != 'TTM'
 ),
-quarterly_data_rn AS (
-    SELECT
-        symbol,
-        report_date,
-        item_name,
-        item_value,
-        finance_type,
-        period_type,
-        continuous_id,
-        ROW_NUMBER() OVER (ORDER BY continuous_id ASC) AS rn_asc
-    FROM
-        quarterly_data
-),
-grouped_data AS (
-    SELECT
-        *,
-        continuous_id - rn_asc AS group_id
-    FROM
-        quarterly_data_rn
-),
-base_data_window AS (
-    SELECT
-        symbol,
-        report_date,
-        item_name,
-        item_value,
-        finance_type,
-        period_type
-    FROM
-        grouped_data t1
-        where t1.group_id = (
-            SELECT
-                group_id
-            FROM
-                grouped_data
-            ORDER BY
-                continuous_id DESC
-                LIMIT 1
-        )
-    ORDER BY
-        continuous_id ASC
-),
 sliding_window AS (
     SELECT
     report_date,
     ttm_net_income,
-    TO_JSON(MAP(window_report_dates, window_item_values)) AS report_date_2_net_income,
+    TO_JSON(MAP(window_report_dates, window_item_values)) AS report_date_2_net_income
     FROM (
         SELECT
             symbol,
@@ -81,6 +39,17 @@ sliding_window AS (
                 ORDER BY CAST(report_date AS DATE)
                 ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
             ) AS quarter_count,
+            -- Ensure the 4 quarters in the window are truly consecutive:
+            -- max continuous_id - min continuous_id must equal 3
+            MAX(continuous_id) OVER (
+                PARTITION BY symbol
+                ORDER BY CAST(report_date AS DATE)
+                ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+            ) - MIN(continuous_id) OVER (
+                PARTITION BY symbol
+                ORDER BY CAST(report_date AS DATE)
+                ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+            ) AS id_range,
             ARRAY_AGG(report_date) OVER (
                 PARTITION BY symbol
                 ORDER BY CAST(report_date AS DATE)
@@ -91,9 +60,9 @@ sliding_window AS (
                 ORDER BY CAST(report_date AS DATE)
                 ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
             ) AS window_item_values
-        FROM base_data_window
+        FROM quarterly_data
     ) t
-    WHERE quarter_count = 4
+    WHERE quarter_count = 4 AND id_range = 3
 )
 SELECT
     * from sliding_window
