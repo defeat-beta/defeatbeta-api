@@ -27,6 +27,8 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ✅ **MCP Server implementation**: [A MCP server implementation](mcp/README.md) for `defeatbeta-api`, provides AI access analysis through MCP. [Click here](doc/mcp/README.md) to discover more ways to use MCP.
 
+✅ **Skills implementation**: [A Skills implementation](skills/README.md) for `defeatbeta-api`, enhances AI financial analysis capabilities with professional workflows. Compatible with Claude.ai, Manus, and other AI platforms that support skills.
+
 ## Quickstart
 
 ### Installation
