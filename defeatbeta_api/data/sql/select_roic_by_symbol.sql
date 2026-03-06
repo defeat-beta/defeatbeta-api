@@ -9,7 +9,7 @@ WITH roic_table AS (
      '{url}'
  WHERE
      symbol = '{ticker}'
-     AND item_name IN ('ebit', 'tax_rate_for_calcs', 'net_income_common_stockholders', 'invested_capital')
+     AND item_name IN ('ebit', 'tax_rate_for_calcs', 'invested_capital')
      AND report_date != 'TTM'
      AND period_type = 'quarterly'
      AND finance_type in ('income_statement', 'balance_sheet')
@@ -29,6 +29,8 @@ base_data AS (
       YEAR(report_date::DATE) * 4 + QUARTER(report_date::DATE) AS continuous_id
   FROM
       roic_table
+  WHERE
+      ebit IS NOT NULL AND tax_rate_for_calcs IS NOT NULL AND invested_capital IS NOT NULL
 ),
 
 base_data_rn AS (
@@ -107,13 +109,22 @@ invested_capital_avg AS (
 )
 
 
-select symbol,
-      report_date,
-      ebit,
-      tax_rate_for_calcs,
-      nopat,
-      beginning_invested_capital,
-      ending_invested_capital,
-      avg_invested_capital,
-      round(nopat / avg_invested_capital, 4) AS roic
-  from invested_capital_avg order by report_date;
+SELECT
+    symbol,
+    report_date,
+    ebit,
+    tax_rate_for_calcs,
+    nopat,
+    beginning_invested_capital,
+    ending_invested_capital,
+    avg_invested_capital,
+    ROUND(
+        CASE
+            WHEN nopat < 0 OR avg_invested_capital < 0 THEN
+                -ABS(nopat / avg_invested_capital)
+            ELSE
+                nopat / avg_invested_capital
+        END
+    , 4) AS roic
+FROM invested_capital_avg
+ORDER BY report_date;

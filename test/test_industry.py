@@ -43,6 +43,12 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.industry_roa()
         print(result.to_string())
 
+    def test_industry_roic(self):
+        result = self.ticker.roic()
+        print(result.to_string())
+        result = self.ticker.industry_roic()
+        print(result.to_string())
+
     def test_industry_em(self):
         result = self.ticker.equity_multiplier()
         print(result.to_string())
