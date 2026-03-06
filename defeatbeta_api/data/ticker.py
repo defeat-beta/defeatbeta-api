@@ -2585,6 +2585,100 @@ class Ticker:
         result = result.dropna(subset=['total_ttm_net_income'])
         return result
 
+    def industry_roic(self) -> pd.DataFrame:
+        info = self.info()
+        industry = info['industry']
+        if isinstance(industry, pd.Series):
+            industry = industry.iloc[0]
+
+        if not industry or pd.isna(industry):
+            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+
+        url = self.huggingface_client.get_url_path(stock_profile)
+        sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
+        symbols = self.duckdb_client.query(sql)['symbol']
+        symbols = symbols[symbols != self.ticker]
+        symbols = pd.concat([pd.Series([self.ticker]), symbols], ignore_index=True)
+
+        ttm_roic_sql = load_sql("select_ttm_roic_by_industry",
+                                stock_statement=self.huggingface_client.get_url_path(stock_statement),
+                                symbols=", ".join(f"'{s}'" for s in symbols))
+        ttm_roic_table = self.duckdb_client.query(ttm_roic_sql)
+
+        ttm_roic_table['report_date'] = pd.to_datetime(ttm_roic_table['report_date'])
+        ttm_roic_table = ttm_roic_table.sort_values('report_date').reset_index(drop=True)
+
+        currency_dict = self.company_meta.get_financial_currency_map()
+
+        nopat_suffix = '_ttm_nopat'
+        ic_suffix = '_ttm_avg_invested_capital'
+        nopat_symbols = [col[:-len(nopat_suffix)] for col in ttm_roic_table.columns if col.endswith(nopat_suffix)]
+
+        print(f"[DEBUG] industry={industry}, total symbols with TTM data: {len(nopat_symbols)}")
+        print(f"[DEBUG] symbols: {nopat_symbols}")
+        print(f"[DEBUG] raw TTM table (quarterly pivot):\n{ttm_roic_table.to_string()}\n")
+
+        # Monthly date baseline: every month end from first to last fiscal quarter in the data
+        min_date = ttm_roic_table['report_date'].min()
+        max_date = ttm_roic_table['report_date'].max()
+        baseline = pd.DataFrame({
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+        })
+
+        total_ttm_nopat = np.zeros(len(baseline))
+        total_avg_invested_capital = np.zeros(len(baseline))
+        count_with_data = np.zeros(len(baseline), dtype=int)
+
+        for symbol in nopat_symbols:
+            nopat_col = f"{symbol}{nopat_suffix}"
+            ic_col = f"{symbol}{ic_suffix}"
+            if nopat_col not in ttm_roic_table.columns or ic_col not in ttm_roic_table.columns:
+                continue
+
+            currency = currency_dict.get(symbol, 'USD')
+            if currency == 'USD':
+                fx_series = pd.Series(1.0, index=ttm_roic_table.index)
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date'])
+                fx_series = pd.merge_asof(
+                    ttm_roic_table[['report_date']],
+                    currency_df,
+                    on='report_date',
+                    direction='backward'
+                )['close']
+
+            symbol_df = pd.DataFrame({
+                'report_date': ttm_roic_table['report_date'],
+                'nopat_usd': (ttm_roic_table[nopat_col] / fx_series).values,
+                'ic_usd': (ttm_roic_table[ic_col] / fx_series).values,
+            }).dropna()
+
+            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
+            nopat_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'nopat_usd']],
+                on='report_date', direction='backward'
+            )['nopat_usd']
+            ic_aligned = pd.merge_asof(
+                baseline, symbol_df[['report_date', 'ic_usd']],
+                on='report_date', direction='backward'
+            )['ic_usd']
+
+            # Paired exclusion: only include when both TTM nopat and avg invested capital are available
+            has_data = nopat_aligned.notna().values & ic_aligned.notna().values
+            total_ttm_nopat += np.where(has_data, nopat_aligned.fillna(0).values, 0.0)
+            total_avg_invested_capital += np.where(has_data, ic_aligned.fillna(0).values, 0.0)
+            count_with_data += has_data.astype(int)
+
+        result = baseline.copy()
+        result.insert(1, 'industry', industry)
+        has_any = count_with_data > 0
+        result['total_ttm_nopat'] = np.where(has_any, total_ttm_nopat, np.nan)
+        result['total_avg_invested_capital'] = np.where(has_any, total_avg_invested_capital, np.nan)
+        result['industry_roic'] = (result['total_ttm_nopat'] / result['total_avg_invested_capital']).replace([np.inf, -np.inf], np.nan).round(4)
+        result = result.dropna(subset=['total_ttm_nopat'])
+        return result
+
     def industry_equity_multiplier(self) -> pd.DataFrame:
         roe = self.industry_roe()
         roa = self.industry_roa()

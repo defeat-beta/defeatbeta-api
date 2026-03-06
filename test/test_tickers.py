@@ -602,6 +602,13 @@ class TestTickers(unittest.TestCase):
         self.assertFalse(result.empty)
         self.assertIn('industry', result.columns)
 
+    def test_industry_roic(self):
+        result = self.tickers.industry_roic()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertFalse(result.empty)
+        self.assertIn('industry', result.columns)
+
     def test_industry_equity_multiplier(self):
         result = self.tickers.industry_equity_multiplier()
         print(result.to_string())

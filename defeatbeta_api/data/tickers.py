@@ -440,6 +440,10 @@ class Tickers:
         """Industry-level ROA for each unique industry represented by the tickers."""
         return self._run_industry_parallel_concat("industry_roa")
 
+    def industry_roic(self) -> pd.DataFrame:
+        """Industry-level ROIC for each unique industry represented by the tickers."""
+        return self._run_industry_parallel_concat("industry_roic")
+
     def industry_equity_multiplier(self) -> pd.DataFrame:
         """Industry-level equity multiplier for each unique industry represented by the tickers."""
         return self._run_industry_parallel_concat("industry_equity_multiplier")
