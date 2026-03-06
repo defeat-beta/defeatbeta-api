@@ -1033,9 +1033,20 @@ After the table, add a brief summary:
 
 ## Template 15: Pre-Investment Risk Assessment (10-Question Framework)
 
-**Use case**: Structured risk review before taking a position. Work through all 10 questions to build a complete picture of the business, financials, competition, and downside scenarios.
+**Use case**: Structured risk review before taking a position. Work through all 10 questions sequentially to build a complete picture of the business, financials, competition, and downside scenarios.
 
 **Trigger phrases**: "risk assessment", "before I invest", "investment checklist", "pre-investment review", "10-question framework"
+
+### Execution Model — One Question at a Time
+
+**CRITICAL**: Do NOT batch all API calls together. Execute each question independently:
+
+1. Call only the APIs listed for that question
+2. Present the full analysis output for that question
+3. End with the transition line: `---  Moving to Question N+1: [Question Title] ---`
+4. Then immediately proceed to the next question
+
+This keeps each analysis focused and prevents context overload. Begin every session with `get_latest_data_update_date` before Question 1, then do not call it again.
 
 ---
 
@@ -1052,6 +1063,8 @@ After the table, add a brief summary:
 ```
 
 **Output**: 2–3 paragraph plain-language business description covering: what they do, who the customer is, why customers pay, and what would make a customer switch.
+
+**Transition**: `--- Moving to Question 2: Revenue Breakdown ---`
 
 ---
 
@@ -1071,6 +1084,8 @@ After the table, add a brief summary:
 
 **Output**: Segment table showing revenue and % of total for each period. Flag any segment >40% of revenue (concentration risk) or any segment declining >10% YoY (structural risk).
 
+**Transition**: `--- Moving to Question 3: Industry Context ---`
+
 ---
 
 ### Question 3 — Industry Context
@@ -1088,6 +1103,8 @@ After the table, add a brief summary:
 ```
 
 **Output**: Industry growth assessment (expanding / stable / contracting) with supporting data. List 2–3 structural tailwinds and 2–3 structural headwinds.
+
+**Transition**: `--- Moving to Question 4: Competitive Landscape ---`
 
 ---
 
@@ -1111,6 +1128,8 @@ After the table, add a brief summary:
 
 **Output**: Competitive position summary table. Rate the company on: pricing power, scale advantage, switching costs, and capital efficiency — each as Strong / Neutral / Weak vs industry median.
 
+**Transition**: `--- Moving to Question 5: Financial Quality ---`
+
 ---
 
 ### Question 5 — Financial Quality
@@ -1132,6 +1151,8 @@ After the table, add a brief summary:
 ```
 
 **Output**: Financial quality scorecard. Grade each dimension A/B/C/D: revenue consistency, margin trend, cash conversion, balance sheet health, capital efficiency. Overall grade = average.
+
+**Transition**: `--- Moving to Question 6: Risks and Downside ---`
 
 ---
 
@@ -1155,6 +1176,8 @@ After the table, add a brief summary:
 
 **Output**: Risk register with 5–8 risks ranked by severity (High / Medium / Low). For each: risk description, early warning signal to monitor, and potential permanent impairment (Yes / No).
 
+**Transition**: `--- Moving to Question 7: Management and Execution ---`
+
 ---
 
 ### Question 7 — Management and Execution
@@ -1177,6 +1200,8 @@ After the table, add a brief summary:
 
 **Output**: Management scorecard. Assess: capital allocation quality, guidance reliability, shareholder alignment, and tenure stability. Note any red flags (missed guidance repeatedly, high leverage, declining ROIC).
 
+**Transition**: `--- Moving to Question 8: Bull and Bear Scenarios ---`
+
 ---
 
 ### Question 8 — Bull and Bear Scenarios
@@ -1196,6 +1221,8 @@ After the table, add a brief summary:
 ```
 
 **Output**: Two-column scenario table (Bull / Bear) covering: revenue growth assumption, operating margin assumption, ROIC trend, and qualitative outcome description. No price targets — fundamentals only.
+
+**Transition**: `--- Moving to Question 9: Valuation Framework ---`
 
 ---
 
@@ -1219,6 +1246,8 @@ After the table, add a brief summary:
 
 **Output**: Valuation summary covering: (1) most appropriate valuation method for this business type, (2) key assumptions that drive value, (3) what would justify a premium vs discount to peers, (4) current implied expectations baked into the price.
 
+**Transition**: `--- Moving to Question 10: Long-Term Investment Thesis ---`
+
 ---
 
 ### Question 10 — Long-Term Investment Thesis
@@ -1241,35 +1270,20 @@ After the table, add a brief summary:
 
 ---
 
-### Full 10-Question Workflow
+### Final Deliverable — Overall Assessment
 
-When user requests a complete pre-investment risk assessment, run all 10 questions sequentially:
+After completing Question 10, synthesize findings from all 10 questions into a closing verdict. Do NOT call any new APIs at this stage — use only the data already collected.
+
+**Format**:
 
 ```
-Phase 1 — Understand the Business (Q1–Q3)
-  → get_latest_data_update_date
-  → get_stock_profile
-  → get_stock_earnings_transcript (recent)
-  → get_stock_revenue_by_segment, get_stock_revenue_by_geography
-  → get_industry_ttm_revenue_yoy_growth, get_industry_ttm_pe
+## Pre-Investment Assessment: [TICKER]
 
-Phase 2 — Assess the Moat (Q4–Q5)
-  → get_industry_ttm_gross_margin, get_stock_ttm_gross_margin
-  → get_industry_ttm_roic, get_stock_ttm_roic
-  → get_stock_annual_revenue_yoy_growth
-  → get_stock_ttm_operating_margin, get_stock_ttm_net_margin, get_stock_ttm_fcf_margin
-  → get_stock_average_net_debt_ttm
+Overall verdict: Compelling / Watchlist / Avoid
 
-Phase 3 — Identify Risks (Q6–Q7)
-  → get_stock_beta
-  → get_stock_news
-  → get_stock_officers
-  → get_stock_earnings_transcript (last 4 quarters for guidance tracking)
+One-sentence rationale: [Why this verdict, grounded in the 10-question findings]
 
-Phase 4 — Size the Opportunity (Q8–Q10)
-  → get_stock_ttm_pe, get_stock_ttm_ps, get_stock_ttm_pb
-  → get_stock_wacc
-  → Synthesize all prior data for scenarios and thesis
+Key strengths (2–3 bullets)
+Key risks (2–3 bullets)
+Conditions to revisit this assessment (1–2 bullets)
 ```
-
-**Final deliverable**: Present answers to all 10 questions as a structured investment memo. End with an overall assessment: Compelling / Watchlist / Avoid — with one-sentence rationale.
