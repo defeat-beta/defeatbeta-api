@@ -1039,14 +1039,17 @@ After the table, add a brief summary:
 
 ### Execution Model — One Question at a Time
 
-**CRITICAL**: Do NOT batch all API calls together. Execute each question independently:
+**STRICT RULE: You are forbidden from calling APIs for Question N+1 until you have finished writing the full output for Question N.**
 
-1. Call only the APIs listed for that question
-2. Present the full analysis output for that question
-3. End with the transition line: `---  Moving to Question N+1: [Question Title] ---`
-4. Then immediately proceed to the next question
+Do not read ahead. Do not pre-fetch data for future questions. Treat each question as a completely independent analysis step:
 
-This keeps each analysis focused and prevents context overload. Begin every session with `get_latest_data_update_date` before Question 1, then do not call it again.
+1. Call `get_latest_data_update_date` once before Question 1. Never call it again.
+2. For each question: call ONLY the APIs listed under that question — nothing more.
+3. Write the complete output for that question.
+4. Print the transition line.
+5. Only then proceed to the next question and call its APIs.
+
+**Why**: Batching all API calls upfront floods the context with raw data across all 10 dimensions simultaneously, degrading analysis quality on every question. Sequential execution keeps each question focused.
 
 ---
 
@@ -1063,6 +1066,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 ```
 
 **Output**: 2–3 paragraph plain-language business description covering: what they do, who the customer is, why customers pay, and what would make a customer switch.
+
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 2 until this output is complete.
 
 **Transition**: `--- Moving to Question 2: Revenue Breakdown ---`
 
@@ -1084,6 +1089,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 
 **Output**: Segment table showing revenue and % of total for each period. Flag any segment >40% of revenue (concentration risk) or any segment declining >10% YoY (structural risk).
 
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 3 until this output is complete.
+
 **Transition**: `--- Moving to Question 3: Industry Context ---`
 
 ---
@@ -1103,6 +1110,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 ```
 
 **Output**: Industry growth assessment (expanding / stable / contracting) with supporting data. List 2–3 structural tailwinds and 2–3 structural headwinds.
+
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 4 until this output is complete.
 
 **Transition**: `--- Moving to Question 4: Competitive Landscape ---`
 
@@ -1128,6 +1137,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 
 **Output**: Competitive position summary table. Rate the company on: pricing power, scale advantage, switching costs, and capital efficiency — each as Strong / Neutral / Weak vs industry median.
 
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 5 until this output is complete.
+
 **Transition**: `--- Moving to Question 5: Financial Quality ---`
 
 ---
@@ -1151,6 +1162,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 ```
 
 **Output**: Financial quality scorecard. Grade each dimension A/B/C/D: revenue consistency, margin trend, cash conversion, balance sheet health, capital efficiency. Overall grade = average.
+
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 6 until this output is complete.
 
 **Transition**: `--- Moving to Question 6: Risks and Downside ---`
 
@@ -1176,6 +1189,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 
 **Output**: Risk register with 5–8 risks ranked by severity (High / Medium / Low). For each: risk description, early warning signal to monitor, and potential permanent impairment (Yes / No).
 
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 7 until this output is complete.
+
 **Transition**: `--- Moving to Question 7: Management and Execution ---`
 
 ---
@@ -1200,6 +1215,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 
 **Output**: Management scorecard. Assess: capital allocation quality, guidance reliability, shareholder alignment, and tenure stability. Note any red flags (missed guidance repeatedly, high leverage, declining ROIC).
 
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 8 until this output is complete.
+
 **Transition**: `--- Moving to Question 8: Bull and Bear Scenarios ---`
 
 ---
@@ -1221,6 +1238,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 ```
 
 **Output**: Two-column scenario table (Bull / Bear) covering: revenue growth assumption, operating margin assumption, ROIC trend, and qualitative outcome description. No price targets — fundamentals only.
+
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 9 until this output is complete.
 
 **Transition**: `--- Moving to Question 9: Valuation Framework ---`
 
@@ -1245,6 +1264,8 @@ This keeps each analysis focused and prevents context overload. Begin every sess
 ```
 
 **Output**: Valuation summary covering: (1) most appropriate valuation method for this business type, (2) key assumptions that drive value, (3) what would justify a premium vs discount to peers, (4) current implied expectations baked into the price.
+
+**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 10 until this output is complete.
 
 **Transition**: `--- Moving to Question 10: Long-Term Investment Thesis ---`
 
