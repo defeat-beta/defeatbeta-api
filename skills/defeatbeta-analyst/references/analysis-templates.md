@@ -1061,7 +1061,7 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 ```
 1. get_stock_profile
    → Business summary, sector, industry, country
-2. get_stock_earnings_transcript (most recent)
+2. get_stock_earning_call_transcript (most recent)
    → Management's own description of the business and competitive positioning
 ```
 
@@ -1079,9 +1079,9 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **APIs to call**:
 ```
-1. get_stock_revenue_by_segment (annual, last 3 years)
+1. get_quarterly_revenue_by_segment (last 3 years)
    → Segment mix and trend
-2. get_stock_revenue_by_geography (annual, last 3 years)
+2. get_quarterly_revenue_by_geography (last 3 years)
    → Geographic concentration risk
 3. get_stock_annual_income_statement (last 3 years)
    → Total revenue context
@@ -1103,8 +1103,8 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 ```
 1. get_stock_profile
    → Industry classification
-2. get_industry_ttm_revenue_yoy_growth (last 3 years)
-   → Industry-level revenue growth trend
+2. get_stock_annual_revenue_yoy_growth (last 3 years)
+   → Company revenue growth as proxy for industry positioning
 3. get_industry_ttm_pe (last 3 years)
    → Market's implied view of industry growth prospects
 ```
@@ -1125,14 +1125,12 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 ```
 1. get_stock_profile (for target company)
    → Business description, sector
-2. get_industry_ttm_gross_margin (last 3 years)
+2. get_industry_quarterly_gross_margin (last 3 years)
    → Industry pricing power benchmark
-3. get_stock_ttm_gross_margin vs get_industry_ttm_gross_margin
-   → Relative pricing power of target vs peers
-4. get_industry_ttm_roic (last 3 years)
-   → Industry moat benchmark (capital efficiency)
-5. get_stock_ttm_roic vs get_industry_ttm_roic
-   → Relative moat strength
+3. get_stock_annual_gross_margin (last 3 years)
+   → Company gross margin vs industry benchmark
+4. get_stock_quarterly_roic (last 3 years)
+   → Capital efficiency as moat indicator
 ```
 
 **Output**: Competitive position summary table. Rate the company on: pricing power, scale advantage, switching costs, and capital efficiency — each as Strong / Neutral / Weak vs industry median.
@@ -1151,13 +1149,17 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 ```
 1. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Revenue growth consistency
-2. get_stock_ttm_gross_margin, get_stock_ttm_operating_margin, get_stock_ttm_net_margin (last 5 years)
-   → Margin trend
-3. get_stock_ttm_fcf_margin (last 5 years)
+2. get_stock_annual_gross_margin (last 5 years)
+   → Gross margin trend
+3. get_stock_annual_operating_margin (last 5 years)
+   → Operating leverage trend
+4. get_stock_annual_net_margin (last 5 years)
+   → Bottom-line profitability trend
+5. get_stock_annual_fcf_margin (last 5 years)
    → Cash conversion quality
-4. get_stock_average_net_debt_ttm (last 5 years)
-   → Debt trend
-5. get_stock_ttm_roic (last 5 years)
+6. get_stock_annual_balance_sheet (last 3 years)
+   → Debt and cash position trend
+7. get_stock_quarterly_roic (last 5 years)
    → Capital allocation quality
 ```
 
@@ -1175,13 +1177,13 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **APIs to call**:
 ```
-1. get_stock_average_net_debt_ttm (last 3 years)
-   → Financial risk: leverage trend
-2. get_stock_ttm_fcf_margin (last 3 years)
-   → Financial risk: ability to service debt
-3. get_stock_beta (last 3 years)
-   → Market risk: systematic sensitivity
-4. get_stock_earnings_transcript (most recent 2)
+1. get_stock_annual_balance_sheet (last 3 years)
+   → Financial risk: debt load and cash buffer
+2. get_stock_annual_fcf_margin (last 3 years)
+   → Financial risk: ability to service debt from operations
+3. get_stock_quarterly_debt_to_equity (last 3 years)
+   → Leverage ratio trend
+4. get_stock_earning_call_transcript (most recent 2)
    → Management's own risk disclosures
 5. get_stock_news (last 30 days)
    → Current risk events
@@ -1203,13 +1205,13 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 ```
 1. get_stock_officers
    → Tenure and background of key executives
-2. get_stock_ttm_roic (last 5 years)
+2. get_stock_quarterly_roic (last 5 years)
    → Capital allocation outcome
 3. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Execution on growth
-4. get_stock_ttm_fcf_margin (last 5 years)
+4. get_stock_annual_fcf_margin (last 5 years)
    → Cash generation under their watch
-5. get_stock_earnings_transcript (last 4 quarters)
+5. get_stock_earning_call_transcript (last 4 quarters)
    → Guidance accuracy: compare past guidance to actual results
 ```
 
@@ -1229,11 +1231,11 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 ```
 1. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Historical growth range as scenario anchor
-2. get_stock_ttm_operating_margin (last 5 years)
+2. get_stock_annual_operating_margin (last 5 years)
    → Margin expansion / contraction range
 3. get_industry_ttm_pe (last 5 years)
    → Valuation multiple range for exit multiple
-4. get_stock_ttm_roic (last 5 years)
+4. get_stock_quarterly_roic (last 5 years)
    → ROIC trajectory as quality anchor
 ```
 
@@ -1251,15 +1253,21 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **APIs to call**:
 ```
-1. get_stock_ttm_pe, get_stock_ttm_ps, get_stock_ttm_pb (last 5 years)
-   → Current and historical multiples
-2. get_industry_ttm_pe, get_industry_ttm_ps (last 5 years)
-   → Peer multiple comparison
-3. get_stock_wacc (most recent)
+1. get_stock_ttm_pe (last 5 years)
+   → P/E history vs current
+2. get_stock_ps_ratio (last 5 years)
+   → P/S history vs current
+3. get_stock_pb_ratio (last 5 years)
+   → P/B history vs current
+4. get_industry_ttm_pe (last 5 years)
+   → Industry P/E benchmark
+5. get_industry_ps_ratio (last 5 years)
+   → Industry P/S benchmark
+6. get_stock_wacc (most recent)
    → Discount rate for intrinsic value work
-4. get_stock_ttm_fcf_margin (last 3 years)
+7. get_stock_annual_fcf_margin (last 3 years)
    → FCF yield as valuation anchor
-5. get_stock_annual_revenue_yoy_growth (last 5 years)
+8. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Growth rate inputs
 ```
 
@@ -1277,11 +1285,10 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **APIs to call**:
 ```
-1. Synthesize findings from Questions 1–9 (no new API calls required if prior questions were answered)
-2. get_stock_ttm_roic (last 5 years) — if not already fetched
-   → Compounding quality check
-3. get_stock_annual_revenue_yoy_growth (last 5 years) — if not already fetched
-   → Growth sustainability check
+Synthesize findings from Questions 1–9. No new API calls required.
+If any of the following were not fetched in prior questions, call them now:
+- get_stock_quarterly_roic → Compounding quality check
+- get_stock_annual_revenue_yoy_growth → Growth sustainability check
 ```
 
 **Output**: One-page thesis in three sections:
