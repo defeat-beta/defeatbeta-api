@@ -26,6 +26,7 @@
 - [22. Industry Historical ROA](#22-industry-historical-roa)
 - [23. Industry Historical Equity Multiplier](#23-industry-historical-equity-multiplier)
 - [24. Industry Historical Asset Turnover](#24-industry-historical-asset-turnover)
+- [25. Industry Historical ROIC](#25-industry-historical-roic)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -792,4 +793,49 @@ ticker.industry_asset_turnover()
 7  2025-03-31  Auto Manufacturers        0.0029               0.0200                     0.14
 8  2025-06-30  Auto Manufacturers        0.0033               0.0212                     0.16
 9  2025-09-30  Auto Manufacturers        0.0042               0.0268                     0.16
+```
+
+## 25. Industry Historical ROIC
+```markdown
+[!WARN] ROIC is generally NOT applicable to banks and other financial institutions,
+due to their fundamentally different balance sheet structures.
+
+Aggregate method (Damodaran methodology): industry ROIC = total TTM NOPAT / total TTM avg invested capital.
+
+Paired exclusion: a company is included only when BOTH its TTM NOPAT AND its TTM avg invested capital
+are available on the same date. Companies missing ebit, tax_rate_for_calcs, or invested_capital in any
+of the four quarters are excluded.
+
+TTM NOPAT: sum of nopat over trailing four consecutive quarters, where
+  nopat = ebit * (1 - tax_rate_for_calcs)
+All values converted to USD at the spot FX rate of each fiscal quarter end.
+
+TTM avg invested capital: average of invested_capital at the start and end of the TTM window
+(i.e., invested_capital 3 quarters ago and current invested_capital), converted to USD.
+
+Date baseline: every month end. Each company's quarterly TTM values are forward-filled to the
+monthly baseline via merge_asof (backward), so companies with different fiscal year ends all
+contribute to every month.
+
+total_ttm_nopat          = Σ ttm_nopat_usd(i)         for companies where both values available
+total_ttm_avg_inv_cap    = Σ ttm_avg_inv_cap_usd(i)   for the same set of companies
+
+industry_roic            = total_ttm_nopat / total_ttm_avg_inv_cap
+```
+
+```python
+ticker.industry_roic()
+```
+```text
+   report_date                    industry  total_ttm_nopat  total_ttm_avg_inv_cap  industry_roic
+0   2024-03-31  Semiconductors & Equipment     3.456789e+10           2.345678e+11         0.1473
+1   2024-04-30  Semiconductors & Equipment     3.456789e+10           2.345678e+11         0.1473
+2   2024-05-31  Semiconductors & Equipment     3.456789e+10           2.345678e+11         0.1473
+3   2024-06-30  Semiconductors & Equipment     4.123456e+10           2.567891e+11         0.1606
+4   2024-07-31  Semiconductors & Equipment     4.123456e+10           2.567891e+11         0.1606
+5   2024-08-31  Semiconductors & Equipment     4.123456e+10           2.567891e+11         0.1606
+6   2024-09-30  Semiconductors & Equipment     5.234567e+10           2.789012e+11         0.1876
+7   2024-10-31  Semiconductors & Equipment     5.234567e+10           2.789012e+11         0.1876
+8   2024-11-30  Semiconductors & Equipment     5.234567e+10           2.789012e+11         0.1876
+9   2024-12-31  Semiconductors & Equipment     6.345678e+10           2.901234e+11         0.2187
 ```
