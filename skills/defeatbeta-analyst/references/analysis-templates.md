@@ -1028,3 +1028,248 @@ After the table, add a brief summary:
 - Overall management tone: [one sentence characterizing the dominant attitude]
 - Key themes (1–3 bullet points on the most significant forward-looking items)
 - ❌ Avoid for unprofitable, highly cyclical, or financial companies
+
+---
+
+## Template 15: Pre-Investment Risk Assessment (10-Question Framework)
+
+**Use case**: Structured risk review before taking a position. Work through all 10 questions to build a complete picture of the business, financials, competition, and downside scenarios.
+
+**Trigger phrases**: "risk assessment", "before I invest", "investment checklist", "pre-investment review", "10-question framework"
+
+---
+
+### Question 1 — Business Understanding
+
+**Prompt**: Explain this company's business in plain language. What problem does it solve, who pays for it, and why do customers choose it over alternatives? Avoid financial jargon.
+
+**APIs to call**:
+```
+1. get_stock_profile
+   → Business summary, sector, industry, country
+2. get_stock_earnings_transcript (most recent)
+   → Management's own description of the business and competitive positioning
+```
+
+**Output**: 2–3 paragraph plain-language business description covering: what they do, who the customer is, why customers pay, and what would make a customer switch.
+
+---
+
+### Question 2 — Revenue Breakdown
+
+**Prompt**: Break down this company's revenue streams. Which segments are growing, which are slowing, and how dependent is the company on its top products or customers?
+
+**APIs to call**:
+```
+1. get_stock_revenue_by_segment (annual, last 3 years)
+   → Segment mix and trend
+2. get_stock_revenue_by_geography (annual, last 3 years)
+   → Geographic concentration risk
+3. get_stock_annual_income_statement (last 3 years)
+   → Total revenue context
+```
+
+**Output**: Segment table showing revenue and % of total for each period. Flag any segment >40% of revenue (concentration risk) or any segment declining >10% YoY (structural risk).
+
+---
+
+### Question 3 — Industry Context
+
+**Prompt**: Explain the industry this company operates in. Is the market growing, stable, or shrinking? What long-term trends are tailwinds or headwinds for this business?
+
+**APIs to call**:
+```
+1. get_stock_profile
+   → Industry classification
+2. get_industry_ttm_revenue_yoy_growth (last 3 years)
+   → Industry-level revenue growth trend
+3. get_industry_ttm_pe (last 3 years)
+   → Market's implied view of industry growth prospects
+```
+
+**Output**: Industry growth assessment (expanding / stable / contracting) with supporting data. List 2–3 structural tailwinds and 2–3 structural headwinds.
+
+---
+
+### Question 4 — Competitive Landscape
+
+**Prompt**: List the main competitors and compare pricing power, product strength, scale, and moat. Highlight where this company clearly wins or clearly lags.
+
+**APIs to call**:
+```
+1. get_stock_profile (for target company)
+   → Business description, sector
+2. get_industry_ttm_gross_margin (last 3 years)
+   → Industry pricing power benchmark
+3. get_stock_ttm_gross_margin vs get_industry_ttm_gross_margin
+   → Relative pricing power of target vs peers
+4. get_industry_ttm_roic (last 3 years)
+   → Industry moat benchmark (capital efficiency)
+5. get_stock_ttm_roic vs get_industry_ttm_roic
+   → Relative moat strength
+```
+
+**Output**: Competitive position summary table. Rate the company on: pricing power, scale advantage, switching costs, and capital efficiency — each as Strong / Neutral / Weak vs industry median.
+
+---
+
+### Question 5 — Financial Quality
+
+**Prompt**: Analyze the financial quality over recent years. Focus on revenue growth consistency, margin trajectory, debt levels, cash flow strength, and capital allocation.
+
+**APIs to call**:
+```
+1. get_stock_annual_revenue_yoy_growth (last 5 years)
+   → Revenue growth consistency
+2. get_stock_ttm_gross_margin, get_stock_ttm_operating_margin, get_stock_ttm_net_margin (last 5 years)
+   → Margin trend
+3. get_stock_ttm_fcf_margin (last 5 years)
+   → Cash conversion quality
+4. get_stock_average_net_debt_ttm (last 5 years)
+   → Debt trend
+5. get_stock_ttm_roic (last 5 years)
+   → Capital allocation quality
+```
+
+**Output**: Financial quality scorecard. Grade each dimension A/B/C/D: revenue consistency, margin trend, cash conversion, balance sheet health, capital efficiency. Overall grade = average.
+
+---
+
+### Question 6 — Risks and Downside
+
+**Prompt**: Identify the biggest risks for this company. Include business risks, financial risks, regulatory threats, and factors that could permanently impair the business.
+
+**APIs to call**:
+```
+1. get_stock_average_net_debt_ttm (last 3 years)
+   → Financial risk: leverage trend
+2. get_stock_ttm_fcf_margin (last 3 years)
+   → Financial risk: ability to service debt
+3. get_stock_beta (last 3 years)
+   → Market risk: systematic sensitivity
+4. get_stock_earnings_transcript (most recent 2)
+   → Management's own risk disclosures
+5. get_stock_news (last 30 days)
+   → Current risk events
+```
+
+**Output**: Risk register with 5–8 risks ranked by severity (High / Medium / Low). For each: risk description, early warning signal to monitor, and potential permanent impairment (Yes / No).
+
+---
+
+### Question 7 — Management and Execution
+
+**Prompt**: Assess the management team's track record. How well have they executed historically? How have their decisions affected long-term shareholders?
+
+**APIs to call**:
+```
+1. get_stock_officers
+   → Tenure and background of key executives
+2. get_stock_ttm_roic (last 5 years)
+   → Capital allocation outcome
+3. get_stock_annual_revenue_yoy_growth (last 5 years)
+   → Execution on growth
+4. get_stock_ttm_fcf_margin (last 5 years)
+   → Cash generation under their watch
+5. get_stock_earnings_transcript (last 4 quarters)
+   → Guidance accuracy: compare past guidance to actual results
+```
+
+**Output**: Management scorecard. Assess: capital allocation quality, guidance reliability, shareholder alignment, and tenure stability. Note any red flags (missed guidance repeatedly, high leverage, declining ROIC).
+
+---
+
+### Question 8 — Bull and Bear Scenarios
+
+**Prompt**: Articulate realistic bull and bear scenarios for this stock over the next 3–5 years. Focus on fundamentals, not price targets.
+
+**APIs to call**:
+```
+1. get_stock_annual_revenue_yoy_growth (last 5 years)
+   → Historical growth range as scenario anchor
+2. get_stock_ttm_operating_margin (last 5 years)
+   → Margin expansion / contraction range
+3. get_industry_ttm_pe (last 5 years)
+   → Valuation multiple range for exit multiple
+4. get_stock_ttm_roic (last 5 years)
+   → ROIC trajectory as quality anchor
+```
+
+**Output**: Two-column scenario table (Bull / Bear) covering: revenue growth assumption, operating margin assumption, ROIC trend, and qualitative outcome description. No price targets — fundamentals only.
+
+---
+
+### Question 9 — Valuation Framework
+
+**Prompt**: Explain how investors should value this company. What assumptions matter most, and what would justify a higher or lower valuation?
+
+**APIs to call**:
+```
+1. get_stock_ttm_pe, get_stock_ttm_ps, get_stock_ttm_pb (last 5 years)
+   → Current and historical multiples
+2. get_industry_ttm_pe, get_industry_ttm_ps (last 5 years)
+   → Peer multiple comparison
+3. get_stock_wacc (most recent)
+   → Discount rate for intrinsic value work
+4. get_stock_ttm_fcf_margin (last 3 years)
+   → FCF yield as valuation anchor
+5. get_stock_annual_revenue_yoy_growth (last 5 years)
+   → Growth rate inputs
+```
+
+**Output**: Valuation summary covering: (1) most appropriate valuation method for this business type, (2) key assumptions that drive value, (3) what would justify a premium vs discount to peers, (4) current implied expectations baked into the price.
+
+---
+
+### Question 10 — Long-Term Investment Thesis
+
+**Prompt**: Help me form a long-term investment thesis. Summarize why this could be a good investment, what must go right, and what signals would tell me I'm wrong.
+
+**APIs to call**:
+```
+1. Synthesize findings from Questions 1–9 (no new API calls required if prior questions were answered)
+2. get_stock_ttm_roic (last 5 years) — if not already fetched
+   → Compounding quality check
+3. get_stock_annual_revenue_yoy_growth (last 5 years) — if not already fetched
+   → Growth sustainability check
+```
+
+**Output**: One-page thesis in three sections:
+- **The Case For**: 3–5 bullet points on why this is an attractive investment
+- **What Must Go Right**: 3–5 specific conditions that the bull case depends on
+- **When I'm Wrong**: 3–5 observable signals that would invalidate the thesis (not price drops — fundamental deterioration)
+
+---
+
+### Full 10-Question Workflow
+
+When user requests a complete pre-investment risk assessment, run all 10 questions sequentially:
+
+```
+Phase 1 — Understand the Business (Q1–Q3)
+  → get_latest_data_update_date
+  → get_stock_profile
+  → get_stock_earnings_transcript (recent)
+  → get_stock_revenue_by_segment, get_stock_revenue_by_geography
+  → get_industry_ttm_revenue_yoy_growth, get_industry_ttm_pe
+
+Phase 2 — Assess the Moat (Q4–Q5)
+  → get_industry_ttm_gross_margin, get_stock_ttm_gross_margin
+  → get_industry_ttm_roic, get_stock_ttm_roic
+  → get_stock_annual_revenue_yoy_growth
+  → get_stock_ttm_operating_margin, get_stock_ttm_net_margin, get_stock_ttm_fcf_margin
+  → get_stock_average_net_debt_ttm
+
+Phase 3 — Identify Risks (Q6–Q7)
+  → get_stock_beta
+  → get_stock_news
+  → get_stock_officers
+  → get_stock_earnings_transcript (last 4 quarters for guidance tracking)
+
+Phase 4 — Size the Opportunity (Q8–Q10)
+  → get_stock_ttm_pe, get_stock_ttm_ps, get_stock_ttm_pb
+  → get_stock_wacc
+  → Synthesize all prior data for scenarios and thesis
+```
+
+**Final deliverable**: Present answers to all 10 questions as a structured investment memo. End with an overall assessment: Compelling / Watchlist / Avoid — with one-sentence rationale.

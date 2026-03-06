@@ -168,6 +168,12 @@ When displaying results from `get_stock_*_income_statement`, `get_stock_*_balanc
 - "Extract forward-looking statements with numbers from the transcript"
 - "What is management's attitude toward future performance?"
 
+### Pre-Investment Risk Assessment
+- "Risk assessment for [COMPANY]", "pre-investment checklist"
+- "Before I invest in [STOCK]", "investment risk review"
+- "10-question framework", "full risk review before investing"
+- "Should I buy [STOCK]", "is [COMPANY] worth investing in"
+
 ## Reference Documentation
 
 **When you need detailed workflows**, see [analysis-templates.md](./references/analysis-templates.md):
@@ -179,6 +185,7 @@ When displaying results from `get_stock_*_income_statement`, `get_stock_*_balanc
 - Template 12: Extract Key Financial Data from Earnings Call (reported results + guidance, no external LLM needed)
 - Template 13: Analyze Financial Metric Changes from Earnings Call (factual QoQ/YoY changes with direction and reason, no external LLM needed)
 - Template 14: Analyze Financial Metric Forecasts from Earnings Call (forward-looking numerical guidance with management attitude, no external LLM needed)
+- Template 15: Pre-Investment Risk Assessment — 10-question framework covering business, revenue, industry, competition, financial quality, risks, management, scenarios, valuation, and long-term thesis
 
 **When you need API parameters and schemas**, see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md):
 - Complete API documentation with parameters, response schemas, examples
