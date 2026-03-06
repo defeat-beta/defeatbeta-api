@@ -2614,10 +2614,6 @@ class Ticker:
         ic_suffix = '_ttm_avg_invested_capital'
         nopat_symbols = [col[:-len(nopat_suffix)] for col in ttm_roic_table.columns if col.endswith(nopat_suffix)]
 
-        print(f"[DEBUG] industry={industry}, total symbols with TTM data: {len(nopat_symbols)}")
-        print(f"[DEBUG] symbols: {nopat_symbols}")
-        print(f"[DEBUG] raw TTM table (quarterly pivot):\n{ttm_roic_table.to_string()}\n")
-
         # Monthly date baseline: every month end from first to last fiscal quarter in the data
         min_date = ttm_roic_table['report_date'].min()
         max_date = ttm_roic_table['report_date'].max()
