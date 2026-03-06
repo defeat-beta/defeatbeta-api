@@ -1037,23 +1037,30 @@ After the table, add a brief summary:
 
 **Trigger phrases**: "risk assessment", "before I invest", "investment checklist", "pre-investment review", "10-question framework"
 
-### Execution Model — One Question at a Time
+### Execution Model — One Question at a Time, User-Confirmed
 
-**STRICT RULE: You are forbidden from calling APIs for Question N+1 until you have finished writing the full output for Question N.**
+**STRICT RULES — read carefully before starting:**
 
-Do not read ahead. Do not pre-fetch data for future questions. Treat each question as a completely independent analysis step:
-
-1. Call `get_latest_data_update_date` once before Question 1. Never call it again.
+1. Call `get_latest_data_update_date` ONCE before Question 1. Never call it again.
 2. For each question: call ONLY the APIs listed under that question — nothing more.
 3. Write the complete output for that question.
-4. Print the transition line.
-5. Only then proceed to the next question and call its APIs.
+4. **STOP. Do NOT proceed automatically.** Print the pause prompt and wait for the user to confirm.
+5. Only after the user replies (e.g. "continue", "next", "ok") call APIs for the next question.
 
-**Why**: Batching all API calls upfront floods the context with raw data across all 10 dimensions simultaneously, degrading analysis quality on every question. Sequential execution keeps each question focused.
+**You must NEVER skip ahead, batch questions, or generate a final report before all 10 questions are answered individually.**
+
+### Resuming After Context Compaction
+
+If the conversation is compacted mid-way, the user may say something like "continue Question 5" or "resume". In that case:
+- Acknowledge which question you are resuming
+- Print `[Question N/10 — RESUMED]` at the top
+- Call only the APIs for that question and continue from there
+- Do not repeat earlier questions
 
 ---
 
 ### Question 1 — Business Understanding
+`[Question 1/10]`
 
 **Prompt**: Explain this company's business in plain language. What problem does it solve, who pays for it, and why do customers choose it over alternatives? Avoid financial jargon.
 
@@ -1067,13 +1074,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: 2–3 paragraph plain-language business description covering: what they do, who the customer is, why customers pay, and what would make a customer switch.
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 2 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 2: Revenue Breakdown ---`
+> ✅ **Question 1/10 complete.**
+> Reply "continue" to proceed to Question 2: Revenue Breakdown.
 
 ---
 
 ### Question 2 — Revenue Breakdown
+`[Question 2/10]`
 
 **Prompt**: Break down this company's revenue streams. Which segments are growing, which are slowing, and how dependent is the company on its top products or customers?
 
@@ -1089,13 +1098,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Segment table showing revenue and % of total for each period. Flag any segment >40% of revenue (concentration risk) or any segment declining >10% YoY (structural risk).
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 3 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 3: Industry Context ---`
+> ✅ **Question 2/10 complete.**
+> Reply "continue" to proceed to Question 3: Industry Context.
 
 ---
 
 ### Question 3 — Industry Context
+`[Question 3/10]`
 
 **Prompt**: Explain the industry this company operates in. Is the market growing, stable, or shrinking? What long-term trends are tailwinds or headwinds for this business?
 
@@ -1111,13 +1122,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Industry growth assessment (expanding / stable / contracting) with supporting data. List 2–3 structural tailwinds and 2–3 structural headwinds.
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 4 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 4: Competitive Landscape ---`
+> ✅ **Question 3/10 complete.**
+> Reply "continue" to proceed to Question 4: Competitive Landscape.
 
 ---
 
 ### Question 4 — Competitive Landscape
+`[Question 4/10]`
 
 **Prompt**: List the main competitors and compare pricing power, product strength, scale, and moat. Highlight where this company clearly wins or clearly lags.
 
@@ -1135,13 +1148,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Competitive position summary table. Rate the company on: pricing power, scale advantage, switching costs, and capital efficiency — each as Strong / Neutral / Weak vs industry median.
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 5 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 5: Financial Quality ---`
+> ✅ **Question 4/10 complete.**
+> Reply "continue" to proceed to Question 5: Financial Quality.
 
 ---
 
 ### Question 5 — Financial Quality
+`[Question 5/10]`
 
 **Prompt**: Analyze the financial quality over recent years. Focus on revenue growth consistency, margin trajectory, debt levels, cash flow strength, and capital allocation.
 
@@ -1165,13 +1180,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Financial quality scorecard. Grade each dimension A/B/C/D: revenue consistency, margin trend, cash conversion, balance sheet health, capital efficiency. Overall grade = average.
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 6 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 6: Risks and Downside ---`
+> ✅ **Question 5/10 complete.**
+> Reply "continue" to proceed to Question 6: Risks and Downside.
 
 ---
 
 ### Question 6 — Risks and Downside
+`[Question 6/10]`
 
 **Prompt**: Identify the biggest risks for this company. Include business risks, financial risks, regulatory threats, and factors that could permanently impair the business.
 
@@ -1191,13 +1208,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Risk register with 5–8 risks ranked by severity (High / Medium / Low). For each: risk description, early warning signal to monitor, and potential permanent impairment (Yes / No).
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 7 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 7: Management and Execution ---`
+> ✅ **Question 6/10 complete.**
+> Reply "continue" to proceed to Question 7: Management and Execution.
 
 ---
 
 ### Question 7 — Management and Execution
+`[Question 7/10]`
 
 **Prompt**: Assess the management team's track record. How well have they executed historically? How have their decisions affected long-term shareholders?
 
@@ -1217,13 +1236,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Management scorecard. Assess: capital allocation quality, guidance reliability, shareholder alignment, and tenure stability. Note any red flags (missed guidance repeatedly, high leverage, declining ROIC).
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 8 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 8: Bull and Bear Scenarios ---`
+> ✅ **Question 7/10 complete.**
+> Reply "continue" to proceed to Question 8: Bull and Bear Scenarios.
 
 ---
 
 ### Question 8 — Bull and Bear Scenarios
+`[Question 8/10]`
 
 **Prompt**: Articulate realistic bull and bear scenarios for this stock over the next 3–5 years. Focus on fundamentals, not price targets.
 
@@ -1241,13 +1262,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Two-column scenario table (Bull / Bear) covering: revenue growth assumption, operating margin assumption, ROIC trend, and qualitative outcome description. No price targets — fundamentals only.
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 9 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 9: Valuation Framework ---`
+> ✅ **Question 8/10 complete.**
+> Reply "continue" to proceed to Question 9: Valuation Framework.
 
 ---
 
 ### Question 9 — Valuation Framework
+`[Question 9/10]`
 
 **Prompt**: Explain how investors should value this company. What assumptions matter most, and what would justify a higher or lower valuation?
 
@@ -1273,13 +1296,15 @@ Do not read ahead. Do not pre-fetch data for future questions. Treat each questi
 
 **Output**: Valuation summary covering: (1) most appropriate valuation method for this business type, (2) key assumptions that drive value, (3) what would justify a premium vs discount to peers, (4) current implied expectations baked into the price.
 
-**STOP**: Write the output above in full before calling any APIs. Do not call APIs for Question 10 until this output is complete.
+**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
 
-**Transition**: `--- Moving to Question 10: Long-Term Investment Thesis ---`
+> ✅ **Question 9/10 complete.**
+> Reply "continue" to proceed to Question 10: Long-Term Investment Thesis.
 
 ---
 
 ### Question 10 — Long-Term Investment Thesis
+`[Question 10/10]`
 
 **Prompt**: Help me form a long-term investment thesis. Summarize why this could be a good investment, what must go right, and what signals would tell me I'm wrong.
 
@@ -1300,18 +1325,6 @@ If any of the following were not fetched in prior questions, call them now:
 
 ### Final Deliverable — Overall Assessment
 
-After completing Question 10, synthesize findings from all 10 questions into a closing verdict. Do NOT call any new APIs at this stage — use only the data already collected.
+After completing Question 10 output, print:
 
-**Format**:
-
-```
-## Pre-Investment Assessment: [TICKER]
-
-Overall verdict: Compelling / Watchlist / Avoid
-
-One-sentence rationale: [Why this verdict, grounded in the 10-question findings]
-
-Key strengths (2–3 bullets)
-Key risks (2–3 bullets)
-Conditions to revisit this assessment (1–2 bullets)
-```
+> ✅ **Question 10/10 complete. Pre-investment review finished.**
