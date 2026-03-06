@@ -463,6 +463,20 @@ class Ticker:
 
         return result_df
 
+    def net_debt_ttm(self) -> pd.DataFrame:
+        url = self.huggingface_client.get_url_path(stock_statement)
+        sql = load_sql("select_net_debt_ttm_by_symbol", ticker=self.ticker, url=url)
+        result_df = self.duckdb_client.query(sql)
+        result_df = result_df[[
+            'symbol',
+            'report_date',
+            'long_term_debt',
+            'cash_and_short_term_investments',
+            'net_debt',
+            'avg_net_debt_ttm'
+        ]]
+        return result_df
+
     def enterprise_value(self) -> pd.DataFrame:
         url = self.huggingface_client.get_url_path(stock_statement)
         sql = load_sql("select_enterprise_value_components_by_symbol", ticker=self.ticker, url=url)
