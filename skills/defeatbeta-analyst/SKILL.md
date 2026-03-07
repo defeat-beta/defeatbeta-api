@@ -168,11 +168,45 @@ When displaying results from `get_stock_*_income_statement`, `get_stock_*_balanc
 - "Extract forward-looking statements with numbers from the transcript"
 - "What is management's attitude toward future performance?"
 
-### Pre-Investment Risk Assessment
-- "Risk assessment for [COMPANY]", "pre-investment checklist"
-- "Before I invest in [STOCK]", "investment risk review"
-- "10-question framework", "full risk review before investing"
-- "Should I buy [STOCK]", "is [COMPANY] worth investing in"
+### Business Understanding (Template 15)
+- "Explain this company's business", "what does [COMPANY] do"
+- "Business model", "how does [COMPANY] make money"
+
+### Revenue Breakdown (Template 16)
+- "Revenue breakdown", "revenue segments", "where does [COMPANY] make money"
+- "Revenue concentration", "segment analysis"
+
+### Industry Context (Template 17)
+- "Industry analysis", "industry context", "market trends for [COMPANY]"
+- "Tailwinds headwinds", "what industry is [COMPANY] in"
+
+### Competitive Landscape (Template 18)
+- "Competitive landscape", "competitors", "moat", "pricing power"
+- "Competitive advantage", "how does [COMPANY] compare to peers"
+
+### Financial Quality (Template 19)
+- "Financial quality", "financial health", "balance sheet strength"
+- "How strong are the financials", "debt cash flow quality"
+
+### Risks and Downside (Template 20)
+- "Risks", "downside risk", "what could go wrong", "risk analysis"
+- "Permanent impairment", "risk factors"
+
+### Management and Execution (Template 21)
+- "Management team", "management quality", "CEO track record"
+- "How well has management executed", "capital allocation history"
+
+### Bull and Bear Scenarios (Template 22)
+- "Bull case", "bear case", "bull bear scenarios"
+- "Best case worst case", "upside downside scenarios"
+
+### Valuation Framework (Template 23)
+- "Is [STOCK] overvalued", "how to value [COMPANY]", "valuation framework"
+- "What assumptions drive valuation"
+
+### Long-Term Investment Thesis (Template 24)
+- "Investment thesis", "long-term thesis", "should I hold [STOCK] long term"
+- "Why invest in [COMPANY]", "what must go right"
 
 ## Reference Documentation
 
@@ -185,7 +219,16 @@ When displaying results from `get_stock_*_income_statement`, `get_stock_*_balanc
 - Template 12: Extract Key Financial Data from Earnings Call (reported results + guidance, no external LLM needed)
 - Template 13: Analyze Financial Metric Changes from Earnings Call (factual QoQ/YoY changes with direction and reason, no external LLM needed)
 - Template 14: Analyze Financial Metric Forecasts from Earnings Call (forward-looking numerical guidance with management attitude, no external LLM needed)
-- Template 15: Pre-Investment Risk Assessment — 10-question framework covering business, revenue, industry, competition, financial quality, risks, management, scenarios, valuation, and long-term thesis
+- Template 15: Business Understanding — plain-language business description
+- Template 16: Revenue Breakdown — segment and geography concentration analysis
+- Template 17: Industry Context — market growth, tailwinds, headwinds
+- Template 18: Competitive Landscape — pricing power, moat, peer comparison
+- Template 19: Financial Quality — margins, cash flow, balance sheet scorecard
+- Template 20: Risks and Downside — risk register with severity and warning signals
+- Template 21: Management and Execution — track record, guidance reliability, ROIC
+- Template 22: Bull and Bear Scenarios — fundamental scenario table (no price targets)
+- Template 23: Valuation Framework — multiples, WACC, key valuation assumptions
+- Template 24: Long-Term Investment Thesis — case for, what must go right, when I'm wrong
 
 **When you need API parameters and schemas**, see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md):
 - Complete API documentation with parameters, response schemas, examples

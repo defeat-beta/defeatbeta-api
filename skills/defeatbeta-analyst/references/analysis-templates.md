@@ -1031,300 +1031,243 @@ After the table, add a brief summary:
 
 ---
 
-## Template 15: Pre-Investment Risk Assessment (10-Question Framework)
+## Template 15: Business Understanding
 
-**Use case**: Structured risk review before taking a position. Work through all 10 questions sequentially to build a complete picture of the business, financials, competition, and downside scenarios.
-
-**Trigger phrases**: "risk assessment", "before I invest", "investment checklist", "pre-investment review", "10-question framework"
-
-### Execution Model — One Question at a Time, User-Confirmed
-
-**STRICT RULES — read carefully before starting:**
-
-1. Call `get_latest_data_update_date` ONCE before Question 1. Never call it again.
-2. For each question: call ONLY the APIs listed under that question — nothing more.
-3. Write the complete output for that question.
-4. **STOP. Do NOT proceed automatically.** Print the pause prompt and wait for the user to confirm.
-5. Only after the user replies (e.g. "continue", "next", "ok") call APIs for the next question.
-
-**You must NEVER skip ahead, batch questions, or generate a final report before all 10 questions are answered individually.**
-
-### Resuming After Context Compaction
-
-If the conversation is compacted mid-way, the user may say something like "continue Question 5" or "resume". In that case:
-- Acknowledge which question you are resuming
-- Print `[Question N/10 — RESUMED]` at the top
-- Call only the APIs for that question and continue from there
-- Do not repeat earlier questions
-
----
-
-### Question 1 — Business Understanding
-`[Question 1/10]`
+**Trigger phrases**: "explain this company's business", "what does [COMPANY] do", "business model", "how does [COMPANY] make money", "understand the business before investing"
 
 **Prompt**: Explain this company's business in plain language. What problem does it solve, who pays for it, and why do customers choose it over alternatives? Avoid financial jargon.
 
 **APIs to call**:
 ```
-1. get_stock_profile
+1. get_latest_data_update_date
+2. get_stock_profile
    → Business summary, sector, industry, country
-2. get_stock_earning_call_transcript (most recent)
+3. get_stock_earning_call_transcript (most recent)
    → Management's own description of the business and competitive positioning
 ```
 
 **Output**: 2–3 paragraph plain-language business description covering: what they do, who the customer is, why customers pay, and what would make a customer switch.
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 1/10 complete.**
-> Reply "continue" to proceed to Question 2: Revenue Breakdown.
-
 ---
 
-### Question 2 — Revenue Breakdown
-`[Question 2/10]`
+## Template 16: Revenue Breakdown
+
+**Trigger phrases**: "revenue breakdown", "revenue segments", "where does [COMPANY] make money", "revenue concentration", "segment analysis"
 
 **Prompt**: Break down this company's revenue streams. Which segments are growing, which are slowing, and how dependent is the company on its top products or customers?
 
 **APIs to call**:
 ```
-1. get_quarterly_revenue_by_segment (last 3 years)
+1. get_latest_data_update_date
+2. get_quarterly_revenue_by_segment (last 3 years)
    → Segment mix and trend
-2. get_quarterly_revenue_by_geography (last 3 years)
+3. get_quarterly_revenue_by_geography (last 3 years)
    → Geographic concentration risk
-3. get_stock_annual_income_statement (last 3 years)
+4. get_stock_annual_income_statement (last 3 years)
    → Total revenue context
 ```
 
 **Output**: Segment table showing revenue and % of total for each period. Flag any segment >40% of revenue (concentration risk) or any segment declining >10% YoY (structural risk).
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 2/10 complete.**
-> Reply "continue" to proceed to Question 3: Industry Context.
-
 ---
 
-### Question 3 — Industry Context
-`[Question 3/10]`
+## Template 17: Industry Context
+
+**Trigger phrases**: "industry analysis", "industry context", "what industry is [COMPANY] in", "market trends for [COMPANY]", "tailwinds headwinds"
 
 **Prompt**: Explain the industry this company operates in. Is the market growing, stable, or shrinking? What long-term trends are tailwinds or headwinds for this business?
 
 **APIs to call**:
 ```
-1. get_stock_profile
+1. get_latest_data_update_date
+2. get_stock_profile
    → Industry classification
-2. get_stock_annual_revenue_yoy_growth (last 3 years)
+3. get_stock_annual_revenue_yoy_growth (last 3 years)
    → Company revenue growth as proxy for industry positioning
-3. get_industry_ttm_pe (last 3 years)
+4. get_industry_ttm_pe (last 3 years)
    → Market's implied view of industry growth prospects
 ```
 
 **Output**: Industry growth assessment (expanding / stable / contracting) with supporting data. List 2–3 structural tailwinds and 2–3 structural headwinds.
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 3/10 complete.**
-> Reply "continue" to proceed to Question 4: Competitive Landscape.
-
 ---
 
-### Question 4 — Competitive Landscape
-`[Question 4/10]`
+## Template 18: Competitive Landscape
+
+**Trigger phrases**: "competitive landscape", "competitors", "moat", "pricing power", "competitive advantage", "how does [COMPANY] compare to peers"
 
 **Prompt**: List the main competitors and compare pricing power, product strength, scale, and moat. Highlight where this company clearly wins or clearly lags.
 
 **APIs to call**:
 ```
-1. get_stock_profile (for target company)
+1. get_latest_data_update_date
+2. get_stock_profile
    → Business description, sector
-2. get_industry_quarterly_gross_margin (last 3 years)
+3. get_industry_quarterly_gross_margin (last 3 years)
    → Industry pricing power benchmark
-3. get_stock_annual_gross_margin (last 3 years)
+4. get_stock_annual_gross_margin (last 3 years)
    → Company gross margin vs industry benchmark
-4. get_stock_quarterly_roic (last 3 years)
+5. get_stock_quarterly_roic (last 3 years)
    → Capital efficiency as moat indicator
 ```
 
 **Output**: Competitive position summary table. Rate the company on: pricing power, scale advantage, switching costs, and capital efficiency — each as Strong / Neutral / Weak vs industry median.
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 4/10 complete.**
-> Reply "continue" to proceed to Question 5: Financial Quality.
-
 ---
 
-### Question 5 — Financial Quality
-`[Question 5/10]`
+## Template 19: Financial Quality
+
+**Trigger phrases**: "financial quality", "financial health", "balance sheet strength", "how strong are the financials", "debt cash flow quality"
 
 **Prompt**: Analyze the financial quality over recent years. Focus on revenue growth consistency, margin trajectory, debt levels, cash flow strength, and capital allocation.
 
 **APIs to call**:
 ```
-1. get_stock_annual_revenue_yoy_growth (last 5 years)
+1. get_latest_data_update_date
+2. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Revenue growth consistency
-2. get_stock_annual_gross_margin (last 5 years)
+3. get_stock_annual_gross_margin (last 5 years)
    → Gross margin trend
-3. get_stock_annual_operating_margin (last 5 years)
+4. get_stock_annual_operating_margin (last 5 years)
    → Operating leverage trend
-4. get_stock_annual_net_margin (last 5 years)
+5. get_stock_annual_net_margin (last 5 years)
    → Bottom-line profitability trend
-5. get_stock_annual_fcf_margin (last 5 years)
+6. get_stock_annual_fcf_margin (last 5 years)
    → Cash conversion quality
-6. get_stock_annual_balance_sheet (last 3 years)
+7. get_stock_annual_balance_sheet (last 3 years)
    → Debt and cash position trend
-7. get_stock_quarterly_roic (last 5 years)
+8. get_stock_quarterly_roic (last 5 years)
    → Capital allocation quality
 ```
 
 **Output**: Financial quality scorecard. Grade each dimension A/B/C/D: revenue consistency, margin trend, cash conversion, balance sheet health, capital efficiency. Overall grade = average.
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 5/10 complete.**
-> Reply "continue" to proceed to Question 6: Risks and Downside.
-
 ---
 
-### Question 6 — Risks and Downside
-`[Question 6/10]`
+## Template 20: Risks and Downside
+
+**Trigger phrases**: "risks", "downside risk", "what could go wrong", "risk analysis", "permanent impairment", "risk factors"
 
 **Prompt**: Identify the biggest risks for this company. Include business risks, financial risks, regulatory threats, and factors that could permanently impair the business.
 
 **APIs to call**:
 ```
-1. get_stock_annual_balance_sheet (last 3 years)
+1. get_latest_data_update_date
+2. get_stock_annual_balance_sheet (last 3 years)
    → Financial risk: debt load and cash buffer
-2. get_stock_annual_fcf_margin (last 3 years)
+3. get_stock_annual_fcf_margin (last 3 years)
    → Financial risk: ability to service debt from operations
-3. get_stock_quarterly_debt_to_equity (last 3 years)
+4. get_stock_quarterly_debt_to_equity (last 3 years)
    → Leverage ratio trend
-4. get_stock_earning_call_transcript (most recent 2)
+5. get_stock_earning_call_transcript (most recent 2)
    → Management's own risk disclosures
-5. get_stock_news (last 30 days)
+6. get_stock_news (last 30 days)
    → Current risk events
 ```
 
 **Output**: Risk register with 5–8 risks ranked by severity (High / Medium / Low). For each: risk description, early warning signal to monitor, and potential permanent impairment (Yes / No).
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 6/10 complete.**
-> Reply "continue" to proceed to Question 7: Management and Execution.
-
 ---
 
-### Question 7 — Management and Execution
-`[Question 7/10]`
+## Template 21: Management and Execution
+
+**Trigger phrases**: "management team", "management quality", "CEO track record", "how well has management executed", "capital allocation history"
 
 **Prompt**: Assess the management team's track record. How well have they executed historically? How have their decisions affected long-term shareholders?
 
 **APIs to call**:
 ```
-1. get_stock_officers
+1. get_latest_data_update_date
+2. get_stock_officers
    → Tenure and background of key executives
-2. get_stock_quarterly_roic (last 5 years)
+3. get_stock_quarterly_roic (last 5 years)
    → Capital allocation outcome
-3. get_stock_annual_revenue_yoy_growth (last 5 years)
+4. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Execution on growth
-4. get_stock_annual_fcf_margin (last 5 years)
+5. get_stock_annual_fcf_margin (last 5 years)
    → Cash generation under their watch
-5. get_stock_earning_call_transcript (last 4 quarters)
+6. get_stock_earning_call_transcript (last 4 quarters)
    → Guidance accuracy: compare past guidance to actual results
 ```
 
 **Output**: Management scorecard. Assess: capital allocation quality, guidance reliability, shareholder alignment, and tenure stability. Note any red flags (missed guidance repeatedly, high leverage, declining ROIC).
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 7/10 complete.**
-> Reply "continue" to proceed to Question 8: Bull and Bear Scenarios.
-
 ---
 
-### Question 8 — Bull and Bear Scenarios
-`[Question 8/10]`
+## Template 22: Bull and Bear Scenarios
+
+**Trigger phrases**: "bull case", "bear case", "bull bear scenarios", "upside downside scenarios", "best case worst case"
 
 **Prompt**: Articulate realistic bull and bear scenarios for this stock over the next 3–5 years. Focus on fundamentals, not price targets.
 
 **APIs to call**:
 ```
-1. get_stock_annual_revenue_yoy_growth (last 5 years)
+1. get_latest_data_update_date
+2. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Historical growth range as scenario anchor
-2. get_stock_annual_operating_margin (last 5 years)
+3. get_stock_annual_operating_margin (last 5 years)
    → Margin expansion / contraction range
-3. get_industry_ttm_pe (last 5 years)
+4. get_industry_ttm_pe (last 5 years)
    → Valuation multiple range for exit multiple
-4. get_stock_quarterly_roic (last 5 years)
+5. get_stock_quarterly_roic (last 5 years)
    → ROIC trajectory as quality anchor
 ```
 
 **Output**: Two-column scenario table (Bull / Bear) covering: revenue growth assumption, operating margin assumption, ROIC trend, and qualitative outcome description. No price targets — fundamentals only.
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 8/10 complete.**
-> Reply "continue" to proceed to Question 9: Valuation Framework.
-
 ---
 
-### Question 9 — Valuation Framework
-`[Question 9/10]`
+## Template 23: Valuation Framework
+
+**Trigger phrases**: "valuation", "is [STOCK] overvalued", "how to value [COMPANY]", "valuation framework", "what assumptions drive valuation"
 
 **Prompt**: Explain how investors should value this company. What assumptions matter most, and what would justify a higher or lower valuation?
 
 **APIs to call**:
 ```
-1. get_stock_ttm_pe (last 5 years)
+1. get_latest_data_update_date
+2. get_stock_ttm_pe (last 5 years)
    → P/E history vs current
-2. get_stock_ps_ratio (last 5 years)
+3. get_stock_ps_ratio (last 5 years)
    → P/S history vs current
-3. get_stock_pb_ratio (last 5 years)
+4. get_stock_pb_ratio (last 5 years)
    → P/B history vs current
-4. get_industry_ttm_pe (last 5 years)
+5. get_industry_ttm_pe (last 5 years)
    → Industry P/E benchmark
-5. get_industry_ps_ratio (last 5 years)
+6. get_industry_ps_ratio (last 5 years)
    → Industry P/S benchmark
-6. get_stock_wacc (most recent)
+7. get_stock_wacc (most recent)
    → Discount rate for intrinsic value work
-7. get_stock_annual_fcf_margin (last 3 years)
+8. get_stock_annual_fcf_margin (last 3 years)
    → FCF yield as valuation anchor
-8. get_stock_annual_revenue_yoy_growth (last 5 years)
+9. get_stock_annual_revenue_yoy_growth (last 5 years)
    → Growth rate inputs
 ```
 
 **Output**: Valuation summary covering: (1) most appropriate valuation method for this business type, (2) key assumptions that drive value, (3) what would justify a premium vs discount to peers, (4) current implied expectations baked into the price.
 
-**PAUSE**: Output above is complete. Print the following and wait for user confirmation before calling any APIs:
-
-> ✅ **Question 9/10 complete.**
-> Reply "continue" to proceed to Question 10: Long-Term Investment Thesis.
-
 ---
 
-### Question 10 — Long-Term Investment Thesis
-`[Question 10/10]`
+## Template 24: Long-Term Investment Thesis
+
+**Trigger phrases**: "investment thesis", "long-term thesis", "should I hold [STOCK] long term", "why invest in [COMPANY]", "what must go right"
 
 **Prompt**: Help me form a long-term investment thesis. Summarize why this could be a good investment, what must go right, and what signals would tell me I'm wrong.
 
 **APIs to call**:
 ```
-Synthesize findings from Questions 1–9. No new API calls required.
-If any of the following were not fetched in prior questions, call them now:
-- get_stock_quarterly_roic → Compounding quality check
-- get_stock_annual_revenue_yoy_growth → Growth sustainability check
+1. get_latest_data_update_date
+2. get_stock_quarterly_roic (last 5 years)
+   → Compounding quality check
+3. get_stock_annual_revenue_yoy_growth (last 5 years)
+   → Growth sustainability check
+4. get_stock_annual_fcf_margin (last 3 years)
+   → Cash generation quality
+5. get_stock_ttm_pe (last 3 years)
+   → Current valuation context
 ```
 
-**Output**: One-page thesis in three sections:
+**Output**: Investment thesis in three sections:
 - **The Case For**: 3–5 bullet points on why this is an attractive investment
 - **What Must Go Right**: 3–5 specific conditions that the bull case depends on
 - **When I'm Wrong**: 3–5 observable signals that would invalidate the thesis (not price drops — fundamental deterioration)
-
----
-
-### Final Deliverable — Overall Assessment
-
-After completing Question 10 output, print:
-
-> ✅ **Question 10/10 complete. Pre-investment review finished.**
