@@ -98,13 +98,15 @@ def get_stock_news(symbol: str, start_date: str = None, end_date: str = None, ma
         news_content = news.get_news(row["uuid"])
         paragraphs = []
         if not news_content.empty:
+            raw_news = news_content.iloc[0].get("news")
+            news_list = raw_news if isinstance(raw_news, list) else []
             paragraphs = [
                 {
                     "paragraph_number": p.get("paragraph_number"),
                     "paragraph": p.get("paragraph"),
                     "highlight": p.get("highlight", "")
                 }
-                for p in news_content.iloc[0].get("news", [])
+                for p in news_list
             ]
         news_items.append({
             "uuid": row["uuid"],
@@ -113,7 +115,7 @@ def get_stock_news(symbol: str, start_date: str = None, end_date: str = None, ma
             "publisher": row.get("publisher"),
             "type": row.get("type"),
             "link": row.get("link"),
-            "related_symbols": row.get("related_symbols", []),
+            "related_symbols": row["related_symbols"] if isinstance(row.get("related_symbols"), list) else [],
             "paragraphs": paragraphs
         })
 
