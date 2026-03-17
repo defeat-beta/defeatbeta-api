@@ -1,59 +1,59 @@
 ---
 name: defeatbeta-analyst
-description: "Comprehensive financial analysis using 60+ data endpoints. Analyze company fundamentals, financial statements, valuation metrics, profitability ratios, growth trends, and industry comparisons. Use for: (1) fundamental analysis and DCF modeling, (2) financial statement analysis, (3) valuation and ratio analysis, (4) growth and profitability assessment, (5) industry benchmarking, or any deep financial research tasks."
+description: "Professional financial analysis using 60+ market data APIs. Use for: company fundamentals (revenue, margins, EPS, balance sheet), valuation (P/E, P/B, P/S, PEG, DCF, intrinsic value), profitability (ROE, ROA, ROIC), growth trends (YoY revenue/earnings/FCF), earnings transcripts (key data, changes, guidance), industry benchmarking, segment/geography revenue breakdown, business model analysis, competitive landscape, risk analysis, investment thesis, bull/bear scenarios. Trigger on: stock tickers, company names, financial metrics, or any investment research request. DO NOT trigger for: general economics, non-public companies, crypto/commodities with no equity ticker."
+argument-hint: <TICKER> [analysis-type]
+compatibility: Requires defeatbeta MCP server
 ---
 
 # Financial Analyst
 
 Professional-grade financial analysis using historical market data and comprehensive financial metrics from the [defeatbeta dataset](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data).
 
-## Core Capabilities
+## Defaults
 
-- **Market Data**: S&P 500 returns, Treasury yields, stock prices, market cap, beta
-- **Company Intelligence**: Profiles, executives, SEC filings, earnings transcripts, news
-- **Financial Statements**: Income statement, balance sheet, cash flow (quarterly & annual)
-- **Valuation Metrics**: P/E, P/S, P/B, PEG ratios, market cap, WACC
-- **Profitability Analysis**: Margins (gross, operating, net, EBITDA, FCF), ROE, ROA, ROIC
-- **Growth Analysis**: YoY growth for revenue, earnings, EBITDA, FCF, EPS
-- **DCF Modeling**: Automated discounted cash flow valuation with WACC, growth projections, fair value
-- **Segment Analysis**: Revenue by business segment and geography
-- **Industry Benchmarking**: Compare against industry averages for all metrics
-- **DuPont Analysis**: Equity multiplier, asset turnover decomposition
+Unless the user specifies otherwise:
 
-## Dataset Reference Date
+- **Always call `get_latest_data_update_date` first** — this is "today" for all relative time queries
+- **Default analysis**: When given only a ticker (e.g., `/defeatbeta-analyst AAPL`), run **Template 1: Quick Investment Screening**
+- **ROIC and Equity Multiplier**: Not applicable to banks/financial institutions — check `sector` in profile first
+- **Date format**: "YYYY-MM-DD"
+- **Data limits**: Price/valuation APIs return max 1000 rows — use date ranges for large datasets
 
-**CRITICAL**: Always call `get_latest_data_update_date` at the start of analysis to determine the data cutoff date. This is the "today" for all relative time queries (e.g., "last 10 days", "past quarter", "YTD").
+## Template Selection
 
-## Available APIs
+Choose the template that best matches the user's request. Read [analysis-templates.md](./references/analysis-templates.md) for the full workflow of any template.
 
-60+ financial data APIs covering:
-- Market & Macro Data (S&P 500, Treasury yields, market data)
-- Company Information (profile, officers, SEC filings, earnings calls, news)
-- Price & Market Data (stock prices, market cap, P/E, WACC)
-- Financial Statements (income statement, balance sheet, cash flow - quarterly & annual)
-- Profitability Metrics (margins, ROE, ROA, ROIC)
-- Valuation Ratios (P/E, P/S, P/B, PEG)
-- Growth Metrics (YoY growth for revenue, earnings, FCF, EPS)
-- Industry Benchmarking (compare vs industry averages)
-- Segment Analysis (revenue by segment/geography)
+| User request                                  | Template                                           |
+|-----------------------------------------------|----------------------------------------------------|
+| Quick check / "should I look at this stock?"  | T1: Quick Investment Screening                     |
+| Full company deep-dive                        | T2: Full Fundamental Analysis                      |
+| Overvalued / undervalued / P/E / P/B / DCF    | T3: Valuation-Focused or T10: DCF Valuation        |
+| Revenue growth / earnings quality / ROIC      | T4: Growth Quality Assessment                      |
+| ROE decomposition / DuPont                    | T5: DuPont Analysis                                |
+| Margin trends / vs peers                      | T6: Margin Analysis & Peer Comparison              |
+| Accruals / FCF quality / working capital      | T7: Earnings Quality Assessment                    |
+| Industry positioning                          | T8: Industry Positioning Analysis                  |
+| Latest earnings release numbers               | T9: Quarterly Earnings Analysis                    |
+| "What did management report this quarter?"    | T11: Extract Key Financial Data from Earnings Call |
+| "What changed vs last quarter/year?"          | T12: Financial Metric Changes from Earnings Call   |
+| "What is management's guidance/outlook?"      | T13: Financial Metric Forecasts from Earnings Call |
+| "What does this company do?" / business model | T14: Business Understanding                        |
+| Revenue segments / geography breakdown        | T15: Revenue Breakdown                             |
+| Industry trends / tailwinds / headwinds       | T16: Industry Context                              |
+| Competitors / moat / pricing power            | T17: Competitive Landscape                         |
+| Balance sheet strength / debt / FCF quality   | T18: Financial Quality                             |
+| Risks / downside / what could go wrong        | T19: Risks and Downside                            |
+| Management track record / capital allocation  | T20: Management and Execution                      |
+| Bull case / bear case / scenarios             | T21: Bull and Bear Scenarios                       |
+| How to value / valuation assumptions          | T22: Valuation Framework                           |
+| Long-term thesis / why invest / must go right | T23: Long-Term Investment Thesis                   |
 
-**→ For complete API details** (parameters, response schemas, data types), see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md)
+## API Gotchas
 
-## Common Workflows
+**REQUIRED**: Before calling any API, read the relevant section in [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md) to confirm the correct parameters and response schema.
 
-For detailed analysis workflows, see [analysis-templates.md](./references/analysis-templates.md):
-
-1. **Quick Investment Screening** - Fast evaluation (profile, price, financials, valuation)
-2. **Full Fundamental Analysis** - Comprehensive 6-phase analysis (business, financials, profitability, growth, valuation)
-3. **Valuation-Focused Analysis** - Determine over/undervaluation (P/E, P/S, P/B, PEG, industry comparison)
-4. **Growth Quality Assessment** - Evaluate revenue/earnings sustainability (margins, cash conversion, ROIC)
-5. **DuPont Analysis Deep Dive** - Decompose ROE drivers (margin, turnover, leverage)
-6. **DCF Model Data Preparation** - Gather inputs for discounted cash flow valuation
-7. **Margin Analysis & Peer Comparison** - Operational efficiency and competitive positioning
-8. **Earnings Quality Assessment** - Cash vs accrual earnings, FCF quality, working capital
-9. **Industry Positioning Analysis** - Company position relative to peers
-10. **Quarterly Earnings Analysis** - Deep dive into latest earnings release
-11. **DCF Valuation** - Calculate intrinsic value using discounted cash flow (WACC, growth projections, terminal value)
+1. **Fiscal periods**: Earnings transcripts use fiscal periods (may differ from calendar) — specify both `fiscal_year` and `fiscal_quarter`
+2. **SEC filing access**: Must use `sec_user_agent` field value as User-Agent header when accessing SEC URLs (SEC blocks without it)
 
 ## Rendering Financial Statements
 
@@ -70,167 +70,28 @@ When displaying results from `get_stock_*_income_statement`, `get_stock_*_balanc
 
 **Example — given these rows:**
 
-| label | indent | is_section |
-|---|---|---|
-| Total Revenue | 0 | true |
-| Operating Revenue | 1 | false |
-| Cost of Revenue | 0 | false |
-| Operating Expense | 0 | true |
-| SG&A | 1 | false |
-| R&D | 1 | false |
+| label             | indent | is_section |
+|-------------------|--------|------------|
+| Total Revenue     | 0      | true       |
+| Operating Revenue | 1      | false      |
+| Cost of Revenue   | 0      | false      |
+| Operating Expense | 0      | true       |
+| SG&A              | 1      | false      |
+| R&D               | 1      | false      |
 
 **Correct rendered output:**
 
-| Item | 2025Q4 | 2025Q3 |
-|---|---|---|
-| **Total Revenue** | 10,270 | 9,246 |
-| &nbsp;&nbsp;Operating Revenue | 10,270 | 9,246 |
-| Cost of Revenue | 4,693 | 4,466 |
-| **Operating Expense** | 3,825 | 3,510 |
-| &nbsp;&nbsp;SG&A | 1,198 | 1,069 |
-| &nbsp;&nbsp;R&D | 2,330 | 2,139 |
-
-## Using the APIs
-
-**Critical requirements:**
-1. **Always call `get_latest_data_update_date` first** - This is the "today" for all relative time queries
-2. **Data limits**: Stock price/valuation APIs return max 1000 rows - use date ranges for larger datasets
-3. **ROIC and Equity Multiplier not applicable to banks** - Check `sector` in profile to identify financial institutions
-4. **Fiscal periods**: Earnings transcripts use fiscal periods (may differ from calendar) - specify both `fiscal_year` and `fiscal_quarter`
-5. **SEC filing access**: Must use `sec_user_agent` field value as User-Agent header when accessing SEC URLs (SEC blocks without it)
-
-**Date format**: "YYYY-MM-DD" (e.g., "2020-01-01")
-
-**→ For detailed API documentation**, see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md) (parameters, schemas, examples for all 60+ APIs)
-
-## When to Use This Skill
-
-**ALWAYS invoke this skill when users request:**
-
-### Company Analysis
-- "Analyze [COMPANY]", "fundamental analysis", "company overview"
-- "Tell me about [COMPANY]'s business", "what does [COMPANY] do"
-- "How is [COMPANY] performing", "financial health"
-
-### Financial Statements
-- "Income statement", "balance sheet", "cash flow statement"
-- "Revenue", "earnings", "profit", "assets", "liabilities", "cash"
-- "Quarterly/annual financials"
-
-### Valuation
-- "Is [STOCK] overvalued/undervalued", "fair value", "valuation"
-- "P/E ratio", "price-to-sales", "price-to-book", "PEG ratio"
-- "Market cap", "enterprise value"
-
-### Profitability
-- "Margins", "profitability", "ROE", "ROA", "ROIC"
-- "How profitable is [COMPANY]"
-- "Operating efficiency", "return on investment"
-
-### Growth
-- "Growth rate", "revenue growth", "earnings growth"
-- "Is [COMPANY] growing", "growth trajectory"
-- "YoY growth", "year-over-year"
-
-### Industry Comparison
-- "Compare to industry", "industry average", "peer comparison"
-- "How does [COMPANY] compare to competitors"
-- "Industry benchmarking"
-
-### DCF & Modeling
-- "DCF model", "discounted cash flow", "intrinsic value"
-- "WACC", "cost of capital", "discount rate"
-- "Terminal value", "free cash flow projection"
-
-### Earnings & News
-- "Earnings call", "earnings transcript", "what did management say"
-- "Recent news", "latest developments"
-- "SEC filing", "10-K", "10-Q", "8-K"
-
-### Key Financial Data Extraction from Earnings Call
-- "Extract key financial data from earnings call"
-- "What were the reported revenue / EPS / margins this quarter?"
-- "What guidance did management give for next quarter or full year?"
-- "Summarize key financial metrics from the transcript"
-- "Get the numbers from the earnings call"
-
-### Financial Metric Change Analysis from Earnings Call
-- "What changed this quarter in the earnings call?"
-- "Analyze financial metric changes from the transcript"
-- "What improved or declined compared to last quarter / last year?"
-- "Summarize business changes mentioned in the earnings call"
-- "What did management say about metric changes?"
-
-### Financial Metric Forecast Analysis from Earnings Call
-- "What is management's outlook / guidance from the earnings call?"
-- "Analyze financial forecasts from the transcript"
-- "What did management project or guide for future quarters?"
-- "Extract forward-looking statements with numbers from the transcript"
-- "What is management's attitude toward future performance?"
-
-### Business Understanding (Template 15)
-- "Explain this company's business", "what does [COMPANY] do"
-- "Business model", "how does [COMPANY] make money"
-
-### Revenue Breakdown (Template 16)
-- "Revenue breakdown", "revenue segments", "where does [COMPANY] make money"
-- "Revenue concentration", "segment analysis"
-
-### Industry Context (Template 17)
-- "Industry analysis", "industry context", "market trends for [COMPANY]"
-- "Tailwinds headwinds", "what industry is [COMPANY] in"
-
-### Competitive Landscape (Template 18)
-- "Competitive landscape", "competitors", "moat", "pricing power"
-- "Competitive advantage", "how does [COMPANY] compare to peers"
-
-### Financial Quality (Template 19)
-- "Financial quality", "financial health", "balance sheet strength"
-- "How strong are the financials", "debt cash flow quality"
-
-### Risks and Downside (Template 20)
-- "Risks", "downside risk", "what could go wrong", "risk analysis"
-- "Permanent impairment", "risk factors"
-
-### Management and Execution (Template 21)
-- "Management team", "management quality", "CEO track record"
-- "How well has management executed", "capital allocation history"
-
-### Bull and Bear Scenarios (Template 22)
-- "Bull case", "bear case", "bull bear scenarios"
-- "Best case worst case", "upside downside scenarios"
-
-### Valuation Framework (Template 23)
-- "Is [STOCK] overvalued", "how to value [COMPANY]", "valuation framework"
-- "What assumptions drive valuation"
-
-### Long-Term Investment Thesis (Template 24)
-- "Investment thesis", "long-term thesis", "should I hold [STOCK] long term"
-- "Why invest in [COMPANY]", "what must go right"
+| Item                          | 2025Q4 | 2025Q3 |
+|-------------------------------|--------|--------|
+| **Total Revenue**             | 10,270 | 9,246  |
+| &nbsp;&nbsp;Operating Revenue | 10,270 | 9,246  |
+| Cost of Revenue               | 4,693  | 4,466  |
+| **Operating Expense**         | 3,825  | 3,510  |
+| &nbsp;&nbsp;SG&A              | 1,198  | 1,069  |
+| &nbsp;&nbsp;R&D               | 2,330  | 2,139  |
 
 ## Reference Documentation
 
-**When you need detailed workflows**, see [analysis-templates.md](./references/analysis-templates.md):
-- 11 detailed templates with step-by-step instructions
-- Template 1: Quick Investment Screening
-- Template 2: Full Fundamental Analysis
-- Template 3-10: Specialized analyses (valuation, growth, margins, earnings, etc.)
-- Template 11: DCF Valuation with 8-section professional report structure
-- Template 12: Extract Key Financial Data from Earnings Call (reported results + guidance, no external LLM needed)
-- Template 13: Analyze Financial Metric Changes from Earnings Call (factual QoQ/YoY changes with direction and reason, no external LLM needed)
-- Template 14: Analyze Financial Metric Forecasts from Earnings Call (forward-looking numerical guidance with management attitude, no external LLM needed)
-- Template 15: Business Understanding — plain-language business description
-- Template 16: Revenue Breakdown — segment and geography concentration analysis
-- Template 17: Industry Context — market growth, tailwinds, headwinds
-- Template 18: Competitive Landscape — pricing power, moat, peer comparison
-- Template 19: Financial Quality — margins, cash flow, balance sheet scorecard
-- Template 20: Risks and Downside — risk register with severity and warning signals
-- Template 21: Management and Execution — track record, guidance reliability, ROIC
-- Template 22: Bull and Bear Scenarios — fundamental scenario table (no price targets)
-- Template 23: Valuation Framework — multiples, WACC, key valuation assumptions
-- Template 24: Long-Term Investment Thesis — case for, what must go right, when I'm wrong
+**Detailed step-by-step workflows (T1–T23)** → [analysis-templates.md](./references/analysis-templates.md)
 
-**When you need API parameters and schemas**, see [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md):
-- Complete API documentation with parameters, response schemas, examples
-- 60+ APIs organized by category
-- Data types, validation rules, error handling
+**API parameters, response schemas, examples (60+ APIs)** → [defeatbeta-api-reference.md](./references/defeatbeta-api-reference.md)

@@ -6,7 +6,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_latest_data_update_date()
 **Returns**: Dictionary with latest data update date
-```python
+```jsonc
 {
     "latest_data_update_date": "2025-01-24"  # YYYY-MM-DD format
 }
@@ -17,7 +17,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_sp500_historical_annual_returns()
 **Returns**: S&P 500 annual returns since 1928
-```python
+```jsonc
 {
     "date_range": "1928 to 2024",
     "rows_returned": 97,
@@ -35,7 +35,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - `years`: Number of recent years (e.g., 10 for 10-year CAGR)
 
 **Returns**: CAGR for specified period
-```python
+```jsonc
 {
     "years": 10,
     "cagr_returns": 0.1107  # 11.07% annualized
@@ -47,7 +47,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - `years`: Rolling window size (e.g., 10 for all 10-year periods)
 
 **Returns**: All possible N-year rolling CAGRs
-```python
+```jsonc
 {
     "years": 10,
     "rows_returned": 88,
@@ -63,7 +63,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_daily_treasury_yield()
 **Returns**: Daily Treasury yield curve (all maturities)
-```python
+```jsonc
 {
     "date_range": "1990-01-02 to 2025-01-24",
     "rows_returned": 8832,
@@ -92,7 +92,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - `symbol`: Stock ticker (e.g., "TSLA")
 
 **Returns**: Company profile information
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "address": "1 Tesla Road",
@@ -111,7 +111,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_stock_officers(symbol: str)
 **Returns**: Executive team with compensation
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "rows_returned": 10,
@@ -137,7 +137,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - **MAX 500 rows** (truncated if exceeded)
 
 **Returns**: SEC filing history
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "date_range": "2010-02-01 to 2025-01-24",
@@ -170,7 +170,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_stock_earning_call_transcripts_list(symbol: str)
 **Returns**: Available earnings call metadata
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "rows_returned": 25,
@@ -190,7 +190,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - `fiscal_quarter`: 1-4
 
 **Returns**: Full earnings call transcript
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "fiscal_year": 2024,
@@ -210,7 +210,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - `max_rows`: Default 50 (configurable to avoid token limits)
 
 **Returns**: News articles with full content
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "date_range": "2024-01-01 to 2025-01-24",
@@ -244,7 +244,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - **MAX 1000 rows** (most recent if truncated)
 
 **Returns**: Historical OHLCV data
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "date_range": "2015-01-01 to 2025-01-24",
@@ -270,7 +270,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 - **MAX 1000 rows** (most recent if truncated)
 
 **Returns**: Historical market cap
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -291,7 +291,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_stock_eps_and_ttm_eps(symbol: str)
 **Returns**: Quarterly EPS and TTM EPS
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -308,89 +308,71 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ## Financial Statements
 
-### Income Statement
-
-#### get_stock_quarterly_income_statement(symbol: str)
-#### get_stock_annual_income_statement(symbol: str)
+### get_stock_quarterly_income_statement(symbol: str)
+### get_stock_annual_income_statement(symbol: str)
 
 **Returns**: Complete income statement
-```python
+```jsonc
 {
     "currency": "USD",
-    "period_type": "quarterly",  # or "annual"
+    "period_type": "quarterly",  // or "annual"
     "periods": ["2024-12-31", "2024-09-30", ...],
-    "rows_returned": 20,
     "statement": [
         {
-            "period": "2024-12-31",
-            "items": {
-                "total_revenue": 25167000000,
-                "cost_of_revenue": 18636000000,
-                "gross_profit": 6531000000,
-                "operating_expense": 2939000000,
-                "operating_income": 3592000000,
-                "net_income": 2321000000,
-                "diluted_eps": 0.73,
-                "ebitda": 4200000000,
-                # ... 50+ more line items
-            }
+            "label": "Total Revenue",     // display name of the line item
+            "indent": 0,                  // 0 = top-level, 1 = sub-item, 2 = sub-sub-item
+            "is_section": true,           // true = section header (render bold)
+            "values": [25707000000, 25182000000, ...]  // aligned to periods; null if unavailable
+        },
+        {
+            "label": "Operating Revenue",
+            "indent": 1,
+            "is_section": false,
+            "values": [25707000000, 25182000000, ...]
         }
+        // ... 50+ more rows
     ]
 }
 ```
 
-### Balance Sheet
+### get_stock_quarterly_balance_sheet(symbol: str)
+### get_stock_annual_balance_sheet(symbol: str)
 
-#### get_stock_quarterly_balance_sheet(symbol: str)
-#### get_stock_annual_balance_sheet(symbol: str)
-
-**Returns**: Complete balance sheet
-```python
+**Returns**: Complete balance sheet (same structure as income statement)
+```jsonc
 {
     "currency": "USD",
-    "period_type": "quarterly",
-    "periods": [...],
-    "rows_returned": 20,
+    "period_type": "quarterly",  // or "annual"
+    "periods": ["2024-12-31", "2024-09-30", ...],
     "statement": [
         {
-            "period": "2024-12-31",
-            "items": {
-                "total_assets": 123456789000,
-                "current_assets": 45678900000,
-                "cash_and_cash_equivalents": 12345678000,
-                "total_liabilities": 67890123000,
-                "stockholders_equity": 55566666000,
-                # ... 40+ more line items
-            }
+            "label": "Total Assets",
+            "indent": 0,
+            "is_section": true,
+            "values": [123456789000, 119000000000, ...]
         }
+        // ... 40+ more rows
     ]
 }
 ```
 
-### Cash Flow Statement
+### get_stock_quarterly_cash_flow(symbol: str)
+### get_stock_annual_cash_flow(symbol: str)
 
-#### get_stock_quarterly_cash_flow(symbol: str)
-#### get_stock_annual_cash_flow(symbol: str)
-
-**Returns**: Complete cash flow statement
-```python
+**Returns**: Complete cash flow statement (same structure as income statement)
+```jsonc
 {
     "currency": "USD",
-    "period_type": "quarterly",
-    "periods": [...],
-    "rows_returned": 20,
+    "period_type": "quarterly",  // or "annual"
+    "periods": ["2024-12-31", "2024-09-30", ...],
     "statement": [
         {
-            "period": "2024-12-31",
-            "items": {
-                "operating_cash_flow": 3500000000,
-                "investing_cash_flow": -2100000000,
-                "financing_cash_flow": -800000000,
-                "free_cash_flow": 1400000000,
-                "capital_expenditure": -2100000000,
-                # ... 30+ more line items
-            }
+            "label": "Operating Cash Flow",
+            "indent": 0,
+            "is_section": false,
+            "values": [3500000000, 3200000000, ...]
         }
+        // ... 30+ more rows
     ]
 }
 ```
@@ -399,7 +381,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_quarterly_revenue_by_segment(symbol: str)
 **Returns**: Revenue breakdown by business segment
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "period_type": "quarterly",
@@ -422,7 +404,7 @@ Comprehensive reference for all 60+ defeatbeta-api endpoints.
 
 ### get_quarterly_revenue_by_geography(symbol: str)
 **Returns**: Revenue breakdown by region
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "period_type": "quarterly",
@@ -462,7 +444,7 @@ All margin APIs return similar structure. Using gross margin as example:
 - `get_stock_annual_fcf_margin(symbol)`
 
 **Returns**:
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -484,7 +466,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_quarterly_roe(symbol: str)
 **Returns**: Return on Equity (quarterly)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -506,7 +488,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_quarterly_roa(symbol: str)
 **Returns**: Return on Assets (quarterly)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -530,7 +512,7 @@ All margin APIs return similar structure. Using gross margin as example:
 **WARNING**: Not applicable to banks/financial institutions
 
 **Returns**: Return on Invested Capital
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -556,7 +538,7 @@ All margin APIs return similar structure. Using gross margin as example:
 **WARNING**: Not applicable to banks
 
 **Returns**: Leverage ratio (DuPont component)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "period_type": "quarterly",
@@ -575,7 +557,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_quarterly_asset_turnover(symbol: str)
 **Returns**: Asset efficiency (DuPont component)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "period_type": "quarterly",
@@ -594,7 +576,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_quarterly_debt_to_equity(symbol: str)
 **Returns**: Debt to Equity (D/E) Ratio (quarterly)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -619,7 +601,7 @@ All margin APIs return similar structure. Using gross margin as example:
 - **MAX 1000 rows** (most recent if truncated)
 
 **Returns**: Historical P/E ratio
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -640,7 +622,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_ps_ratio(symbol: str, start_date: str = None, end_date: str = None)
 **Returns**: Historical P/S ratio (MAX 1000 rows)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -661,7 +643,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_pb_ratio(symbol: str, start_date: str = None, end_date: str = None)
 **Returns**: Historical P/B ratio (MAX 1000 rows)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -682,7 +664,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_peg_ratio(symbol: str, start_date: str = None, end_date: str = None)
 **Returns**: PEG by earnings & revenue growth (MAX 1000 rows)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "date_range": "2020-01-01 to 2025-01-24",
@@ -704,7 +686,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 ### get_stock_wacc(symbol: str, start_date: str = None, end_date: str = None)
 **Returns**: Weighted Average Cost of Capital (MAX 1000 rows)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "date_range": "2020-01-01 to 2025-01-24",
@@ -735,7 +717,7 @@ All margin APIs return similar structure. Using gross margin as example:
 
 EV = Market Cap + Total Debt + Minority Interest + Preferred Stock Equity - Cash and Equivalents (all in USD)
 
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -764,7 +746,7 @@ EV = Market Cap + Total Debt + Minority Interest + Preferred Stock Equity - Cash
 
 ### get_stock_enterprise_to_revenue(symbol: str, start_date: str = None, end_date: str = None)
 **Returns**: Historical EV/Revenue ratio (MAX 1000 rows)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -788,7 +770,7 @@ EV = Market Cap + Total Debt + Minority Interest + Preferred Stock Equity - Cash
 **WARNING**: Not applicable to banks/financial institutions
 
 **Returns**: Historical EV/EBITDA ratio (MAX 1000 rows)
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -818,7 +800,7 @@ EV = Market Cap + Total Debt + Minority Interest + Preferred Stock Equity - Cash
 
 **Returns**: Complete DCF analysis with 5 main components
 
-```python
+```jsonc
 {
     "symbol": "QCOM",
     "file_path": "/tmp/defeatbeta_tmp/QCOM.xlsx",  # Excel model for detailed review
@@ -1057,7 +1039,7 @@ All growth APIs return YoY growth rate. Using revenue as example:
 - `get_stock_annual_fcf_yoy_growth(symbol)`
 
 **Returns**:
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -1085,7 +1067,7 @@ Industry APIs follow same structure as company-level APIs, but aggregate across 
 - `get_industry_quarterly_ebitda_margin(symbol)`
 
 **Returns**:
-```python
+```jsonc
 {
     "industry": "Auto Manufacturers",
     "currency": "USD",
@@ -1109,7 +1091,7 @@ Industry APIs follow same structure as company-level APIs, but aggregate across 
 - `get_industry_pb_ratio(symbol, start_date, end_date)` - MAX 1000 rows
 
 **Returns**:
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -1135,7 +1117,7 @@ Industry APIs follow same structure as company-level APIs, but aggregate across 
 - `get_industry_quarterly_asset_turnover(symbol)`
 
 **Returns**:
-```python
+```jsonc
 {
     "symbol": "TSLA",
     "currency": "USD",
@@ -1158,7 +1140,7 @@ Industry APIs follow same structure as company-level APIs, but aggregate across 
 
 ### Handling Null Values
 All numeric fields may be `null` when data is unavailable:
-```python
+```jsonc
 {
     "revenue": null,  # Not reported for this period
     "net_margin": null  # Cannot calculate (division by zero)
@@ -1167,7 +1149,7 @@ All numeric fields may be `null` when data is unavailable:
 
 ### Truncation Warnings
 When data exceeds limits:
-```python
+```jsonc
 {
     "rows_returned": 1000,
     "truncated": true  # More data exists, use narrower date range
@@ -1176,7 +1158,7 @@ When data exceeds limits:
 
 ### Currency Information
 All financial data includes currency:
-```python
+```jsonc
 {
     "currency": "USD",  # All amounts in US Dollars
     "statement": [...]
@@ -1185,7 +1167,7 @@ All financial data includes currency:
 
 ### Date Formats
 All dates use ISO 8601 (YYYY-MM-DD):
-```python
+```jsonc
 {
     "report_date": "2024-12-31",
     "period": "2024-12-31"
