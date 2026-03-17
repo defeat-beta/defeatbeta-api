@@ -293,69 +293,7 @@
 
 ---
 
-## Template 6: DCF Model Data Preparation
-
-**Use case**: Gather inputs for discounted cash flow valuation
-
-**Workflow**:
-```
-1. get_latest_data_update_date
-
-2. Historical Free Cash Flow (5 years)
-   → get_stock_annual_cash_flow
-   → Extract FCF for last 5 years
-   → Calculate average FCF
-   → Identify trend (growing/stable/declining)
-
-3. Growth Rate Estimation
-   → get_stock_annual_revenue_yoy_growth (5 years)
-   → get_stock_annual_fcf_yoy_growth (5 years)
-   → Calculate weighted average growth rate
-   → Adjust for sustainability (cap at industry growth)
-
-4. Discount Rate (WACC)
-   → get_stock_wacc (current)
-   → Verify components:
-     - Risk-free rate (10y Treasury)
-     - Beta (5-year)
-     - Market return (S&P 500 10y CAGR)
-     - Debt/Equity weights
-     - Cost of debt
-
-5. Terminal Value Inputs
-   → get_stock_quarterly_balance_sheet (latest)
-   → Book value for sanity check
-   → get_industry_quarterly_roe (perpetuity growth proxy)
-   → Assume terminal growth = 2-3% (GDP growth)
-
-6. Shares Outstanding
-   → get_stock_market_capitalization (current)
-   → get_stock_price (current)
-   → Calculate shares: Market Cap / Price
-
-7. Sensitivity Analysis Inputs
-   → Growth rate range: Base ± 2%
-   → WACC range: Base ± 1%
-   → Terminal growth range: 1.5% - 3.5%
-
-8. Sanity Checks
-   → P/E implied by DCF vs current P/E
-   → DCF value vs book value (reasonable premium?)
-   → Compare to industry average valuations
-```
-
-**DCF calculation structure**:
-```
-Year 1-5: FCF × (1 + growth_rate)^year
-Terminal Value: Year_5_FCF × (1 + terminal_growth) / (WACC - terminal_growth)
-PV = Σ(FCF / (1 + WACC)^year) + (Terminal_Value / (1 + WACC)^5)
-Equity Value = PV - Net Debt
-Price per share = Equity Value / Shares Outstanding
-```
-
----
-
-## Template 7: Margin Analysis & Peer Comparison
+## Template 6: Margin Analysis & Peer Comparison
 
 **Use case**: Evaluate operational efficiency and competitive positioning
 
@@ -408,7 +346,7 @@ Price per share = Equity Value / Shares Outstanding
 
 ---
 
-## Template 8: Earnings Quality Assessment
+## Template 7: Earnings Quality Assessment
 
 **Use case**: Determine if reported earnings reflect true economic performance
 
@@ -467,7 +405,7 @@ Price per share = Equity Value / Shares Outstanding
 
 ---
 
-## Template 9: Industry Positioning Analysis
+## Template 8: Industry Positioning Analysis
 
 **Use case**: Understand company's position relative to industry peers
 
@@ -532,7 +470,7 @@ Price per share = Equity Value / Shares Outstanding
 
 ---
 
-## Template 10: Quarterly Earnings Analysis
+## Template 9: Quarterly Earnings Analysis
 
 **Use case**: Analyze latest earnings release in detail
 
@@ -605,7 +543,7 @@ Price per share = Equity Value / Shares Outstanding
 
 ---
 
-## Template 11: DCF (Discounted Cash Flow) Valuation
+## Template 10: DCF (Discounted Cash Flow) Valuation
 
 **Use case**: Calculate intrinsic value and generate comprehensive DCF valuation report
 
@@ -630,7 +568,7 @@ Price per share = Equity Value / Shares Outstanding
 
 **Step 4: Generate Professional DCF Report**
 
-Present a comprehensive 8-section report:
+Present a comprehensive 9-section report:
 
 #### **Section I: Valuation Conclusion**
 Clear summary table with:
@@ -694,19 +632,13 @@ Clear summary table with:
 **When DCF Works Best**:
 - ✅ Mature, profitable companies with positive FCF
 - ✅ Predictable business models with clear growth drivers
+- ❌ Avoid for unprofitable, highly cyclical, or financial companies
 
 ---
 
-## Template 12: Extract Key Financial Data from Earnings Call
+## Template 11: Extract Key Financial Data from Earnings Call
 
 **Use case**: Directly extract structured key financial metrics (reported results + forward guidance) from an earnings call transcript — no external LLM needed, Claude performs the extraction.
-
-**Triggers**:
-- "Extract key financial data from earnings call"
-- "What were the reported revenue/EPS/margins this quarter?"
-- "What guidance did management give for next quarter / full year?"
-- "Summarize key financial metrics from the transcript"
-- "Get the numbers from the earnings call"
 
 ---
 
@@ -841,16 +773,9 @@ Present results in three grouped tables:
 
 ---
 
-## Template 13: Analyze Financial Metric Changes from Earnings Call
+## Template 12: Analyze Financial Metric Changes from Earnings Call
 
 **Use case**: Extract every sentence from an earnings call transcript that describes a factual change in a financial metric this quarter — compared to the prior quarter (QoQ) or same quarter last year (YoY). No external LLM needed; Claude performs the extraction.
-
-**Triggers**:
-- "What changed this quarter in the earnings call?"
-- "Analyze financial metric changes from the transcript"
-- "What improved or declined compared to last quarter / last year?"
-- "Summarize the business changes mentioned in the earnings call"
-- "What did management say about metric changes?"
 
 ---
 
@@ -938,16 +863,9 @@ After the table, add a brief summary:
 
 ---
 
-## Template 14: Analyze Financial Metric Forecasts from Earnings Call
+## Template 13: Analyze Financial Metric Forecasts from Earnings Call
 
 **Use case**: Extract every sentence from an earnings call transcript that contains specific numerical forward-looking statements — guidance, outlook, expectations, or forecasts for future periods. Infer management's attitude (optimistic / pessimistic / neutral) for each. No external LLM needed; Claude performs the extraction.
-
-**Triggers**:
-- "What is management's outlook / guidance from the earnings call?"
-- "Analyze financial forecasts from the transcript"
-- "What did management project or guide for future quarters?"
-- "Extract forward-looking statements with numbers from the transcript"
-- "What is management's attitude toward future performance?"
 
 ---
 
@@ -1027,11 +945,10 @@ After the table, add a brief summary:
 - Total forecasts found: N (optimistic: X, neutral: Y, pessimistic: Z)
 - Overall management tone: [one sentence characterizing the dominant attitude]
 - Key themes (1–3 bullet points on the most significant forward-looking items)
-- ❌ Avoid for unprofitable, highly cyclical, or financial companies
 
 ---
 
-## Template 15: Business Understanding
+## Template 14: Business Understanding
 
 **Trigger phrases**: "explain this company's business", "what does [COMPANY] do", "business model", "how does [COMPANY] make money", "understand the business before investing"
 
@@ -1050,7 +967,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 16: Revenue Breakdown
+## Template 15: Revenue Breakdown
 
 **Trigger phrases**: "revenue breakdown", "revenue segments", "where does [COMPANY] make money", "revenue concentration", "segment analysis"
 
@@ -1071,7 +988,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 17: Industry Context
+## Template 16: Industry Context
 
 **Trigger phrases**: "industry analysis", "industry context", "what industry is [COMPANY] in", "market trends for [COMPANY]", "tailwinds headwinds"
 
@@ -1082,17 +999,21 @@ After the table, add a brief summary:
 1. get_latest_data_update_date
 2. get_stock_profile
    → Industry classification
-3. get_stock_annual_revenue_yoy_growth (last 3 years)
-   → Company revenue growth as proxy for industry positioning
-4. get_industry_ttm_pe (last 3 years)
+3. get_industry_quarterly_gross_margin (last 3 years)
+   → Industry profitability trend (expanding = healthy, compressing = under pressure)
+4. get_industry_quarterly_net_margin (last 3 years)
+   → Industry bottom-line trend
+5. get_industry_ttm_pe (last 3 years)
    → Market's implied view of industry growth prospects
+6. get_stock_annual_revenue_yoy_growth (last 3 years)
+   → Company growth vs implied industry direction
 ```
 
 **Output**: Industry growth assessment (expanding / stable / contracting) with supporting data. List 2–3 structural tailwinds and 2–3 structural headwinds.
 
 ---
 
-## Template 18: Competitive Landscape
+## Template 17: Competitive Landscape
 
 **Trigger phrases**: "competitive landscape", "competitors", "moat", "pricing power", "competitive advantage", "how does [COMPANY] compare to peers"
 
@@ -1115,7 +1036,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 19: Financial Quality
+## Template 18: Financial Quality
 
 **Trigger phrases**: "financial quality", "financial health", "balance sheet strength", "how strong are the financials", "debt cash flow quality"
 
@@ -1144,7 +1065,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 20: Risks and Downside
+## Template 19: Risks and Downside
 
 **Trigger phrases**: "risks", "downside risk", "what could go wrong", "risk analysis", "permanent impairment", "risk factors"
 
@@ -1159,7 +1080,8 @@ After the table, add a brief summary:
    → Financial risk: ability to service debt from operations
 4. get_stock_quarterly_debt_to_equity (last 3 years)
    → Leverage ratio trend
-5. get_stock_earning_call_transcript (most recent 2)
+5. get_stock_earning_call_transcripts_list → pick most recent 2 fiscal_year/fiscal_quarter pairs
+   get_stock_earning_call_transcript (call twice, once per quarter)
    → Management's own risk disclosures
 6. get_stock_news (last 30 days)
    → Current risk events
@@ -1169,7 +1091,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 21: Management and Execution
+## Template 20: Management and Execution
 
 **Trigger phrases**: "management team", "management quality", "CEO track record", "how well has management executed", "capital allocation history"
 
@@ -1186,7 +1108,8 @@ After the table, add a brief summary:
    → Execution on growth
 5. get_stock_annual_fcf_margin (last 5 years)
    → Cash generation under their watch
-6. get_stock_earning_call_transcript (last 4 quarters)
+6. get_stock_earning_call_transcripts_list → pick most recent 4 fiscal_year/fiscal_quarter pairs
+   get_stock_earning_call_transcript (call 4 times, once per quarter)
    → Guidance accuracy: compare past guidance to actual results
 ```
 
@@ -1194,7 +1117,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 22: Bull and Bear Scenarios
+## Template 21: Bull and Bear Scenarios
 
 **Trigger phrases**: "bull case", "bear case", "bull bear scenarios", "upside downside scenarios", "best case worst case"
 
@@ -1217,7 +1140,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 23: Valuation Framework
+## Template 22: Valuation Framework
 
 **Trigger phrases**: "valuation", "is [STOCK] overvalued", "how to value [COMPANY]", "valuation framework", "what assumptions drive valuation"
 
@@ -1248,7 +1171,7 @@ After the table, add a brief summary:
 
 ---
 
-## Template 24: Long-Term Investment Thesis
+## Template 23: Long-Term Investment Thesis
 
 **Trigger phrases**: "investment thesis", "long-term thesis", "should I hold [STOCK] long term", "why invest in [COMPANY]", "what must go right"
 
