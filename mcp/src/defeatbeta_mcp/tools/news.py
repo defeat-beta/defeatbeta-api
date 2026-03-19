@@ -99,7 +99,7 @@ def get_stock_news(symbol: str, start_date: str = None, end_date: str = None, ma
         paragraphs = []
         if not news_content.empty:
             raw_news = news_content.iloc[0].get("news")
-            news_list = raw_news if isinstance(raw_news, list) else []
+            news_list = list(raw_news) if pd.api.types.is_list_like(raw_news) else []
             paragraphs = [
                 {
                     "paragraph_number": p.get("paragraph_number"),
