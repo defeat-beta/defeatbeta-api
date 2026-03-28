@@ -181,7 +181,9 @@ class Ticker:
         }])
 
     def currency(self, symbol: str) -> pd.DataFrame:
-        return self._query_data2(exchange_rate, symbol)
+        df = self._query_data2(exchange_rate, symbol)
+        df['report_date'] = pd.to_datetime(df['report_date']).astype('datetime64[us]')
+        return df
 
     def shares(self) -> pd.DataFrame:
         return self._query_data(stock_shares_outstanding)
@@ -2438,7 +2440,7 @@ class Ticker:
         min_date = ttm_roe_table['report_date'].min()
         max_date = ttm_roe_table['report_date'].max()
         baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
         })
 
         total_net_income = np.zeros(len(baseline))
@@ -2528,7 +2530,7 @@ class Ticker:
         min_date = ttm_roa_table['report_date'].min()
         max_date = ttm_roa_table['report_date'].max()
         baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
         })
 
         total_net_income = np.zeros(len(baseline))
@@ -2618,7 +2620,7 @@ class Ticker:
         min_date = ttm_roic_table['report_date'].min()
         max_date = ttm_roic_table['report_date'].max()
         baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
         })
 
         total_ttm_nopat = np.zeros(len(baseline))
@@ -2725,7 +2727,7 @@ class Ticker:
         min_date = ttm_table['report_date'].min()
         max_date = ttm_table['report_date'].max()
         baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
         })
 
         total_gross_profit = np.zeros(len(baseline))
@@ -2815,7 +2817,7 @@ class Ticker:
         min_date = ttm_table['report_date'].min()
         max_date = ttm_table['report_date'].max()
         baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
         })
 
         total_ebitda = np.zeros(len(baseline))
@@ -2905,7 +2907,7 @@ class Ticker:
         min_date = ttm_table['report_date'].min()
         max_date = ttm_table['report_date'].max()
         baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME')
+            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
         })
 
         total_net_income = np.zeros(len(baseline))
