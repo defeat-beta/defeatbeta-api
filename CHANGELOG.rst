@@ -6,6 +6,7 @@ Change Log
 - Support Average Net Debt TTM [`#48 <https://github.com/defeat-beta/defeatbeta-api/issues/48>`_]
 - Support Industry ROIC [`#64 <https://github.com/defeat-beta/defeatbeta-api/issues/64>`_]
 - fix: incompatible datetime precision in merge_asof for all industry methods [`#173 <https://github.com/defeat-beta/defeatbeta-api/issues/173>`_]
+- Support get_all_tickers() in CompanyMeta [`#174 <https://github.com/defeat-beta/defeatbeta-api/issues/174>`_]
 
 0.0.48
 -------
