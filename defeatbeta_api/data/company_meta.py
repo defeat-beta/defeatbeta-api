@@ -44,3 +44,7 @@ class CompanyMeta:
     def get_all_companies_info(self) -> List[dict]:
         df = self._get_all_companies()
         return df.to_dict(orient="records")
+
+    def get_all_tickers(self) -> List[str]:
+        df = self._get_all_companies()
+        return df["symbol"].tolist()
