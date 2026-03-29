@@ -601,12 +601,10 @@ class Ticker:
 
     def peg_ratio(self) -> pd.DataFrame:
         ttm_pe_df = self.ttm_pe()
-        revenue_yoy_df = self.quarterly_revenue_yoy_growth()
         eps_yoy_df = self.quarterly_eps_yoy_growth()
 
         ttm_pe_df['report_date'] = pd.to_datetime(ttm_pe_df['report_date']).astype('datetime64[us]')
         ttm_pe_df['eps_report_date'] = pd.to_datetime(ttm_pe_df['eps_report_date']).astype('datetime64[us]')
-        revenue_yoy_df['report_date'] = pd.to_datetime(revenue_yoy_df['report_date']).astype('datetime64[us]')
         eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date']).astype('datetime64[us]')
 
         result_df = ttm_pe_df.copy()
@@ -621,11 +619,12 @@ class Ticker:
             direction='backward'
         )
 
-        result_df['peg_ratio_by_eps'] = np.where(
-            (result_df['ttm_pe'] < 0) | (result_df['yoy_growth'] < 0),
-            -np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100)),
-            np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100))
-        ).round(2)
+        valid_peg = (result_df['ttm_eps'] > 0) & (result_df['yoy_growth'] > 0)
+        result_df['peg_ratio'] = np.where(
+            valid_peg,
+            (result_df['ttm_pe'] / (result_df['yoy_growth'] * 100)).round(2),
+            np.nan
+        )
 
         result_df = result_df[[
             'ttm_pe_report_date',
@@ -634,7 +633,7 @@ class Ticker:
             'ttm_eps',
             'ttm_pe',
             'yoy_growth',
-            'peg_ratio_by_eps'
+            'peg_ratio'
         ]]
 
         result_df = result_df.rename(columns={
@@ -643,38 +642,8 @@ class Ticker:
             'yoy_growth': 'eps_yoy_growth'
         })
 
-        result_df = pd.merge_asof(
-            result_df,
-            revenue_yoy_df,
-            left_on='fiscal_quarter',
-            right_on='report_date',
-            direction='backward'
-        )
-
-        result_df['peg_ratio_by_revenue'] = np.where(
-            (result_df['ttm_pe'] < 0) | (result_df['yoy_growth'] < 0),
-            -np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100)),
-            np.abs(result_df['ttm_pe'] / (result_df['yoy_growth'] * 100))
-        ).round(2)
-
-        result_df = result_df[[
-            'report_date_x',
-            'close_price',
-            'fiscal_quarter',
-            'ttm_eps',
-            'ttm_pe',
-            'eps_yoy_growth',
-            'yoy_growth',
-            'peg_ratio_by_revenue',
-            'peg_ratio_by_eps'
-        ]]
-
-        result_df = result_df.rename(columns={
-            'report_date_x': 'report_date',
-            'yoy_growth': 'revenue_yoy_growth'
-        })
-
         result_df = result_df[result_df['ttm_pe'].notna()]
+        result_df = result_df[result_df['eps_yoy_growth'].notna()]
         result_df.insert(0, 'symbol', self.ticker)
         return result_df
 
