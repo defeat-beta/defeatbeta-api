@@ -4,7 +4,7 @@ import unittest
 from defeatbeta_api.data.ticker import Ticker
 
 class TestTicker(unittest.TestCase):
-    SYMBOL = "BABA"
+    SYMBOL = "AMD"
 
     @classmethod
     def setUpClass(cls):
@@ -242,9 +242,7 @@ class TestTicker(unittest.TestCase):
 
     def test_peg_ratio(self):
         result = self.ticker.peg_ratio()
-        print(result.head(10).to_string())
-        print("....")
-        print(result.tail(10).to_string())
+        print(result.to_string())
 
     def test_ttm_revenue(self):
         result = self.ticker.ttm_revenue()
