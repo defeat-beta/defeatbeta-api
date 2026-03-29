@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.50
+-------
+
 0.0.49
 -------
 - Support Average Net Debt TTM [`#48 <https://github.com/defeat-beta/defeatbeta-api/issues/48>`_]
