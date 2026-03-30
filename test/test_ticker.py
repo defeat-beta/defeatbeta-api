@@ -81,6 +81,28 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.ttm_pe()
         print(result)
 
+        # No negative P/E values should exist (Bloomberg/FactSet convention)
+        self.assertFalse(
+            (result['ttm_pe'] < 0).any(),
+            "ttm_pe should never be negative; negative EPS periods must be NaN"
+        )
+
+        # Rows with negative EPS must have NaN ttm_pe
+        negative_eps_mask = result['ttm_eps'] < 0
+        if negative_eps_mask.any():
+            self.assertTrue(
+                result.loc[negative_eps_mask, 'ttm_pe'].isna().all(),
+                "ttm_pe must be NaN when ttm_eps < 0"
+            )
+
+        # Rows with positive EPS must have a positive ttm_pe
+        positive_eps_mask = result['ttm_eps'] > 0
+        if positive_eps_mask.any():
+            self.assertTrue(
+                (result.loc[positive_eps_mask, 'ttm_pe'] > 0).all(),
+                "ttm_pe must be positive when ttm_eps > 0"
+            )
+
     def test_earning_call_transcripts(self):
         transcripts = self.ticker.earning_call_transcripts()
         print(transcripts)

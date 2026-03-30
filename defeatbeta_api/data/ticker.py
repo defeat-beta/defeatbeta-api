@@ -226,6 +226,8 @@ class Ticker:
         )
 
         result_df['ttm_pe'] = round(result_df['close'] / result_df['tailing_eps'], 2)
+        # Negative EPS yields a meaningless negative P/E; mask per Bloomberg/FactSet convention
+        result_df.loc[result_df['tailing_eps'] < 0, 'ttm_pe'] = float('nan')
 
         result_df = result_df[[
             'price_report_date',

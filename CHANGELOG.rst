@@ -4,6 +4,7 @@ Change Log
 0.0.50
 -------
 - fix: peg_ratio() align with industry standard — remove revenue-based PEG, return NaN for negative EPS or non-positive growth, preserve time series continuity [`#176 <https://github.com/defeat-beta/defeatbeta-api/issues/176>`_]
+- fix: ttm_pe() returns NaN for negative EPS per Bloomberg/FactSet convention [`#177 <https://github.com/defeat-beta/defeatbeta-api/issues/177>`_]
 
 0.0.49
 -------
