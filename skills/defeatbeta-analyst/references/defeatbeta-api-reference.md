@@ -663,7 +663,7 @@ All margin APIs return similar structure. Using gross margin as example:
 ```
 
 ### get_stock_peg_ratio(symbol: str, start_date: str = None, end_date: str = None)
-**Returns**: PEG by earnings & revenue growth (MAX 1000 rows)
+**Returns**: PEG ratio based on EPS growth (MAX 1000 rows)
 ```jsonc
 {
     "symbol": "TSLA",
@@ -674,11 +674,11 @@ All margin APIs return similar structure. Using gross margin as example:
         {
             "report_date": "2025-01-24",
             "fiscal_quarter": "2024-12-31",
+            "close_price": 403.84,
+            "ttm_eps": 2.36,
             "ttm_pe": 64.43,
-            "eps_yoy_growth": 0.15,  # 15% EPS growth
-            "peg_ratio_by_eps": 4.30,  # P/E / EPS growth
-            "revenue_yoy_growth": 0.12,
-            "peg_ratio_by_revenue": 5.37
+            "eps_yoy_growth": 0.15,  # 15% EPS YoY growth
+            "peg_ratio": 4.30        # ttm_pe / (eps_yoy_growth * 100); null if EPS or growth <= 0
         }
     ]
 }

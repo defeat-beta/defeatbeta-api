@@ -158,28 +158,27 @@ ticker.pb_ratio()
 
 ## 6. Stock Historical PEG Ratio
 ```markdown
-peg_ratio_by_revenue = ttm_pe / revenue_yoy_growth
-
-peg_ratio_by_eps = ttm_pe / eps_yoy_growth
+peg_ratio = ttm_pe / (eps_yoy_growth * 100)
+# Only calculated when ttm_eps > 0 and eps_yoy_growth > 0; otherwise None
 ```
 ```python
 ticker.peg_ratio()
 ```
 ```text
-    symbol report_date  close_price  ... peg_ratio_by_revenue  peg_ratio_by_eps
-0     TSLA  2023-06-30       261.77  ...                 1.57              3.71
-1     TSLA  2023-08-18       215.49  ...                 1.29              3.05
-2     TSLA  2023-08-21       231.28  ...                 1.39              3.28
-3     TSLA  2023-08-22       233.19  ...                 1.40              3.30
-4     TSLA  2023-08-23       236.86  ...                 1.42              3.35
-..     ...         ...          ...  ...                  ...               ...
-347   TSLA  2025-07-21       328.49  ...               -16.12            -10.85
-348   TSLA  2025-07-22       332.11  ...               -16.30            -10.97
-349   TSLA  2025-07-23       332.56  ...               -16.32            -10.98
-350   TSLA  2025-07-25       316.06  ...               -15.51            -10.44
-351   TSLA  2025-08-22       340.01  ...               -16.68            -11.23
+    symbol report_date  close_price  ttm_eps  ttm_pe  eps_yoy_growth  peg_ratio  fiscal_quarter
+0     TSLA  2023-06-30       261.77     3.83   68.35            0.63       1.08      2023-03-31
+1     TSLA  2023-08-18       215.49     3.83   56.26            0.63       0.89      2023-03-31
+2     TSLA  2023-08-21       231.28     3.83   60.39            0.63       0.96      2023-03-31
+3     TSLA  2023-08-22       233.19     3.83   60.89            0.63       0.97      2023-03-31
+4     TSLA  2023-08-23       236.86     3.83   61.84            0.63       0.98      2023-03-31
+..     ...         ...          ...      ...     ...             ...        ...             ...
+347   TSLA  2025-07-21       328.49    -0.47     NaN            -0.87       NaN      2025-03-31
+348   TSLA  2025-07-22       332.11    -0.47     NaN            -0.87       NaN      2025-03-31
+349   TSLA  2025-07-23       332.56    -0.47     NaN            -0.87       NaN      2025-03-31
+350   TSLA  2025-07-25       316.06    -0.47     NaN            -0.87       NaN      2025-03-31
+351   TSLA  2025-08-22       340.01    -0.47     NaN            -0.87       NaN      2025-03-31
 
-[352 rows x 10 columns]
+[352 rows x 8 columns]
 ```
 
 ## 7. Stock Historical ROE

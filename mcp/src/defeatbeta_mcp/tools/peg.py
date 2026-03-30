@@ -30,11 +30,11 @@ def get_stock_peg_ratio(symbol: str, start_date: str = None, end_date: str = Non
             "data": list[dict],                           # List of records with:
                 - report_date (str):                      # Date of stock price observation
                 - fiscal_quarter (str):                   # Fiscal quarter-end date of the latest financial report
+                - close_price (decimal | None):           # Stock closing price on report_date
+                - ttm_eps (decimal | None):               # Trailing Twelve Months diluted EPS
                 - ttm_pe (decimal | None):                # Trailing Twelve Months P/E ratio, based on diluted EPS
                 - eps_yoy_growth (decimal | None):        # Year-over-year growth rate of TTM diluted EPS
-                - peg_ratio_by_eps (decimal | None):      # PEG based on earnings growth = ttm_pe / eps_yoy_growth
-                - revenue_yoy_growth (decimal | None):    # Year-over-year growth rate of TTM revenue
-                - peg_ratio_by_revenue (decimal | None):  # PEG based on revenue growth = ttm_pe / revenue_yoy_growth
+                - peg_ratio (decimal | None):             # PEG ratio = ttm_pe / (eps_yoy_growth * 100); None if EPS or growth <= 0
         }
 
     Important note on data limits:
@@ -99,7 +99,7 @@ def get_stock_peg_ratio(symbol: str, start_date: str = None, end_date: str = Non
 
     # Format dates as strings for clean JSON
     data_records = (
-        df[['report_date', 'fiscal_quarter', 'ttm_pe', 'eps_yoy_growth', 'peg_ratio_by_eps', 'revenue_yoy_growth', 'peg_ratio_by_revenue']]
+        df[['report_date', 'fiscal_quarter', 'close_price', 'ttm_eps', 'ttm_pe', 'eps_yoy_growth', 'peg_ratio']]
         .copy()
     )
     data_records['report_date'] = data_records['report_date'].dt.strftime('%Y-%m-%d')
