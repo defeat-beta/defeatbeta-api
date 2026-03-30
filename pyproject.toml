@@ -23,7 +23,7 @@ dependencies = [
     "numpy >= 2.2.5",
     "rich >= 14.0.0",
     "openai >= 1.106.1",
-    "nltk >= 3.9.2",
+    "nltk >= 3.9.4",
     "ipython>=8.0.0,<=8.37.0",
     "matplotlib>=3.10.7",
     "openpyxl>=3.1.5"
