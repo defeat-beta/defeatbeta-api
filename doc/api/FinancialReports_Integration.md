@@ -2,15 +2,15 @@
 
 ## Overview
 
-[FinancialReports.eu](https://financialreports.eu) provides a comprehensive, structured API for accessing regulatory filings and company disclosures from **35 official sources** across **30+ countries**. It would complement Defeat Beta's existing market data (prices, financial statements, valuations) by adding a rich layer of **regulatory filing data** — annual reports, interim reports, ESG disclosures, M&A announcements, and more.
+[FinancialReports.eu](https://financialreports.eu) provides a comprehensive, structured API for accessing filings and company disclosures from data sources across **30+ countries**. It would complement Defeat Beta's existing market data (prices, financial statements, valuations) by adding a rich layer of **filing data** — annual reports, interim reports, ESG disclosures, M&A announcements, and more.
 
 ## Why This Fits
 
-Defeat Beta currently sources financial statements and SEC filings from the HuggingFace dataset. FinancialReports.eu would extend coverage to:
+Defeat Beta currently sources financial statements and filings from the HuggingFace dataset. FinancialReports.eu would extend coverage to:
 
-- **14M+ regulatory filings** from official regulators worldwide
+- **14M+ filings** 
 - **33,000+ companies** with ISIN, LEI, and GICS industry classification
-- **Global coverage** beyond SEC/EDGAR — including EU (Euronext, FCA UK, BaFin Germany, CNMV Spain, AMF France, etc.), Japan (EDINET), South Korea (OPENDART), Israel (TASE), Switzerland (SIX), Turkey (KAP), and more
+- **Global coverage** beyond the US — across 30+ countries — including UK, EU, Japan, South Korea, Israel, Switzerland, Turkey, and more
 - **11 standardized filing categories**: Annual General Meeting, Financial Reporting, Debt Information, Equity Information, ESG Information, M&A/Partnerships/Legal, Investor Communication, Management & Remuneration, Listing/Delisting, Investment Vehicle Info
 - **Filing document access**: Direct PDF/document URLs and a Markdown conversion endpoint for LLM-ready text extraction
 
@@ -30,23 +30,23 @@ Defeat Beta currently sources financial statements and SEC filings from the Hugg
 | `GET /filings/` | Search 14M+ filings by company, date range, category, type, country, language |
 | `GET /filings/{id}/markdown/` | Get filing content as Markdown (ideal for LLM analysis) |
 | `GET /companies/{id}/next-annual-report/` | Predicted next annual report date |
-| `GET /sources/` | List all 35 regulatory data sources |
+| `GET /sources/` | List all available data sources |
 | `GET /filing-categories/` | 11 standardized disclosure categories |
 | `GET /filing-types/` | Granular filing type taxonomy |
 | `GET /countries/` | Country reference data |
 
 ### Integration Ideas
 
-1. **Extend `Ticker` class** with a `filings()` method to fetch regulatory filings by ticker/ISIN
+1. **Extend `Ticker` class** with a `filings()` method to fetch filings by ticker/ISIN
 2. **LLM-powered filing analysis** — use the `/filings/{id}/markdown/` endpoint to feed annual report text into the existing LLM pipeline (similar to earnings transcript analysis)
-3. **Global SEC filings** — extend the current `sec_filing()` method to support non-US regulatory filings
+3. **Global filings** — extend the current `sec_filing()` method to support non-US filings
 4. **ESG data** — surface ESG-categorized filings alongside financial data
 5. **Event detection** — M&A announcements, management changes, listing/delisting events
 
 ### Example: Fetching Apple's European Filings
 
 ```python
-# Using the official Python SDK
+# Using the Python SDK
 from financial_reports_client import Client
 
 client = Client(base_url="https://api.financialreports.eu")
@@ -93,7 +93,7 @@ FinancialReports.eu also offers an [MCP server integration](https://financialrep
 |---|---|
 | Companies covered | 33,230+ |
 | Total filings | 14,135,359+ |
-| Regulatory sources | 35 (SEC, FCA, EDINET, Euronext, etc.) |
+| Coverage | 30+ countries |
 | Filing categories | 11 standardized |
 | Country coverage | 30+ countries |
 | API format | REST JSON |
@@ -106,9 +106,9 @@ FinancialReports.eu also offers an [MCP server integration](https://financialrep
 
 | Defeat Beta (current) | + FinancialReports.eu |
 |---|---|
-| Stock prices (OHLCV) | Regulatory filing documents |
+| Stock prices (OHLCV) | Filing documents |
 | Financial statements | Annual/interim report PDFs + Markdown |
-| SEC filings (US only) | 35 regulators across 30+ countries |
+| US filings only | 30+ countries |
 | Earnings transcripts | ESG disclosures, M&A announcements |
 | Valuation metrics | Filing event timeline |
 | LLM analysis of transcripts | LLM analysis of full annual reports |
