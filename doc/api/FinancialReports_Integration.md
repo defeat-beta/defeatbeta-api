@@ -14,9 +14,13 @@ Defeat Beta currently sources financial statements and SEC filings from the Hugg
 - **11 standardized filing categories**: Annual General Meeting, Financial Reporting, Debt Information, Equity Information, ESG Information, M&A/Partnerships/Legal, Investor Communication, Management & Remuneration, Listing/Delisting, Investment Vehicle Info
 - **Filing document access**: Direct PDF/document URLs and a Markdown conversion endpoint for LLM-ready text extraction
 
-## API Highlights
+## API Details
 
 **Base URL**: `https://api.financialreports.eu`
+**API Documentation**: [docs.financialreports.eu](https://docs.financialreports.eu/)
+**Authentication**: API key via `X-API-Key` header
+**Python SDK**: `pip install financial-reports-generated-client` ([GitHub](https://github.com/financial-reports/financial-reports-python))
+**Rate Limiting**: Two-tier system (burst limit + monthly quota) with rate limit headers in responses
 
 ### Key Endpoints
 
@@ -42,23 +46,41 @@ Defeat Beta currently sources financial statements and SEC filings from the Hugg
 ### Example: Fetching Apple's European Filings
 
 ```python
-import requests
+# Using the official Python SDK
+from financial_reports_client import Client
+
+client = Client(base_url="https://api.financialreports.eu")
+client = client.with_headers({"X-API-Key": "your-api-key"})
 
 # Search for Apple
-resp = requests.get("https://api.financialreports.eu/companies/", params={
-    "search": "Apple",
-    "page_size": 5
-})
+from financial_reports_client.api.companies import companies_list
+companies = companies_list.sync(client=client, search="Apple", page_size=5)
+
+# Or using requests directly
+import requests
+
+headers = {"X-API-Key": "your-api-key"}
+
+# Search for Apple
+resp = requests.get("https://api.financialreports.eu/companies/",
+    headers=headers,
+    params={"search": "Apple", "page_size": 5}
+)
 
 # Get filings for a company
-resp = requests.get("https://api.financialreports.eu/filings/", params={
-    "company_isin": "US0378331005",  # Apple's ISIN
-    "categories": "2",               # Financial Reporting
-    "page_size": 10
-})
+resp = requests.get("https://api.financialreports.eu/filings/",
+    headers=headers,
+    params={
+        "company_isin": "US0378331005",  # Apple's ISIN
+        "categories": "2",               # Financial Reporting
+        "page_size": 10
+    }
+)
 
 # Get filing content as Markdown (for LLM analysis)
-resp = requests.get("https://api.financialreports.eu/filings/12345/markdown/")
+resp = requests.get("https://api.financialreports.eu/filings/12345/markdown/",
+    headers=headers
+)
 ```
 
 ### MCP Server
@@ -75,8 +97,10 @@ FinancialReports.eu also offers an [MCP server integration](https://financialrep
 | Filing categories | 11 standardized |
 | Country coverage | 30+ countries |
 | API format | REST JSON |
-| Authentication | API key |
-| Documentation | [financialreports.eu](https://financialreports.eu) |
+| Authentication | API key (`X-API-Key` header) |
+| Rate limiting | Burst limit + monthly quota |
+| Python SDK | `pip install financial-reports-generated-client` |
+| API Documentation | [docs.financialreports.eu](https://docs.financialreports.eu/) |
 
 ## Complementary Value
 
