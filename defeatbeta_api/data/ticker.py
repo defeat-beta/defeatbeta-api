@@ -7,8 +7,6 @@ import numpy as np
 import pandas as pd
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.formatting.rule import CellIsRule
-from openpyxl.cell.text import InlineFont
-from openpyxl.cell.rich_text import TextBlock, CellRichText
 from openpyxl.workbook import Workbook
 
 from defeatbeta_api.client.duckdb_client import get_duckdb_client
@@ -1252,7 +1250,8 @@ class Ticker:
         )
         return result_df
 
-    def _add_discount_rate_section(self, ws, last_wacc, add_cell, add_border, bold, orange_fill, thin):
+    def _add_discount_rate_section(self, ws, last_wacc, add_cell, add_border, bold, orange_fill, thin,
+                                    treasury_avg_row=None):
         """Create Discount Rate Estimates Section (rows 1-9).
 
         Populates the discount rate estimates including market cap, beta, debt,
@@ -1284,7 +1283,10 @@ class Ticker:
         add_cell("B", (row := row + 1), "Tax Provision", font=bold)
         add_cell("C", row, last_wacc['tax_provision_usd'], number_format='#,##0')
         add_cell("B", (row := row + 1), "Risk-Free Rate of Return (10Y Treasury Rate)", font=bold, fill=orange_fill)
-        add_cell("C", row, last_wacc['treasure_10y_yield'], number_format='0.00%')
+        if treasury_avg_row is not None:
+            add_cell("C", row, f"=L{treasury_avg_row}", number_format='0.00%')
+        else:
+            add_cell("C", row, last_wacc['treasure_10y_yield'], number_format='0.00%')
         add_cell("B", (row := row + 1), "Expected Market Return (S&P500 Avg Return)", font=bold)
         add_cell("C", row, last_wacc['sp500_10y_cagr'], number_format='0.00%')
 
@@ -1304,20 +1306,19 @@ class Ticker:
 
         add_border(2, 9, ['B', 'C', 'D', 'E'])
 
-    def _add_growth_estimates_section(self, ws, revenue_details, fcf_details, ebitda_details,
-                                       net_income_details, finance_currency, add_cell, add_border,
+    def _add_growth_estimates_section(self, ws, revenue_details, eps_details,
+                                       eps_cagr_years, finance_currency, add_cell, add_border,
                                        bold, orange_fill, thin) -> Dict[str, int]:
-        """Create Growth Estimates Section with revenue, FCF, EBITDA, and net income growth data.
+        """Create Growth Estimates Section with revenue and EPS growth data.
 
-        Populates the growth estimates section showing 3-year historical data for each metric
-        along with YoY growth rates and 3-year CAGR calculations.
+        Populates the growth estimates section showing 3-year historical revenue data
+        and up to 10 annual EPS TTM snapshots with the computed CAGR.
 
         Args:
             ws: The openpyxl worksheet object.
             revenue_details: List of dicts with revenue data (date, value, yoy).
-            fcf_details: List of dicts with FCF data (date, value, yoy).
-            ebitda_details: List of dicts with EBITDA data (date, value, yoy).
-            net_income_details: List of dicts with net income data (date, value, yoy).
+            eps_details: List of annual EPS TTM snapshots (same quarter each year, up to 10).
+            eps_cagr_years: Number of years used in the EPS CAGR calculation (for label only).
             finance_currency: Currency code for display labels.
             add_cell: Helper function to add cell values with formatting.
             add_border: Helper function to add borders to cells.
@@ -1326,15 +1327,14 @@ class Ticker:
             thin: Border side style.
 
         Returns:
-            Dict containing row numbers for CAGR calculations:
+            Dict containing row numbers:
             - 'revenue_cagr_row': Row number of Revenue 3Y CAGR
-            - 'fcf_cagr_row': Row number of FCF 3Y CAGR
-            - 'ebitda_cagr_row': Row number of EBITDA 3Y CAGR
-            - 'ni_cagr_row': Row number of Net Income 3Y CAGR
+            - 'eps_avg_row': Row number of EPS CAGR label
         """
         row = 0
-        add_cell("G", (row := row + 1), f"Growth Estimates", font=bold)
+        add_cell("G", (row := row + 1), "Growth Estimates", font=bold)
 
+        # --- Revenue (3 years + 3Y CAGR) in G/H/I (rows 2-6) ---
         add_cell("G", (row := row + 1), f"Revenue ({finance_currency})", font=bold)
         y1_row = row + 1
         add_cell("G", (row := row + 1), revenue_details[0]['date'])
@@ -1351,69 +1351,91 @@ class Ticker:
         add_cell("G", (row := row + 1), "Revenue 3Y CAGR", font=bold)
         add_cell("H", row, f"=IF(H{y1_row}<=0,IF(H{y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{y3_row}<=0,\"Turned Negative\",POWER(H{y3_row}/H{y1_row},1/2)-1))", number_format='0.00%')
 
-        row += 1
-        add_cell("G", (row := row + 1), f"FCF ({finance_currency})", font=bold)
-        fcf_y1_row = row + 1
-        add_cell("G", (row := row + 1), fcf_details[0]['date'])
-        add_cell("H", row, fcf_details[0]['value'], number_format='#,##0')
-        add_cell("I", row, fcf_details[0]['yoy'], number_format='0.00%')
-        add_cell("G", (row := row + 1), fcf_details[1]['date'])
-        add_cell("H", row, fcf_details[1]['value'], number_format='#,##0')
-        add_cell("I", row, fcf_details[1]['yoy'], number_format='0.00%')
-        fcf_y3_row = row + 1
-        add_cell("G", (row := row + 1), fcf_details[2]['date'])
-        add_cell("H", row, fcf_details[2]['value'], number_format='#,##0')
-        add_cell("I", row, fcf_details[2]['yoy'], number_format='0.00%')
-        fcf_cagr_row = row + 1
-        add_cell("G", (row := row + 1), "FCF 3Y CAGR", font=bold)
-        add_cell("H", row, f"=IF(H{fcf_y1_row}<=0,IF(H{fcf_y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{fcf_y3_row}<=0,\"Turned Negative\",POWER(H{fcf_y3_row}/H{fcf_y1_row},1/2)-1))", number_format='0.00%')
+        # --- EPS TTM annual snapshots (same quarter per year, up to 10) in G/H/I ---
+        # I column shows YoY vs same quarter one year prior (from the SQL).
+        add_cell("G", 7, "EPS TTM (USD)", font=bold)
+        eps_start_row = 8
+        for i, d in enumerate(eps_details):
+            r = eps_start_row + i
+            add_cell("G", r, d['date'])
+            add_cell("H", r, d['value'], number_format='0.00')
+            add_cell("I", r, d['yoy'], number_format='0.00%')
 
-        row += 1
-        add_cell("G", (row := row + 1), f"EBITDA ({finance_currency})", font=bold)
-        ebitda_y1_row = row + 1
-        add_cell("G", (row := row + 1), ebitda_details[0]['date'])
-        add_cell("H", row, ebitda_details[0]['value'], number_format='#,##0')
-        add_cell("I", row, ebitda_details[0]['yoy'], number_format='0.00%')
-        add_cell("G", (row := row + 1), ebitda_details[1]['date'])
-        add_cell("H", row, ebitda_details[1]['value'], number_format='#,##0')
-        add_cell("I", row, ebitda_details[1]['yoy'], number_format='0.00%')
-        ebitda_y3_row = row + 1
-        add_cell("G", (row := row + 1), ebitda_details[2]['date'])
-        add_cell("H", row, ebitda_details[2]['value'], number_format='#,##0')
-        add_cell("I", row, ebitda_details[2]['yoy'], number_format='0.00%')
-        ebitda_cagr_row = row + 1
-        add_cell("G", (row := row + 1), "EBITDA 3Y CAGR", font=bold)
-        add_cell("H", row, f"=IF(H{ebitda_y1_row}<=0,IF(H{ebitda_y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{ebitda_y3_row}<=0,\"Turned Negative\",POWER(H{ebitda_y3_row}/H{ebitda_y1_row},1/2)-1))", number_format='0.00%')
+        eps_avg_row = eps_start_row + len(eps_details)
+        cagr_label = f"EPS {eps_cagr_years}Y CAGR Growth" if eps_cagr_years > 0 else "EPS CAGR Growth"
+        add_cell("G", eps_avg_row, cagr_label, font=bold)
+        # Build Excel formula for EPS CAGR: find first positive year, compute POWER CAGR.
+        # Returns 0 when end EPS <= 0 or no positive start found (floor in C12 handles it).
+        n_eps = len(eps_details)
+        if n_eps <= 1:
+            eps_cagr_formula = 0
+        else:
+            last_eps_row = eps_avg_row - 1
+            inner = '0'
+            for j in range(n_eps - 2, -1, -1):
+                row_j = eps_start_row + j
+                years = n_eps - 1 - j
+                inner = f'IF(H{row_j}>0,POWER(H{last_eps_row}/H{row_j},1/{years})-1,{inner})'
+            eps_cagr_formula = f'=IF(H{last_eps_row}<=0,0,{inner})'
+        add_cell("H", eps_avg_row, eps_cagr_formula, number_format='0.00%')
 
-        row += 1
-        add_cell("G", (row := row + 1), f"Net Income ({finance_currency})", font=bold)
-        ni_y1_row = row + 1
-        add_cell("G", (row := row + 1), net_income_details[0]['date'])
-        add_cell("H", row, net_income_details[0]['value'], number_format='#,##0')
-        add_cell("I", row, net_income_details[0]['yoy'], number_format='0.00%')
-        add_cell("G", (row := row + 1), net_income_details[1]['date'])
-        add_cell("H", row, net_income_details[1]['value'], number_format='#,##0')
-        add_cell("I", row, net_income_details[1]['yoy'], number_format='0.00%')
-        ni_y3_row = row + 1
-        add_cell("G", (row := row + 1), net_income_details[2]['date'])
-        add_cell("H", row, net_income_details[2]['value'], number_format='#,##0')
-        add_cell("I", row, net_income_details[2]['yoy'], number_format='0.00%')
-        ni_cagr_row = row + 1
-        add_cell("G", (row := row + 1), "Net Income 3Y CAGR", font=bold)
-        add_cell("H", row, f"=IF(H{ni_y1_row}<=0,IF(H{ni_y3_row}>0,\"Turned Positive\",\"N/A\"),IF(H{ni_y3_row}<=0,\"Turned Negative\",POWER(H{ni_y3_row}/H{ni_y1_row},1/2)-1))", number_format='0.00%')
+        # Revenue box starts at row 2 ("Revenue (USD)" header), not row 1
+        add_border(2, revenue_cagr_row, ['G', 'H', 'I'])
+        add_border(7, eps_avg_row, ['G', 'H', 'I'])
 
-        add_border(2, row, ['G', 'H', 'I'])
+        # Remove the dividing line between Revenue (row 6) and EPS TTM (row 7) for G/H/I columns
+        for col in ['G', 'H', 'I']:
+            cell = ws[f'{col}{revenue_cagr_row}']
+            cell.border = Border(left=cell.border.left, right=cell.border.right,
+                                 top=cell.border.top, bottom=None)
+            cell = ws[f'{col}7']
+            cell.border = Border(left=cell.border.left, right=cell.border.right,
+                                 top=None, bottom=cell.border.bottom)
 
         return {
             'revenue_cagr_row': revenue_cagr_row,
-            'fcf_cagr_row': fcf_cagr_row,
-            'ebitda_cagr_row': ebitda_cagr_row,
-            'ni_cagr_row': ni_cagr_row
+            'eps_avg_row': eps_avg_row,
         }
 
-    def _add_dcf_template_section(self, ws, base_fcf, end_date, revenue_cagr_row, fcf_cagr_row,
-                                   ebitda_cagr_row, ni_cagr_row, revenue_details, add_cell,
-                                   add_border, bold, orange_fill, thin) -> Dict[str, int]:
+    def _add_treasury_section(self, ws, treasury_details, add_cell, add_border, bold) -> Dict[str, int]:
+        """Create US 10Y Treasury Yield section in K/L columns starting at row 2.
+
+        Args:
+            ws: The openpyxl worksheet object.
+            treasury_details: List of dicts with {year (int), avg_yield (float)}.
+            add_cell: Helper function to add cell values with formatting.
+            add_border: Helper function to add borders to cells.
+            bold: Bold font style.
+
+        Returns:
+            Dict containing:
+            - 'treasury_avg_row': Row number of Avg (Last 5Y)
+        """
+        header_row = 2
+        add_cell("K", header_row, "US 10Y Treasury Yield", font=bold)
+        data_start_row = header_row + 1
+        for i, d in enumerate(treasury_details):
+            r = data_start_row + i
+            add_cell("K", r, d['year'])
+            add_cell("L", r, d['avg_yield'], number_format='0.00%')
+        treasury_avg_row = data_start_row + len(treasury_details)
+        add_cell("K", treasury_avg_row, "Avg (Last 5Y)", font=bold)
+        if treasury_details:
+            add_cell("L", treasury_avg_row,
+                     f"=AVERAGE(L{data_start_row}:L{treasury_avg_row - 1})",
+                     number_format='0.00%')
+        else:
+            add_cell("L", treasury_avg_row, 0, number_format='0.00%')
+        add_border(header_row, treasury_avg_row, ['K', 'L'])
+        return {'treasury_avg_row': treasury_avg_row}
+
+    def _add_dcf_template_section(self, ws, base_fcf, end_date, revenue_cagr_row,
+                                   revenue_details, add_cell,
+                                   add_border, bold, orange_fill, thin,
+                                   ttm_revenue_value=None, ttm_revenue_label=None,
+                                   historical_fcf_margins=None,
+                                   growth_rate_1_5y=None, growth_rate_terminal=None,
+                                   eps_avg_row=None, treasury_avg_row=None) -> Dict[str, int]:
         """Create DCF Template Section with projections and historical FCF margins.
 
         Populates the DCF template including growth rate parameters, TTM revenue/FCF,
@@ -1424,15 +1446,14 @@ class Ticker:
             base_fcf: TTM free cash flow value.
             end_date: End date string for TTM period.
             revenue_cagr_row: Row number of Revenue 3Y CAGR.
-            fcf_cagr_row: Row number of FCF 3Y CAGR.
-            ebitda_cagr_row: Row number of EBITDA 3Y CAGR.
-            ni_cagr_row: Row number of Net Income 3Y CAGR.
             revenue_details: List of dicts with revenue data for TTM calculations.
             add_cell: Helper function to add cell values with formatting.
             add_border: Helper function to add borders to cells.
             bold: Bold font style.
             orange_fill: Orange fill pattern for highlighted cells.
             thin: Border side style.
+            growth_rate_1_5y: Pre-computed EPS 10Y avg growth rate (1~5Y, capped/floored).
+            growth_rate_terminal: Pre-computed 5Y treasury avg terminal rate.
 
         Returns:
             Dict containing key row numbers:
@@ -1442,48 +1463,48 @@ class Ticker:
             - 'revenue_growth_1_5y_row': Row number of Future Revenue Growth (1-5Y)
             - 'revenue_growth_6_10y_row': Row number of Future Revenue Growth (6-10Y)
         """
-        row = 15
+        row = 10
         add_cell("B", (row := row + 1), "DCF Template", font=bold)
-
-        decay_factor_row = row + 1
-        add_cell("B", (row := row + 1), "Decay Factor (6~10Y)", font=bold, fill=orange_fill)
-        add_cell("C", row, 0.9, number_format='0.00')
 
         growth_1_5y_row = row + 1
         add_cell("B", (row := row + 1), "Future Growth Rate (1~5 Years)", font=bold, fill=orange_fill)
-        add_cell("C", row, f"=IFERROR((IF(ISNUMBER(H{revenue_cagr_row}),H{revenue_cagr_row},0)*0.4+IF(ISNUMBER(H{fcf_cagr_row}),H{fcf_cagr_row},0)*0.3+IF(ISNUMBER(H{ebitda_cagr_row}),H{ebitda_cagr_row},0)*0.2+IF(ISNUMBER(H{ni_cagr_row}),H{ni_cagr_row},0)*0.1)/(IF(ISNUMBER(H{revenue_cagr_row}),0.4,0)+IF(ISNUMBER(H{fcf_cagr_row}),0.3,0)+IF(ISNUMBER(H{ebitda_cagr_row}),0.2,0)+IF(ISNUMBER(H{ni_cagr_row}),0.1,0)),\"N/A\")",
-                 number_format='0.00%')
+        if eps_avg_row is not None:
+            # Cap 20%, floor 5%, referencing the raw EPS CAGR displayed in the Growth Estimates section
+            add_cell("C", row, f"=MIN(MAX(H{eps_avg_row},0.05),0.20)", number_format='0.00%')
+        else:
+            add_cell("C", row, growth_rate_1_5y, number_format='0.00%')
 
         add_cell("B", (row := row + 1), "Future Growth Rate (6~10 Years)", font=bold, fill=orange_fill)
-        add_cell("C", row, f"=MAX(C{growth_1_5y_row}*POWER(C{decay_factor_row},5),C8)", number_format='0.00%')
+        # Year-6 linear interpolation: g_1_5y - (g_1_5y - g_terminal) / 5
+        add_cell("C", row, f"=C{growth_1_5y_row}-(C{growth_1_5y_row}-C{growth_1_5y_row+2})/5", number_format='0.00%')
 
+        growth_terminal_row = row + 1
         add_cell("B", (row := row + 1), "Future Growth Rate (Terminal Stage)", font=bold, fill=orange_fill)
-        add_cell("C", row, "=C8", number_format='0.00%')
+        if treasury_avg_row is not None:
+            add_cell("C", row, f"=L{treasury_avg_row}", number_format='0.00%')
+        else:
+            add_cell("C", row, growth_rate_terminal, number_format='0.00%')
 
+        discount_rate_row = row + 1
         row = row + 1
-        cell = ws[f"B{row}"]
-        # Create rich text with normal and italic parts
-        normal_text = TextBlock(InlineFont(b=True), "Discount Rate (%) (Default: WACC)\n")
-        italic_text = TextBlock(InlineFont(b=True, i=True), "or S&P 500 Average Return")
-        cell.value = CellRichText(normal_text, italic_text)
-        cell.fill = orange_fill
-        cell.alignment = Alignment(wrap_text=True)
+        add_cell("B", row, "Discount Rate (%) (Default: WACC)", font=bold, fill=orange_fill)
 
         add_cell("C", row, "=E9", number_format='0.00%')
 
-        ttm_revenue_df = self.ttm_revenue()
-        if not ttm_revenue_df.empty:
-            latest_ttm = ttm_revenue_df.iloc[-1]
-            ttm_revenue_value = latest_ttm['ttm_total_revenue_usd']
-            import json
-            quarters = json.loads(latest_ttm['report_date_2_revenue'])
-            quarter_dates = sorted(quarters.keys())
-            start_date = pd.to_datetime(quarter_dates[0]).strftime("%Y-%m-%d")
-            end_date = pd.to_datetime(quarter_dates[-1]).strftime("%Y-%m-%d")
-            ttm_revenue_label = f"TTM Revenue (USD | {start_date} ~ {end_date})"
-        else:
-            ttm_revenue_value = 0
-            ttm_revenue_label = "TTM Revenue N/A"
+        if ttm_revenue_value is None:
+            ttm_revenue_df = self.ttm_revenue()
+            if not ttm_revenue_df.empty:
+                latest_ttm = ttm_revenue_df.iloc[-1]
+                ttm_revenue_value = latest_ttm['ttm_total_revenue_usd']
+                import json
+                quarters = json.loads(latest_ttm['report_date_2_revenue'])
+                quarter_dates = sorted(quarters.keys())
+                start_date = pd.to_datetime(quarter_dates[0]).strftime("%Y-%m-%d")
+                end_date = pd.to_datetime(quarter_dates[-1]).strftime("%Y-%m-%d")
+                ttm_revenue_label = f"TTM Revenue (USD | {start_date} ~ {end_date})"
+            else:
+                ttm_revenue_value = 0
+                ttm_revenue_label = "TTM Revenue N/A"
 
         ttm_revenue_row = row + 1
         add_cell("B", (row := row + 1), ttm_revenue_label, font=bold, fill=orange_fill)
@@ -1491,11 +1512,12 @@ class Ticker:
 
         revenue_growth_1_5y_row = row + 1
         add_cell("B", (row := row + 1), "Future Revenue Growth Rate (1~5 Years)", font=bold, fill=orange_fill)
-        add_cell("C", row, f"=H{revenue_cagr_row}", number_format='0.00%')
+        add_cell("C", row, f"=MIN(MAX(H{revenue_cagr_row},0.05),0.20)", number_format='0.00%')
 
         revenue_growth_6_10y_row = row + 1
         add_cell("B", (row := row + 1), "Future Revenue Growth Rate (6~10 Years)", font=bold, fill=orange_fill)
-        add_cell("C", row, f"=MAX(H{revenue_cagr_row}*POWER(C{decay_factor_row},5),C8)", number_format='0.00%')
+        # Year-6 linear interpolation using same terminal rate
+        add_cell("C", row, f"=C{revenue_growth_1_5y_row}-(C{revenue_growth_1_5y_row}-C{growth_terminal_row})/5", number_format='0.00%')
 
         row += 1
         add_cell("B", (row := row + 1), "Year", font=bold)
@@ -1513,26 +1535,28 @@ class Ticker:
 
         add_cell("C", row, base_fcf, number_format='#,##0')
 
-        growth_1_5y = f"C{growth_1_5y_row}"
-        growth_6_10y = f"C{growth_1_5y_row + 1}"
+        g1 = f"C{growth_1_5y_row}"
+        gt = f"C{growth_terminal_row}"
 
-        add_cell("D", row, f"=C{row}*(1+{growth_1_5y})", number_format='#,##0')
-        add_cell("E", row, f"=D{row}*(1+{growth_1_5y})", number_format='#,##0')
-        add_cell("F", row, f"=E{row}*(1+{growth_1_5y})", number_format='#,##0')
-        add_cell("G", row, f"=F{row}*(1+{growth_1_5y})", number_format='#,##0')
-        add_cell("H", row, f"=G{row}*(1+{growth_1_5y})", number_format='#,##0')
-        add_cell("I", row, f"=H{row}*(1+{growth_6_10y})", number_format='#,##0')
-        add_cell("J", row, f"=I{row}*(1+{growth_6_10y})", number_format='#,##0')
-        add_cell("K", row, f"=J{row}*(1+{growth_6_10y})", number_format='#,##0')
-        add_cell("L", row, f"=K{row}*(1+{growth_6_10y})", number_format='#,##0')
-        add_cell("M", row, f"=L{row}*(1+{growth_6_10y})", number_format='#,##0')
+        # Years 1-5: fixed near-term rate
+        add_cell("D", row, f"=C{row}*(1+{g1})", number_format='#,##0')
+        add_cell("E", row, f"=D{row}*(1+{g1})", number_format='#,##0')
+        add_cell("F", row, f"=E{row}*(1+{g1})", number_format='#,##0')
+        add_cell("G", row, f"=F{row}*(1+{g1})", number_format='#,##0')
+        add_cell("H", row, f"=G{row}*(1+{g1})", number_format='#,##0')
+        # Years 6-10: per-year linear interpolation rate_i = g1 - i*(g1-gt)/5
+        add_cell("I", row, f"=H{row}*(1+{g1}-1*({g1}-{gt})/5)", number_format='#,##0')
+        add_cell("J", row, f"=I{row}*(1+{g1}-2*({g1}-{gt})/5)", number_format='#,##0')
+        add_cell("K", row, f"=J{row}*(1+{g1}-3*({g1}-{gt})/5)", number_format='#,##0')
+        add_cell("L", row, f"=K{row}*(1+{g1}-4*({g1}-{gt})/5)", number_format='#,##0')
+        add_cell("M", row, f"=L{row}*(1+{g1}-5*({g1}-{gt})/5)", number_format='#,##0')
 
         tv_row = row + 1
         add_cell("B", (row := row + 1), "Terminal Value (USD)", font=bold)
 
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']:
             add_cell(col, row, 0, number_format='#,##0')
-        add_cell("M", row, f"=M{fcf_row}*(1 + C20) / (C9 - C20)", number_format='#,##0')
+        add_cell("M", row, f"=M{fcf_row}*(1 + {gt}) / (C{discount_rate_row} - {gt})", number_format='#,##0')
 
         total_value_row = row + 1
         add_cell("B", (row := row + 1), "Total Value (USD)", font=bold)
@@ -1544,49 +1568,61 @@ class Ticker:
         fcf_margin_row = row + 1
         add_cell("B", (row := row + 1), "FCF Margin", font=bold)
 
-        revenue_growth_1_5y = f"C{revenue_growth_1_5y_row}"
-        revenue_growth_6_10y = f"C{revenue_growth_6_10y_row}"
+        r1 = f"C{revenue_growth_1_5y_row}"
+        rt = f"C{growth_terminal_row}"
 
         add_cell("C", row, f"=C{fcf_row}/C{ttm_revenue_row}", number_format='0.00%')
 
+        # Years 1-5: revenue = TTM * (1+r1)^i
         for i, col in enumerate(['D', 'E', 'F', 'G', 'H'], start=1):
-            add_cell(col, row, f"={col}{fcf_row}/(C{ttm_revenue_row}*POWER(1+{revenue_growth_1_5y},{i}))", number_format='0.00%')
+            add_cell(col, row, f"={col}{fcf_row}/(C{ttm_revenue_row}*POWER(1+{r1},{i}))", number_format='0.00%')
 
-        for i, col in enumerate(['I', 'J', 'K', 'L', 'M'], start=6):
-            add_cell(col, row, f"={col}{fcf_row}/(C{ttm_revenue_row}*POWER(1+{revenue_growth_1_5y},5)*POWER(1+{revenue_growth_6_10y},{i-5}))", number_format='0.00%')
+        # Years 6-10: revenue = TTM*(1+r1)^5 * product of per-year interpolated rates
+        for k, col in enumerate(['I', 'J', 'K', 'L', 'M'], start=1):
+            base = f"C{ttm_revenue_row}*POWER(1+{r1},5)"
+            factors = "*".join(
+                [f"(1+{r1}-{j}*({r1}-{rt})/5)" for j in range(1, k + 1)]
+            )
+            add_cell(col, row, f"={col}{fcf_row}/({base}*{factors})", number_format='0.00%')
 
         row += 1
 
+        # Historical FCF margin — use pre-fetched data if available
         hist_col_count = 0
-        fcf_margin_df = self.annual_fcf_margin()
-        if not fcf_margin_df.empty:
-            recent_fcf_margin = fcf_margin_df.tail(5).dropna(subset=['fcf_margin'])
-            if not recent_fcf_margin.empty:
-                year_history_row = row + 1
-                add_cell("B", (row := row + 1), "Year (Historical)", font=bold)
-                for i, (_, row_data) in enumerate(recent_fcf_margin.iterrows()):
-                    if i >= 10:
-                        break
-                    col = chr(ord('C') + i)
-                    year = pd.to_datetime(row_data['report_date']).strftime("%Y/%m/%d")
-                    add_cell(col, row, year, font=bold, alignment=right_align)
-                    hist_col_count = i + 1
+        if historical_fcf_margins is None:
+            # Legacy path: fetch internally
+            fcf_margin_df = self.annual_fcf_margin()
+            historical_fcf_margins = []
+            if not fcf_margin_df.empty:
+                recent = fcf_margin_df.tail(5).dropna(subset=['fcf_margin'])
+                for _, row_data in recent.iterrows():
+                    historical_fcf_margins.append({
+                        "date": pd.to_datetime(row_data['report_date']).strftime("%Y/%m/%d"),
+                        "margin": float(row_data['fcf_margin']),
+                    })
 
-                add_cell("B", (row := row + 1), "FCF Margin (Historical)", font=bold)
-                for i, (_, row_data) in enumerate(recent_fcf_margin.iterrows()):
-                    if i >= 10:
-                        break
-                    col = chr(ord('C') + i)
-                    add_cell(col, row, row_data['fcf_margin'], number_format='0.00%')
-            else:
-                add_cell("B", (row := row + 1), "Year", font=bold)
-                add_cell("B", (row := row + 1), "Historical FCF Margin", font=bold)
+        if historical_fcf_margins:
+            year_history_row = row + 1
+            add_cell("B", (row := row + 1), "Year (Historical)", font=bold)
+            for i, item in enumerate(historical_fcf_margins):
+                if i >= 10:
+                    break
+                col = chr(ord('C') + i)
+                add_cell(col, row, item['date'], font=bold, alignment=right_align)
+                hist_col_count = i + 1
+
+            add_cell("B", (row := row + 1), "FCF Margin (Historical)", font=bold)
+            for i, item in enumerate(historical_fcf_margins):
+                if i >= 10:
+                    break
+                col = chr(ord('C') + i)
+                add_cell(col, row, item['margin'], number_format='0.00%')
         else:
             add_cell("B", (row := row + 1), "Year", font=bold)
             add_cell("B", (row := row + 1), "Historical FCF Margin", font=bold)
 
         # Add border to DCF Template Section (irregular shape)
-        dcf_start_row = 17
+        dcf_start_row = 12
         params_end_row = revenue_growth_6_10y_row + 1
         year_row = params_end_row + 1
         proj_fcf_margin_row = year_row + 4
@@ -1649,11 +1685,14 @@ class Ticker:
             'fcf_margin_row': fcf_margin_row,
             'ttm_revenue_row': ttm_revenue_row,
             'revenue_growth_1_5y_row': revenue_growth_1_5y_row,
-            'revenue_growth_6_10y_row': revenue_growth_6_10y_row
+            'revenue_growth_6_10y_row': revenue_growth_6_10y_row,
+            'discount_rate_row': discount_rate_row
         }
 
     def _add_dcf_value_section(self, ws, total_value_row, last_wacc, finance_currency,
-                                add_cell, add_border, bold, orange_fill, thin) -> Dict[str, int]:
+                                add_cell, add_border, bold, orange_fill, thin,
+                                cash_value=None, shares_value=None,
+                                current_price=None, discount_rate_row=21) -> Dict[str, int]:
         """Create DCF Value Section with enterprise value, equity value, and fair price calculations.
 
         Populates the DCF value section including enterprise value (NPV of projected cash flows),
@@ -1682,48 +1721,42 @@ class Ticker:
             - 'current_price_row': Row number of Current Price
             - 'margin_row': Row number of Margin of Safety
         """
-        row = 35
+        row = 29
         report_date = pd.to_datetime(last_wacc["report_date"]).strftime("%Y-%m-%d")
         add_cell("B", (row := row + 1), f"DCF Value ({report_date})", font=bold)
 
         ev_row = row + 1
         add_cell("B", (row := row + 1), "Enterprise Value (USD)", font=bold, fill=orange_fill)
-        add_cell("C", row, f"=NPV(C21,D{total_value_row}:M{total_value_row})", number_format='#,##0')
+        add_cell("C", row, f"=NPV(C{discount_rate_row},D{total_value_row}:M{total_value_row})", number_format='#,##0')
 
         cash_row = row + 1
         add_cell("B", (row := row + 1), "Cash & ST Investments (USD)", font=bold, fill=orange_fill)
 
-        # Get cash value and convert to USD
-        bs_df = self.quarterly_balance_sheet().df()
-        cash_value = 0
-        if not bs_df.empty:
-            cash_rows = bs_df[bs_df['Breakdown'].str.contains('Cash, Cash Equivalents & Short Term Investments', na=False)]
-            if not cash_rows.empty:
-                date_columns = [col for col in bs_df.columns if col != 'Breakdown']
-                if date_columns:
-                    cash_value_original = cash_rows.iloc[0][date_columns[0]]
-                    if pd.isna(cash_value_original) or cash_value_original == '*':
-                        cash_value = 0
-                    else:
-                        # Get exchange rate for currency conversion
-
-                        if finance_currency == 'USD':
-                            cash_value = cash_value_original
+        # Use pre-fetched cash value if available, otherwise fetch internally
+        if cash_value is None:
+            bs_df = self.quarterly_balance_sheet().df()
+            cash_value = 0
+            if not bs_df.empty:
+                cash_rows = bs_df[bs_df['Breakdown'].str.contains('Cash, Cash Equivalents & Short Term Investments', na=False)]
+                if not cash_rows.empty:
+                    date_columns = [col for col in bs_df.columns if col != 'Breakdown']
+                    if date_columns:
+                        cash_value_original = cash_rows.iloc[0][date_columns[0]]
+                        if pd.isna(cash_value_original) or cash_value_original == '*':
+                            cash_value = 0
                         else:
-                            # Get latest quarter date from balance sheet
-                            latest_bs_date = pd.to_datetime(date_columns[0])
-
-                            # Get exchange rate
-                            currency_df = self.currency(finance_currency + '=X')
-                            currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-
-                            # Find exchange rate closest to balance sheet date
-                            exchange_rate_row = currency_df[currency_df['report_date'] <= latest_bs_date].tail(1)
-                            if not exchange_rate_row.empty:
-                                _exchange_rate = exchange_rate_row.iloc[0]['close']
-                                cash_value = round(float(cash_value_original) / float(_exchange_rate), 2)
+                            if finance_currency == 'USD':
+                                cash_value = cash_value_original
                             else:
-                                cash_value = float(cash_value_original)  # Fallback to original if no exchange rate found
+                                latest_bs_date = pd.to_datetime(date_columns[0])
+                                currency_df = self.currency(finance_currency + '=X')
+                                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+                                exchange_rate_row = currency_df[currency_df['report_date'] <= latest_bs_date].tail(1)
+                                if not exchange_rate_row.empty:
+                                    _exchange_rate = exchange_rate_row.iloc[0]['close']
+                                    cash_value = round(float(cash_value_original) / float(_exchange_rate), 2)
+                                else:
+                                    cash_value = float(cash_value_original)
 
         add_cell("C", row, cash_value, number_format='#,##0')
 
@@ -1737,12 +1770,13 @@ class Ticker:
 
         shares_row = row + 1
         add_cell("B", (row := row + 1), "Outstanding Shares", font=bold, fill=orange_fill)
-        mc_df = self.market_capitalization()
-        shares_value = 0
-        if not mc_df.empty:
-            shares_value = mc_df.iloc[-1]['shares_outstanding']
-            if pd.isna(shares_value):
-                shares_value = 0
+        if shares_value is None:
+            mc_df = self.market_capitalization()
+            shares_value = 0
+            if not mc_df.empty:
+                shares_value = mc_df.iloc[-1]['shares_outstanding']
+                if pd.isna(shares_value):
+                    shares_value = 0
         add_cell("C", row, shares_value, number_format='#,##0')
 
         fair_price_row = row + 1
@@ -1751,18 +1785,16 @@ class Ticker:
 
         current_price_row = row + 1
         add_cell("B", (row := row + 1), "Current Price", font=bold, fill=orange_fill)
-        price_df = self.price()
-        if not price_df.empty:
-            current_price = price_df.iloc[-1]['close']
-        else:
-            current_price = 0
+        if current_price is None:
+            price_df = self.price()
+            current_price = price_df.iloc[-1]['close'] if not price_df.empty else 0
         add_cell("C", row, current_price, number_format='0.00')
 
         margin_row = row + 1
         add_cell("B", (row := row + 1), "Margin of safety", font=bold, fill=orange_fill)
         add_cell("C", row, f"=(C{fair_price_row}-C{current_price_row})/C{fair_price_row}", number_format='0.00%')
-        add_border(37, row, ['B', 'C'])
-        add_border(44, 44, ['B', 'C'], Side(style='thick', color='FFDD5E56'))
+        add_border(31, row, ['B', 'C'])
+        add_border(38, 38, ['B', 'C'], Side(style='thick', color='FFDD5E56'))
 
         return {
             'ev_row': ev_row,
@@ -1802,47 +1834,47 @@ class Ticker:
         cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='left', vertical='center')
         cell.number_format = '0.00'
-        add_border(37, 38, ['E'], Side(style='thick', color='FF51A39A'))
-        # Fair Price (F37:F38)
+        add_border(31, 32, ['E'], Side(style='thick', color='FF51A39A'))
+        # Fair Price (F31:F32)
         ws.merge_cells(f'F{ev_row}:F{cash_row}')
         cell = ws[f'F{ev_row}']
         cell.value = f"=C{fair_price_row}"
         cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
         cell.number_format = '0.00'
-        add_border(37, 38, ['F'], Side(style='thick', color='FF51A39A'))
+        add_border(31, 32, ['F'], Side(style='thick', color='FF51A39A'))
 
-        # Current Price (E40:E41)
+        # Current Price (E34:E35)
         ws.merge_cells(f'E{equity_row}:E{shares_row}')
         cell = ws[f'E{equity_row}']
         cell.value = f"Current Price"
         cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='left', vertical='center')
         cell.number_format = '0.00'
-        add_border(40, 41, ['E'], Side(style='thick', color='FF51A39A'))
-        # Current Price (F40:F41)
+        add_border(34, 35, ['E'], Side(style='thick', color='FF51A39A'))
+        # Current Price (F34:F35)
         ws.merge_cells(f'F{equity_row}:F{shares_row}')
         cell = ws[f'F{equity_row}']
         cell.value = f"=C{current_price_row}"
         cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
         cell.number_format = '0.00'
-        add_border(40, 41, ['F'], Side(style='thick', color='FF51A39A'))
+        add_border(34, 35, ['F'], Side(style='thick', color='FF51A39A'))
 
-        # Buy/Sell (E43:E44)
+        # Buy/Sell (E37:E38)
         ws.merge_cells(f'E{current_price_row}:E{margin_row}')
         cell = ws[f'E{current_price_row}']
         cell.value = f'Buy / Sell'
         cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='left', vertical='center')
-        add_border(43, 44, ['E'], Side(style='thick', color='FF51A39A'))
-        # Buy/Sell (F43:F44)
+        add_border(37, 38, ['E'], Side(style='thick', color='FF51A39A'))
+        # Buy/Sell (F37:F38)
         ws.merge_cells(f'F{current_price_row}:F{margin_row}')
         cell = ws[f'F{current_price_row}']
         cell.value = f'=IF(C{fair_price_row}>C{current_price_row},"Buy","Sell")'
         cell.font = Font(size=15, bold=True)
         cell.alignment = Alignment(horizontal='right', vertical='center')
-        add_border(43, 44, ['F'], Side(style='thick', color='FF51A39A'))
+        add_border(37, 38, ['F'], Side(style='thick', color='FF51A39A'))
 
         # Add conditional formatting for Buy/Sell font color
         # Green font for "Buy"
@@ -1854,6 +1886,388 @@ class Ticker:
         red_font = Font(color='FFDD5E56', size=15, bold=True)
         sell_rule = CellIsRule(operator='equal', formula=['"Sell"'], font=red_font)
         ws.conditional_formatting.add(f'F{current_price_row}:F{margin_row}', sell_rule)
+
+    def dcf_data(self) -> Dict:
+        """Compute a full DCF valuation and return structured data.
+
+        Performs the same analysis as dcf() but returns all inputs, intermediate
+        calculations, and results as a Python dictionary instead of an Excel file.
+
+        Returns:
+            Dict with keys:
+                - symbol (str)
+                - discount_rate (dict): WACC components and computed values
+                - growth_estimates (dict): Historical growth details and 3Y CAGRs
+                - dcf_template (dict): Growth assumptions, 10-year projections, historical FCF margin
+                - dcf_value (dict): Enterprise value, fair price, recommendation
+        """
+        import json
+
+        # ===== Helper: extract recent growth details from DataFrame =====
+        def _get_growth_details(growth_df, years=3):
+            if growth_df.empty:
+                return []
+            recent = growth_df.tail(years)
+            details = []
+            for _, row_data in recent.iterrows():
+                date_str = pd.to_datetime(row_data['report_date']).strftime("%Y-%m-%d")
+                metric_name = [col for col in row_data.index
+                               if col not in ['symbol', 'report_date', 'yoy_growth']
+                               and not col.startswith('prev_year_')][0]
+                current_val = row_data.get(metric_name, 0)
+                yoy = row_data.get('yoy_growth', 0)
+                details.append({'date': date_str, 'value': current_val, 'yoy': yoy})
+            while len(details) < years:
+                details.insert(0, {'date': 'N/A', 'value': 0, 'yoy': 0})
+            return details[-years:]
+
+        # ===== Helper: 3-year CAGR (matches Excel formula logic) =====
+        def _compute_cagr(start_val, end_val):
+            start_val = float(start_val) if start_val else 0
+            end_val = float(end_val) if end_val else 0
+            if start_val <= 0:
+                return "Turned Positive" if end_val > 0 else "N/A"
+            if end_val <= 0:
+                return "Turned Negative"
+            return (end_val / start_val) ** 0.5 - 1
+
+        # ========== 1. Fetch all required data ==========
+        wacc_df = self.wacc()
+        if wacc_df.empty:
+            raise ValueError(
+                f"Cannot calculate DCF for {self.ticker}: WACC data is unavailable. "
+                f"This typically means the ticker has no financial statements (e.g. ETFs, indices)."
+            )
+        last_wacc = wacc_df.iloc[-1]
+
+        revenue_growth = self.annual_revenue_yoy_growth()
+        revenue_details = _get_growth_details(revenue_growth, 3)
+
+        eps_yoy_df = self.quarterly_ttm_eps_yoy_growth()
+        treasure_df = self.treasure.daily_treasure_yield()
+
+        ttm_fcf_df = self.ttm_fcf()
+        ttm_revenue_df = self.ttm_revenue()
+        bs_df = self.quarterly_balance_sheet().df()
+        mc_df = self.market_capitalization()
+        price_df = self.price()
+        fcf_margin_df = self.annual_fcf_margin()
+
+        company_info = self.company_meta.get_company_info(self.ticker)
+        finance_currency = (
+            company_info.get("financial_currency") if company_info else "USD"
+        )
+
+        # ========== 2. Discount rate computation ==========
+        # Compute treasury 5Y avg first so it can serve as risk_free_rate.
+        # This keeps Python and Excel aligned (C8 = =L{treasury_avg_row}).
+        _current_yield = float(last_wacc['treasure_10y_yield'])
+        if not treasure_df.empty and 'bc10_year' in treasure_df.columns:
+            _tr = treasure_df.copy()
+            _tr['report_date'] = pd.to_datetime(_tr['report_date'])
+            _cutoff = pd.Timestamp.now() - pd.DateOffset(years=5)
+            _recent = _tr[_tr['report_date'] >= _cutoff]['bc10_year'].dropna()
+            if not _recent.empty:
+                _tr_year = _tr[_tr['report_date'] >= _cutoff][['report_date', 'bc10_year']].dropna(subset=['bc10_year']).copy()
+                _tr_year['year'] = _tr_year['report_date'].dt.year
+                _annual = _tr_year.groupby('year')['bc10_year'].mean()
+                risk_free_rate = float(_annual.mean())
+            else:
+                risk_free_rate = _current_yield
+        else:
+            risk_free_rate = _current_yield
+
+        report_date = pd.to_datetime(last_wacc["report_date"]).strftime("%Y-%m-%d")
+        market_cap = float(last_wacc['market_capitalization'])
+        total_debt = float(last_wacc['total_debt_usd'])
+        interest_expense = float(last_wacc['interest_expense_usd'])
+        beta_5y = float(last_wacc['beta_5y'])
+        expected_market_return = float(last_wacc['sp500_10y_cagr'])
+        tax_rate = float(last_wacc['tax_rate_for_calcs'])
+        pretax_income = float(last_wacc['pretax_income_usd'])
+        tax_provision = float(last_wacc['tax_provision_usd'])
+
+        total_capital = market_cap + total_debt
+        weight_of_debt = total_debt / total_capital if total_capital > 0 else 0
+        weight_of_equity = market_cap / total_capital if total_capital > 0 else 0
+        cost_of_debt = interest_expense / total_debt if total_debt > 0 else 0
+        cost_of_equity = risk_free_rate + beta_5y * (expected_market_return - risk_free_rate)
+        wacc = weight_of_debt * cost_of_debt * (1 - tax_rate) + weight_of_equity * cost_of_equity
+
+        # ========== 3. Growth estimates & CAGRs ==========
+        rev_cagr = _compute_cagr(revenue_details[0]['value'], revenue_details[2]['value'])
+
+        # EPS annual snapshots: same quarter (month/day) each year, going back up to 10 years.
+        # Use the latest quarter date as anchor and step back one year at a time.
+        eps_details = []
+        eps_cagr = None
+        eps_cagr_years = 0
+
+        if not eps_yoy_df.empty and 'ttm_eps' in eps_yoy_df.columns:
+            eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date'])
+            latest_date = eps_yoy_df['report_date'].max()
+            target_month = latest_date.month
+            target_day = latest_date.day
+
+            # Collect one row per year for up to 10 prior years
+            annual_rows = []
+            for i in range(10):
+                target_year = latest_date.year - i
+                mask = (
+                    (eps_yoy_df['report_date'].dt.year == target_year) &
+                    (eps_yoy_df['report_date'].dt.month == target_month) &
+                    (eps_yoy_df['report_date'].dt.day == target_day)
+                )
+                match = eps_yoy_df[mask]
+                if not match.empty:
+                    annual_rows.append(match.iloc[0])
+
+            annual_rows = list(reversed(annual_rows))  # chronological order
+
+            for row_data in annual_rows:
+                eps_details.append({
+                    'date': row_data['report_date'].strftime("%Y-%m-%d"),
+                    'value': float(row_data.get('ttm_eps', 0) or 0),
+                    'yoy': float(row_data.get('yoy_growth', 0) or 0),
+                })
+
+            # CAGR: find earliest row with positive TTM EPS as the start point
+            if annual_rows:
+                end_eps = float(annual_rows[-1]['ttm_eps'] or 0)
+                if end_eps > 0:
+                    for j, row_data in enumerate(annual_rows):
+                        start_eps = float(row_data['ttm_eps'] or 0)
+                        if start_eps > 0:
+                            n = len(annual_rows) - 1 - j
+                            if n > 0:
+                                eps_cagr = (end_eps / start_eps) ** (1.0 / n) - 1
+                                eps_cagr_years = n
+                            break
+
+        # ========== 4. DCF template parameters ==========
+        # Terminal rate: mean of annual-average 10Y treasury yields over last 5 years.
+        # Using annual averages (not raw data points) so Python and the Excel AVERAGE formula agree exactly.
+        treasury_annual_details = []
+        if not treasure_df.empty and 'bc10_year' in treasure_df.columns:
+            treasure_df['report_date'] = pd.to_datetime(treasure_df['report_date'])
+            cutoff = pd.Timestamp.now() - pd.DateOffset(years=5)
+            recent = treasure_df[treasure_df['report_date'] >= cutoff][
+                ['report_date', 'bc10_year']
+            ].dropna(subset=['bc10_year']).copy()
+            if not recent.empty:
+                recent['year'] = recent['report_date'].dt.year
+                annual_avgs = (
+                    recent.groupby('year')['bc10_year'].mean()
+                    .reset_index().sort_values('year')
+                )
+                for _, r in annual_avgs.iterrows():
+                    treasury_annual_details.append({
+                        'year': int(r['year']),
+                        'avg_yield': float(r['bc10_year']),
+                    })
+                growth_rate_terminal = float(annual_avgs['bc10_year'].mean())
+            else:
+                growth_rate_terminal = risk_free_rate
+        else:
+            growth_rate_terminal = risk_free_rate
+
+        # Near-term growth rate (1~5Y): EPS CAGR over available years, cap 20% floor 5%
+        if eps_cagr is not None:
+            growth_rate_1_5y = max(min(eps_cagr, 0.20), 0.05)
+        else:
+            growth_rate_1_5y = 0.05
+
+        # Mid-term rate (6~10Y): year-6 linear interpolation start point
+        growth_rate_6_10y = growth_rate_1_5y - (growth_rate_1_5y - growth_rate_terminal) / 5
+        discount_rate = wacc
+
+        # Revenue-specific growth rates (for FCF margin computation)
+        rev_growth_1_5y = max(min(rev_cagr, 0.20), 0.05) if isinstance(rev_cagr, (int, float)) else 0.05
+        rev_growth_6_10y = rev_growth_1_5y - (rev_growth_1_5y - growth_rate_terminal) / 5
+
+        # EPS CAGR raw value for display — cap/floor is applied in the Excel C12 formula
+        eps_cagr_display = eps_cagr if eps_cagr is not None else 0.0
+
+        # ========== 5. TTM values ==========
+        base_fcf = 0
+        if not ttm_fcf_df.empty:
+            base_fcf = float(ttm_fcf_df.iloc[-1]['ttm_free_cash_flow_usd'])
+
+        ttm_revenue_value = 0
+        ttm_revenue_label = "TTM Revenue N/A"
+        ttm_period = ""
+        end_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+        if not ttm_revenue_df.empty:
+            latest_ttm_rev = ttm_revenue_df.iloc[-1]
+            ttm_revenue_value = float(latest_ttm_rev['ttm_total_revenue_usd'])
+            quarters = json.loads(latest_ttm_rev['report_date_2_revenue'])
+            quarter_dates = sorted(quarters.keys())
+            start_date = pd.to_datetime(quarter_dates[0]).strftime("%Y-%m-%d")
+            end_date = pd.to_datetime(quarter_dates[-1]).strftime("%Y-%m-%d")
+            ttm_revenue_label = f"TTM Revenue (USD | {start_date} ~ {end_date})"
+            ttm_period = f"{start_date} ~ {end_date}"
+
+        # ========== 6. 10-year FCF projections ==========
+        ttm_end_date = pd.to_datetime(end_date)
+        projections = []
+
+        # Year 0 (TTM base)
+        fcf_margin_0 = base_fcf / ttm_revenue_value if ttm_revenue_value != 0 else 0
+        projections.append({
+            "year": 0,
+            "date": ttm_end_date.strftime("%Y-%m-%d"),
+            "fcf": base_fcf,
+            "terminal_value": 0.0,
+            "total_value": base_fcf,
+            "fcf_margin": fcf_margin_0,
+        })
+
+        prev_fcf = base_fcf
+        prev_rev = ttm_revenue_value
+        for i in range(1, 11):
+            if i <= 5:
+                rate = growth_rate_1_5y
+                rev_rate = rev_growth_1_5y
+            else:
+                rate = growth_rate_1_5y - (i - 5) * (growth_rate_1_5y - growth_rate_terminal) / 5
+                rev_rate = rev_growth_1_5y - (i - 5) * (rev_growth_1_5y - growth_rate_terminal) / 5
+
+            fcf = prev_fcf * (1 + rate)
+            proj_rev = prev_rev * (1 + rev_rate)
+
+            future_date = ttm_end_date + pd.DateOffset(years=i)
+
+            tv = 0.0
+            if i == 10:
+                tv_denom = discount_rate - growth_rate_terminal
+                tv = fcf * (1 + growth_rate_terminal) / tv_denom if tv_denom != 0 else 0.0
+
+            total = fcf + tv
+            margin = fcf / proj_rev if proj_rev != 0 else 0
+
+            projections.append({
+                "year": i,
+                "date": f"{future_date.year}/{future_date.month}/{future_date.day}",
+                "fcf": fcf,
+                "terminal_value": tv,
+                "total_value": total,
+                "fcf_margin": margin,
+            })
+            prev_fcf = fcf
+            prev_rev = proj_rev
+
+        # ========== 7. Enterprise value (NPV) ==========
+        total_values = [p["total_value"] for p in projections[1:]]  # Years 1-10
+        ev = sum(v / (1 + discount_rate) ** i for i, v in enumerate(total_values, 1))
+
+        # ========== 8. Cash from balance sheet ==========
+        cash_value = 0.0
+        if not bs_df.empty:
+            cash_rows = bs_df[bs_df['Breakdown'].str.contains(
+                'Cash, Cash Equivalents & Short Term Investments', na=False)]
+            if not cash_rows.empty:
+                date_columns = [col for col in bs_df.columns if col != 'Breakdown']
+                if date_columns:
+                    cash_val_orig = cash_rows.iloc[0][date_columns[0]]
+                    if not pd.isna(cash_val_orig) and cash_val_orig != '*':
+                        if finance_currency == 'USD':
+                            cash_value = float(cash_val_orig)
+                        else:
+                            latest_bs_date = pd.to_datetime(date_columns[0])
+                            currency_df = self.currency(finance_currency + '=X')
+                            currency_df['report_date'] = pd.to_datetime(
+                                currency_df['report_date']).astype('datetime64[us]')
+                            ex_row = currency_df[
+                                currency_df['report_date'] <= latest_bs_date].tail(1)
+                            if not ex_row.empty:
+                                cash_value = round(
+                                    float(cash_val_orig) / float(ex_row.iloc[0]['close']), 2)
+                            else:
+                                cash_value = float(cash_val_orig)
+
+        # ========== 9. Shares & current price ==========
+        shares_outstanding = 0.0
+        if not mc_df.empty:
+            shares_val = mc_df.iloc[-1]['shares_outstanding']
+            if not pd.isna(shares_val):
+                shares_outstanding = float(shares_val)
+
+        current_price = 0.0
+        if not price_df.empty:
+            current_price = float(price_df.iloc[-1]['close'])
+
+        # ========== 10. Fair price & recommendation ==========
+        equity_value = ev + cash_value - total_debt
+        fair_price = equity_value / shares_outstanding if shares_outstanding > 0 else 0
+        margin_of_safety = (
+            (fair_price - current_price) / fair_price if fair_price != 0 else 0
+        )
+        recommendation = "Buy" if fair_price > current_price else "Sell"
+
+        # ========== 11. Historical FCF margin ==========
+        historical_fcf_margin = []
+        if not fcf_margin_df.empty:
+            recent = fcf_margin_df.tail(5).dropna(subset=['fcf_margin'])
+            for _, row_data in recent.iterrows():
+                historical_fcf_margin.append({
+                    "date": pd.to_datetime(row_data['report_date']).strftime("%Y/%m/%d"),
+                    "margin": float(row_data['fcf_margin']),
+                })
+
+        # ========== Return structured result ==========
+        return {
+            "symbol": self.ticker,
+            "discount_rate": {
+                "report_date": report_date,
+                "market_cap": market_cap,
+                "beta_5y": beta_5y,
+                "total_debt": total_debt,
+                "interest_expense": interest_expense,
+                "pretax_income": pretax_income,
+                "tax_provision": tax_provision,
+                "risk_free_rate": risk_free_rate,
+                "expected_market_return": expected_market_return,
+                "weight_of_debt": weight_of_debt,
+                "weight_of_equity": weight_of_equity,
+                "cost_of_debt": cost_of_debt,
+                "cost_of_equity": cost_of_equity,
+                "tax_rate": tax_rate,
+                "wacc": wacc,
+            },
+            "growth_estimates": {
+                "currency": finance_currency,
+                "revenue": {"details": revenue_details, "cagr_3y": rev_cagr},
+                "eps": {"details": eps_details, "cagr_10y": eps_cagr_display, "cagr_years": eps_cagr_years},
+                "treasury": {"details": treasury_annual_details, "avg_5y": growth_rate_terminal},
+            },
+            "dcf_template": {
+                "growth_rate_1_5y": growth_rate_1_5y,
+                "growth_rate_6_10y": growth_rate_6_10y,
+                "growth_rate_terminal": growth_rate_terminal,
+                "discount_rate": discount_rate,
+                "ttm_revenue": ttm_revenue_value,
+                "ttm_revenue_label": ttm_revenue_label,
+                "ttm_period": ttm_period,
+                "base_fcf": base_fcf,
+                "end_date": end_date,
+                "revenue_growth_1_5y": rev_growth_1_5y,
+                "revenue_growth_6_10y": rev_growth_6_10y,
+                "projections": projections,
+                "historical_fcf_margin": historical_fcf_margin,
+            },
+            "dcf_value": {
+                "report_date": report_date,
+                "enterprise_value": ev,
+                "cash": cash_value,
+                "total_debt": total_debt,
+                "equity_value": equity_value,
+                "shares_outstanding": shares_outstanding,
+                "fair_price": fair_price,
+                "current_price": current_price,
+                "margin_of_safety": margin_of_safety,
+                "recommendation": recommendation,
+            },
+        }
 
     def dcf(self) -> Dict[str, str]:
         """Generate a Discounted Cash Flow (DCF) valuation Excel spreadsheet.
@@ -1870,8 +2284,6 @@ class Ticker:
                 - file_path (str): Path to the generated Excel workbook
                 - description (str): Description of the DCF analysis file
         """
-        import json
-
         # Initialize workbook and styles
         wb = Workbook()
         ws = wb.active
@@ -1879,14 +2291,6 @@ class Ticker:
         bold = Font(bold=True)
         orange_fill = PatternFill(start_color="FFE6DB74", end_color="FFE6DB74", fill_type="solid")
         thin = Side(style='medium', color='FFB1B9F9')
-
-        # Get company info and finance currency
-        company_info = self.company_meta.get_company_info(self.ticker)
-        finance_currency = (
-            company_info.get("financial_currency")
-            if company_info
-            else "USD"
-        )
 
         # Set column widths
         for col, width in zip(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"],
@@ -1919,80 +2323,73 @@ class Ticker:
                     bottom = border_side if _row == end_row else None
                     _cell.border = Border(left=left, right=right, top=top, bottom=bottom)
 
-        # Helper function to extract growth details from dataframe
-        def get_growth_details(growth_df, years=3):
-            if growth_df.empty:
-                return []
-            recent = growth_df.tail(years)
-            details = []
-            for _, row_data in recent.iterrows():
-                date_str = pd.to_datetime(row_data['report_date']).strftime("%Y-%m-%d")
-                metric_name = [col for col in row_data.index if col not in ['symbol', 'report_date', 'yoy_growth'] and not col.startswith('prev_year_')][0]
-                current_val = row_data.get(metric_name, 0)
-                yoy = row_data.get('yoy_growth', 0)
-                details.append({'date': date_str, 'value': current_val, 'yoy': yoy})
-            while len(details) < years:
-                details.insert(0, {'date': 'N/A', 'value': 0, 'yoy': 0})
-            return details[-years:]
+        # ========== Fetch all data via dcf_data() ==========
+        data = self.dcf_data()
+        dr = data["discount_rate"]
+        ge = data["growth_estimates"]
+        dt = data["dcf_template"]
+        dv = data["dcf_value"]
 
-        # ========== Fetch Required Data ==========
-        wacc = self.wacc()
-        if wacc.empty:
-            raise ValueError(
-                f"Cannot calculate DCF for {self.ticker}: WACC data is unavailable. "
-                f"This typically means the ticker has no financial statements (e.g. ETFs, indices)."
-            )
-        last_wacc = wacc.iloc[-1]
+        # Reconstruct last_wacc-like dict for _add_discount_rate_section
+        last_wacc = {
+            "report_date": dr["report_date"],
+            "market_capitalization": dr["market_cap"],
+            "beta_5y": dr["beta_5y"],
+            "total_debt_usd": dr["total_debt"],
+            "interest_expense_usd": dr["interest_expense"],
+            "pretax_income_usd": dr["pretax_income"],
+            "tax_provision_usd": dr["tax_provision"],
+            "treasure_10y_yield": dr["risk_free_rate"],
+            "sp500_10y_cagr": dr["expected_market_return"],
+            "tax_rate_for_calcs": dr["tax_rate"],
+        }
 
-        revenue_growth = self.annual_revenue_yoy_growth()
-        fcf_growth = self.annual_fcf_yoy_growth()
-        ebitda_growth = self.annual_ebitda_yoy_growth()
-        net_income_growth = self.annual_net_income_yoy_growth()
+        revenue_details = ge["revenue"]["details"]
+        eps_details = ge["eps"]["details"]
+        eps_cagr_10y = ge["eps"]["cagr_10y"]
+        eps_cagr_years = ge["eps"]["cagr_years"]
+        treasury_details = ge["treasury"]["details"]
+        finance_currency = ge["currency"]
 
-        revenue_details = get_growth_details(revenue_growth, 3)
-        fcf_details = get_growth_details(fcf_growth, 3)
-        ebitda_details = get_growth_details(ebitda_growth, 3)
-        net_income_details = get_growth_details(net_income_growth, 3)
+        base_fcf = dt["base_fcf"]
+        end_date = dt["end_date"]
 
-        # Get TTM FCF for base FCF value
-        ttm_fcf_df = self.ttm_fcf()
-        if not ttm_fcf_df.empty:
-            latest_ttm = ttm_fcf_df.iloc[-1]
-            base_fcf = latest_ttm['ttm_free_cash_flow_usd']
-        else:
-            base_fcf = 0
-
-        # Get end_date from TTM revenue for DCF template
-        ttm_revenue_df = self.ttm_revenue()
-        if not ttm_revenue_df.empty:
-            latest_ttm_rev = ttm_revenue_df.iloc[-1]
-            quarters = json.loads(latest_ttm_rev['report_date_2_revenue'])
-            quarter_dates = sorted(quarters.keys())
-            end_date = pd.to_datetime(quarter_dates[-1]).strftime("%Y-%m-%d")
-        else:
-            end_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+        # ========== Add US 10Y Treasury Yield Section (K/L cols, row 2) ==========
+        # Must be written first so treasury_avg_row is known before discount rate section.
+        treasury_rows = self._add_treasury_section(ws, treasury_details, add_cell, add_border, bold)
 
         # ========== Add Discount Rate Estimates Section ==========
-        self._add_discount_rate_section(ws, last_wacc, add_cell, add_border, bold, orange_fill, thin)
+        self._add_discount_rate_section(ws, last_wacc, add_cell, add_border, bold, orange_fill, thin,
+                                        treasury_avg_row=treasury_rows['treasury_avg_row'])
 
         # ========== Add Growth Estimates Section ==========
         growth_rows = self._add_growth_estimates_section(
-            ws, revenue_details, fcf_details, ebitda_details, net_income_details,
+            ws, revenue_details, eps_details, eps_cagr_years,
             finance_currency, add_cell, add_border, bold, orange_fill, thin
         )
 
         # ========== Add DCF Template Section ==========
         template_rows = self._add_dcf_template_section(
             ws, base_fcf, end_date,
-            growth_rows['revenue_cagr_row'], growth_rows['fcf_cagr_row'],
-            growth_rows['ebitda_cagr_row'], growth_rows['ni_cagr_row'],
-            revenue_details, add_cell, add_border, bold, orange_fill, thin
+            growth_rows['revenue_cagr_row'],
+            revenue_details, add_cell, add_border, bold, orange_fill, thin,
+            ttm_revenue_value=dt["ttm_revenue"],
+            ttm_revenue_label=dt["ttm_revenue_label"],
+            historical_fcf_margins=dt["historical_fcf_margin"],
+            growth_rate_1_5y=dt["growth_rate_1_5y"],
+            growth_rate_terminal=dt["growth_rate_terminal"],
+            eps_avg_row=growth_rows['eps_avg_row'],
+            treasury_avg_row=treasury_rows['treasury_avg_row'],
         )
 
         # ========== Add DCF Value Section ==========
         value_rows = self._add_dcf_value_section(
             ws, template_rows['total_value_row'], last_wacc, finance_currency,
-            add_cell, add_border, bold, orange_fill, thin
+            add_cell, add_border, bold, orange_fill, thin,
+            cash_value=dv["cash"],
+            shares_value=dv["shares_outstanding"],
+            current_price=dv["current_price"],
+            discount_rate_row=template_rows['discount_rate_row'],
         )
 
         # ========== Add Key Metrics Display ==========

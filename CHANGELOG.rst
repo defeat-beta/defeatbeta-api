@@ -3,6 +3,7 @@ Change Log
 
 0.0.51
 -------
+- refactor: DCF model overhaul — 3-stage growth, EPS CAGR, Treasury yield, dcf_data() API [`#179 <https://github.com/defeat-beta/defeatbeta-api/issues/179>`_]
 
 0.0.50
 -------
