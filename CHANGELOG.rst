@@ -1,6 +1,9 @@
 Change Log
 ===========
 
+0.0.53
+-------
+
 0.0.52
 -------
 - fix: bump requires-python to >=3.11 in pyproject.toml to match actual dependency floor (pandas>=3.0.1, numpy>=2.2.5) and unblock uv sync [`#180 <https://github.com/defeat-beta/defeatbeta-api/issues/180>`_]
