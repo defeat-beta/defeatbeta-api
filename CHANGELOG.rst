@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.52
+-------
+- fix: bump requires-python to >=3.11 in pyproject.toml to match actual dependency floor (pandas>=3.0.1, numpy>=2.2.5) and unblock uv sync [`#180 <https://github.com/defeat-beta/defeatbeta-api/issues/180>`_]
+
 0.0.51
 -------
 - refactor: DCF model overhaul — 3-stage growth, EPS CAGR, Treasury yield, dcf_data() API [`#179 <https://github.com/defeat-beta/defeatbeta-api/issues/179>`_]
