@@ -285,9 +285,12 @@ class Ticker:
         )
 
     def news(self) -> News:
-        url = self.huggingface_client.get_url_path(stock_news)
-        sql = load_sql("select_news_by_symbol", ticker = self.ticker, url = url)
-        return News(self.duckdb_client.query(sql))
+        return News(
+            self.ticker,
+            self.duckdb_client,
+            self.huggingface_client,
+            self.log_level,
+        )
 
     def revenue_by_segment(self) -> pd.DataFrame:
         return self._revenue_by_breakdown('segment')

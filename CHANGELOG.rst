@@ -4,6 +4,7 @@ Change Log
 0.0.53
 -------
 - refactor: Transcripts loads metadata and per-quarter paragraphs lazily — column-pruned list query and server-side filtered + UNNESTed detail query; ~478× smaller list payload on AAPL with public API unchanged [`#182 <https://github.com/defeat-beta/defeatbeta-api/issues/182>`_]
+- refactor: News loads metadata and per-article paragraphs lazily — column-pruned list query and server-side uuid+ticker filtered detail query; ~11.5× smaller list payload on AAPL with public API unchanged [`#183 <https://github.com/defeat-beta/defeatbeta-api/issues/183>`_]
 
 0.0.52
 -------

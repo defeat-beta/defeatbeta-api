@@ -1,1 +1,0 @@
-SELECT * FROM '{url}' WHERE related_symbols = '{ticker}' ORDER BY report_date ASC
