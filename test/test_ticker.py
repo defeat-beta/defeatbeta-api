@@ -4,7 +4,7 @@ import unittest
 from defeatbeta_api.data.ticker import Ticker
 
 class TestTicker(unittest.TestCase):
-    SYMBOL = "QCOM"
+    SYMBOL = "MSFT"
 
     @classmethod
     def setUpClass(cls):
@@ -110,7 +110,7 @@ class TestTicker(unittest.TestCase):
         print(transcript_list)
         if transcript_list.empty:
             self.skipTest(f"No earning call transcripts available for {self.SYMBOL}")
-        row = transcript_list.iloc[0]
+        row = transcript_list.iloc[-1]
         fiscal_year, fiscal_quarter = int(row["fiscal_year"]), int(row["fiscal_quarter"])
         print(transcripts.get_transcript(fiscal_year, fiscal_quarter))
         transcripts.print_pretty_table(fiscal_year, fiscal_quarter)
