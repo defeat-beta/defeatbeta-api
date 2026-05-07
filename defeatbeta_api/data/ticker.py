@@ -277,7 +277,12 @@ class Ticker:
         return self._generate_margin('fcf', 'annual', 'free_cash_flow', 'fcf_margin')
 
     def earning_call_transcripts(self) -> Transcripts:
-        return Transcripts(self.ticker, self._query_data(stock_earning_call_transcripts), self.log_level)
+        return Transcripts(
+            self.ticker,
+            self.duckdb_client,
+            self.huggingface_client,
+            self.log_level,
+        )
 
     def news(self) -> News:
         url = self.huggingface_client.get_url_path(stock_news)

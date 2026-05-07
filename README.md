@@ -161,63 +161,26 @@ transcripts.get_transcripts_list()
 ```text
 >>> transcripts = ticker.earning_call_transcripts()
 >>> transcripts.get_transcripts_list()
-   symbol  fiscal_year  fiscal_quarter report_date                                        transcripts  transcripts_id
-0    TSLA         2011               2  2011-08-03  [{'paragraph_number': 1, 'speaker': 'Executive...          303288
-1    TSLA         2011               3  2011-11-03  [{'paragraph_number': 1, 'speaker': 'Executive...          303289
-2    TSLA         2011               4  2012-02-16  [{'paragraph_number': 1, 'speaker': 'Operator'...          303290
-3    TSLA         2012               1  2012-05-09  [{'paragraph_number': 1, 'speaker': 'Executive...          303291
-4    TSLA         2012               2  2012-07-25  [{'paragraph_number': 1, 'speaker': 'Executive...          303292
-5    TSLA         2012               3  2012-11-05  [{'paragraph_number': 1, 'speaker': 'Executive...          303293
-6    TSLA         2012               4  2013-02-20  [{'paragraph_number': 1, 'speaker': 'Executive...          303294
-7    TSLA         2013               1  2013-05-08  [{'paragraph_number': 1, 'speaker': 'Executive...          303295
-8    TSLA         2013               2  2013-08-07  [{'paragraph_number': 1, 'speaker': 'Executive...          303296
-9    TSLA         2013               3  2013-11-05  [{'paragraph_number': 1, 'speaker': 'Executive...          303297
-10   TSLA         2013               4  2014-02-19  [{'paragraph_number': 1, 'speaker': 'Executive...          303298
-11   TSLA         2014               1  2014-05-08  [{'paragraph_number': 1, 'speaker': 'Executive...          303299
-12   TSLA         2014               2  2014-08-01  [{'paragraph_number': 1, 'speaker': 'Executive...          303300
-13   TSLA         2014               3  2014-11-05  [{'paragraph_number': 1, 'speaker': 'Executive...          303301
-14   TSLA         2014               4  2015-02-12  [{'paragraph_number': 1, 'speaker': 'Executive...          303302
-15   TSLA         2015               1  2015-05-05  [{'paragraph_number': 1, 'speaker': 'Executive...          303303
-16   TSLA         2015               2  2015-07-30  [{'paragraph_number': 1, 'speaker': 'Executive...          303304
-17   TSLA         2015               3  2015-10-30  [{'paragraph_number': 1, 'speaker': 'Executive...          303305
-18   TSLA         2015               4  2016-02-10  [{'paragraph_number': 1, 'speaker': 'Executive...          303306
-19   TSLA         2016               1  2016-05-05  [{'paragraph_number': 1, 'speaker': 'Executive...          303308
-20   TSLA         2016               2  2016-08-03  [{'paragraph_number': 1, 'speaker': 'Executive...          303310
-21   TSLA         2016               3  2016-10-27  [{'paragraph_number': 1, 'speaker': 'Executive...          303312
-22   TSLA         2016               4  2017-02-23  [{'paragraph_number': 1, 'speaker': 'Executive...          303314
-23   TSLA         2017               1  2017-05-04  [{'paragraph_number': 1, 'speaker': 'Executive...          303316
-24   TSLA         2017               2  2017-08-03  [{'paragraph_number': 1, 'speaker': 'Executive...          303318
-25   TSLA         2017               3  2017-11-02  [{'paragraph_number': 1, 'speaker': 'Executive...          303320
-26   TSLA         2017               4  2018-02-07  [{'paragraph_number': 1, 'speaker': 'Executive...          303322
-27   TSLA         2018               1  2018-05-03  [{'paragraph_number': 1, 'speaker': 'Executive...          303324
-28   TSLA         2018               2  2018-08-02  [{'paragraph_number': 1, 'speaker': 'Executive...          303327
-29   TSLA         2018               3  2018-10-25  [{'paragraph_number': 1, 'speaker': 'Executive...          303329
-30   TSLA         2018               4  2019-01-31  [{'paragraph_number': 1, 'speaker': 'Operator'...          303331
-31   TSLA         2019               1  2019-04-25  [{'paragraph_number': 1, 'speaker': 'Operator'...          303333
-32   TSLA         2019               2  2019-07-24  [{'paragraph_number': 1, 'speaker': 'Operator'...          303335
-33   TSLA         2019               3  2019-10-24  [{'paragraph_number': 1, 'speaker': 'Operator'...          303337
-34   TSLA         2019               4  2020-01-30  [{'paragraph_number': 1, 'speaker': 'Operator'...          303339
-35   TSLA         2020               1  2020-04-29  [{'paragraph_number': 1, 'speaker': 'Operator'...          303341
-36   TSLA         2020               2  2020-07-22  [{'paragraph_number': 1, 'speaker': 'Operator'...          303343
-37   TSLA         2020               3  2020-10-21  [{'paragraph_number': 1, 'speaker': 'Operator'...          303345
-38   TSLA         2020               4  2021-01-27  [{'paragraph_number': 1, 'speaker': 'Operator'...          303347
-39   TSLA         2021               1  2021-04-27  [{'paragraph_number': 1, 'speaker': 'Operator'...          303349
-40   TSLA         2021               2  2021-07-26  [{'paragraph_number': 1, 'speaker': 'Operator'...          303350
-41   TSLA         2021               3  2021-10-20  [{'paragraph_number': 1, 'speaker': 'Lars Mora...          303352
-42   TSLA         2021               4  2022-01-26  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303355
-43   TSLA         2022               1  2022-04-20  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303358
-44   TSLA         2022               2  2022-07-20  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303360
-45   TSLA         2022               3  2022-10-19  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303362
-46   TSLA         2022               4  2023-01-25  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303364
-47   TSLA         2023               1  2023-04-19  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303366
-48   TSLA         2023               2  2023-07-19  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303370
-49   TSLA         2023               3  2023-10-18  [{'paragraph_number': 1, 'speaker': 'Elon Musk...          303372
-50   TSLA         2023               4  2024-01-24  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303374
-51   TSLA         2024               1  2024-04-23  [{'paragraph_number': 1, 'speaker': 'Martin Vi...          303376
-52   TSLA         2024               2  2024-07-24  [{'paragraph_number': 1, 'speaker': 'Travis Ax...          303378
-53   TSLA         2024               3  2024-10-23  [{'paragraph_number': 1, 'speaker': 'Travis Ax...          303380
-54   TSLA         2024               4  2025-01-29  [{'paragraph_number': 1, 'speaker': 'Operator'...          486436
+   symbol  fiscal_year  fiscal_quarter report_date
+0    TSLA         2011               2  2011-08-03
+1    TSLA         2011               3  2011-11-03
+2    TSLA         2011               4  2012-02-16
+3    TSLA         2012               1  2012-05-09
+4    TSLA         2012               2  2012-07-25
+..    ...          ...             ...         ...
+55   TSLA         2025               1  2025-04-22
+56   TSLA         2025               2  2025-07-23
+57   TSLA         2025               3  2025-10-22
+58   TSLA         2025               4  2026-01-28
+59   TSLA         2026               1  2026-04-22
+
+[60 rows x 4 columns]
 ```
+
+> **Note:** This call returns metadata only. Transcript paragraphs are fetched on demand via
+> `get_transcript(fiscal_year, fiscal_quarter)`, which issues a server-side filtered query
+> (column-pruned + period-filtered) so listing the catalog is cheap regardless of how many
+> quarters are available.
 
 ##### Fetching the Q4 2024 Earnings Call Transcript
 ```python

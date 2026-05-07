@@ -18,22 +18,43 @@ except ImportError:
     from IPython.display import display
     from IPython.core.display import HTML
 
+from defeatbeta_api.client.duckdb_client import DuckDBClient
+from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.client.openai_conf import OpenAIConfiguration
+from defeatbeta_api.data.sql.sql_loader import load_sql
+from defeatbeta_api.utils.const import stock_earning_call_transcripts
 from defeatbeta_api.utils.util import load_transcripts_summary_prompt_temp, load_transcripts_summary_tools_def, \
     unit_map, load_transcripts_analyze_change_prompt, load_transcripts_analyze_change_tools, \
     load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools, nltk_sentences, in_notebook
 
 
-def _unnest(record: pd.DataFrame) -> pd.DataFrame:
-    transcripts_data = record["transcripts"].iloc[0]
-    df_paragraphs = pd.json_normalize(transcripts_data)
-    return df_paragraphs
-
 @dataclass
 class Transcripts:
-    def __init__(self, ticker: str, transcripts: pd.DataFrame, log_level: str):
+    """
+    Lazy accessor for a ticker's earnings call transcripts.
+
+    Two SQL paths are used so the inline `transcripts` paragraph array is only
+    fetched on demand (it accounts for ~99% of the parquet row size):
+
+      - `select_transcripts_list_by_symbol`  → metadata-only list
+      - `select_transcript_by_symbol_and_period` → single quarter, paragraphs
+        already UNNESTed to (paragraph_number, speaker, content)
+
+    The metadata list is memoised on the instance; transcript bodies are not
+    cached here because DuckDB's httpfs cache already handles repeat reads.
+    """
+
+    def __init__(
+        self,
+        ticker: str,
+        duckdb_client: DuckDBClient,
+        huggingface_client: HuggingFaceClient,
+        log_level: str,
+    ):
         self.ticker = ticker
-        self.transcripts = transcripts
+        self.duckdb_client = duckdb_client
+        self.huggingface_client = huggingface_client
+        self._list_cache: Optional[pd.DataFrame] = None
         logging.basicConfig(
             level=log_level,
             format='%(asctime)s %(levelname)s %(name)s - %(message)s',
@@ -43,14 +64,25 @@ class Transcripts:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def get_transcripts_list(self) -> pd.DataFrame:
-        return self.transcripts
+        if self._list_cache is None:
+            url = self.huggingface_client.get_url_path(stock_earning_call_transcripts)
+            sql = load_sql("select_transcripts_list_by_symbol", ticker=self.ticker, url=url)
+            self._list_cache = self.duckdb_client.query(sql)
+        return self._list_cache
 
     def get_transcript(self, fiscal_year: int, fiscal_quarter: int) -> pd.DataFrame:
-        record = self._find_transcripts(fiscal_quarter, fiscal_year)
-        if record.empty:
+        url = self.huggingface_client.get_url_path(stock_earning_call_transcripts)
+        sql = load_sql(
+            "select_transcript_by_symbol_and_period",
+            ticker=self.ticker,
+            url=url,
+            fiscal_year=fiscal_year,
+            fiscal_quarter=fiscal_quarter,
+        )
+        df = self.duckdb_client.query(sql)
+        if df.empty:
             raise ValueError(f"No transcript found for FY{fiscal_year} Q{fiscal_quarter}")
-        df_paragraphs = _unnest(record)
-        return df_paragraphs
+        return df
 
     def analyze_financial_metrics_forecast_for_future_with_ai(self, fiscal_year: int, fiscal_quarter: int, llm: OpenAI, config: Optional[OpenAIConfiguration] = None) -> pd.DataFrame:
         conf = config if config is not None else OpenAIConfiguration()
@@ -429,11 +461,14 @@ class Transcripts:
             return df
 
     def print_pretty_table(self, fiscal_year: int, fiscal_quarter: int) -> str:
-        record = self._find_transcripts(fiscal_quarter, fiscal_year)
+        list_df = self.get_transcripts_list()
+        mask = (list_df['fiscal_year'] == fiscal_year) & \
+               (list_df['fiscal_quarter'] == fiscal_quarter)
+        record = list_df.loc[mask]
         if record.empty:
             raise ValueError(f"No transcript found for FY{fiscal_year} Q{fiscal_quarter}")
         report_date = record["report_date"].iloc[0]
-        df_paragraphs = _unnest(record)
+        df_paragraphs = self.get_transcript(fiscal_year, fiscal_quarter)
         title = f"Earnings Call Transcripts FY{fiscal_year} Q{fiscal_quarter} (Reported on {report_date})\n"
         if in_notebook():
             html = tabulate(df_paragraphs, headers="keys", tablefmt="html", showindex=False)
@@ -443,13 +478,9 @@ class Transcripts:
             print(title + table)
 
     def __str__(self):
-        return self.transcripts.to_string(columns=["symbol", 'fiscal_year', "fiscal_quarter", "report_date"])
+        return self.get_transcripts_list().to_string(
+            columns=["symbol", 'fiscal_year', "fiscal_quarter", "report_date"]
+        )
 
     def __repr__(self):
-        return repr(self.transcripts)
-
-    def _find_transcripts(self, fiscal_quarter, fiscal_year):
-        mask = (self.transcripts['fiscal_year'] == fiscal_year) & \
-               (self.transcripts['fiscal_quarter'] == fiscal_quarter)
-        record = self.transcripts.loc[mask]
-        return record
+        return repr(self.get_transcripts_list())

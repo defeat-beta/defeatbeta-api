@@ -3,6 +3,7 @@ Change Log
 
 0.0.53
 -------
+- refactor: Transcripts loads metadata and per-quarter paragraphs lazily — column-pruned list query and server-side filtered + UNNESTed detail query; ~478× smaller list payload on AAPL with public API unchanged [`#182 <https://github.com/defeat-beta/defeatbeta-api/issues/182>`_]
 
 0.0.52
 -------
