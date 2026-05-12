@@ -44,7 +44,7 @@ Once set up, you can ask directly without any preamble:
 
 ### defeatbeta-earnings-preview
 
-> `/defeatbeta-earnings-preview 阿里巴巴明天公布财报，应该关注什么`
+> `/defeatbeta-earnings-preview What should I watch for Alibaba's earnings tomorrow?`
 
 ### Use in [Claude Desktop](https://claude.ai/desktop/directory)
 
