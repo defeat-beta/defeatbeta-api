@@ -14,13 +14,13 @@ way. Each skill includes a `SKILL.md` file with YAML frontmatter and detailed gu
 | Skill                                               | Description                                                                                                                                                                  |
 |-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [defeatbeta-analyst](./defeatbeta-analyst/SKILL.md) | Professional financial analysis using 60+ data endpoints. Covers fundamental analysis, DCF modeling, valuation, profitability, growth assessment, and industry benchmarking. |
-| [earnings-preview](./earnings-preview/SKILL.md)     | Pre-earnings analysis using consensus estimates, defeatbeta MCP transcript tools, key metrics, bull/base/bear scenarios, catalysts, and trading setup.                        |
+| [defeatbeta-earnings-preview](./defeatbeta-earnings-preview/SKILL.md) | Pre-earnings analysis using consensus estimates, defeatbeta MCP transcript tools, key metrics, bull/base/bear scenarios, catalysts, and trading setup. |
 
 ## Usage
 
 ### Packaging Your Skill
 
-1. Create a ZIP file of the skill folder, for example `defeatbeta-analyst` or `earnings-preview`.
+1. Create a ZIP file of the skill folder, for example `defeatbeta-analyst` or `defeatbeta-earnings-preview`.
 2. The ZIP should contain the skill folder as its root:
 
 ```
