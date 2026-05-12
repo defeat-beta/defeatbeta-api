@@ -32,6 +32,20 @@ defeatbeta-analyst.zip
           └── defeatbeta-api-reference.md       # Complete API documentation
 ```
 
+## Example Prompts
+
+Once set up, you can ask directly without any preamble:
+
+### defeatbeta-analyst
+
+> `/defeatbeta-analyst Analyze AMD's fundamentals`
+> `/defeatbeta-analyst Show me Apple's quarterly income statement`
+> `/defeatbeta-analyst Run a DCF valuation on NVDA`
+
+### defeatbeta-earnings-preview
+
+> `/defeatbeta-earnings-preview 阿里巴巴明天公布财报，应该关注什么`
+
 ### Use in [Claude Desktop](https://claude.ai/desktop/directory)
 
 #### 1. Configure MCP Server
@@ -56,11 +70,7 @@ To avoid specifying the skill and MCP tool in every message, create a dedicated 
 Use the defeatbeta-analyst skill and the defeatbeta-api MCP tool for all financial analysis tasks.
 ```
 
-Once set up, you can ask directly without any preamble:
-
-> `Analyze AMD's fundamentals`
-> `Show me Apple's quarterly income statement`
-> `Run a DCF valuation on NVDA`
+Once set up, use the example prompts above.
 
 ---
 
@@ -88,8 +98,4 @@ To avoid specifying the skill and MCP tool in every message, create a dedicated 
 Use the defeatbeta-analyst skill and the defeatbeta-api MCP tool for all financial analysis tasks.
 ```
 
-Once set up, you can ask directly without any preamble:
-
-> `Analyze AMD's fundamentals`
-> `Show me Apple's quarterly income statement`
-> `Run a DCF valuation on NVDA`
+Once set up, use the example prompts above.
