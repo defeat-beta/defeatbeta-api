@@ -11,6 +11,10 @@ Skills are folders containing instructions and resources that teach AI how to co
 | Skill                                               | Description                                                                                                                                                                  |
 |-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [defeatbeta-analyst](./defeatbeta-analyst/SKILL.md) | Professional financial analysis using 60+ data endpoints. Covers fundamental analysis, DCF modeling, valuation, profitability, growth assessment, and industry benchmarking. |
+| [defeatbeta-3-statement-model](./defeatbeta-3-statement-model/SKILL.md) | Complete, populate, and validate 3-statement financial model templates using DefeatBeta public-company data. |
+| [defeatbeta-xlsx-author](./defeatbeta-xlsx-author/SKILL.md) | Produce `.xlsx` workbook artifacts in headless mode when live Excel tools are unavailable. |
+| [defeatbeta-audit-xls](./defeatbeta-audit-xls/SKILL.md) | Audit spreadsheet formulas, model integrity, balance sheet checks, cash tie-outs, hardcodes, and common spreadsheet errors. |
+| [defeatbeta-clean-data-xls](./defeatbeta-clean-data-xls/SKILL.md) | Clean messy spreadsheet data before analysis, including whitespace, dates, number-as-text, duplicates, and mixed-type columns. |
 
 ## Usage
 
