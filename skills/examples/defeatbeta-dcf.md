@@ -12,7 +12,7 @@ That's it. The skill takes care of: calling the MCP tool, saving the payload, ru
 
 ## What Claude returned
 
-![DCF chat response](images/dcf-aapl-chat.png)
+<img src="images/dcf-aapl-chat.png" alt="DCF chat response" width="600">
 
 In the chat panel, Claude summarized:
 

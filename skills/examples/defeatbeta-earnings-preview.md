@@ -12,7 +12,7 @@ The skill orchestrates several steps in parallel: pulling the most recent transc
 
 ## What Claude returned
 
-![Earnings preview chat response](images/earnings-preview-pdd-chat.png)
+<img src="images/earnings-preview-pdd-chat.png" alt="Earnings preview chat response" width="600">
 
 Claude walked through the high-level takeaways inline:
 
