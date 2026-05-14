@@ -1,6 +1,6 @@
 # Example: DCF Valuation for AAPL
 
-A walkthrough of running `defeatbeta-dcf` in Claude Desktop's cowork to produce a fully-editable DCF model for Apple. The skill pulls structured DCF inputs from the `defeatbeta-api` MCP server and renders them into a single-sheet `.xlsx` whose projections, NPV, fair price, and recommendation are all live Excel formulas.
+A walkthrough of running `defeatbeta-dcf` in Claude Desktop (works equally well in chat or cowork) to produce a fully-editable DCF model for Apple. The skill pulls structured DCF inputs from the `defeatbeta-api` MCP server and renders them into a single-sheet `.xlsx` whose projections, NPV, fair price, and recommendation are all live Excel formulas. The screenshots below are from a chat session.
 
 ## Prompt
 
@@ -33,7 +33,7 @@ In the chat panel, Claude summarized:
 
 ## The generated Excel
 
-The cowork preview renders the workbook in-place — no download needed to inspect it:
+Claude renders the workbook in-place — no download needed to inspect it:
 
 <img src="images/dcf-aapl-excel.png" alt="DCF Excel preview" width="600">
 

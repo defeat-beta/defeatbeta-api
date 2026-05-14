@@ -1,6 +1,6 @@
 # Example: Earnings Preview for Pinduoduo (PDD)
 
-A walkthrough of running `defeatbeta-earnings-preview` in Claude Desktop's cowork to produce a one-page pre-earnings briefing for Pinduoduo Holdings ahead of its FY2026 Q1 print. The skill pulls the prior-quarter earnings-call transcript from the `defeatbeta-api` MCP server, gathers consensus estimates and stock context via web search, then synthesizes a structured preview with bull/base/bear scenarios, a catalyst checklist, and a trading setup.
+A walkthrough of running `defeatbeta-earnings-preview` in Claude Desktop (works equally well in chat or cowork) to produce a one-page pre-earnings briefing for Pinduoduo Holdings ahead of its FY2026 Q1 print. The skill pulls the prior-quarter earnings-call transcript from the `defeatbeta-api` MCP server, gathers consensus estimates and stock context via web search, then synthesizes a structured preview with bull/base/bear scenarios, a catalyst checklist, and a trading setup. The screenshots below are from a chat session.
 
 ## Prompt
 

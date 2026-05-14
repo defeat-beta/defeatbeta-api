@@ -18,7 +18,7 @@ Walkthroughs of real skill invocations — prompts, screenshots, and tips for
 flexing the outputs:
 
 - [DCF Valuation for AAPL](./examples/defeatbeta-dcf.md) — running
-  `defeatbeta-dcf` in Claude Desktop's cowork to produce a fully editable
+  `defeatbeta-dcf` in Claude Desktop to produce a fully editable
   DCF model for Apple.
 - [Earnings Preview for PDD (Q1 FY2026)](./examples/defeatbeta-earnings-preview.md)
   — running `defeatbeta-earnings-preview` to synthesize a one-page pre-earnings
