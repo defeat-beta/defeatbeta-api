@@ -35,7 +35,7 @@ In the chat panel, Claude summarized:
 
 The cowork preview renders the workbook in-place — no download needed to inspect it:
 
-![DCF Excel preview](images/dcf-aapl-excel.png)
+<img src="images/dcf-aapl-excel.png" alt="DCF Excel preview" width="600">
 
 Four vertical sections, single sheet:
 

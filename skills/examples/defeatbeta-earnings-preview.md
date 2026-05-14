@@ -28,7 +28,7 @@ Inline citations link back to the original sources (Yahoo Finance, Reuters/Marke
 
 Beyond the chat summary, Claude produced a standalone one-page HTML preview embedded with all the structured analysis:
 
-![PDD Q1 FY2026 earnings preview report](images/earnings-preview-pdd-report.png)
+<img src="images/earnings-preview-pdd-report.png" alt="PDD Q1 FY2026 earnings preview report" width="600">
 
 The report is organized into five sections:
 
