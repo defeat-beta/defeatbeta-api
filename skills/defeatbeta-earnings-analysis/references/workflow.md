@@ -126,10 +126,11 @@ Do not waste calls hunting for MCP coverage here. Go to web and cite source + "a
 **Recent news / policy / catalysts**:
 - Reuters, Bloomberg, sector outlets
 
-#### Prior estimates (separate from data tiers)
+#### Prior estimates (optional reference data)
 
-- If the user provides a previous model or report (e.g. prior coverage from this skill), use that as the source for old estimates and prior price target
-- If no prior model exists, **stop and tell the user** — earnings update is a maintenance product, it can't be written without a prior thesis to update (see SKILL.md Section 7). Do not fabricate prior numbers. Suggest an initiation report instead.
+- **If this company was previously covered** (by the user, by this skill in a prior quarter, or by a sell-side firm whose research is on the web), retrieve the prior estimates, prior rating, and prior price target for the "Old vs. New" comparison
+- Sources: user-provided previous model / report, prior `[Company]_Q[X]_[Year]_Earnings_Update.docx` if available, web search for "[firm] previous [Company] coverage", or a prior consensus snapshot
+- If prior estimates cannot be found, the report still proceeds — beat/miss is computed against consensus only, and the "Old" columns can be omitted or marked "N/A". Do not fabricate prior numbers.
 
 **Verification before Step 3:**
 
@@ -272,7 +273,7 @@ Based on updated estimates:
 
 ### Step 11: Assess Rating Impact
 
-Decide whether to change rating relative to the prior rating provided by the user (SKILL.md Section 7 requires prior coverage).
+Decide whether to change rating relative to the prior rating.
 
 - If results significantly better than expected + guidance raised → Consider upgrade
 - If results significantly worse + guidance cut → Consider downgrade
@@ -284,8 +285,6 @@ Decide whether to change rating relative to the prior rating provided by the use
 - Risk/reward (asymmetry shifted?)
 
 Output: `Rating: [MAINTAIN / RAISE TO / LOWER TO] [OUTPERFORM / EQUAL-WEIGHT / UNDERPERFORM]`
-
-Do not output a rating without a prior anchor to move from. If the user did not supply a prior rating, stop and surface the gap (see Section 7).
 
 ## Phase 3: Chart Generation
 

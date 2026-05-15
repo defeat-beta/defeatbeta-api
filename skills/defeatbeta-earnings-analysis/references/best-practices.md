@@ -38,7 +38,7 @@ This document provides examples, tips for success, common mistakes to avoid, and
 - **Missing price target update**: If estimates changed materially, PT should too
 - **No investment impact**: Must connect results to thesis and rating
 - **Unattributed data**: Every number needs the right citation for its tier (see SKILL.md Section 6)
-- **Fabricating prior estimates**: if the user has no prior coverage on this name, stop and refer them to an initiation report (see SKILL.md Section 7) — don't invent old numbers to fill the Old vs. New columns
+- **Fabricating prior estimates**: if prior coverage isn't available, leave the "Old" columns marked "N/A" and compute beat/miss against consensus only — don't invent old numbers
 
 ## Comprehensive Quality Control Checklist
 
@@ -181,7 +181,7 @@ Run through this quick final check before sending report to user:
 5. **Charts**: All 8-12 embedded? All numbered and captioned?
 6. **Length**: Is it 8-12 pages (not 6, not 15)?
 7. **Sources**: Does the sources section list all MCP tools used?
-8. **Prior coverage**: Was prior estimates / rating / PT actually provided? If not, the report should not have been written.
+8. **Tier-correct citations**: spot check 3-4 figures/tables — does each source line match its data tier (see SKILL.md Section 6)?
 
 If all items check out, the report is ready for delivery.
 

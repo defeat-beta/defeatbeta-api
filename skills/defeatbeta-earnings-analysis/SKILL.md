@@ -42,7 +42,7 @@ Use when the user requests:
 
 ### 2. Focus
 - Focus on what's NEW from this quarter — don't rehash company background
-- Assume reader has seen the prior coverage (see Section 7 — prior coverage is required)
+- Assume reader has seen the prior coverage (initiation report or prior earnings update on this name)
 
 ### 3. Beat/Miss Analysis
 - Lead with whether company beat or missed estimates
@@ -178,24 +178,10 @@ Tier 3 — Web (MCP does not cover):
 - [ ] T3 citations include source name + "as of" date (pre-earnings where applicable)
 - [ ] Sources section is grouped by T1/T2/T3
 
-### 7. Prior Coverage Is Required
-
-An earnings update is by definition a *maintenance* product on an existing thesis — it assumes the analyst (or the user) already has prior coverage on this name. The skill cannot synthesize the "what changed this quarter" narrative without it.
-
-**Required inputs from the user** (one or more of):
-- Previous earnings update / initiation report (DOCX, PDF, or summary) with prior estimates, prior rating, prior price target
-- Spreadsheet model with old quarterly/annual estimates
-- Explicit numbers in the request (e.g. "last quarter we had revenue est $9.5B, rating Overweight, PT $185")
-
-**If no prior coverage is provided, stop and tell the user:**
-> This skill produces an earnings update — a maintenance report on existing coverage. I need your prior estimates, rating, and price target to write the "old vs. new" comparison. If this is the first time you're covering [Company], you want an **initiation report** instead (different scope, 30-50 pages, much longer turnaround — not what this skill produces).
-
-Do **not** fabricate prior numbers or invent an "old rating" — that destroys the report's credibility.
-
-**Estimate-change presentation:**
-- Page 1 header: `Rating: MAINTAIN / RAISE / LOWER [RATING]` and `Price Target: $OLD → $NEW` (or `MAINTAIN $XXX`)
-- Estimates tables: `Old / New / Change` columns
-- Rating-change rationale: references the prior thesis pillars and how this quarter's results affect each one
+### 7. Updated Estimates
+- Update forward estimates based on results
+- Show old vs. new estimates clearly when prior coverage is available
+- Explain what changed and why
 
 ## High-Level Workflow
 
@@ -228,7 +214,7 @@ Create 8-12 charts focusing on quarterly trends and what's new:
 **See [references/workflow.md](references/workflow.md)** for chart specifications.
 
 ### Phase 4: Report Creation
-Create the 8-12 page DOCX report. **First verify prior coverage was provided (Section 7)** before populating Page 1; if not, stop and surface the gap to the user.
+Create the 8-12 page DOCX report.
 
 **See [references/report-structure.md](references/report-structure.md)** for complete page-by-page templates and formatting requirements.
 

@@ -22,8 +22,6 @@ Price (as of [date]): $XX.XX
 Price Target: [OLD → NEW if changed, or MAINTAIN $XXX]
 ```
 
-(The skill assumes prior coverage exists — see SKILL.md Section 7. If the user has no prior estimates, stop and refer them to an initiation report instead.)
-
 **Top Section - Quick Summary Box:**
 ```
 EARNINGS SUMMARY
