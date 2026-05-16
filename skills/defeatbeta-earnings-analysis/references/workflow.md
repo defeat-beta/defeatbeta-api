@@ -48,7 +48,7 @@ User phrasings like "Q1 2024" / "1Q24" / "First Quarter 2024" / "Q1 FY24" all re
 
 ### Step 2: Gather Earnings Data — Call-Then-Write
 
-Each MCP tool call is followed **immediately** by a `Write` of the verbatim return value to a cache file under `/tmp/<TICKER>_<PERIOD>/cache/`. The point is not to save tokens — context can compress, that's fine. The point is to create an **on-disk source of truth** the report can later `Read` precisely, instead of citing numbers from a possibly compressed conversation history.
+Each MCP tool call is followed **immediately** by a `Write` of the verbatim return value to a cache file under `./<TICKER>_<PERIOD>/cache/`. The point is not to save tokens — context can compress, that's fine. The point is to create an **on-disk source of truth** the report can later `Read` precisely, instead of citing numbers from a possibly compressed conversation history.
 
 #### Verbatim discipline (non-negotiable)
 
@@ -65,14 +65,16 @@ The cache file is the report's source of truth. A field skipped at Write time is
 After Step 1 you know the target fiscal year/quarter and (optionally) the prior period. Create the cache directory:
 
 ```bash
-mkdir -p /tmp/<TICKER>_FY<YEAR>_Q<QUARTER>/cache
+mkdir -p ./<TICKER>_FY<YEAR>_Q<QUARTER>/cache
 ```
 
-Example: `mkdir -p /tmp/AMD_FY2025_Q1/cache`.
+Example: `mkdir -p ./AMD_FY2025_Q1/cache`.
+
+The cache lives **under the current working directory**, not under `/tmp`. Same convention as the `defeatbeta-dcf` skill. If cwd is not writable, fall back to `mktemp -d` and update path references in the rest of this section.
 
 #### Tier 1 — call each tool, then Write its return verbatim
 
-| MCP tool | Cache file (under `/tmp/<TICKER>_<PERIOD>/cache/`) |
+| MCP tool | Cache file (under `./<TICKER>_<PERIOD>/cache/`) |
 |---|---|
 | `get_stock_quarterly_income_statement(symbol)` | `income_statement.json` |
 | `get_stock_quarterly_balance_sheet(symbol)` | `balance_sheet.json` |
@@ -99,7 +101,7 @@ Example: `mkdir -p /tmp/AMD_FY2025_Q1/cache`.
 | `get_quarterly_revenue_by_geography(symbol)` | `geography.json` |
 | `get_industry_ttm_pe`, `get_industry_ps_ratio`, `get_industry_pb_ratio`, `get_industry_quarterly_gross_margin`, `get_industry_quarterly_ebitda_margin`, `get_industry_quarterly_net_margin`, `get_industry_quarterly_roa`, `get_industry_quarterly_roe`, `get_industry_quarterly_asset_turnover`, `get_industry_quarterly_equity_multiplier` | `industry.json` (one file, all industry returns under labeled keys) |
 
-If a T2 MCP tool returns nothing, **separately Write the web fallback excerpt** to `/tmp/<TICKER>_<PERIOD>/cache/fallback_<topic>.txt`, including the source URL and retrieval date in the first line. Do not mix MCP and fallback content in the same file.
+If a T2 MCP tool returns nothing, **separately Write the web fallback excerpt** to `./<TICKER>_<PERIOD>/cache/fallback_<topic>.txt`, including the source URL and retrieval date in the first line. Do not mix MCP and fallback content in the same file.
 
 #### Tier 3 — Web only (MCP does not cover, go straight to web)
 
@@ -143,7 +145,7 @@ Practical tips:
 #### Verification before Step 3
 
 Confirm before continuing to Step 3:
-- `ls /tmp/<TICKER>_<PERIOD>/cache/` shows every file from the Tier 1 and Tier 2 tables above (or, for genuine MCP gaps, the gap is documented and no T1 web patching happened)
+- `ls ./<TICKER>_<PERIOD>/cache/` shows every file from the Tier 1 and Tier 2 tables above (or, for genuine MCP gaps, the gap is documented and no T1 web patching happened)
 - `transcript_current.txt` and `transcript_prior.txt` contain the expected fiscal periods (open and check the first lines if unsure)
 - Tier 2 fallback files (if any) are clearly named `fallback_*.txt` and not mixed with MCP cache files
 

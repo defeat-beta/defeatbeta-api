@@ -105,7 +105,7 @@ Data MCP does not provide. Cite source name and "as of" date. No pretense of MCP
 
 #### Where each tool's cache file lives (Call-Then-Write — Phase 1)
 
-After Phase 1, every T1 and T2 MCP tool call has produced one cache file under `/tmp/<TICKER>_<PERIOD>/cache/`. This is the map: pick the right file to `Read` when drafting each section.
+After Phase 1, every T1 and T2 MCP tool call has produced one cache file under `./<TICKER>_<PERIOD>/cache/`. This is the map: pick the right file to `Read` when drafting each section.
 
 | Need this data | MCP tool called | Cache file (T1 unless noted) |
 |---|---|---|
@@ -140,7 +140,7 @@ After Phase 1, every T1 and T2 MCP tool call has produced one cache file under `
   ```
 - This still satisfies the verbatim rule — you concatenate raw returns under labeled keys; you don't summarize.
 
-Tier 3 data lands in `/tmp/<TICKER>_<PERIOD>/cache/web_<topic>.txt` (web excerpts written verbatim from the search result). Phase 1's MCP fetch does **not** include Tier 3.
+Tier 3 data lands in `./<TICKER>_<PERIOD>/cache/web_<topic>.txt` (web excerpts written verbatim from the search result). Phase 1's MCP fetch does **not** include Tier 3.
 
 ### 6. Citations & Source Attribution ⭐⭐⭐ MANDATORY
 
@@ -233,7 +233,7 @@ The earnings update process has 5 phases. Detailed procedures live in [reference
 For **every** Tier 1 and Tier 2 MCP tool call:
 
 1. **Call** the MCP tool.
-2. **Immediately Write the full return value verbatim** to `/tmp/<TICKER>_<PERIOD>/cache/<tool_name>.json` (or `.txt` for transcripts). No paraphrasing. No restructuring. No summarizing. No omitting fields. Byte-for-byte copy. If the return is JSON, Write the JSON as-is; if it's a dict object in your context, serialize it to JSON before Write.
+2. **Immediately Write the full return value verbatim** to `./<TICKER>_<PERIOD>/cache/<tool_name>.json` (or `.txt` for transcripts). No paraphrasing. No restructuring. No summarizing. No omitting fields. Byte-for-byte copy. If the return is JSON, Write the JSON as-is; if it's a dict object in your context, serialize it to JSON before Write.
 3. Only after the cache file is written, move on to the next tool.
 
 **Why verbatim matters:** the very temptation to "I already saw this data, let me just save the key fields" is what breaks traceability. Once you skip a field at Write time, no later Read can recover it. Resist the temptation. Write everything.
@@ -241,7 +241,7 @@ For **every** Tier 1 and Tier 2 MCP tool call:
 **Cache directory layout** (see Section 5 below for the full file map):
 
 ```
-/tmp/<TICKER>_<PERIOD>/cache/
+./<TICKER>_<PERIOD>/cache/
   ├── income_statement.json
   ├── balance_sheet.json
   ├── cash_flow.json
@@ -261,7 +261,9 @@ For **every** Tier 1 and Tier 2 MCP tool call:
   └── industry.json
 ```
 
-**Choose `<PERIOD>` after Step 0 below** so the directory path is concrete (e.g. `/tmp/AMD_FY2025_Q1/cache/`).
+**Choose `<PERIOD>` after Step 0 below** so the directory path is concrete (e.g. `./AMD_FY2025_Q1/cache/`).
+
+The cache lives **under the current working directory**, not under `/tmp`. Same convention as the `defeatbeta-dcf` skill, which writes `{SYMBOL}_DCF.xlsx` to cwd. Rationale: in cowork the cwd is the session's visible working area — users can preview / download the cache files directly, and Claude doesn't have to guess whether a system-level path is writable. If for some reason the cwd is not writable, fall back to a writable location (e.g. `mktemp -d`) and adjust the paths in the rest of this guide accordingly.
 
 #### Step 0: pick the period (very small calls, no caching needed)
 
@@ -272,7 +274,7 @@ Both calls return tiny payloads — they don't need cache files.
 
 #### Tier 3 data
 
-Tier 3 (consensus, analyst PT, operating metrics, news) comes from web search at report-writing time. **Apply the same Call-Then-Write discipline to web results**: when you fetch a consensus number or a stock-reaction stat, Write the relevant excerpt to `/tmp/<TICKER>_<PERIOD>/cache/web_<topic>.txt` so it's traceable.
+Tier 3 (consensus, analyst PT, operating metrics, news) comes from web search at report-writing time. **Apply the same Call-Then-Write discipline to web results**: when you fetch a consensus number or a stock-reaction stat, Write the relevant excerpt to `./<TICKER>_<PERIOD>/cache/web_<topic>.txt` so it's traceable.
 
 #### When MCP returns nothing for a T1 tool
 
