@@ -48,59 +48,27 @@ User phrasings like "Q1 2024" / "1Q24" / "First Quarter 2024" / "Q1 FY24" all re
 
 ### Step 2: Gather Earnings Data
 
-After confirming the target fiscal period from DefeatBeta MCP, collect data in the order **T1 → T2 → T3** (see SKILL.md Section 5 for the full tier table). Each tier has a different source policy; do not blend them.
+Tier 1 and Tier 2 data are retrieved by running the `collect_data.py` helper script, which imports the MCP tool functions directly and writes one file per data domain to a local directory. **Do not call MCP tools individually for Tier 1 / Tier 2 data** — every call returns a large JSON payload that goes straight into the assistant's context, and pulling 20+ tools that way reliably triggers context compaction.
 
-#### Tier 1 — MCP only (no web fallback)
+#### Tier 1 + Tier 2 — Run the bundle script
 
-Call each tool below and verify the selected fiscal period appears in the returned data. If a tool returns nothing for the target period, **state the gap in the report and proceed** — do not patch from 10-Q, press releases, IR pages, or news.
+```bash
+python <SKILL_DIR>/scripts/collect_data.py \
+    --ticker <SYMBOL> \
+    --output-dir <PATH>
+# Optional: --fiscal-year YYYY --fiscal-quarter Q  (defaults to latest)
+```
 
-**Reported financial statements:**
-- `get_stock_quarterly_income_statement(symbol)` — revenue, gross profit, operating income, net income, EPS, share count, EBIT, EBITDA
-- `get_stock_quarterly_balance_sheet(symbol)` — assets, liabilities, equity, cash, debt, working capital, invested capital
-- `get_stock_quarterly_cash_flow(symbol)` — operating cash flow, capex, free cash flow, buybacks, dividends, debt issuance/repayment
+The script:
+- Calls `get_latest_data_update_date` and `get_stock_earning_call_transcripts_list` to pick the target fiscal period
+- Pulls all Tier 1 data (3 statements, current + prior transcript, price/market cap/WACC/EPS, valuation multiples, margins, growth, capital efficiency)
+- Pulls all Tier 2 data (segment, geography, industry comparables)
+- Writes each domain to a separate JSON/TXT file in `--output-dir`
+- Fail-fast: if any tool errors, the script exits with nonzero — handle the error, surface to the user, do **not** patch from web
 
-**Earnings call transcript** (already retrieved in Step 1 — use the same `fiscal_year`, `fiscal_quarter` to keep statement/transcript periods aligned):
-- `get_stock_earning_call_transcript(symbol, fiscal_year, fiscal_quarter)`
-- Extract management guidance, outlook, demand commentary, margin commentary, capital allocation comments, Q&A themes, management tone, and forward-looking statements
-- **Period-alignment check**: transcript `fiscal_year` / `fiscal_quarter` MUST match the selected statement period. If they diverge, you have the wrong transcript — re-check the list.
+After the script runs, **Read only the file you need** for each report-writing step. See SKILL.md Section 5 "Where data lives after `collect_data.py`" for the file → content map. Files are typically 10KB-2MB; use `Read` with line ranges on large files rather than reading the whole thing.
 
-**Market data:**
-- `get_stock_price(symbol)` — current price, used in Page 1 header
-- `get_stock_market_capitalization(symbol)` — market cap
-- `get_stock_wacc(symbol)` — WACC, used in DCF valuation
-- `get_stock_eps_and_ttm_eps(symbol)` — reported EPS + TTM EPS
-
-**Valuation multiples** (call those the report cites):
-- `get_stock_ttm_pe`, `get_stock_enterprise_value`, `get_stock_enterprise_to_ebitda`, `get_stock_enterprise_to_revenue`, `get_stock_ps_ratio`, `get_stock_pb_ratio`, `get_stock_peg_ratio`
-- `get_stock_dcf_analysis` — returns the structured DCF with fair price; in most cases use this as the DCF anchor rather than re-deriving (the `defeatbeta-dcf` skill is the editable spreadsheet counterpart of the same calculation)
-
-**Growth / margins / capital efficiency:**
-- Margins: `get_stock_quarterly_gross_margin`, `get_stock_quarterly_operating_margin`, `get_stock_quarterly_net_margin`, `get_stock_quarterly_ebitda_margin`, `get_stock_quarterly_fcf_margin`
-- YoY growth: `get_stock_quarterly_revenue_yoy_growth`, `get_stock_quarterly_ebitda_yoy_growth`, `get_stock_quarterly_diluted_eps_yoy_growth`, `get_stock_quarterly_fcf_yoy_growth`, `get_stock_quarterly_operating_income_yoy_growth`, `get_stock_quarterly_net_income_yoy_growth`
-- Capital efficiency: `get_stock_quarterly_roic`, `get_stock_quarterly_roa`, `get_stock_quarterly_roe`, `get_stock_quarterly_asset_turnover`, `get_stock_quarterly_equity_multiplier`, `get_stock_quarterly_debt_to_equity`
-
-**Period comparisons** (for QoQ / YoY tables):
-- Prior quarter and prior-year same-quarter values are returned in the same MCP statement responses (multiple `periods`) — no extra call needed
-
-#### Tier 2 — MCP preferred, web fallback allowed (must be labeled)
-
-Try MCP first. If MCP doesn't return the data for the target period, web fallback is allowed but **must be labeled with "Fallback:"** in the figure/table source line.
-
-**Segment revenue:**
-- Primary: `get_quarterly_revenue_by_segment(symbol)`
-- Fallback (if MCP returns nothing or coverage is partial): company 10-Q / earnings press release supplementary tables — label as fallback
-
-**Geography revenue:**
-- Primary: `get_quarterly_revenue_by_geography(symbol)`
-- Fallback: same as segment — 10-Q / earnings release — label as fallback
-
-**Prior guidance** (for guidance-change analysis):
-- Primary: prior-quarter `get_stock_earning_call_transcript(symbol, prior_fiscal_year, prior_fiscal_quarter)`
-- Fallback (if prior transcript unavailable): prior-quarter press release / 8-K — label as fallback
-
-**Industry / peer comparables:**
-- Primary: `get_industry_ttm_pe`, `get_industry_ps_ratio`, `get_industry_pb_ratio`, `get_industry_quarterly_gross_margin`, `get_industry_quarterly_ebitda_margin`, `get_industry_quarterly_net_margin`, `get_industry_quarterly_roa`, `get_industry_quarterly_roe`, `get_industry_quarterly_asset_turnover`, `get_industry_quarterly_equity_multiplier`
-- Fallback: Bloomberg / FactSet peer screens — label as fallback
+**Period alignment** is automatic — the script selects the same `fiscal_year` / `fiscal_quarter` for transcript and statements. The values are recorded in `_summary.json` for verification.
 
 #### Tier 3 — Web only (MCP does not cover, go straight to web)
 
@@ -134,13 +102,12 @@ Do not waste calls hunting for MCP coverage here. Go to web and cite source + "a
 
 **Verification before Step 3:**
 
-Confirm before continuing:
-- The fiscal period appears in the `periods` array of every T1 statement tool you called (income / balance / cash flow)
-- The transcript's `fiscal_year` / `fiscal_quarter` match the statement period
-- Any T2 fallback rows are labeled (segment/geography/industry/prior guidance)
-- Any T1 gaps are noted for the report — not patched from web
+Read `_summary.json` to confirm:
+- `target_period.fiscal_year` / `target_period.fiscal_quarter` match what the user asked for (or latest if unspecified)
+- `prior_period` exists if you intend to write a prior-guidance comparison
+- All expected file paths under `files` are present on disk
 
-If a check fails, re-call the failing tool or document the gap. Do not proceed with mismatched periods.
+If something is missing, re-run `collect_data.py`. Do not proceed with mismatched periods.
 
 ### Step 3: Extract Key Metrics
 

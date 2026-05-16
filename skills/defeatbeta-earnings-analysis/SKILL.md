@@ -103,6 +103,26 @@ Data MCP does not provide. Cite source name and "as of" date. No pretense of MCP
 | Operating metrics (DAU/MAU/ARPU, customer count, store count, units shipped, occupancy, RPO, NRR, etc.) | Company IR site, 10-Q supplementary tables, investor presentation |
 | Recent news / policy catalysts | Reuters, Bloomberg, sector news outlets |
 
+#### Where data lives after `collect_data.py` (Phase 1)
+
+The bundle script writes one file per data domain under `--output-dir`. Use this map at report-writing time to pick the right file to `Read`:
+
+| Need this data | Read this file (T1 unless noted) |
+|---|---|
+| Reported income statement, balance sheet, cash flow (all in one) | `statements.json` |
+| Earnings call transcript (target period) | `transcript_current.txt` |
+| Earnings call transcript (prior period — for prior guidance) | `transcript_prior.txt` |
+| Price, market cap, EPS, WACC, DCF, P/E, EV/EBITDA, EV/Revenue, P/S, P/B, PEG | `valuation.json` |
+| Gross / operating / net / EBITDA / FCF margins (history) | `margins.json` |
+| Revenue / op income / EBITDA / net income / FCF / EPS YoY growth (history) | `growth.json` |
+| ROIC, ROE, ROA, asset turnover, equity multiplier, debt/equity | `capital_efficiency.json` |
+| Segment revenue (T2) | `segment.json` |
+| Geography revenue (T2) | `geography.json` |
+| Industry comparables (TTM P/E, P/S, P/B, margins, ROA, ROE — T2) | `industry.json` |
+| Selected period, prior period, dataset date, file inventory | `_summary.json` |
+
+Tier 3 data is **not** in the bundle — fetch via web search at report-writing time.
+
 ### 6. Citations & Source Attribution ⭐⭐⭐ MANDATORY
 
 Every data point cites its source. The format depends on tier (see Section 5).
@@ -189,10 +209,26 @@ The earnings update process has 5 phases. Detailed procedures live in [reference
 
 ### Phase 1: Data Collection
 
-1. Call `get_latest_data_update_date` to anchor the dataset.
-2. Call `get_stock_earning_call_transcripts_list(symbol)` to pick the target fiscal period (latest by default, or matching a user-specified quarter).
-3. Retrieve Tier 1 → Tier 2 → Tier 3 data in that order (see Section 5 for the tier table).
-4. If a Tier 1 MCP tool returns nothing, state the gap in the report. Do **not** patch from web.
+To avoid flooding the assistant's context with raw MCP tool returns (statements, transcripts, multiples, etc. can total 100K+ tokens for one ticker), Tier 1 and Tier 2 data are pulled by a helper script that writes them to local files. The assistant then **reads only the file it needs at each report-writing step**.
+
+1. Call `get_latest_data_update_date` (small payload, fine to keep in context).
+2. Run the bundle script — this replaces dozens of individual MCP tool calls:
+
+   ```bash
+   python <SKILL_DIR>/scripts/collect_data.py \
+       --ticker <SYMBOL> \
+       --output-dir <PATH>
+   # Optional: --fiscal-year YYYY --fiscal-quarter Q  (defaults to latest available)
+   ```
+
+   The script writes one file per data domain (`statements.json`, `transcript_current.txt`, `valuation.json`, `margins.json`, `growth.json`, `capital_efficiency.json`, `segment.json`, `geography.json`, `industry.json`, `transcript_prior.txt`, `_summary.json`) and prints a short stdout summary.
+
+3. Read `_summary.json` to learn the target period, prior period, and file inventory.
+4. Pull Tier 3 data via web search at report-writing time (consensus, analyst PT, operating metrics, news). The bundle script does **not** include Tier 3 data on purpose.
+
+When you need a specific data point while drafting a section, `Read` the relevant file from the output directory. Do not `cat` whole files into context — `Read` with line ranges if the file is large.
+
+If a Tier 1 MCP tool returns nothing inside the bundle script, the script will fail fast with an error. Surface that gap to the user; do **not** patch from web.
 
 ### Phase 2: Analysis
 - Beat/miss analysis for each key metric
