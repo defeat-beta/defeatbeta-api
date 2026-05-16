@@ -41,6 +41,10 @@ The skill's primary deliverable is a full 8-12 page sell-side style DOCX:
 
 [**Download AMD_Q1_FY2026_Earnings_Update.docx** →](files/AMD_Q1_FY2026_Earnings_Update.docx)
 
+Page 1 — header, earnings-summary table, key takeaways, updated estimates:
+
+<img src="images/earnings-analysis-amd-report.png" alt="AMD Q1 FY2026 earnings update Page 1" width="600">
+
 It's organized as a standard sell-side update:
 
 | Pages | Content |
