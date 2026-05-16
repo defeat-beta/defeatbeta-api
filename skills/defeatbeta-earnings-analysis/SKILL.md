@@ -103,25 +103,44 @@ Data MCP does not provide. Cite source name and "as of" date. No pretense of MCP
 | Operating metrics (DAU/MAU/ARPU, customer count, store count, units shipped, occupancy, RPO, NRR, etc.) | Company IR site, 10-Q supplementary tables, investor presentation |
 | Recent news / policy catalysts | Reuters, Bloomberg, sector news outlets |
 
-#### Where data lives after `collect_data.py` (Phase 1)
+#### Where each tool's cache file lives (Call-Then-Write — Phase 1)
 
-The bundle script writes one file per data domain under `--output-dir`. Use this map at report-writing time to pick the right file to `Read`:
+After Phase 1, every T1 and T2 MCP tool call has produced one cache file under `/tmp/<TICKER>_<PERIOD>/cache/`. This is the map: pick the right file to `Read` when drafting each section.
 
-| Need this data | Read this file (T1 unless noted) |
-|---|---|
-| Reported income statement, balance sheet, cash flow (all in one) | `statements.json` |
-| Earnings call transcript (target period) | `transcript_current.txt` |
-| Earnings call transcript (prior period — for prior guidance) | `transcript_prior.txt` |
-| Price, market cap, EPS, WACC, DCF, P/E, EV/EBITDA, EV/Revenue, P/S, P/B, PEG | `valuation.json` |
-| Gross / operating / net / EBITDA / FCF margins (history) | `margins.json` |
-| Revenue / op income / EBITDA / net income / FCF / EPS YoY growth (history) | `growth.json` |
-| ROIC, ROE, ROA, asset turnover, equity multiplier, debt/equity | `capital_efficiency.json` |
-| Segment revenue (T2) | `segment.json` |
-| Geography revenue (T2) | `geography.json` |
-| Industry comparables (TTM P/E, P/S, P/B, margins, ROA, ROE — T2) | `industry.json` |
-| Selected period, prior period, dataset date, file inventory | `_summary.json` |
+| Need this data | MCP tool called | Cache file (T1 unless noted) |
+|---|---|---|
+| Reported income statement | `get_stock_quarterly_income_statement` | `income_statement.json` |
+| Reported balance sheet | `get_stock_quarterly_balance_sheet` | `balance_sheet.json` |
+| Reported cash flow | `get_stock_quarterly_cash_flow` | `cash_flow.json` |
+| Earnings call transcript (target period) | `get_stock_earning_call_transcript` | `transcript_current.txt` |
+| Earnings call transcript (prior period — for prior guidance) | `get_stock_earning_call_transcript` (prior FY/Q) | `transcript_prior.txt` |
+| Stock price | `get_stock_price` | `price.json` |
+| Market cap | `get_stock_market_capitalization` | `market_cap.json` |
+| EPS + TTM EPS | `get_stock_eps_and_ttm_eps` | `eps.json` |
+| WACC | `get_stock_wacc` | `wacc.json` |
+| Structured DCF + fair price | `get_stock_dcf_analysis` | `dcf_analysis.json` |
+| P/E, EV/*, P/S, P/B, PEG | multiple multiple tools | `valuation_multiples.json` (one file, multiple tool returns) |
+| Gross/op/net/EBITDA/FCF margins (history) | 5 margin tools | `margins.json` (one file, 5 returns) |
+| Revenue/op-income/EBITDA/net-income/FCF/EPS YoY (history) | 6 growth tools | `growth.json` (one file, 6 returns) |
+| ROIC, ROE, ROA, asset turnover, equity multiplier, D/E | 6 tools | `capital_efficiency.json` (one file, 6 returns) |
+| Segment revenue (T2) | `get_quarterly_revenue_by_segment` | `segment.json` |
+| Geography revenue (T2) | `get_quarterly_revenue_by_geography` | `geography.json` |
+| Industry comparables (T2) | several `get_industry_*` tools | `industry.json` (one file, several returns) |
 
-Tier 3 data is **not** in the bundle — fetch via web search at report-writing time.
+**Two helpful conventions for the multi-tool bundles** (`valuation_multiples`, `margins`, `growth`, `capital_efficiency`, `industry`):
+- Within one bundled file, store each tool's return under a key named after the tool, e.g.
+  ```json
+  {
+    "ttm_pe": {...},
+    "ev_to_ebitda": {...},
+    "ps_ratio": {...},
+    "pb_ratio": {...},
+    "peg_ratio": {...}
+  }
+  ```
+- This still satisfies the verbatim rule — you concatenate raw returns under labeled keys; you don't summarize.
+
+Tier 3 data lands in `/tmp/<TICKER>_<PERIOD>/cache/web_<topic>.txt` (web excerpts written verbatim from the search result). Phase 1's MCP fetch does **not** include Tier 3.
 
 ### 6. Citations & Source Attribution ⭐⭐⭐ MANDATORY
 
@@ -207,28 +226,63 @@ Tier 3 — Web (MCP does not cover):
 
 The earnings update process has 5 phases. Detailed procedures live in [references/workflow.md](references/workflow.md); the summary below is for orientation only.
 
-### Phase 1: Data Collection
+### Phase 1: Data Collection — Call-Then-Write Pattern
 
-To avoid flooding the assistant's context with raw MCP tool returns (statements, transcripts, multiples, etc. can total 100K+ tokens for one ticker), Tier 1 and Tier 2 data are pulled by a helper script that writes them to local files. The assistant then **reads only the file it needs at each report-writing step**.
+**The goal of this phase is not just to retrieve data — it is to create an on-disk source of truth that the report draws from later.** Conversation context can be compressed at any time; compressed summaries paraphrase numbers. A report that cites numbers from compressed context is a report that hallucinates digits. The cache is the antidote.
 
-1. Call `get_latest_data_update_date` (small payload, fine to keep in context).
-2. Run the bundle script — this replaces dozens of individual MCP tool calls:
+For **every** Tier 1 and Tier 2 MCP tool call:
 
-   ```bash
-   python <SKILL_DIR>/scripts/collect_data.py \
-       --ticker <SYMBOL> \
-       --output-dir <PATH>
-   # Optional: --fiscal-year YYYY --fiscal-quarter Q  (defaults to latest available)
-   ```
+1. **Call** the MCP tool.
+2. **Immediately Write the full return value verbatim** to `/tmp/<TICKER>_<PERIOD>/cache/<tool_name>.json` (or `.txt` for transcripts). No paraphrasing. No restructuring. No summarizing. No omitting fields. Byte-for-byte copy. If the return is JSON, Write the JSON as-is; if it's a dict object in your context, serialize it to JSON before Write.
+3. Only after the cache file is written, move on to the next tool.
 
-   The script writes one file per data domain (`statements.json`, `transcript_current.txt`, `valuation.json`, `margins.json`, `growth.json`, `capital_efficiency.json`, `segment.json`, `geography.json`, `industry.json`, `transcript_prior.txt`, `_summary.json`) and prints a short stdout summary.
+**Why verbatim matters:** the very temptation to "I already saw this data, let me just save the key fields" is what breaks traceability. Once you skip a field at Write time, no later Read can recover it. Resist the temptation. Write everything.
 
-3. Read `_summary.json` to learn the target period, prior period, and file inventory.
-4. Pull Tier 3 data via web search at report-writing time (consensus, analyst PT, operating metrics, news). The bundle script does **not** include Tier 3 data on purpose.
+**Cache directory layout** (see Section 5 below for the full file map):
 
-When you need a specific data point while drafting a section, `Read` the relevant file from the output directory. Do not `cat` whole files into context — `Read` with line ranges if the file is large.
+```
+/tmp/<TICKER>_<PERIOD>/cache/
+  ├── income_statement.json
+  ├── balance_sheet.json
+  ├── cash_flow.json
+  ├── transcript_current.txt
+  ├── transcript_prior.txt
+  ├── price.json
+  ├── market_cap.json
+  ├── eps.json
+  ├── wacc.json
+  ├── dcf_analysis.json
+  ├── valuation_multiples.json    (P/E, EV/EBITDA, EV/Rev, P/S, P/B, PEG bundled)
+  ├── margins.json                 (5 margins bundled)
+  ├── growth.json                  (6 YoY growth metrics bundled)
+  ├── capital_efficiency.json      (ROIC, ROE, ROA, asset turnover, etc. bundled)
+  ├── segment.json
+  ├── geography.json
+  └── industry.json
+```
 
-If a Tier 1 MCP tool returns nothing inside the bundle script, the script will fail fast with an error. Surface that gap to the user; do **not** patch from web.
+**Choose `<PERIOD>` after Step 0 below** so the directory path is concrete (e.g. `/tmp/AMD_FY2025_Q1/cache/`).
+
+#### Step 0: pick the period (very small calls, no caching needed)
+
+1. Call `get_latest_data_update_date` → write down the dataset date.
+2. Call `get_stock_earning_call_transcripts_list(symbol)` → pick the target fiscal period (latest by default, or the user-specified `fiscal_year` + `fiscal_quarter`).
+
+Both calls return tiny payloads — they don't need cache files.
+
+#### Tier 3 data
+
+Tier 3 (consensus, analyst PT, operating metrics, news) comes from web search at report-writing time. **Apply the same Call-Then-Write discipline to web results**: when you fetch a consensus number or a stock-reaction stat, Write the relevant excerpt to `/tmp/<TICKER>_<PERIOD>/cache/web_<topic>.txt` so it's traceable.
+
+#### When MCP returns nothing for a T1 tool
+
+State the gap in the report; do **not** patch from web. T1 has no fallback by design (see Section 5).
+
+#### Reading the cache when drafting the report
+
+**Before citing any number** in the report, `Read` the corresponding cache file. Do **not** rely on numbers you remember from earlier tool calls — context compression can have altered them. The cache file is the only authoritative source once Phase 1 is complete.
+
+If a cache file is large (e.g. `transcript_current.txt` is 50K+ chars), use `Read` with `offset` + `limit` to fetch only the relevant section rather than the whole file.
 
 ### Phase 2: Analysis
 - Beat/miss analysis for each key metric

@@ -46,29 +46,60 @@ Three date concepts often get confused — keep them straight:
 
 User phrasings like "Q1 2024" / "1Q24" / "First Quarter 2024" / "Q1 FY24" all refer to the same `fiscal_year, fiscal_quarter` tuple from MCP — let the MCP metadata be authoritative.
 
-### Step 2: Gather Earnings Data
+### Step 2: Gather Earnings Data — Call-Then-Write
 
-Tier 1 and Tier 2 data are retrieved by running the `collect_data.py` helper script, which imports the MCP tool functions directly and writes one file per data domain to a local directory. **Do not call MCP tools individually for Tier 1 / Tier 2 data** — every call returns a large JSON payload that goes straight into the assistant's context, and pulling 20+ tools that way reliably triggers context compaction.
+Each MCP tool call is followed **immediately** by a `Write` of the verbatim return value to a cache file under `/tmp/<TICKER>_<PERIOD>/cache/`. The point is not to save tokens — context can compress, that's fine. The point is to create an **on-disk source of truth** the report can later `Read` precisely, instead of citing numbers from a possibly compressed conversation history.
 
-#### Tier 1 + Tier 2 — Run the bundle script
+#### Verbatim discipline (non-negotiable)
+
+When Writing a tool's return value to its cache file:
+- **Do not** paraphrase, restructure, or summarize
+- **Do not** drop fields that look "unimportant" — you don't know what the report will cite later
+- **Do not** combine multiple tools' returns into one bag of fields; use the cache-file map below or, for bundled files, store each tool's return under a labeled key (see SKILL.md Section 5)
+- If the return is a Python dict in your context, serialize it to JSON before Write
+
+The cache file is the report's source of truth. A field skipped at Write time is lost forever.
+
+#### Setup
+
+After Step 1 you know the target fiscal year/quarter and (optionally) the prior period. Create the cache directory:
 
 ```bash
-python <SKILL_DIR>/scripts/collect_data.py \
-    --ticker <SYMBOL> \
-    --output-dir <PATH>
-# Optional: --fiscal-year YYYY --fiscal-quarter Q  (defaults to latest)
+mkdir -p /tmp/<TICKER>_FY<YEAR>_Q<QUARTER>/cache
 ```
 
-The script:
-- Calls `get_latest_data_update_date` and `get_stock_earning_call_transcripts_list` to pick the target fiscal period
-- Pulls all Tier 1 data (3 statements, current + prior transcript, price/market cap/WACC/EPS, valuation multiples, margins, growth, capital efficiency)
-- Pulls all Tier 2 data (segment, geography, industry comparables)
-- Writes each domain to a separate JSON/TXT file in `--output-dir`
-- Fail-fast: if any tool errors, the script exits with nonzero — handle the error, surface to the user, do **not** patch from web
+Example: `mkdir -p /tmp/AMD_FY2025_Q1/cache`.
 
-After the script runs, **Read only the file you need** for each report-writing step. See SKILL.md Section 5 "Where data lives after `collect_data.py`" for the file → content map. Files are typically 10KB-2MB; use `Read` with line ranges on large files rather than reading the whole thing.
+#### Tier 1 — call each tool, then Write its return verbatim
 
-**Period alignment** is automatic — the script selects the same `fiscal_year` / `fiscal_quarter` for transcript and statements. The values are recorded in `_summary.json` for verification.
+| MCP tool | Cache file (under `/tmp/<TICKER>_<PERIOD>/cache/`) |
+|---|---|
+| `get_stock_quarterly_income_statement(symbol)` | `income_statement.json` |
+| `get_stock_quarterly_balance_sheet(symbol)` | `balance_sheet.json` |
+| `get_stock_quarterly_cash_flow(symbol)` | `cash_flow.json` |
+| `get_stock_earning_call_transcript(symbol, FY, Q)` for target period | `transcript_current.txt` |
+| `get_stock_earning_call_transcript(symbol, prior FY, prior Q)` | `transcript_prior.txt` |
+| `get_stock_price(symbol)` | `price.json` |
+| `get_stock_market_capitalization(symbol)` | `market_cap.json` |
+| `get_stock_eps_and_ttm_eps(symbol)` | `eps.json` |
+| `get_stock_wacc(symbol)` | `wacc.json` |
+| `get_stock_dcf_analysis(symbol)` | `dcf_analysis.json` |
+| `get_stock_ttm_pe`, `get_stock_enterprise_value`, `get_stock_enterprise_to_ebitda`, `get_stock_enterprise_to_revenue`, `get_stock_ps_ratio`, `get_stock_pb_ratio`, `get_stock_peg_ratio` | `valuation_multiples.json` (one file with each tool return under a labeled key) |
+| `get_stock_quarterly_gross_margin`, `get_stock_quarterly_operating_margin`, `get_stock_quarterly_net_margin`, `get_stock_quarterly_ebitda_margin`, `get_stock_quarterly_fcf_margin` | `margins.json` (one file, 5 returns under labeled keys) |
+| `get_stock_quarterly_revenue_yoy_growth`, `get_stock_quarterly_operating_income_yoy_growth`, `get_stock_quarterly_ebitda_yoy_growth`, `get_stock_quarterly_net_income_yoy_growth`, `get_stock_quarterly_fcf_yoy_growth`, `get_stock_quarterly_diluted_eps_yoy_growth` | `growth.json` (one file, 6 returns under labeled keys) |
+| `get_stock_quarterly_roic`, `get_stock_quarterly_roe`, `get_stock_quarterly_roa`, `get_stock_quarterly_asset_turnover`, `get_stock_quarterly_equity_multiplier`, `get_stock_quarterly_debt_to_equity` | `capital_efficiency.json` (one file, 6 returns under labeled keys) |
+
+**Period alignment:** transcript `fiscal_year`/`fiscal_quarter` must match the statement period. If you got the wrong transcript, re-call before Writing — once you Write, the cache file is treated as authoritative.
+
+#### Tier 2 — call, then Write (with labeled fallback if MCP empty)
+
+| MCP tool (primary) | Cache file |
+|---|---|
+| `get_quarterly_revenue_by_segment(symbol)` | `segment.json` |
+| `get_quarterly_revenue_by_geography(symbol)` | `geography.json` |
+| `get_industry_ttm_pe`, `get_industry_ps_ratio`, `get_industry_pb_ratio`, `get_industry_quarterly_gross_margin`, `get_industry_quarterly_ebitda_margin`, `get_industry_quarterly_net_margin`, `get_industry_quarterly_roa`, `get_industry_quarterly_roe`, `get_industry_quarterly_asset_turnover`, `get_industry_quarterly_equity_multiplier` | `industry.json` (one file, all industry returns under labeled keys) |
+
+If a T2 MCP tool returns nothing, **separately Write the web fallback excerpt** to `/tmp/<TICKER>_<PERIOD>/cache/fallback_<topic>.txt`, including the source URL and retrieval date in the first line. Do not mix MCP and fallback content in the same file.
 
 #### Tier 3 — Web only (MCP does not cover, go straight to web)
 
@@ -100,14 +131,23 @@ Do not waste calls hunting for MCP coverage here. Go to web and cite source + "a
 - Sources: user-provided previous model / report, prior `[Company]_Q[X]_[Year]_Earnings_Update.docx` if available, web search for "[firm] previous [Company] coverage", or a prior consensus snapshot
 - If prior estimates cannot be found, the report still proceeds — beat/miss is computed against consensus only, and the "Old" columns can be omitted or marked "N/A". Do not fabricate prior numbers.
 
-**Verification before Step 3:**
+#### Reading the cache when drafting the report
 
-Read `_summary.json` to confirm:
-- `target_period.fiscal_year` / `target_period.fiscal_quarter` match what the user asked for (or latest if unspecified)
-- `prior_period` exists if you intend to write a prior-guidance comparison
-- All expected file paths under `files` are present on disk
+**Before citing any number** in Phase 2 (analysis) or Phase 4 (DOCX), `Read` the corresponding cache file. Do not rely on numbers remembered from earlier in the conversation — context compression can paraphrase them. The cache file is the only authoritative source after Step 2.
 
-If something is missing, re-run `collect_data.py`. Do not proceed with mismatched periods.
+Practical tips:
+- For small cache files (`income_statement.json`, `market_cap.json`, `dcf_analysis.json`, etc.) — `Read` the whole file.
+- For long ones (`transcript_current.txt` often 30K-60K chars, `industry.json` can be 500KB+) — `Read` with `offset` + `limit` to grab the specific section relevant to the paragraph you're writing.
+- If two sections cite the same metric, prefer two narrowly-scoped `Read`s over one big `Read`. Re-reading is cheap; recovering a paraphrased number is impossible.
+
+#### Verification before Step 3
+
+Confirm before continuing to Step 3:
+- `ls /tmp/<TICKER>_<PERIOD>/cache/` shows every file from the Tier 1 and Tier 2 tables above (or, for genuine MCP gaps, the gap is documented and no T1 web patching happened)
+- `transcript_current.txt` and `transcript_prior.txt` contain the expected fiscal periods (open and check the first lines if unsure)
+- Tier 2 fallback files (if any) are clearly named `fallback_*.txt` and not mixed with MCP cache files
+
+If something is missing or wrong, re-call the MCP tool and re-Write the cache file before continuing.
 
 ### Step 3: Extract Key Metrics
 
