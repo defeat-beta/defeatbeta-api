@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.55
+-------
+- feat: expose hierarchy depth in revenue_by_breakdown — add ``depth`` / ``parent_name`` columns and DFS pre-order row sorting via recursive CTE on ``member_hierarchy`` [`#189 <https://github.com/defeat-beta/defeatbeta-api/issues/189>`_]
+
 0.0.54
 -------
 - fix: adapt to upstream parquet schema changes — news `related_symbols` → `symbol`, treasury yield `bc10_year` → `bc_10year`, beta date format `%Y-%m-%d` → `%Y-%m-%d %H:%M:%S` [`#188 <https://github.com/defeat-beta/defeatbeta-api/issues/188>`_]

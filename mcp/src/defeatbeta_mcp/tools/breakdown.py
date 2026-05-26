@@ -25,6 +25,8 @@ def get_revenue_breakdown(symbol: str, period_type: str = None):
                 - breakdown_type (str):     # source table name from the SEC filing
                 - item_name (str):          # dimension member, e.g. "Automotive", "US", "Cloud"
                 - item_value (int | None):  # revenue in USD (not scaled)
+                - depth (int):              # hierarchy depth: 1 = root, 2 = child, 3 = grandchild
+                - parent_name (str | None): # display name of the parent node; None for root members
         }
 
     Notes:
@@ -33,6 +35,9 @@ def get_revenue_breakdown(symbol: str, period_type: str = None):
         - The same economic concept (e.g. geographic revenue) may appear under slightly
           different table names across filing years — group by breakdown_type to compare.
         - item_value is in raw USD (e.g. 82056000000 = $82.1B).
+        - Within each (report_date, breakdown_type) group the rows are ordered by
+          depth-first pre-order traversal: parent before children, full subtree before
+          next sibling. Use depth and parent_name to reconstruct the tree structure.
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
@@ -54,19 +59,20 @@ def get_revenue_breakdown(symbol: str, period_type: str = None):
         # so we rely on the caller passing a pre-filtered df or leave filtering to the API layer.
         # For now, no-op — period_type filtering is informational only via the docstring.
 
-    df = df.sort_values(["report_date", "breakdown_type", "item_name"]).reset_index(drop=True)
-
     breakdown_types = sorted(df["breakdown_type"].dropna().unique().tolist())
 
     records = []
     for _, row in df.iterrows():
         val = row.get("item_value")
+        parent = row.get("parent_name")
         records.append({
             "report_date": str(row["report_date"]),
             "period_label": str(row["period_label"]) if row["period_label"] else None,
             "breakdown_type": str(row["breakdown_type"]),
             "item_name": str(row["item_name"]),
             "item_value": int(val) if val is not None and str(val) != "<NA>" else None,
+            "depth": int(row["depth"]) if row.get("depth") is not None else 1,
+            "parent_name": str(parent) if parent is not None and str(parent) != "<NA>" else None,
         })
 
     return {

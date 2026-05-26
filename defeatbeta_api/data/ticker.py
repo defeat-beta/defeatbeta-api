@@ -302,7 +302,13 @@ class Ticker:
         "Schedule Of Revenues From External Customers And Long Lived Assets Table",
         "Disaggregation Of Revenue Table"). item_value is in raw USD.
 
-        Columns: symbol, report_date, period_label, breakdown_type, item_name, item_value
+        Columns: symbol, report_date, period_label, breakdown_type, item_name,
+                 item_value, depth, parent_name
+
+        Within each (report_date, period_label, breakdown_type) group the rows are
+        ordered by depth-first pre-order traversal: a parent row always precedes all
+        of its descendants, and the complete subtree of one node is shown before the
+        next sibling. depth=1 are root members; parent_name is NULL for root members.
         """
         url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
         sql = load_sql("select_revenue_breakdown_by_symbol", ticker=self.ticker, url=url)
