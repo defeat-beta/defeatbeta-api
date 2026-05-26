@@ -4,7 +4,7 @@ import unittest
 from defeatbeta_api.data.ticker import Ticker
 
 class TestTicker(unittest.TestCase):
-    SYMBOL = "MSFT"
+    SYMBOL = "TSLA"
 
     @classmethod
     def setUpClass(cls):

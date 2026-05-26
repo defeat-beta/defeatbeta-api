@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.56
+-------
+- update __version__.py
+
+
 0.0.55
 -------
 - feat: expose hierarchy depth in revenue_by_breakdown — add ``depth`` / ``parent_name`` columns and DFS pre-order row sorting via recursive CTE on ``member_hierarchy`` [`#189 <https://github.com/defeat-beta/defeatbeta-api/issues/189>`_]
