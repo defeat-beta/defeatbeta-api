@@ -8,3 +8,4 @@ __pycache__/*
 test/siliconflow_api.key
 settings.local.json
 *.egg-info
+.claude
