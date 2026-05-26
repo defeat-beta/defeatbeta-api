@@ -939,17 +939,22 @@ for btype, bdf in df.groupby('breakdown_type'):
             print(f"\n[{btype}]  filing={ftype}  period={months}M")
 
             if mdf['depth'].max() > 1:
-                # Nested: DFS order is preserved from the original DataFrame
-                seen = set()
-                for _, row in mdf.iterrows():
-                    key = (row['depth'], row['item_name'])
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    indent = '  ' * (row['depth'] - 1)
-                    vals = mdf[mdf['item_name'] == row['item_name']].set_index('report_date')['item_value']
-                    cols = '  '.join(f"{vals.get(d, '*'):>15}" for d in dates)
-                    print(f"  {indent}{row['item_name']:<45} {cols}")
+                # Nested: use structure from the most recent filing date to determine
+                # item order and depth (structure may evolve across filings)
+                last_date = mdf['report_date'].max()
+                structure = (mdf[mdf['report_date'] == last_date]
+                             [['item_name', 'depth', 'parent_name']]
+                             .drop_duplicates('item_name'))
+                header = '  '.join(f"{str(d):>18}" for d in dates)
+                print(f"  {'':48} {header}")
+                for _, srow in structure.iterrows():
+                    indent = '  ' * (srow['depth'] - 1)
+                    vals = mdf[mdf['item_name'] == srow['item_name']].set_index('report_date')['item_value']
+                    cols = '  '.join(
+                        f"{int(vals[d]):>18,}" if d in vals.index and pd.notna(vals[d]) else f"{'*':>18}"
+                        for d in dates
+                    )
+                    print(f"  {indent}{srow['item_name']:<48} {cols}")
             else:
                 pivot = mdf.pivot_table(
                     index='item_name', columns='report_date',
@@ -958,44 +963,42 @@ for btype, bdf in df.groupby('breakdown_type'):
                 print(pivot.to_string())
 ```
 
-**Example — Geographic Revenue (flat, 10-K, 12-month):**
+**Example — Segment Revenue (flat, 10-K, 12-month):**
 
-Rows from `Schedule Of Revenues From External Customers And Long Lived Assets Table`,
-`form_type=10-K`, `period_months=12` — one column per annual filing date:
+`Reconciliation Of Revenue From Segments To Consolidated Table`, `form_type=10-K`, `period_months=12`:
 
 ```text
-[Schedule Of Revenues From External Customers And Long Lived Assets Table]  filing=10-K  period=12M
+[Reconciliation Of Revenue From Segments To Consolidated Table]  filing=10-K  period=12M
 
-report_date    2011-12-31   2012-12-31   2013-12-31   ...
+report_date                    2016-12-31   2017-12-31   2018-12-31   2019-12-31   2020-12-31   2021-12-31   2022-12-31   2023-12-31   2024-12-31   2025-12-31
 item_name
-Asia            10,612,000   27,494,000   95,896,000   ...
-Europe          84,397,000  139,120,000  193,272,000   ...
-North America  109,233,000  204,242,000  252,649,000   ...
-US             103,900,000  193,380,000  239,285,000   ...
+Automotive                     6818738000  10642485000  19906024000  23047000000  29542000000  51034000000  77553000000  90738000000  87604000000  82056000000
+Energy Generation And Storage   181394000   1116266000   1555244000   1531000000   1994000000   2789000000   3909000000   6035000000  10086000000  12771000000
 ```
 
-The same `breakdown_type` with `form_type=10-Q` and `period_months=3` produces a separate table
-for quarterly filings — the two cannot be merged because the period durations differ.
+The same `breakdown_type` with `form_type=10-Q` produces separate tables per period duration
+(3M, 6M, 9M) — only periods of equal length can be compared in the same table.
 
-**Example — Nested Revenue (illustrative, 10-K, 12-month with hierarchy):**
+**Example — Nested Revenue (10-K, 12-month with hierarchy):**
 
-When `depth > 1`, sub-items are indented under their parent (`parent_name` identifies the parent):
+`Disaggregation Of Revenue Table`, `form_type=10-K`, `period_months=12` — `depth=2` items are
+indented under their `parent_name` ("Sales And Services"):
 
 ```text
 [Disaggregation Of Revenue Table]  filing=10-K  period=12M
 
-  item_name                                              2024-12-31      2023-12-31
-  Automotive                                         77,119,000,000  82,418,000,000
-    Automotive Sales                                 72,406,000,000  77,812,000,000
-    Automotive Regulatory Credits                     2,763,000,000   1,790,000,000
-    Automotive Leasing                                1,950,000,000   2,120,000,000
-  Services and Other                                 10,082,000,000   8,319,000,000
-  Energy Generation and Storage                      10,489,000,000   6,035,000,000
+                                                           2023-12-31          2024-12-31          2025-12-31
+  Sales And Services                                   94,133,000,000      95,341,000,000      92,614,000,000
+    Automotive Sales                                   78,509,000,000      72,480,000,000      65,821,000,000
+    Automotive Regulatory Credits                       1,790,000,000       2,763,000,000       1,993,000,000
+    Energy Generation And Storage Sales                 5,515,000,000       9,564,000,000      12,270,000,000
+    Services And Other                                  8,319,000,000      10,534,000,000      12,530,000,000
+  Automotive Leasing                                    2,120,000,000       1,827,000,000       1,712,000,000
+  Energy Generation And Storage Leasing                   520,000,000         522,000,000         501,000,000
 ```
 
-`depth=1` rows (Automotive, Services and Other, Energy Generation and Storage) are top-level;
-`depth=2` rows (Automotive Sales, Automotive Regulatory Credits, Automotive Leasing) are children
-whose `parent_name` equals `"Automotive"`.
+`depth=1` rows (Sales And Services, Automotive Leasing, Energy Generation And Storage Leasing) are
+top-level; `depth=2` rows are children whose `parent_name` equals `"Sales And Services"`.
 
 To filter by annual or quarterly data, or by a specific breakdown type:
 ```python
