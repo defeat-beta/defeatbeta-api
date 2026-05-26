@@ -867,11 +867,22 @@ ticker.beta("5y", benchmark="IWM")
 
 ## 6. Accessing Revenue breakdown
 
-Returns all revenue breakdown tables directly from SEC filings in long format.
-Each row is one `(report_date, breakdown_type, item_name)` combination.
-`breakdown_type` is the exact XBRL table name; `item_value` is in raw USD.
-`form_type` identifies the SEC filing type (e.g. `10-K` for annual, `10-Q` for quarterly;
-foreign issuers use `20-F` / `6-K`).
+Returns all revenue breakdown tables extracted from SEC filings in unified long format.
+Each row is one `(symbol, report_date, breakdown_type, item_name)` observation.
+
+**Column descriptions:**
+
+| Column | Description |
+|--------|-------------|
+| `symbol` | Stock ticker |
+| `report_date` | Period end date |
+| `period_label` | Reporting window as `start/end` (e.g. `2024-01-01/2024-03-31` = 3-month Q1) |
+| `form_type` | SEC filing type — annual: `10-K`, `10-K/A`, `20-F`, `20-F/A`; quarterly: `10-Q`, `10-Q/A`, `6-K`, `6-K/A` |
+| `breakdown_type` | XBRL table name; each unique value is a separate breakdown table |
+| `item_name` | Revenue line item within the breakdown |
+| `item_value` | Raw USD value |
+| `depth` | Hierarchy depth: 1 = top-level item, 2+ = child of `parent_name` |
+| `parent_name` | Parent item name for nested rows; `NaN` for top-level items |
 
 ```python
 ticker.revenue_by_breakdown()
@@ -896,23 +907,108 @@ ticker.revenue_by_breakdown()
 ...
 ```
 
-To filter by annual (10-K) or quarterly (10-Q) data:
+**Data organization rules:**
+
+The long-format DataFrame maps to a set of tables structured as:
+**`breakdown_type` → `form_type` → `period duration`**
+
+1. **Split by `breakdown_type`**: each unique value is a distinct financial breakdown — e.g. geographic revenue, product revenue, segment revenue
+2. **Split by `form_type`**: annual filings (`10-K`, `20-F`) and quarterly filings (`10-Q`, `6-K`) cover different date ranges and must stay separate
+3. **Split by period duration**: derive the window length from `period_label` — only periods of the same duration belong in the same table (e.g. two 3-month periods are comparable; a 3-month period and a 12-month period are not)
+4. **Respect nesting**: when `depth > 1`, a row is a sub-item of `parent_name`; display with indentation to preserve the reported hierarchy
+
+**Code to split and display:**
+
+```python
+import pandas as pd
+from datetime import datetime
+
+df = ticker.revenue_by_breakdown()
+
+def period_months(period_label):
+    start, end = period_label.split('/')
+    delta = datetime.strptime(end, '%Y-%m-%d') - datetime.strptime(start, '%Y-%m-%d')
+    return round(delta.days / 30)
+
+df['period_months'] = df['period_label'].apply(period_months)
+
+for btype, bdf in df.groupby('breakdown_type'):
+    for ftype, fdf in bdf.groupby('form_type'):
+        for months, mdf in sorted(fdf.groupby('period_months')):
+            dates = sorted(mdf['report_date'].unique())
+            print(f"\n[{btype}]  filing={ftype}  period={months}M")
+
+            if mdf['depth'].max() > 1:
+                # Nested: DFS order is preserved from the original DataFrame
+                seen = set()
+                for _, row in mdf.iterrows():
+                    key = (row['depth'], row['item_name'])
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    indent = '  ' * (row['depth'] - 1)
+                    vals = mdf[mdf['item_name'] == row['item_name']].set_index('report_date')['item_value']
+                    cols = '  '.join(f"{vals.get(d, '*'):>15}" for d in dates)
+                    print(f"  {indent}{row['item_name']:<45} {cols}")
+            else:
+                pivot = mdf.pivot_table(
+                    index='item_name', columns='report_date',
+                    values='item_value', aggfunc='first'
+                ).reindex(columns=dates)
+                print(pivot.to_string())
+```
+
+**Example — Geographic Revenue (flat, 10-K, 12-month):**
+
+Rows from `Schedule Of Revenues From External Customers And Long Lived Assets Table`,
+`form_type=10-K`, `period_months=12` — one column per annual filing date:
+
+```text
+[Schedule Of Revenues From External Customers And Long Lived Assets Table]  filing=10-K  period=12M
+
+report_date    2011-12-31   2012-12-31   2013-12-31   ...
+item_name
+Asia            10,612,000   27,494,000   95,896,000   ...
+Europe          84,397,000  139,120,000  193,272,000   ...
+North America  109,233,000  204,242,000  252,649,000   ...
+US             103,900,000  193,380,000  239,285,000   ...
+```
+
+The same `breakdown_type` with `form_type=10-Q` and `period_months=3` produces a separate table
+for quarterly filings — the two cannot be merged because the period durations differ.
+
+**Example — Nested Revenue (illustrative, 10-K, 12-month with hierarchy):**
+
+When `depth > 1`, sub-items are indented under their parent (`parent_name` identifies the parent):
+
+```text
+[Disaggregation Of Revenue Table]  filing=10-K  period=12M
+
+  item_name                                              2024-12-31      2023-12-31
+  Automotive                                         77,119,000,000  82,418,000,000
+    Automotive Sales                                 72,406,000,000  77,812,000,000
+    Automotive Regulatory Credits                     2,763,000,000   1,790,000,000
+    Automotive Leasing                                1,950,000,000   2,120,000,000
+  Services and Other                                 10,082,000,000   8,319,000,000
+  Energy Generation and Storage                      10,489,000,000   6,035,000,000
+```
+
+`depth=1` rows (Automotive, Services and Other, Energy Generation and Storage) are top-level;
+`depth=2` rows (Automotive Sales, Automotive Regulatory Credits, Automotive Leasing) are children
+whose `parent_name` equals `"Automotive"`.
+
+To filter by annual or quarterly data, or by a specific breakdown type:
 ```python
 df = ticker.revenue_by_breakdown()
+
 annual_df    = df[df['form_type'].isin(['10-K', '10-K/A', '20-F', '20-F/A'])]
 quarterly_df = df[df['form_type'].isin(['10-Q', '10-Q/A', '6-K', '6-K/A'])]
-```
 
-To filter by a specific breakdown type:
-```python
-df = ticker.revenue_by_breakdown()
-segment_df = df[df['breakdown_type'] == 'Reconciliation Of Revenue From Segments To Consolidated Table']
 geo_df     = df[df['breakdown_type'] == 'Schedule Of Revenues From External Customers And Long Lived Assets Table']
 product_df = df[df['breakdown_type'] == 'Disaggregation Of Revenue Table']
-```
+segment_df = df[df['breakdown_type'] == 'Reconciliation Of Revenue From Segments To Consolidated Table']
 
-To list all available breakdown types for a ticker:
-```python
+# List all available breakdown types for a ticker
 df['breakdown_type'].unique()
 ```
 ## 7. Stock TTM Revenue
