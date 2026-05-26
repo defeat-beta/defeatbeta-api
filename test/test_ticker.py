@@ -21,7 +21,7 @@ class TestTicker(unittest.TestCase):
 
     def test_sec_filing(self):
         result = self.ticker.sec_filing()
-        print(result)
+        print(result.to_string())
 
     def test_officers(self):
         result = self.ticker.officers()
@@ -130,16 +130,8 @@ class TestTicker(unittest.TestCase):
         print(news.get_news(first_uuid))
         news.print_pretty_table(first_uuid)
 
-    def test_revenue_by_segment(self):
-        result = self.ticker.revenue_by_segment()
-        print(result.to_string())
-
-    def test_revenue_by_geography(self):
-        result = self.ticker.revenue_by_geography()
-        print(result.to_string())
-
-    def test_revenue_by_product(self):
-        result = self.ticker.revenue_by_product()
+    def test_revenue_by_breakdown(self):
+        result = self.ticker.revenue_by_breakdown()
         print(result.to_string())
 
     def test_quarterly_gross_margin(self):

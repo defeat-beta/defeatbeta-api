@@ -3,6 +3,8 @@ Change Log
 
 0.0.54
 -------
+- fix: adapt to upstream parquet schema changes — news `related_symbols` → `symbol`, treasury yield `bc10_year` → `bc_10year`, beta date format `%Y-%m-%d` → `%Y-%m-%d %H:%M:%S` [`#188 <https://github.com/defeat-beta/defeatbeta-api/issues/188>`_]
+- breaking: replace `revenue_by_segment/geography/product()` with unified `revenue_by_breakdown()` returning long-format DataFrame from restructured XBRL-nested parquet [`#188 <https://github.com/defeat-beta/defeatbeta-api/issues/188>`_]
 
 0.0.53
 -------

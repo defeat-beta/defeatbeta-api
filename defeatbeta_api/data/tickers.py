@@ -260,17 +260,9 @@ class Tickers:
         combined into a single DataFrame."""
         return self._run_parallel_concat("ttm_net_income_common_stockholders")
 
-    def revenue_by_segment(self) -> pd.DataFrame:
-        """Revenue breakdown by segment for all tickers, combined into a single DataFrame."""
-        return self._run_parallel_concat("revenue_by_segment")
-
-    def revenue_by_geography(self) -> pd.DataFrame:
-        """Revenue breakdown by geography for all tickers, combined into a single DataFrame."""
-        return self._run_parallel_concat("revenue_by_geography")
-
-    def revenue_by_product(self) -> pd.DataFrame:
-        """Revenue breakdown by product for all tickers, combined into a single DataFrame."""
-        return self._run_parallel_concat("revenue_by_product")
+    def revenue_by_breakdown(self) -> pd.DataFrame:
+        """All revenue breakdown tables for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("revenue_by_breakdown")
 
     # ------------------------------------------------------------------
     # Category 2 – Value

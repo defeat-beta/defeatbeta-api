@@ -869,73 +869,39 @@ ticker.beta("5y", benchmark="IWM")
 - Formula: `β = Covariance(Stock Returns, Market Returns) / Variance(Market Returns)`
 
 ## 6. Accessing Revenue breakdown
-### 9.1 Stock Revenue by segment
+
+Returns all revenue breakdown tables directly from SEC filings in long format.
+Each row is one `(report_date, breakdown_type, item_name)` combination.
+`breakdown_type` is the exact XBRL table name; `item_value` is in raw USD.
+
 ```python
-ticker.revenue_by_segment()
+ticker.revenue_by_breakdown()
 ```
 ```text
->>> ticker.revenue_by_segment()
-   symbol report_date          Auto  Energy and Storage  Services and Other
-0    TSLA  2020-06-30  5.179000e+09        3.700000e+08        4.870000e+08
-1    TSLA  2020-09-30  7.611000e+09        5.790000e+08        5.810000e+08
-2    TSLA  2020-12-31  9.314000e+09        7.520000e+08        6.780000e+08
-3    TSLA  2021-03-31  9.002000e+09        4.940000e+08        8.930000e+08
-4    TSLA  2021-06-30  1.020600e+10        8.010000e+08        9.510000e+08
-5    TSLA  2021-09-30  1.205700e+10        8.060000e+08        8.940000e+08
-6    TSLA  2021-12-31  1.596700e+10        6.880000e+08        1.064000e+09
-7    TSLA  2022-03-31  1.686100e+10        6.160000e+08        1.279000e+09
-8    TSLA  2022-06-30  1.460200e+10        8.660000e+08        1.466000e+09
-9    TSLA  2022-09-30  1.869200e+10        1.117000e+09        1.645000e+09
-10   TSLA  2022-12-31  2.130700e+10        1.310000e+09        1.701000e+09
-11   TSLA  2023-03-31  1.996300e+10        1.529000e+09        1.837000e+09
-12   TSLA  2023-06-30  2.126800e+10        1.509000e+09        2.150000e+09
-13   TSLA  2023-09-30  1.962500e+10        1.559000e+09        2.166000e+09
-14   TSLA  2023-12-31  2.156300e+10        1.438000e+09        2.166000e+09
-15   TSLA  2024-03-31  1.737800e+10        1.635000e+09        2.288000e+09
-16   TSLA  2024-06-30  1.987800e+10        3.014000e+09        2.608000e+09
-17   TSLA  2024-09-30  2.001600e+10        2.376000e+09        2.790000e+09
-18   TSLA  2024-12-31  1.979800e+10        3.061000e+09        2.848000e+09
-19   TSLA  2025-03-31  1.396700e+10        2.730000e+09        2.638000e+09
+>>> ticker.revenue_by_breakdown()
+   symbol report_date                      period_label                                                              breakdown_type                              item_name   item_value
+0    TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Product Information Table           Powertrain Component And Related Sales     46860000
+1    TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Product Information Table                Vehicle Options And Related Sales    101708000
+2    TSLA  2016-12-31  2016-01-01/2016-12-31  Reconciliation Of Revenue From Segments To Consolidated Table                                  Automotive   6818738000
+3    TSLA  2016-12-31  2016-01-01/2016-12-31  Reconciliation Of Revenue From Segments To Consolidated Table           Energy Generation And Storage    181394000
+4    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                          CN   1065255000
+5    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                          NO    335572000
+6    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table               Other Countries   1398599000
+7    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                          US   4200706000
+...
 ```
 
-### 9.2 Stock Revenue by geography
+To filter by a specific breakdown type:
 ```python
-ticker.revenue_by_geography()
-```
-```text
->>> ticker.revenue_by_geography()
-   symbol report_date         China         Other  United States
-0    TSLA  2020-03-31  9.000000e+08  2.317000e+09   2.768000e+09
-1    TSLA  2020-06-30  1.400000e+09  1.546000e+09   3.090000e+09
-2    TSLA  2020-09-30  1.744000e+09  2.812000e+09   4.215000e+09
-3    TSLA  2020-12-31  2.618000e+09  2.992000e+09   5.134000e+09
-4    TSLA  2021-03-31  3.043000e+09  2.922000e+09   4.424000e+09
-5    TSLA  2021-06-30  2.859000e+09  3.894000e+09   5.205000e+09
-6    TSLA  2021-09-30  3.113000e+09  4.230000e+09   6.414000e+09
-7    TSLA  2021-12-31  4.829000e+09  4.960000e+09   7.930000e+09
-8    TSLA  2022-03-31  4.650000e+09  5.372000e+09   8.734000e+09
-9    TSLA  2022-06-30  3.787000e+09  3.533000e+09   9.614000e+09
-10   TSLA  2022-09-30  5.131000e+09  6.087000e+09   1.023600e+10
-11   TSLA  2022-12-31  4.577000e+09  7.772000e+09   1.196900e+10
-12   TSLA  2023-03-31  4.891000e+09  7.191000e+09   1.124700e+10
-13   TSLA  2023-06-30  5.731000e+09  7.864000e+09   1.133200e+10
-14   TSLA  2023-09-30  5.020000e+09  7.437000e+09   1.089300e+10
-15   TSLA  2023-12-31  6.103000e+09  7.301000e+09   1.176300e+10
-16   TSLA  2024-03-31  4.592000e+09  6.947000e+09   9.762000e+09
-17   TSLA  2024-06-30  4.636000e+09  7.608000e+09   1.325600e+10
-18   TSLA  2024-09-30  5.665000e+09  6.933000e+09   1.258400e+10
-19   TSLA  2024-12-31  6.051000e+09  7.533000e+09   1.212300e+10
+df = ticker.revenue_by_breakdown()
+segment_df = df[df['breakdown_type'] == 'Reconciliation Of Revenue From Segments To Consolidated Table']
+geo_df     = df[df['breakdown_type'] == 'Schedule Of Revenues From External Customers And Long Lived Assets Table']
+product_df = df[df['breakdown_type'] == 'Disaggregation Of Revenue Table']
 ```
 
-### 9.3 Stock Revenue by product
+To list all available breakdown types for a ticker:
 ```python
-ticker.revenue_by_product()
-```
-```text
->>> ticker.revenue_by_product()
-Empty DataFrame
-Columns: [symbol, report_date]
-Index: []
+df['breakdown_type'].unique()
 ```
 
 ## 7. Stock TTM Revenue

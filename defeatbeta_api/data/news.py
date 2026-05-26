@@ -78,7 +78,7 @@ class News:
         publisher = data['publisher']
         news_type = data['type']
         report_date = data['report_date']
-        related_symbols = data['related_symbols']
+        related_symbols = data['symbol']
         link = data['link']
         news = data['news']
         length = 120

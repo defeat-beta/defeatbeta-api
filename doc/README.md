@@ -22,7 +22,7 @@
 > 
 > [Information](api/Info_Examples.md) includes `profile`, `sec filing`, `officers`, `earnings call transcripts`, `financial news` etc.
 > 
-> [Finance](api/Finance_Examples.md) includes `price`, `statement`, `earning calendar`, `splits`, `dividends`, `revenue breakdown`, `geography breakdown`, `product breakdown` etc.
+> [Finance](api/Finance_Examples.md) includes `price`, `statement`, `earning calendar`, `splits`, `dividends`, `revenue breakdown` (all SEC filing tables: by segment, geography, product, etc.) etc.
 > 
 > [Profitability](api/Profitability_Examples.md) includes `gross margin`, `operating margin`, `net margin`, `ebitda margin`, `fcf margin` etc.
 > 

@@ -13,7 +13,7 @@ from .tools.news import get_stock_news
 from .tools.statement import get_stock_quarterly_income_statement, get_stock_annual_income_statement, \
     get_stock_quarterly_balance_sheet, get_stock_annual_balance_sheet, get_stock_quarterly_cash_flow, \
     get_stock_annual_cash_flow
-from .tools.breakdown import get_quarterly_revenue_by_segment, get_quarterly_revenue_by_geography
+from .tools.breakdown import get_revenue_breakdown
 from .tools.margin import get_stock_quarterly_gross_margin, get_stock_annual_gross_margin, \
     get_stock_quarterly_operating_margin, get_stock_annual_operating_margin, \
     get_stock_quarterly_net_margin, get_stock_annual_net_margin, \
@@ -90,8 +90,7 @@ mcp.tool()(get_stock_quarterly_cash_flow)
 mcp.tool()(get_stock_annual_cash_flow)
 
 # Revenue Breakdown
-mcp.tool()(get_quarterly_revenue_by_segment)
-mcp.tool()(get_quarterly_revenue_by_geography)
+mcp.tool()(get_revenue_breakdown)
 
 # Margin
 mcp.tool()(get_stock_quarterly_gross_margin)

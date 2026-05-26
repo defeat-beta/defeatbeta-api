@@ -110,7 +110,7 @@ class Ticker:
         value, unit = int(match.group(1)), match.group(2)
 
         # Use data update time as end date (data may not be current to today)
-        end_date = datetime.strptime(self.huggingface_client.get_data_update_time(), '%Y-%m-%d')
+        end_date = datetime.strptime(self.huggingface_client.get_data_update_time(), '%Y-%m-%d %H:%M:%S')
         if unit == 'd':
             start_date = end_date - timedelta(days=value)
         elif unit == 'm':
@@ -292,14 +292,21 @@ class Ticker:
             self.log_level,
         )
 
-    def revenue_by_segment(self) -> pd.DataFrame:
-        return self._revenue_by_breakdown('segment')
+    def revenue_by_breakdown(self) -> pd.DataFrame:
+        """
+        Return all revenue breakdown data from SEC filings in long format.
 
-    def revenue_by_geography(self) -> pd.DataFrame:
-        return self._revenue_by_breakdown('geography')
+        Each row represents one (report_date, breakdown_type, item_name) combination.
+        breakdown_type is the exact XBRL table name from the filing (e.g.
+        "Reconciliation Of Revenue From Segments To Consolidated Table",
+        "Schedule Of Revenues From External Customers And Long Lived Assets Table",
+        "Disaggregation Of Revenue Table"). item_value is in raw USD.
 
-    def revenue_by_product(self) -> pd.DataFrame:
-        return self._revenue_by_breakdown('product')
+        Columns: symbol, report_date, period_label, breakdown_type, item_name, item_value
+        """
+        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
+        sql = load_sql("select_revenue_breakdown_by_symbol", ticker=self.ticker, url=url)
+        return self.duckdb_client.query(sql)
 
     def quarterly_revenue_yoy_growth(self) -> pd.DataFrame:
         return self._calculate_yoy_growth(item_name='total_revenue', period_type='quarterly', finance_type='income_statement')
@@ -1231,11 +1238,11 @@ class Ticker:
             'tax_rate_for_calcs',
             'sp500_cagr_end',
             'sp500_10y_cagr',
-            'bc10_year'
+            'bc_10year'
         ]]
 
         result_df = result_df.rename(columns={
-            'bc10_year': 'treasure_10y_yield',
+            'bc_10year': 'treasure_10y_yield',
         })
 
         # Calculate 5-year beta using monthly returns
@@ -1970,15 +1977,15 @@ class Ticker:
         # Compute treasury 5Y avg first so it can serve as risk_free_rate.
         # This keeps Python and Excel aligned (C8 = =L{treasury_avg_row}).
         _current_yield = float(last_wacc['treasure_10y_yield'])
-        if not treasure_df.empty and 'bc10_year' in treasure_df.columns:
+        if not treasure_df.empty and 'bc_10year' in treasure_df.columns:
             _tr = treasure_df.copy()
             _tr['report_date'] = pd.to_datetime(_tr['report_date'])
             _cutoff = pd.Timestamp.now() - pd.DateOffset(years=5)
-            _recent = _tr[_tr['report_date'] >= _cutoff]['bc10_year'].dropna()
+            _recent = _tr[_tr['report_date'] >= _cutoff]['bc_10year'].dropna()
             if not _recent.empty:
-                _tr_year = _tr[_tr['report_date'] >= _cutoff][['report_date', 'bc10_year']].dropna(subset=['bc10_year']).copy()
+                _tr_year = _tr[_tr['report_date'] >= _cutoff][['report_date', 'bc_10year']].dropna(subset=['bc_10year']).copy()
                 _tr_year['year'] = _tr_year['report_date'].dt.year
-                _annual = _tr_year.groupby('year')['bc10_year'].mean()
+                _annual = _tr_year.groupby('year')['bc_10year'].mean()
                 risk_free_rate = float(_annual.mean())
             else:
                 risk_free_rate = _current_yield
@@ -2056,24 +2063,24 @@ class Ticker:
         # Terminal rate: mean of annual-average 10Y treasury yields over last 5 years.
         # Using annual averages (not raw data points) so Python and the Excel AVERAGE formula agree exactly.
         treasury_annual_details = []
-        if not treasure_df.empty and 'bc10_year' in treasure_df.columns:
+        if not treasure_df.empty and 'bc_10year' in treasure_df.columns:
             treasure_df['report_date'] = pd.to_datetime(treasure_df['report_date'])
             cutoff = pd.Timestamp.now() - pd.DateOffset(years=5)
             recent = treasure_df[treasure_df['report_date'] >= cutoff][
-                ['report_date', 'bc10_year']
-            ].dropna(subset=['bc10_year']).copy()
+                ['report_date', 'bc_10year']
+            ].dropna(subset=['bc_10year']).copy()
             if not recent.empty:
                 recent['year'] = recent['report_date'].dt.year
                 annual_avgs = (
-                    recent.groupby('year')['bc10_year'].mean()
+                    recent.groupby('year')['bc_10year'].mean()
                     .reset_index().sort_values('year')
                 )
                 for _, r in annual_avgs.iterrows():
                     treasury_annual_details.append({
                         'year': int(r['year']),
-                        'avg_yield': float(r['bc10_year']),
+                        'avg_yield': float(r['bc_10year']),
                     })
-                growth_rate_terminal = float(annual_avgs['bc10_year'].mean())
+                growth_rate_terminal = float(annual_avgs['bc_10year'].mean())
             else:
                 growth_rate_terminal = risk_free_rate
         else:
@@ -3387,19 +3394,6 @@ class Ticker:
                        ttm_filter = ttm_filter)
         return self.duckdb_client.query(sql)
 
-    def _revenue_by_breakdown(self, breakdown_type: str) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
-        sql = load_sql(
-            "select_revenue_breakdown_by_symbol",
-            ticker = self.ticker,
-            url = url,
-            breakdown_type = breakdown_type)
-        data = self.duckdb_client.query(sql)
-        df_wide = data.pivot(index=['report_date'], columns='item_name', values='item_value').reset_index()
-        df_wide.columns.name = None
-        df_wide = df_wide.fillna(0)
-        df_wide.insert(0, 'symbol', self.ticker)
-        return df_wide
 
     def _generate_margin(self, margin_type: str, period_type: str, numerator_item: str,
                          margin_column: str) -> pd.DataFrame:

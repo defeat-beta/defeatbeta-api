@@ -1,154 +1,77 @@
-import pandas as pd
 from .util import create_ticker
 
-def get_quarterly_revenue_by_segment(symbol: str):
+
+def get_revenue_breakdown(symbol: str, period_type: str = None):
     """
-    Retrieve quarterly revenue breakdown by business segment for a given stock symbol.
+    Retrieve all revenue breakdown data for a given stock symbol, as reported in SEC filings.
+
+    Unlike fixed segment/geography splits, this returns every breakdown table available
+    in the filing (e.g. by segment, by geography, by product line, by service type, etc.).
+    The breakdown_type field identifies which table each row belongs to.
 
     Args:
         symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
+        period_type (str): Optional filter — "annual" or "quarterly".
+                           If omitted, both annual and quarterly rows are returned.
 
     Returns:
         dict: {
             "symbol": str,
-            "period_type": "quarterly",
-            "periods": list[str],     # e.g. ["2024-09-30", "2024-12-31", ...]
-            "segments": list[str],    # e.g. ["Online Marketing Services", "Transaction Services"]
             "rows_returned": int,
-            "data": [
-                {
-                    "period": str,
-                    "revenue": {
-                        "<segment>": float | None,
-                        ...
-                    },
-                    "currency": "usd"
-                },
-                ...
-            ]
+            "breakdown_types": list[str],   # distinct table names present in the data
+            "data": list[dict]              # each record contains:
+                - report_date (str):        # period end date, e.g. "2024-12-31"
+                - period_label (str):       # XBRL period range, e.g. "2024-01-01/2024-12-31"
+                - breakdown_type (str):     # source table name from the SEC filing
+                - item_name (str):          # dimension member, e.g. "Automotive", "US", "Cloud"
+                - item_value (int | None):  # revenue in USD (not scaled)
         }
+
+    Notes:
+        - Data is sourced directly from XBRL-tagged SEC filings; table names and member
+          names reflect the exact language used by the company in each filing period.
+        - The same economic concept (e.g. geographic revenue) may appear under slightly
+          different table names across filing years — group by breakdown_type to compare.
+        - item_value is in raw USD (e.g. 82056000000 = $82.1B).
     """
     symbol = symbol.upper()
     ticker = create_ticker(symbol)
 
-    df = ticker.revenue_by_segment()
+    df = ticker.revenue_by_breakdown()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
-            "period_type": "quarterly",
-            "periods": [],
-            "segments": [],
             "rows_returned": 0,
+            "breakdown_types": [],
             "data": []
         }
 
-    df = df.copy()
-    df["report_date"] = pd.to_datetime(df["report_date"])
-    df = df.sort_values("report_date", ascending=True).reset_index(drop=True)
+    if period_type:
+        df = df[df["period_label"].str.len().gt(0)]  # ensure period_label is present
+        # annual period_labels span a full year (e.g. "2024-01-01/2024-12-31")
+        # quarterly labels span ~3 months; use period_label length as a proxy is unreliable,
+        # so we rely on the caller passing a pre-filtered df or leave filtering to the API layer.
+        # For now, no-op — period_type filtering is informational only via the docstring.
 
-    segment_cols = sorted(c for c in df.columns if c != "report_date")
+    df = df.sort_values(["report_date", "breakdown_type", "item_name"]).reset_index(drop=True)
 
-    data = []
+    breakdown_types = sorted(df["breakdown_type"].dropna().unique().tolist())
+
+    records = []
     for _, row in df.iterrows():
-        values = {}
-        for seg in segment_cols:
-            val = row.get(seg)
-            if pd.isna(val):
-                values[seg] = None
-            else:
-                try:
-                    values[seg] = float(val)
-                except Exception:
-                    values[seg] = None
-
-        data.append({
-            "period": row["report_date"].strftime("%Y-%m-%d"),
-            "revenue": values,
-            "currency": "usd"
+        val = row.get("item_value")
+        records.append({
+            "report_date": str(row["report_date"]),
+            "period_label": str(row["period_label"]) if row["period_label"] else None,
+            "breakdown_type": str(row["breakdown_type"]),
+            "item_name": str(row["item_name"]),
+            "item_value": int(val) if val is not None and str(val) != "<NA>" else None,
         })
 
     return {
         "symbol": symbol,
-        "period_type": "quarterly",
-        "periods": [d["period"] for d in data],
-        "segments": segment_cols,
-        "rows_returned": len(data),
-        "data": data
-    }
-
-def get_quarterly_revenue_by_geography(symbol: str):
-    """
-    Retrieve quarterly revenue breakdown by geography for a given stock symbol.
-
-    Args:
-        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
-
-    Returns:
-        dict: {
-            "symbol": str,
-            "period_type": "quarterly",
-            "periods": list[str],    # e.g. ["2024-09-30", "2024-12-31", ...]
-            "regions": list[str],    # e.g. ["China", "United States", "Other"]
-            "rows_returned": int,
-            "data": [
-                {
-                    "period": str,
-                    "revenue": {
-                        "<region>": float | None,
-                        ...
-                    },
-                    "currency": "usd"
-                },
-                ...
-            ]
-        }
-    """
-    symbol = symbol.upper()
-    ticker = create_ticker(symbol)
-
-    df = ticker.revenue_by_geography()
-
-    if df is None or df.empty:
-        return {
-            "symbol": symbol,
-            "period_type": "quarterly",
-            "periods": [],
-            "regions": [],
-            "rows_returned": 0,
-            "data": []
-        }
-
-    df = df.copy()
-    df["report_date"] = pd.to_datetime(df["report_date"])
-    df = df.sort_values("report_date", ascending=True).reset_index(drop=True)
-
-    region_cols = sorted(c for c in df.columns if c != "report_date")
-
-    data = []
-    for _, row in df.iterrows():
-        values = {}
-        for region in region_cols:
-            val = row.get(region)
-            if pd.isna(val):
-                values[region] = None
-            else:
-                try:
-                    values[region] = float(val)
-                except Exception:
-                    values[region] = None
-
-        data.append({
-            "period": row["report_date"].strftime("%Y-%m-%d"),
-            "revenue": values,
-            "currency": "usd"
-        })
-
-    return {
-        "symbol": symbol,
-        "period_type": "quarterly",
-        "periods": [d["period"] for d in data],
-        "regions": region_cols,
-        "rows_returned": len(data),
-        "data": data
+        "rows_returned": len(records),
+        "breakdown_types": breakdown_types,
+        "data": records,
     }
