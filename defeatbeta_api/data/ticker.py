@@ -302,13 +302,23 @@ class Ticker:
         "Schedule Of Revenues From External Customers And Long Lived Assets Table",
         "Disaggregation Of Revenue Table"). item_value is in raw USD.
 
-        Columns: symbol, report_date, period_label, breakdown_type, item_name,
-                 item_value, depth, parent_name
+        Columns:
+            symbol          — stock ticker
+            report_date     — period end date (e.g. "2024-12-31")
+            period_label    — data period this report covers; "start/end" when both dates are
+                              available (e.g. "2024-01-01/2024-12-31"), or just "end" when only
+                              the end date is present in the filing
+            form_type       — SEC form type (e.g. "10-K", "10-Q", "10-K/A")
+            breakdown_type  — exact XBRL table name from the filing
+            item_name       — dimension member name (e.g. "Automotive", "US", "Cloud")
+            item_value      — revenue in raw USD (e.g. 82056000000 = $82.1B)
+            depth           — hierarchy depth; 1 = root member
+            parent_name     — display name of the parent node; NULL for root members
 
         Within each (report_date, period_label, breakdown_type) group the rows are
         ordered by depth-first pre-order traversal: a parent row always precedes all
         of its descendants, and the complete subtree of one node is shown before the
-        next sibling. depth=1 are root members; parent_name is NULL for root members.
+        next sibling.
         """
         url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
         sql = load_sql("select_revenue_breakdown_by_symbol", ticker=self.ticker, url=url)

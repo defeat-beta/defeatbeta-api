@@ -1,5 +1,11 @@
 from .util import create_ticker
 
+# Maps period_type filter values to the SEC form types they correspond to.
+# Domestic companies:  10-K / 10-K/A = annual;  10-Q / 10-Q/A = quarterly
+# Foreign private issuers (ADRs etc.): 20-F / 20-F/A = annual;  6-K / 6-K/A = interim (quarterly/semi-annual)
+_ANNUAL_FORM_TYPES = {"10-K", "10-K/A", "20-F", "20-F/A"}
+_QUARTERLY_FORM_TYPES = {"10-Q", "10-Q/A", "6-K", "6-K/A"}
+
 
 def get_revenue_breakdown(symbol: str, period_type: str = None):
     """
@@ -12,7 +18,9 @@ def get_revenue_breakdown(symbol: str, period_type: str = None):
     Args:
         symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
         period_type (str): Optional filter — "annual" or "quarterly".
-                           If omitted, both annual and quarterly rows are returned.
+                           Filtered by form_type: "annual" keeps 10-K/10-K/A rows,
+                           "quarterly" keeps 10-Q/10-Q/A rows.
+                           If omitted, all rows are returned.
 
     Returns:
         dict: {
@@ -21,7 +29,10 @@ def get_revenue_breakdown(symbol: str, period_type: str = None):
             "breakdown_types": list[str],   # distinct table names present in the data
             "data": list[dict]              # each record contains:
                 - report_date (str):        # period end date, e.g. "2024-12-31"
-                - period_label (str):       # XBRL period range, e.g. "2024-01-01/2024-12-31"
+                - period_label (str):       # the data period this report covers, formatted as
+                                            # "start~end" (e.g. "2024-01-01~2024-12-31") or
+                                            # just "end" when no start date is available
+                - form_type (str):          # SEC form type, e.g. "10-K", "10-Q", "10-K/A"
                 - breakdown_type (str):     # source table name from the SEC filing
                 - item_name (str):          # dimension member, e.g. "Automotive", "US", "Cloud"
                 - item_value (int | None):  # revenue in USD (not scaled)
@@ -52,12 +63,10 @@ def get_revenue_breakdown(symbol: str, period_type: str = None):
             "data": []
         }
 
-    if period_type:
-        df = df[df["period_label"].str.len().gt(0)]  # ensure period_label is present
-        # annual period_labels span a full year (e.g. "2024-01-01/2024-12-31")
-        # quarterly labels span ~3 months; use period_label length as a proxy is unreliable,
-        # so we rely on the caller passing a pre-filtered df or leave filtering to the API layer.
-        # For now, no-op — period_type filtering is informational only via the docstring.
+    if period_type == "annual":
+        df = df[df["form_type"].isin(_ANNUAL_FORM_TYPES)]
+    elif period_type == "quarterly":
+        df = df[df["form_type"].isin(_QUARTERLY_FORM_TYPES)]
 
     breakdown_types = sorted(df["breakdown_type"].dropna().unique().tolist())
 
@@ -65,9 +74,13 @@ def get_revenue_breakdown(symbol: str, period_type: str = None):
     for _, row in df.iterrows():
         val = row.get("item_value")
         parent = row.get("parent_name")
+        raw_label = row.get("period_label")
+        # period_label from XBRL: "2024-01-01/2024-12-31" (start~end) or "2024-12-31" (end only)
+        period_label = str(raw_label).replace("/", "~") if raw_label else None
         records.append({
             "report_date": str(row["report_date"]),
-            "period_label": str(row["period_label"]) if row["period_label"] else None,
+            "period_label": period_label,
+            "form_type": str(row["form_type"]) if row.get("form_type") else None,
             "breakdown_type": str(row["breakdown_type"]),
             "item_name": str(row["item_name"]),
             "item_value": int(val) if val is not None and str(val) != "<NA>" else None,
