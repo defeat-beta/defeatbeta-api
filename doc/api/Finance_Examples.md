@@ -876,16 +876,520 @@ ticker.revenue_by_breakdown()
 ```
 ```text
 >>> ticker.revenue_by_breakdown()
-   symbol report_date                      period_label                                                              breakdown_type                              item_name   item_value
-0    TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Product Information Table           Powertrain Component And Related Sales     46860000
-1    TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Product Information Table                Vehicle Options And Related Sales    101708000
-2    TSLA  2016-12-31  2016-01-01/2016-12-31  Reconciliation Of Revenue From Segments To Consolidated Table                                  Automotive   6818738000
-3    TSLA  2016-12-31  2016-01-01/2016-12-31  Reconciliation Of Revenue From Segments To Consolidated Table           Energy Generation And Storage    181394000
-4    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                          CN   1065255000
-5    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                          NO    335572000
-6    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table               Other Countries   1398599000
-7    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                          US   4200706000
-...
+
+    symbol report_date           period_label                                                            breakdown_type                                                      item_name   item_value
+0     TSLA  2011-12-31  2011-01-01/2011-12-31                                                 Development Servces Table                                Daimler Smart Fortwo Ev Program      7200000
+1     TSLA  2011-12-31  2011-01-01/2011-12-31                                                 Development Servces Table                   Toyota Rav Four Program Phase Zero Agreement      7600000
+2     TSLA  2011-12-31  2011-01-01/2011-12-31                                                 Development Servces Table  Toyota Rav Four Program Phase One Contract Services Agreement     47400000
+3     TSLA  2011-12-31  2011-01-01/2011-12-31                                     Schedule Of Product Information Table                         Powertrain Component And Related Sales     46860000
+4     TSLA  2011-12-31  2011-01-01/2011-12-31                                     Schedule Of Product Information Table                              Vehicle Options And Related Sales    101708000
+5     TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia     10612000
+6     TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe     84397000
+7     TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US    103900000
+8     TSLA  2011-12-31  2011-01-01/2011-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    109233000
+9     TSLA  2012-03-31  2012-01-01/2012-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      3828000
+10    TSLA  2012-03-31  2012-01-01/2012-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe      9231000
+11    TSLA  2012-03-31  2012-01-01/2012-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US     17000000
+12    TSLA  2012-03-31  2012-01-01/2012-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America     17108000
+13    TSLA  2012-06-30  2012-01-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      5581000
+14    TSLA  2012-06-30  2012-01-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US     25000000
+15    TSLA  2012-06-30  2012-01-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America     25252000
+16    TSLA  2012-06-30  2012-01-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe     25987000
+17    TSLA  2012-06-30  2012-04-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      1753000
+18    TSLA  2012-06-30  2012-04-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US      8000000
+19    TSLA  2012-06-30  2012-04-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America      8144000
+20    TSLA  2012-06-30  2012-04-01/2012-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe     16756000
+21    TSLA  2012-09-30  2012-01-01/2012-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      6927000
+22    TSLA  2012-09-30  2012-01-01/2012-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe     33594000
+23    TSLA  2012-09-30  2012-01-01/2012-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America     66403000
+24    TSLA  2012-09-30  2012-07-01/2012-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      1345000
+25    TSLA  2012-09-30  2012-07-01/2012-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe      7606000
+26    TSLA  2012-09-30  2012-07-01/2012-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America     41153000
+27    TSLA  2012-12-31  2012-01-01/2012-12-31               Schedule Of Limited Partners Capital Account By Class Table  Toyota Rav Four Program Phase One Contract Services Agreement     10700000
+28    TSLA  2012-12-31  2012-01-01/2012-12-31               Schedule Of Limited Partners Capital Account By Class Table                                  Daimler Mercedes Benz Program     15900000
+29    TSLA  2012-12-31  2012-01-01/2012-12-31                                     Schedule Of Product Information Table                         Powertrain Component And Related Sales     31355000
+30    TSLA  2012-12-31  2012-01-01/2012-12-31                                     Schedule Of Product Information Table                              Vehicle Options And Related Sales    354344000
+31    TSLA  2012-12-31  2012-01-01/2012-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      7613000
+32    TSLA  2012-12-31  2012-01-01/2012-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe     50318000
+33    TSLA  2012-12-31  2012-01-01/2012-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    355325000
+34    TSLA  2012-12-31  2012-01-01/2012-12-31                          Summary Of Significant Accounting Policies Table                                          Extended Service Plan       100000
+35    TSLA  2012-12-31  2012-01-01/2012-12-31                          Summary Of Significant Accounting Policies Table                             Zero Emission Vehicle Credit Sales     40500000
+36    TSLA  2013-03-31  2013-01-01/2013-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia       445000
+37    TSLA  2013-03-31  2013-01-01/2013-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe      8851000
+38    TSLA  2013-03-31  2013-01-01/2013-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    552496000
+39    TSLA  2013-06-30  2013-01-01/2013-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia       703000
+40    TSLA  2013-06-30  2013-01-01/2013-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe     13594000
+41    TSLA  2013-06-30  2013-01-01/2013-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    952634000
+42    TSLA  2013-06-30  2013-04-01/2013-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia       259000
+43    TSLA  2013-06-30  2013-04-01/2013-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe      4743000
+44    TSLA  2013-06-30  2013-04-01/2013-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    400137000
+45    TSLA  2013-09-30  2013-01-01/2013-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia       861000
+46    TSLA  2013-09-30  2013-01-01/2013-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe    159572000
+47    TSLA  2013-09-30  2013-01-01/2013-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America   1237844000
+48    TSLA  2013-09-30  2013-07-01/2013-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia       157000
+49    TSLA  2013-09-30  2013-07-01/2013-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe    145978000
+50    TSLA  2013-09-30  2013-07-01/2013-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    285211000
+51    TSLA  2013-12-31  2013-01-01/2013-12-31               Schedule Of Limited Partners Capital Account By Class Table                   Toyota Rav Four Program Phase Zero Agreement            0
+52    TSLA  2013-12-31  2013-01-01/2013-12-31               Schedule Of Limited Partners Capital Account By Class Table                                  Daimler Mercedes Benz Program     15600000
+53    TSLA  2013-12-31  2013-01-01/2013-12-31                                     Schedule Of Product Information Table                         Powertrain Component And Related Sales     45102000
+54    TSLA  2013-12-31  2013-01-01/2013-12-31                                     Schedule Of Product Information Table                              Vehicle Options And Related Sales   1952684000
+55    TSLA  2013-12-31  2013-01-01/2013-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      1004000
+56    TSLA  2013-12-31  2013-01-01/2013-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    217100000
+57    TSLA  2013-12-31  2013-01-01/2013-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe    467079000
+58    TSLA  2013-12-31  2013-01-01/2013-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   1500000000
+59    TSLA  2013-12-31  2013-01-01/2013-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America   1545413000
+60    TSLA  2013-12-31  2013-01-01/2013-12-31                          Summary Of Significant Accounting Policies Table                                       Battery Replacement Plan            0
+61    TSLA  2013-12-31  2013-01-01/2013-12-31                          Summary Of Significant Accounting Policies Table                                          Extended Service Plan       300000
+62    TSLA  2013-12-31  2013-01-01/2013-12-31                          Summary Of Significant Accounting Policies Table                                           Maintenance Services       700000
+63    TSLA  2013-12-31  2013-01-01/2013-12-31                          Summary Of Significant Accounting Policies Table                                                         Credit    194400000
+64    TSLA  2014-03-31  2014-01-01/2014-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia        55000
+65    TSLA  2014-03-31  2014-01-01/2014-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    211400000
+66    TSLA  2014-03-31  2014-01-01/2014-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US    272300000
+67    TSLA  2014-03-31  2014-01-01/2014-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    288379000
+68    TSLA  2014-03-31  2014-01-01/2014-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe    332108000
+69    TSLA  2014-06-30  2014-01-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    141400000
+70    TSLA  2014-06-30  2014-01-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia    141527000
+71    TSLA  2014-06-30  2014-01-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    327200000
+72    TSLA  2014-06-30  2014-01-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US    601800000
+73    TSLA  2014-06-30  2014-01-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe    608408000
+74    TSLA  2014-06-30  2014-01-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    639956000
+75    TSLA  2014-06-30  2014-04-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    115900000
+76    TSLA  2014-06-30  2014-04-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    141400000
+77    TSLA  2014-06-30  2014-04-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia    141472000
+78    TSLA  2014-06-30  2014-04-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe    276300000
+79    TSLA  2014-06-30  2014-04-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US    329700000
+80    TSLA  2014-06-30  2014-04-01/2014-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    351577000
+81    TSLA  2014-09-30  2014-01-01/2014-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    342800000
+82    TSLA  2014-09-30  2014-01-01/2014-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    371700000
+83    TSLA  2014-09-30  2014-01-01/2014-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US    984000000
+84    TSLA  2014-12-31  2014-01-01/2014-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    412198000
+85    TSLA  2014-12-31  2014-01-01/2014-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    477082000
+86    TSLA  2014-12-31  2014-01-01/2014-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries    837433000
+87    TSLA  2014-12-31  2014-01-01/2014-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   1471643000
+88    TSLA  2015-12-31  2015-01-01/2015-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    318513000
+89    TSLA  2015-12-31  2015-01-01/2015-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    356419000
+90    TSLA  2015-12-31  2015-01-01/2015-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1413696000
+91    TSLA  2015-12-31  2015-01-01/2015-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   1957397000
+92    TSLA  2016-12-31  2016-01-01/2016-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    181394000
+93    TSLA  2016-12-31  2016-01-01/2016-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   6818738000
+94    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    335572000
+95    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1065255000
+96    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1398599000
+97    TSLA  2016-12-31  2016-01-01/2016-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   4200706000
+98    TSLA  2017-03-31  2017-01-01/2017-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    213944000
+99    TSLA  2017-03-31  2017-01-01/2017-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   2482326000
+100   TSLA  2017-03-31  2017-01-01/2017-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    135402000
+101   TSLA  2017-03-31  2017-01-01/2017-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    503933000
+102   TSLA  2017-03-31  2017-01-01/2017-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries    781727000
+103   TSLA  2017-03-31  2017-01-01/2017-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   1275208000
+104   TSLA  2017-06-30  2017-01-01/2017-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    500724000
+105   TSLA  2017-06-30  2017-01-01/2017-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   4985103000
+106   TSLA  2017-06-30  2017-01-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    257504000
+107   TSLA  2017-06-30  2017-01-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    967521000
+108   TSLA  2017-06-30  2017-01-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1462552000
+109   TSLA  2017-06-30  2017-01-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   2798250000
+110   TSLA  2017-06-30  2017-04-01/2017-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    286780000
+111   TSLA  2017-06-30  2017-04-01/2017-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   2502777000
+112   TSLA  2017-06-30  2017-04-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    122102000
+113   TSLA  2017-06-30  2017-04-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    463587000
+114   TSLA  2017-06-30  2017-04-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries    680826000
+115   TSLA  2017-06-30  2017-04-01/2017-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   1523042000
+116   TSLA  2017-09-30  2017-01-01/2017-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    818229000
+117   TSLA  2017-09-30  2017-01-01/2017-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   7652273000
+118   TSLA  2017-09-30  2017-01-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    482965000
+119   TSLA  2017-09-30  2017-01-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1531082000
+120   TSLA  2017-09-30  2017-01-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   2076062000
+121   TSLA  2017-09-30  2017-01-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   4380393000
+122   TSLA  2017-09-30  2017-07-01/2017-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    317505000
+123   TSLA  2017-09-30  2017-07-01/2017-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   2667170000
+124   TSLA  2017-09-30  2017-07-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    225461000
+125   TSLA  2017-09-30  2017-07-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    563561000
+126   TSLA  2017-09-30  2017-07-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries    613510000
+127   TSLA  2017-09-30  2017-07-01/2017-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   1582143000
+128   TSLA  2017-12-31  2017-01-01/2017-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1116266000
+129   TSLA  2017-12-31  2017-01-01/2017-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  10642485000
+130   TSLA  2017-12-31  2017-01-01/2017-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    823081000
+131   TSLA  2017-12-31  2017-01-01/2017-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   2027062000
+132   TSLA  2017-12-31  2017-01-01/2017-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   2687169000
+133   TSLA  2017-12-31  2017-01-01/2017-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   6221439000
+134   TSLA  2018-03-31  2018-01-01/2018-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    410022000
+135   TSLA  2018-03-31  2018-01-01/2018-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   2998729000
+136   TSLA  2018-03-31  2018-01-01/2018-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    162319000
+137   TSLA  2018-03-31  2018-01-01/2018-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    508703000
+138   TSLA  2018-03-31  2018-01-01/2018-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries    893282000
+139   TSLA  2018-03-31  2018-01-01/2018-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   1844447000
+140   TSLA  2018-06-30  2018-01-01/2018-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    784430000
+141   TSLA  2018-06-30  2018-01-01/2018-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   6626552000
+142   TSLA  2018-06-30  2018-01-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    386741000
+143   TSLA  2018-06-30  2018-01-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1035933000
+144   TSLA  2018-06-30  2018-01-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1872480000
+145   TSLA  2018-06-30  2018-01-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   4115828000
+146   TSLA  2018-06-30  2018-04-01/2018-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    374408000
+147   TSLA  2018-06-30  2018-04-01/2018-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   3627823000
+148   TSLA  2018-06-30  2018-04-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    224421000
+149   TSLA  2018-06-30  2018-04-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    527230000
+150   TSLA  2018-06-30  2018-04-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1003943000
+151   TSLA  2018-06-30  2018-04-01/2018-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   2246637000
+152   TSLA  2018-09-30  2018-01-01/2018-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1183747000
+153   TSLA  2018-09-30  2018-01-01/2018-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  13051648000
+154   TSLA  2018-09-30  2018-01-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    611222000
+155   TSLA  2018-09-30  2018-01-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    626835000
+156   TSLA  2018-09-30  2018-01-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1445232000
+157   TSLA  2018-09-30  2018-01-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   2303330000
+158   TSLA  2018-09-30  2018-01-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   9248776000
+159   TSLA  2018-09-30  2018-07-01/2018-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    399317000
+160   TSLA  2018-09-30  2018-07-01/2018-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   6425096000
+161   TSLA  2018-09-30  2018-07-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    224481000
+162   TSLA  2018-09-30  2018-07-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    273750000
+163   TSLA  2018-09-30  2018-07-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    409300000
+164   TSLA  2018-09-30  2018-07-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries    783934000
+165   TSLA  2018-09-30  2018-07-01/2018-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   5132948000
+166   TSLA  2018-12-31  2018-01-01/2018-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1555244000
+167   TSLA  2018-12-31  2018-01-01/2018-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  19906024000
+168   TSLA  2018-12-31  2018-01-01/2018-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    812730000
+169   TSLA  2018-12-31  2018-01-01/2018-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    965596000
+170   TSLA  2018-12-31  2018-01-01/2018-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1757147000
+171   TSLA  2018-12-31  2018-01-01/2018-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   3054288000
+172   TSLA  2018-12-31  2018-01-01/2018-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  14871507000
+173   TSLA  2019-03-31  2019-01-01/2019-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    324661000
+174   TSLA  2019-03-31  2019-01-01/2019-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   4216803000
+175   TSLA  2019-03-31  2019-01-01/2019-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    113351000
+176   TSLA  2019-03-31  2019-01-01/2019-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    416060000
+177   TSLA  2019-03-31  2019-01-01/2019-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    779413000
+178   TSLA  2019-03-31  2019-01-01/2019-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries    903071000
+179   TSLA  2019-03-31  2019-01-01/2019-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   2329569000
+180   TSLA  2019-06-30  2019-01-01/2019-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    692869000
+181   TSLA  2019-06-30  2019-01-01/2019-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  10198271000
+182   TSLA  2019-06-30  2019-01-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    361453000
+183   TSLA  2019-06-30  2019-01-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    796433000
+184   TSLA  2019-06-30  2019-01-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1469148000
+185   TSLA  2019-06-30  2019-01-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   2454537000
+186   TSLA  2019-06-30  2019-01-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   5809569000
+187   TSLA  2019-06-30  2019-04-01/2019-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    368208000
+188   TSLA  2019-06-30  2019-04-01/2019-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   5981468000
+189   TSLA  2019-06-30  2019-04-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    248102000
+190   TSLA  2019-06-30  2019-04-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    380373000
+191   TSLA  2019-06-30  2019-04-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    689735000
+192   TSLA  2019-06-30  2019-04-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1551466000
+193   TSLA  2019-06-30  2019-04-01/2019-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   3480000000
+194   TSLA  2019-09-30  2019-01-01/2019-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1095000000
+195   TSLA  2019-09-30  2019-01-01/2019-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  16099000000
+196   TSLA  2019-09-30  2019-01-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    788000000
+197   TSLA  2019-09-30  2019-01-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO   1049000000
+198   TSLA  2019-09-30  2019-01-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   2138000000
+199   TSLA  2019-09-30  2019-01-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   4282000000
+200   TSLA  2019-09-30  2019-01-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   8937000000
+201   TSLA  2019-09-30  2019-07-01/2019-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    402000000
+202   TSLA  2019-09-30  2019-07-01/2019-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   5901000000
+203   TSLA  2019-09-30  2019-07-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO    253000000
+204   TSLA  2019-09-30  2019-07-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL    427000000
+205   TSLA  2019-09-30  2019-07-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    669000000
+206   TSLA  2019-09-30  2019-07-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1827000000
+207   TSLA  2019-09-30  2019-07-01/2019-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   3127000000
+208   TSLA  2019-12-31  2019-01-01/2019-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1531000000
+209   TSLA  2019-12-31  2019-01-01/2019-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  23047000000
+210   TSLA  2019-12-31  2019-01-01/2019-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NO   1201000000
+211   TSLA  2019-12-31  2019-01-01/2019-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             NL   1590000000
+212   TSLA  2019-12-31  2019-01-01/2019-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   2979000000
+213   TSLA  2019-12-31  2019-01-01/2019-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   6155000000
+214   TSLA  2019-12-31  2019-01-01/2019-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  12653000000
+215   TSLA  2020-03-31  2020-01-01/2020-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    293000000
+216   TSLA  2020-03-31  2020-01-01/2020-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   5692000000
+217   TSLA  2020-03-31  2020-01-01/2020-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN    900000000
+218   TSLA  2020-03-31  2020-01-01/2020-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   2317000000
+219   TSLA  2020-03-31  2020-01-01/2020-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   2768000000
+220   TSLA  2020-06-30  2020-01-01/2020-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    663000000
+221   TSLA  2020-06-30  2020-01-01/2020-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  11358000000
+222   TSLA  2020-06-30  2020-01-01/2020-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   2300000000
+223   TSLA  2020-06-30  2020-01-01/2020-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   3863000000
+224   TSLA  2020-06-30  2020-01-01/2020-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   5858000000
+225   TSLA  2020-06-30  2020-04-01/2020-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    370000000
+226   TSLA  2020-06-30  2020-04-01/2020-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   5666000000
+227   TSLA  2020-06-30  2020-04-01/2020-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1400000000
+228   TSLA  2020-06-30  2020-04-01/2020-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   1546000000
+229   TSLA  2020-06-30  2020-04-01/2020-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   3090000000
+230   TSLA  2020-09-30  2020-01-01/2020-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1242000000
+231   TSLA  2020-09-30  2020-01-01/2020-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  19550000000
+232   TSLA  2020-09-30  2020-01-01/2020-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4044000000
+233   TSLA  2020-09-30  2020-01-01/2020-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   6675000000
+234   TSLA  2020-09-30  2020-01-01/2020-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  10073000000
+235   TSLA  2020-09-30  2020-07-01/2020-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    579000000
+236   TSLA  2020-09-30  2020-07-01/2020-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   8192000000
+237   TSLA  2020-09-30  2020-07-01/2020-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   1744000000
+238   TSLA  2020-09-30  2020-07-01/2020-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   2812000000
+239   TSLA  2020-09-30  2020-07-01/2020-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   4215000000
+240   TSLA  2020-12-31  2020-01-01/2020-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1994000000
+241   TSLA  2020-12-31  2020-01-01/2020-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  29542000000
+242   TSLA  2020-12-31  2020-01-01/2020-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   6662000000
+243   TSLA  2020-12-31  2020-01-01/2020-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   9667000000
+244   TSLA  2020-12-31  2020-01-01/2020-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  15207000000
+245   TSLA  2021-03-31  2021-01-01/2021-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    494000000
+246   TSLA  2021-03-31  2021-01-01/2021-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   9895000000
+247   TSLA  2021-03-31  2021-01-01/2021-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   2922000000
+248   TSLA  2021-03-31  2021-01-01/2021-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   3043000000
+249   TSLA  2021-03-31  2021-01-01/2021-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   4424000000
+250   TSLA  2021-06-30  2021-01-01/2021-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1295000000
+251   TSLA  2021-06-30  2021-01-01/2021-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  21052000000
+252   TSLA  2021-06-30  2021-01-01/2021-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   5902000000
+253   TSLA  2021-06-30  2021-01-01/2021-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   6816000000
+254   TSLA  2021-06-30  2021-01-01/2021-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   9629000000
+255   TSLA  2021-06-30  2021-04-01/2021-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    801000000
+256   TSLA  2021-06-30  2021-04-01/2021-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  11157000000
+257   TSLA  2021-06-30  2021-04-01/2021-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   2859000000
+258   TSLA  2021-06-30  2021-04-01/2021-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   3894000000
+259   TSLA  2021-06-30  2021-04-01/2021-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   5205000000
+260   TSLA  2021-09-30  2021-01-01/2021-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   2101000000
+261   TSLA  2021-09-30  2021-01-01/2021-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  34003000000
+262   TSLA  2021-09-30  2021-01-01/2021-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   9015000000
+263   TSLA  2021-09-30  2021-01-01/2021-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  11046000000
+264   TSLA  2021-09-30  2021-01-01/2021-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  16043000000
+265   TSLA  2021-09-30  2021-07-01/2021-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    806000000
+266   TSLA  2021-09-30  2021-07-01/2021-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  12951000000
+267   TSLA  2021-09-30  2021-07-01/2021-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   3113000000
+268   TSLA  2021-09-30  2021-07-01/2021-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   4230000000
+269   TSLA  2021-09-30  2021-07-01/2021-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   6414000000
+270   TSLA  2021-12-31  2021-01-01/2021-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   2789000000
+271   TSLA  2021-12-31  2021-01-01/2021-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  51034000000
+272   TSLA  2021-12-31  2021-01-01/2021-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  13844000000
+273   TSLA  2021-12-31  2021-01-01/2021-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  16006000000
+274   TSLA  2021-12-31  2021-01-01/2021-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  23973000000
+275   TSLA  2022-03-31  2022-01-01/2022-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    616000000
+276   TSLA  2022-03-31  2022-01-01/2022-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  18140000000
+277   TSLA  2022-03-31  2022-01-01/2022-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4650000000
+278   TSLA  2022-03-31  2022-01-01/2022-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   5372000000
+279   TSLA  2022-03-31  2022-01-01/2022-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   8734000000
+280   TSLA  2022-06-30  2022-01-01/2022-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1482000000
+281   TSLA  2022-06-30  2022-01-01/2022-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  34208000000
+282   TSLA  2022-06-30  2022-01-01/2022-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   8437000000
+283   TSLA  2022-06-30  2022-01-01/2022-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   8905000000
+284   TSLA  2022-06-30  2022-01-01/2022-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  18348000000
+285   TSLA  2022-06-30  2022-04-01/2022-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage    866000000
+286   TSLA  2022-06-30  2022-04-01/2022-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  16068000000
+287   TSLA  2022-06-30  2022-04-01/2022-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   3533000000
+288   TSLA  2022-06-30  2022-04-01/2022-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   3787000000
+289   TSLA  2022-06-30  2022-04-01/2022-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   9614000000
+290   TSLA  2022-09-30  2022-01-01/2022-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   2599000000
+291   TSLA  2022-09-30  2022-01-01/2022-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  54545000000
+292   TSLA  2022-09-30  2022-01-01/2022-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  13568000000
+293   TSLA  2022-09-30  2022-01-01/2022-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  14992000000
+294   TSLA  2022-09-30  2022-01-01/2022-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  28584000000
+295   TSLA  2022-09-30  2022-07-01/2022-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1117000000
+296   TSLA  2022-09-30  2022-07-01/2022-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  20337000000
+297   TSLA  2022-09-30  2022-07-01/2022-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   5131000000
+298   TSLA  2022-09-30  2022-07-01/2022-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   6087000000
+299   TSLA  2022-09-30  2022-07-01/2022-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  10236000000
+300   TSLA  2022-12-31  2022-01-01/2022-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   3909000000
+301   TSLA  2022-12-31  2022-01-01/2022-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  77553000000
+302   TSLA  2022-12-31  2022-01-01/2022-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  18145000000
+303   TSLA  2022-12-31  2022-01-01/2022-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  22764000000
+304   TSLA  2022-12-31  2022-01-01/2022-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  40553000000
+305   TSLA  2023-03-31  2023-01-01/2023-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive   1529000000
+306   TSLA  2023-03-31  2023-01-01/2023-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage  21800000000
+307   TSLA  2023-03-31  2023-01-01/2023-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4891000000
+308   TSLA  2023-03-31  2023-01-01/2023-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   7191000000
+309   TSLA  2023-03-31  2023-01-01/2023-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  11247000000
+310   TSLA  2023-06-30  2023-01-01/2023-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   3038000000
+311   TSLA  2023-06-30  2023-01-01/2023-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  45218000000
+312   TSLA  2023-06-30  2023-01-01/2023-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  10622000000
+313   TSLA  2023-06-30  2023-01-01/2023-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  15055000000
+314   TSLA  2023-06-30  2023-01-01/2023-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  22579000000
+315   TSLA  2023-06-30  2023-04-01/2023-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1509000000
+316   TSLA  2023-06-30  2023-04-01/2023-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  23418000000
+317   TSLA  2023-06-30  2023-04-01/2023-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   5731000000
+318   TSLA  2023-06-30  2023-04-01/2023-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   7864000000
+319   TSLA  2023-06-30  2023-04-01/2023-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  11332000000
+320   TSLA  2023-09-30  2023-01-01/2023-09-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    409000000
+321   TSLA  2023-09-30  2023-01-01/2023-09-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   1357000000
+322   TSLA  2023-09-30  2023-01-01/2023-09-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing   1620000000
+323   TSLA  2023-09-30  2023-01-01/2023-09-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   4188000000
+324   TSLA  2023-09-30  2023-01-01/2023-09-30                                           Disaggregation Of Revenue Table                                             Services And Other   6153000000
+325   TSLA  2023-09-30  2023-01-01/2023-09-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  57879000000
+326   TSLA  2023-09-30  2023-01-01/2023-09-30                                           Disaggregation Of Revenue Table                                             Sales And Services  69577000000
+327   TSLA  2023-09-30  2023-01-01/2023-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   4597000000
+328   TSLA  2023-09-30  2023-01-01/2023-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  67009000000
+329   TSLA  2023-09-30  2023-01-01/2023-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  15642000000
+330   TSLA  2023-09-30  2023-01-01/2023-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  22492000000
+331   TSLA  2023-09-30  2023-01-01/2023-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  33472000000
+332   TSLA  2023-09-30  2023-07-01/2023-09-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    143000000
+333   TSLA  2023-09-30  2023-07-01/2023-09-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing    489000000
+334   TSLA  2023-09-30  2023-07-01/2023-09-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    554000000
+335   TSLA  2023-09-30  2023-07-01/2023-09-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   1416000000
+336   TSLA  2023-09-30  2023-07-01/2023-09-30                                           Disaggregation Of Revenue Table                                             Services And Other   2166000000
+337   TSLA  2023-09-30  2023-07-01/2023-09-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  18582000000
+338   TSLA  2023-09-30  2023-07-01/2023-09-30                                           Disaggregation Of Revenue Table                                             Sales And Services  22718000000
+339   TSLA  2023-09-30  2023-07-01/2023-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1559000000
+340   TSLA  2023-09-30  2023-07-01/2023-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  21791000000
+341   TSLA  2023-09-30  2023-07-01/2023-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   5020000000
+342   TSLA  2023-09-30  2023-07-01/2023-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   7437000000
+343   TSLA  2023-09-30  2023-07-01/2023-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  10893000000
+344   TSLA  2023-12-31  2023-01-01/2023-12-31                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    520000000
+345   TSLA  2023-12-31  2023-01-01/2023-12-31                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   1790000000
+346   TSLA  2023-12-31  2023-01-01/2023-12-31                                           Disaggregation Of Revenue Table                                             Automotive Leasing   2120000000
+347   TSLA  2023-12-31  2023-01-01/2023-12-31                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   5515000000
+348   TSLA  2023-12-31  2023-01-01/2023-12-31                                           Disaggregation Of Revenue Table                                             Services And Other   8319000000
+349   TSLA  2023-12-31  2023-01-01/2023-12-31                                           Disaggregation Of Revenue Table                                               Automotive Sales  78509000000
+350   TSLA  2023-12-31  2023-01-01/2023-12-31                                           Disaggregation Of Revenue Table                                             Sales And Services  94133000000
+351   TSLA  2023-12-31  2023-01-01/2023-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   6035000000
+352   TSLA  2023-12-31  2023-01-01/2023-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  90738000000
+353   TSLA  2023-12-31  2023-01-01/2023-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  21745000000
+354   TSLA  2023-12-31  2023-01-01/2023-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                            Other International  29793000000
+355   TSLA  2023-12-31  2023-01-01/2023-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  45235000000
+356   TSLA  2024-03-31  2024-01-01/2024-03-31                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    113000000
+357   TSLA  2024-03-31  2024-01-01/2024-03-31                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    442000000
+358   TSLA  2024-03-31  2024-01-01/2024-03-31                                           Disaggregation Of Revenue Table                                             Automotive Leasing    476000000
+359   TSLA  2024-03-31  2024-01-01/2024-03-31                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   1522000000
+360   TSLA  2024-03-31  2024-01-01/2024-03-31                                           Disaggregation Of Revenue Table                                             Services And Other   2288000000
+361   TSLA  2024-03-31  2024-01-01/2024-03-31                                           Disaggregation Of Revenue Table                                               Automotive Sales  16460000000
+362   TSLA  2024-03-31  2024-01-01/2024-03-31                                           Disaggregation Of Revenue Table                                             Sales And Services  20712000000
+363   TSLA  2024-03-31  2024-01-01/2024-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   1635000000
+364   TSLA  2024-03-31  2024-01-01/2024-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  19666000000
+365   TSLA  2024-03-31  2024-01-01/2024-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4592000000
+366   TSLA  2024-03-31  2024-01-01/2024-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   6947000000
+367   TSLA  2024-03-31  2024-01-01/2024-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US   9762000000
+368   TSLA  2024-06-30  2024-01-01/2024-06-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    261000000
+369   TSLA  2024-06-30  2024-01-01/2024-06-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing    934000000
+370   TSLA  2024-06-30  2024-01-01/2024-06-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   1332000000
+371   TSLA  2024-06-30  2024-01-01/2024-06-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   4388000000
+372   TSLA  2024-06-30  2024-01-01/2024-06-30                                           Disaggregation Of Revenue Table                                             Services And Other   4896000000
+373   TSLA  2024-06-30  2024-01-01/2024-06-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  34990000000
+374   TSLA  2024-06-30  2024-01-01/2024-06-30                                           Disaggregation Of Revenue Table                                             Sales And Services  45606000000
+375   TSLA  2024-06-30  2024-01-01/2024-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   4649000000
+376   TSLA  2024-06-30  2024-01-01/2024-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  42152000000
+377   TSLA  2024-06-30  2024-01-01/2024-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   9228000000
+378   TSLA  2024-06-30  2024-01-01/2024-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  14555000000
+379   TSLA  2024-06-30  2024-01-01/2024-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  23018000000
+380   TSLA  2024-06-30  2024-04-01/2024-06-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    148000000
+381   TSLA  2024-06-30  2024-04-01/2024-06-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing    458000000
+382   TSLA  2024-06-30  2024-04-01/2024-06-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    890000000
+383   TSLA  2024-06-30  2024-04-01/2024-06-30                                           Disaggregation Of Revenue Table                                             Services And Other   2608000000
+384   TSLA  2024-06-30  2024-04-01/2024-06-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   2866000000
+385   TSLA  2024-06-30  2024-04-01/2024-06-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  18530000000
+386   TSLA  2024-06-30  2024-04-01/2024-06-30                                           Disaggregation Of Revenue Table                                             Sales And Services  24894000000
+387   TSLA  2024-06-30  2024-04-01/2024-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   3014000000
+388   TSLA  2024-06-30  2024-04-01/2024-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  22486000000
+389   TSLA  2024-06-30  2024-04-01/2024-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4636000000
+390   TSLA  2024-06-30  2024-04-01/2024-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   7608000000
+391   TSLA  2024-06-30  2024-04-01/2024-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  13256000000
+392   TSLA  2024-09-30  2024-01-01/2024-09-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    409000000
+393   TSLA  2024-09-30  2024-01-01/2024-09-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing   1380000000
+394   TSLA  2024-09-30  2024-01-01/2024-09-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   2071000000
+395   TSLA  2024-09-30  2024-01-01/2024-09-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   6616000000
+396   TSLA  2024-09-30  2024-01-01/2024-09-30                                           Disaggregation Of Revenue Table                                             Services And Other   7686000000
+397   TSLA  2024-09-30  2024-01-01/2024-09-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  53821000000
+398   TSLA  2024-09-30  2024-01-01/2024-09-30                                           Disaggregation Of Revenue Table                                             Sales And Services  70194000000
+399   TSLA  2024-09-30  2024-01-01/2024-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   7025000000
+400   TSLA  2024-09-30  2024-01-01/2024-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  64958000000
+401   TSLA  2024-09-30  2024-01-01/2024-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  14893000000
+402   TSLA  2024-09-30  2024-01-01/2024-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  21488000000
+403   TSLA  2024-09-30  2024-01-01/2024-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  35602000000
+404   TSLA  2024-09-30  2024-07-01/2024-09-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    148000000
+405   TSLA  2024-09-30  2024-07-01/2024-09-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing    446000000
+406   TSLA  2024-09-30  2024-07-01/2024-09-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    739000000
+407   TSLA  2024-09-30  2024-07-01/2024-09-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   2228000000
+408   TSLA  2024-09-30  2024-07-01/2024-09-30                                           Disaggregation Of Revenue Table                                             Services And Other   2790000000
+409   TSLA  2024-09-30  2024-07-01/2024-09-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  18831000000
+410   TSLA  2024-09-30  2024-07-01/2024-09-30                                           Disaggregation Of Revenue Table                                             Sales And Services  24588000000
+411   TSLA  2024-09-30  2024-07-01/2024-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   2376000000
+412   TSLA  2024-09-30  2024-07-01/2024-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  22806000000
+413   TSLA  2024-09-30  2024-07-01/2024-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   5665000000
+414   TSLA  2024-09-30  2024-07-01/2024-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   6933000000
+415   TSLA  2024-09-30  2024-07-01/2024-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  12584000000
+416   TSLA  2024-12-31  2024-01-01/2024-12-31                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    522000000
+417   TSLA  2024-12-31  2024-01-01/2024-12-31                                           Disaggregation Of Revenue Table                                             Automotive Leasing   1827000000
+418   TSLA  2024-12-31  2024-01-01/2024-12-31                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   2763000000
+419   TSLA  2024-12-31  2024-01-01/2024-12-31                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   9564000000
+420   TSLA  2024-12-31  2024-01-01/2024-12-31                                           Disaggregation Of Revenue Table                                             Services And Other  10534000000
+421   TSLA  2024-12-31  2024-01-01/2024-12-31                                           Disaggregation Of Revenue Table                                               Automotive Sales  72480000000
+422   TSLA  2024-12-31  2024-01-01/2024-12-31                                           Disaggregation Of Revenue Table                                             Sales And Services  95341000000
+423   TSLA  2024-12-31  2024-01-01/2024-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage  10086000000
+424   TSLA  2024-12-31  2024-01-01/2024-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  87604000000
+425   TSLA  2024-12-31  2024-01-01/2024-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  20944000000
+426   TSLA  2024-12-31  2024-01-01/2024-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  29021000000
+427   TSLA  2024-12-31  2024-01-01/2024-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  47725000000
+428   TSLA  2025-03-31  2025-01-01/2025-03-31                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    109000000
+429   TSLA  2025-03-31  2025-01-01/2025-03-31                                           Disaggregation Of Revenue Table                                             Automotive Leasing    447000000
+430   TSLA  2025-03-31  2025-01-01/2025-03-31                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    595000000
+431   TSLA  2025-03-31  2025-01-01/2025-03-31                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   2621000000
+432   TSLA  2025-03-31  2025-01-01/2025-03-31                                           Disaggregation Of Revenue Table                                             Services And Other   2638000000
+433   TSLA  2025-03-31  2025-01-01/2025-03-31                                           Disaggregation Of Revenue Table                                               Automotive Sales  12925000000
+434   TSLA  2025-03-31  2025-01-01/2025-03-31                                           Disaggregation Of Revenue Table                                             Sales And Services  18779000000
+435   TSLA  2025-03-31  2025-01-01/2025-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   2730000000
+436   TSLA  2025-03-31  2025-01-01/2025-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  16605000000
+437   TSLA  2025-03-31  2025-01-01/2025-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4303000000
+438   TSLA  2025-03-31  2025-01-01/2025-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   4699000000
+439   TSLA  2025-03-31  2025-01-01/2025-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  10333000000
+440   TSLA  2025-06-30  2025-01-01/2025-06-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    252000000
+441   TSLA  2025-06-30  2025-01-01/2025-06-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing    882000000
+442   TSLA  2025-06-30  2025-01-01/2025-06-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   1034000000
+443   TSLA  2025-06-30  2025-01-01/2025-06-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   5267000000
+444   TSLA  2025-06-30  2025-01-01/2025-06-30                                           Disaggregation Of Revenue Table                                             Services And Other   5684000000
+445   TSLA  2025-06-30  2025-01-01/2025-06-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  28712000000
+446   TSLA  2025-06-30  2025-01-01/2025-06-30                                           Disaggregation Of Revenue Table                                             Sales And Services  40697000000
+447   TSLA  2025-06-30  2025-01-01/2025-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   5519000000
+448   TSLA  2025-06-30  2025-01-01/2025-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  36312000000
+449   TSLA  2025-06-30  2025-01-01/2025-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   8608000000
+450   TSLA  2025-06-30  2025-01-01/2025-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  11081000000
+451   TSLA  2025-06-30  2025-01-01/2025-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  22142000000
+452   TSLA  2025-06-30  2025-04-01/2025-06-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    143000000
+453   TSLA  2025-06-30  2025-04-01/2025-06-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing    435000000
+454   TSLA  2025-06-30  2025-04-01/2025-06-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    439000000
+455   TSLA  2025-06-30  2025-04-01/2025-06-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   2646000000
+456   TSLA  2025-06-30  2025-04-01/2025-06-30                                           Disaggregation Of Revenue Table                                             Services And Other   3046000000
+457   TSLA  2025-06-30  2025-04-01/2025-06-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  15787000000
+458   TSLA  2025-06-30  2025-04-01/2025-06-30                                           Disaggregation Of Revenue Table                                             Sales And Services  21918000000
+459   TSLA  2025-06-30  2025-04-01/2025-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   2789000000
+460   TSLA  2025-06-30  2025-04-01/2025-06-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  19707000000
+461   TSLA  2025-06-30  2025-04-01/2025-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4305000000
+462   TSLA  2025-06-30  2025-04-01/2025-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   6382000000
+463   TSLA  2025-06-30  2025-04-01/2025-06-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  11809000000
+464   TSLA  2025-09-30  2025-01-01/2025-09-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    386000000
+465   TSLA  2025-09-30  2025-01-01/2025-09-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing   1311000000
+466   TSLA  2025-09-30  2025-01-01/2025-09-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   1451000000
+467   TSLA  2025-09-30  2025-01-01/2025-09-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   8548000000
+468   TSLA  2025-09-30  2025-01-01/2025-09-30                                           Disaggregation Of Revenue Table                                             Services And Other   9159000000
+469   TSLA  2025-09-30  2025-01-01/2025-09-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  49071000000
+470   TSLA  2025-09-30  2025-01-01/2025-09-30                                           Disaggregation Of Revenue Table                                             Sales And Services  68229000000
+471   TSLA  2025-09-30  2025-01-01/2025-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   8934000000
+472   TSLA  2025-09-30  2025-01-01/2025-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  60992000000
+473   TSLA  2025-09-30  2025-01-01/2025-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  14261000000
+474   TSLA  2025-09-30  2025-01-01/2025-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  18925000000
+475   TSLA  2025-09-30  2025-01-01/2025-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  36740000000
+476   TSLA  2025-09-30  2025-07-01/2025-09-30                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    134000000
+477   TSLA  2025-09-30  2025-07-01/2025-09-30                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    417000000
+478   TSLA  2025-09-30  2025-07-01/2025-09-30                                           Disaggregation Of Revenue Table                                             Automotive Leasing    429000000
+479   TSLA  2025-09-30  2025-07-01/2025-09-30                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   3281000000
+480   TSLA  2025-09-30  2025-07-01/2025-09-30                                           Disaggregation Of Revenue Table                                             Services And Other   3475000000
+481   TSLA  2025-09-30  2025-07-01/2025-09-30                                           Disaggregation Of Revenue Table                                               Automotive Sales  20359000000
+482   TSLA  2025-09-30  2025-07-01/2025-09-30                                           Disaggregation Of Revenue Table                                             Sales And Services  27532000000
+483   TSLA  2025-09-30  2025-07-01/2025-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   3415000000
+484   TSLA  2025-09-30  2025-07-01/2025-09-30             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  24680000000
+485   TSLA  2025-09-30  2025-07-01/2025-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   5653000000
+486   TSLA  2025-09-30  2025-07-01/2025-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   7844000000
+487   TSLA  2025-09-30  2025-07-01/2025-09-30  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  14598000000
+488   TSLA  2025-12-31  2025-01-01/2025-12-31                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    501000000
+489   TSLA  2025-12-31  2025-01-01/2025-12-31                                           Disaggregation Of Revenue Table                                             Automotive Leasing   1712000000
+490   TSLA  2025-12-31  2025-01-01/2025-12-31                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits   1993000000
+491   TSLA  2025-12-31  2025-01-01/2025-12-31                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales  12270000000
+492   TSLA  2025-12-31  2025-01-01/2025-12-31                                           Disaggregation Of Revenue Table                                             Services And Other  12530000000
+493   TSLA  2025-12-31  2025-01-01/2025-12-31                                           Disaggregation Of Revenue Table                                               Automotive Sales  65821000000
+494   TSLA  2025-12-31  2025-01-01/2025-12-31                                           Disaggregation Of Revenue Table                                             Sales And Services  92614000000
+495   TSLA  2025-12-31  2025-01-01/2025-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage  12771000000
+496   TSLA  2025-12-31  2025-01-01/2025-12-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  82056000000
+497   TSLA  2025-12-31  2025-01-01/2025-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN  20962000000
+498   TSLA  2025-12-31  2025-01-01/2025-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries  26238000000
+499   TSLA  2025-12-31  2025-01-01/2025-12-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  47627000000
+500   TSLA  2026-03-31  2026-01-01/2026-03-31                                           Disaggregation Of Revenue Table                          Energy Generation And Storage Leasing    103000000
+501   TSLA  2026-03-31  2026-01-01/2026-03-31                                           Disaggregation Of Revenue Table                                  Automotive Regulatory Credits    380000000
+502   TSLA  2026-03-31  2026-01-01/2026-03-31                                           Disaggregation Of Revenue Table                                             Automotive Leasing    381000000
+503   TSLA  2026-03-31  2026-01-01/2026-03-31                                           Disaggregation Of Revenue Table                            Energy Generation And Storage Sales   2305000000
+504   TSLA  2026-03-31  2026-01-01/2026-03-31                                           Disaggregation Of Revenue Table                                             Services And Other   3745000000
+505   TSLA  2026-03-31  2026-01-01/2026-03-31                                           Disaggregation Of Revenue Table                                               Automotive Sales  15473000000
+506   TSLA  2026-03-31  2026-01-01/2026-03-31                                           Disaggregation Of Revenue Table                                             Sales And Services  21903000000
+507   TSLA  2026-03-31  2026-01-01/2026-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                  Energy Generation And Storage   2408000000
+508   TSLA  2026-03-31  2026-01-01/2026-03-31             Reconciliation Of Revenue From Segments To Consolidated Table                                                     Automotive  19979000000
+509   TSLA  2026-03-31  2026-01-01/2026-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             CN   4184000000
+510   TSLA  2026-03-31  2026-01-01/2026-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                Other Countries   7526000000
+511   TSLA  2026-03-31  2026-01-01/2026-03-31  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US  10677000000
 ```
 
 To filter by a specific breakdown type:
