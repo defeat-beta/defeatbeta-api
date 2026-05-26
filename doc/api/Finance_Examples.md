@@ -19,9 +19,6 @@
   - [5.3 Different Benchmark Index](#53-different-benchmark-index)
   - [5.4 Understanding Beta Values](#54-understanding-beta-values)
 - [6. Accessing Revenue breakdown](#6-accessing-revenue-breakdown)
-  - [9.1 Stock Revenue by segment](#91-stock-revenue-by-segment)
-  - [9.2 Stock Revenue by geography](#92-stock-revenue-by-geography)
-  - [9.3 Stock Revenue by product](#93-stock-revenue-by-product)
 - [7. Stock TTM Revenue](#7-stock-ttm-revenue)
 - [8. Stock TTM Net Income](#8-stock-ttm-net-income)
 
