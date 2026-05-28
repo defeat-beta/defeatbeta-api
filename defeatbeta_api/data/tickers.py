@@ -260,9 +260,13 @@ class Tickers:
         combined into a single DataFrame."""
         return self._run_parallel_concat("ttm_net_income_common_stockholders")
 
-    def revenue_by_breakdown(self) -> pd.DataFrame:
-        """All revenue breakdown tables for all tickers, combined into a single DataFrame."""
-        return self._run_parallel_concat("revenue_by_breakdown")
+    def quarterly_revenue_by_breakdown(self) -> pd.DataFrame:
+        """Quarterly revenue / KPI breakdowns for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("quarterly_revenue_by_breakdown")
+
+    def trailing_revenue_by_breakdown(self) -> pd.DataFrame:
+        """Trailing-twelve-months revenue / KPI breakdowns for all tickers, combined into a single DataFrame."""
+        return self._run_parallel_concat("trailing_revenue_by_breakdown")
 
     # ------------------------------------------------------------------
     # Category 2 – Value

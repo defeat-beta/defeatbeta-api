@@ -867,152 +867,107 @@ ticker.beta("5y", benchmark="IWM")
 
 ## 6. Accessing Revenue breakdown
 
-Returns all revenue breakdown tables extracted from SEC filings in unified long format.
-Each row is one `(symbol, report_date, breakdown_type, item_name)` observation.
+Returns revenue / KPI breakdown tables in unified long format.
+Each row is one `(symbol, breakdown, report_date, series_name)` observation.
+
+Use the quarterly endpoint for single-quarter values and the trailing endpoint for trailing-twelve-month values.
 
 **Column descriptions:**
 
 | Column | Description |
 |--------|-------------|
 | `symbol` | Stock ticker |
+| `breakdown` | Stable slug identifying the breakdown table, such as `revenue-by-segment` |
+| `breakdown_name` | Human-readable breakdown name |
+| `period_type` | `quarterly` or `trailing` |
 | `report_date` | Period end date |
-| `period_label` | Reporting window as `start/end` (e.g. `2024-01-01/2024-03-31` = 3-month Q1) |
-| `form_type` | SEC filing type — annual: `10-K`, `10-K/A`, `20-F`, `20-F/A`; quarterly: `10-Q`, `10-Q/A`, `6-K`, `6-K/A` |
-| `breakdown_type` | XBRL table name; each unique value is a separate breakdown table |
-| `item_name` | Revenue line item within the breakdown |
-| `item_value` | Raw USD value |
-| `depth` | Hierarchy depth: 1 = top-level item, 2+ = child of `parent_name` |
-| `parent_name` | Parent item name for nested rows; `NaN` for top-level items |
+| `series_name` | Line item within the breakdown; pivot this field to columns |
+| `value` | Raw numeric value |
+| `value_type` | Value category, such as `CURRENCY` or `NUMBER` |
+| `currency` | ISO currency code when `value_type` is `CURRENCY`; otherwise usually missing |
 
 ```python
-ticker.revenue_by_breakdown()
+ticker.quarterly_revenue_by_breakdown()
+ticker.trailing_revenue_by_breakdown()
 ```
 ```text
->>> ticker.revenue_by_breakdown()
+>>> ticker.quarterly_revenue_by_breakdown()
 
-    symbol report_date           period_label form_type                                                            breakdown_type                                                      item_name   item_value  depth         parent_name
-0     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K                                                 Development Servces Table                                Daimler Smart Fortwo Ev Program      7200000      1                 NaN
-1     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K                                                 Development Servces Table                   Toyota Rav Four Program Phase Zero Agreement      7600000      1                 NaN
-2     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K                                                 Development Servces Table  Toyota Rav Four Program Phase One Contract Services Agreement     47400000      1                 NaN
-3     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K                                     Schedule Of Product Information Table                              Vehicle Options And Related Sales    101708000      1                 NaN
-4     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K                                     Schedule Of Product Information Table                         Powertrain Component And Related Sales     46860000      1                 NaN
-5     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America    109233000      1                 NaN
-6     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe     84397000      1                 NaN
-7     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia     10612000      1                 NaN
-8     TSLA  2011-12-31  2011-01-01/2011-12-31      10-K  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US    103900000      1                 NaN
-9     TSLA  2012-03-31  2012-01-01/2012-03-31      10-Q  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                  North America     17108000      1                 NaN
-10    TSLA  2012-03-31  2012-01-01/2012-03-31      10-Q  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                         Europe      9231000      1                 NaN
-11    TSLA  2012-03-31  2012-01-01/2012-03-31      10-Q  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                           Asia      3828000      1                 NaN
-12    TSLA  2012-03-31  2012-01-01/2012-03-31      10-Q  Schedule Of Revenues From External Customers And Long Lived Assets Table                                                             US     17000000      1                 NaN
+  symbol           breakdown       breakdown_name period_type report_date  series_name       value value_type currency
+0    AMD  revenue-by-segment  Revenue by Segment   quarterly  2021-06-30  Client and Gaming  2983000000   CURRENCY      USD
+1    AMD  revenue-by-segment  Revenue by Segment   quarterly  2021-06-30        Data Center   813000000   CURRENCY      USD
+2    AMD  revenue-by-segment  Revenue by Segment   quarterly  2021-06-30           Embedded    54000000   CURRENCY      USD
+3    AMD  revenue-by-segment  Revenue by Segment   quarterly  2021-09-30  Client and Gaming  3126000000   CURRENCY      USD
 ...
 ```
 
 **Data organization rules:**
 
 The long-format DataFrame maps to a set of tables structured as:
-**`breakdown_type` → `form_type` → `period duration`**
+**`period_type` -> `breakdown` -> `series_name`**
 
-1. **Split by `breakdown_type`**: each unique value is a distinct financial breakdown — e.g. geographic revenue, product revenue, segment revenue
-2. **Split by `form_type`**: annual filings (`10-K`, `20-F`) and quarterly filings (`10-Q`, `6-K`) cover different date ranges and must stay separate
-3. **Split by period duration**: derive the window length from `period_label` — only periods of the same duration belong in the same table (e.g. two 3-month periods are comparable; a 3-month period and a 12-month period are not)
-4. **Respect nesting**: when `depth > 1`, a row is a sub-item of `parent_name`; display with indentation to preserve the reported hierarchy
+1. **Choose `period_type`**: call `quarterly_revenue_by_breakdown()` for single-quarter values or `trailing_revenue_by_breakdown()` for trailing-twelve-month values
+2. **Split by `breakdown`**: each unique slug is a distinct breakdown table, such as revenue by segment, geography, product, or customer type
+3. **Pivot `series_name`**: within one breakdown, pivot `series_name` into columns and use `report_date` as the time index
+4. **Check `value_type` and `currency`**: currency values and count values may appear in the same company dataset, so do not assume every breakdown is USD revenue
 
-**Code to split and display:**
+**Code to split and display wide tables:**
 
 ```python
-import pandas as pd
-from datetime import datetime
+df = ticker.quarterly_revenue_by_breakdown()
 
-df = ticker.revenue_by_breakdown()
+for breakdown, bdf in df.groupby('breakdown'):
+    breakdown_name = bdf['breakdown_name'].dropna().iloc[0]
+    value_type = bdf['value_type'].dropna().iloc[0]
+    currencies = sorted(bdf['currency'].dropna().unique())
+    currency_label = f" ({', '.join(currencies)})" if currencies else ""
 
-def period_months(period_label):
-    start, end = period_label.split('/')
-    delta = datetime.strptime(end, '%Y-%m-%d') - datetime.strptime(start, '%Y-%m-%d')
-    return round(delta.days / 30)
+    table = bdf.pivot_table(
+        index='report_date',
+        columns='series_name',
+        values='value',
+        aggfunc='first',
+    ).sort_index()
 
-df['period_months'] = df['period_label'].apply(period_months)
-
-for btype, bdf in df.groupby('breakdown_type'):
-    for ftype, fdf in bdf.groupby('form_type'):
-        for months, mdf in sorted(fdf.groupby('period_months')):
-            dates = sorted(mdf['report_date'].unique())
-            print(f"\n[{btype}]  filing={ftype}  period={months}M")
-
-            if mdf['depth'].max() > 1:
-                # Nested: use structure from the most recent filing date to determine
-                # item order and depth (structure may evolve across filings)
-                last_date = mdf['report_date'].max()
-                structure = (mdf[mdf['report_date'] == last_date]
-                             [['item_name', 'depth', 'parent_name']]
-                             .drop_duplicates('item_name'))
-                header = '  '.join(f"{str(d):>18}" for d in dates)
-                print(f"  {'':48} {header}")
-                for _, srow in structure.iterrows():
-                    indent = '  ' * (srow['depth'] - 1)
-                    vals = mdf[mdf['item_name'] == srow['item_name']].set_index('report_date')['item_value']
-                    cols = '  '.join(
-                        f"{int(vals[d]):>18,}" if d in vals.index and pd.notna(vals[d]) else f"{'*':>18}"
-                        for d in dates
-                    )
-                    print(f"  {indent}{srow['item_name']:<48} {cols}")
-            else:
-                pivot = mdf.pivot_table(
-                    index='item_name', columns='report_date',
-                    values='item_value', aggfunc='first'
-                ).reindex(columns=dates)
-                print(pivot.to_string())
+    print(f"\n[{breakdown}] {breakdown_name} - {value_type}{currency_label}")
+    print(table.to_string())
 ```
 
-**Example — Segment Revenue (flat, 10-K, 12-month):**
-
-`Reconciliation Of Revenue From Segments To Consolidated Table`, `form_type=10-K`, `period_months=12`:
+**Example - Quarterly segment revenue:**
 
 ```text
-[Reconciliation Of Revenue From Segments To Consolidated Table]  filing=10-K  period=12M
+[revenue-by-segment] Revenue by Segment - CURRENCY (USD)
 
-report_date                    2016-12-31   2017-12-31   2018-12-31   2019-12-31   2020-12-31   2021-12-31   2022-12-31   2023-12-31   2024-12-31   2025-12-31
-item_name
-Automotive                     6818738000  10642485000  19906024000  23047000000  29542000000  51034000000  77553000000  90738000000  87604000000  82056000000
-Energy Generation And Storage   181394000   1116266000   1555244000   1531000000   1994000000   2789000000   3909000000   6035000000  10086000000  12771000000
+series_name  Client and Gaming  Data Center  Embedded
+report_date
+2021-06-30         2983000000    813000000  54000000
+2021-09-30         3126000000   1108000000  79000000
 ```
 
-The same `breakdown_type` with `form_type=10-Q` produces separate tables per period duration
-(3M, 6M, 9M) — only periods of equal length can be compared in the same table.
-
-**Example — Nested Revenue (10-K, 12-month with hierarchy):**
-
-`Disaggregation Of Revenue Table`, `form_type=10-K`, `period_months=12` — `depth=2` items are
-indented under their `parent_name` ("Sales And Services"):
+**Example - Trailing-twelve-month segment revenue:**
 
 ```text
-[Disaggregation Of Revenue Table]  filing=10-K  period=12M
+>>> ticker.trailing_revenue_by_breakdown()
 
-                                                           2023-12-31          2024-12-31          2025-12-31
-  Sales And Services                                   94,133,000,000      95,341,000,000      92,614,000,000
-    Automotive Sales                                   78,509,000,000      72,480,000,000      65,821,000,000
-    Automotive Regulatory Credits                       1,790,000,000       2,763,000,000       1,993,000,000
-    Energy Generation And Storage Sales                 5,515,000,000       9,564,000,000      12,270,000,000
-    Services And Other                                  8,319,000,000      10,534,000,000      12,530,000,000
-  Automotive Leasing                                    2,120,000,000       1,827,000,000       1,712,000,000
-  Energy Generation And Storage Leasing                   520,000,000         522,000,000         501,000,000
+  symbol           breakdown       breakdown_name period_type report_date  series_name        value value_type currency
+0    AMD  revenue-by-segment  Revenue by Segment    trailing  2021-06-30  Client and Gaming                     5776000000   CURRENCY      USD
+1    AMD  revenue-by-segment  Revenue by Segment    trailing  2021-06-30  Computing and Graphics               3627000000   CURRENCY      USD
+2    AMD  revenue-by-segment  Revenue by Segment    trailing  2021-06-30  Data Center                          1423000000   CURRENCY      USD
+3    AMD  revenue-by-segment  Revenue by Segment    trailing  2021-06-30  Embedded                               96000000   CURRENCY      USD
 ```
 
-`depth=1` rows (Sales And Services, Automotive Leasing, Energy Generation And Storage Leasing) are
-top-level; `depth=2` rows are children whose `parent_name` equals `"Sales And Services"`.
+To filter by a specific breakdown or value type:
 
-To filter by annual or quarterly data, or by a specific breakdown type:
 ```python
-df = ticker.revenue_by_breakdown()
+quarterly_df = ticker.quarterly_revenue_by_breakdown()
+trailing_df = ticker.trailing_revenue_by_breakdown()
 
-annual_df    = df[df['form_type'].isin(['10-K', '10-K/A', '20-F', '20-F/A'])]
-quarterly_df = df[df['form_type'].isin(['10-Q', '10-Q/A', '6-K', '6-K/A'])]
+segment_df = quarterly_df[quarterly_df['breakdown'] == 'revenue-by-segment']
+currency_df = quarterly_df[quarterly_df['value_type'] == 'CURRENCY']
+number_df = quarterly_df[quarterly_df['value_type'] == 'NUMBER']
 
-geo_df     = df[df['breakdown_type'] == 'Schedule Of Revenues From External Customers And Long Lived Assets Table']
-product_df = df[df['breakdown_type'] == 'Disaggregation Of Revenue Table']
-segment_df = df[df['breakdown_type'] == 'Reconciliation Of Revenue From Segments To Consolidated Table']
-
-# List all available breakdown types for a ticker
-df['breakdown_type'].unique()
+# List all available breakdown tables for a ticker
+quarterly_df[['breakdown', 'breakdown_name', 'value_type', 'currency']].drop_duplicates()
 ```
 ## 7. Stock TTM Revenue
 ```python

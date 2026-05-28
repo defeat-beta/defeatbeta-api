@@ -4,7 +4,7 @@ import unittest
 from defeatbeta_api.data.ticker import Ticker
 
 class TestTicker(unittest.TestCase):
-    SYMBOL = "TSLA"
+    SYMBOL = "AMD"
 
     @classmethod
     def setUpClass(cls):
@@ -130,8 +130,12 @@ class TestTicker(unittest.TestCase):
         print(news.get_news(first_uuid))
         news.print_pretty_table(first_uuid)
 
-    def test_revenue_by_breakdown(self):
-        result = self.ticker.revenue_by_breakdown()
+    def test_quarterly_revenue_by_breakdown(self):
+        result = self.ticker.quarterly_revenue_by_breakdown()
+        print(result.to_string())
+
+    def test_trailing_revenue_by_breakdown(self):
+        result = self.ticker.trailing_revenue_by_breakdown()
         print(result.to_string())
 
     def test_quarterly_gross_margin(self):

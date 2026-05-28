@@ -205,8 +205,13 @@ class TestTickers(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertFalse(result.empty)
 
-    def test_revenue_by_breakdown(self):
-        result = self.tickers.revenue_by_breakdown()
+    def test_quarterly_revenue_by_breakdown(self):
+        result = self.tickers.quarterly_revenue_by_breakdown()
+        print(result.to_string())
+        self.assertIsInstance(result, pd.DataFrame)
+
+    def test_trailing_revenue_by_breakdown(self):
+        result = self.tickers.trailing_revenue_by_breakdown()
         print(result.to_string())
         self.assertIsInstance(result, pd.DataFrame)
 

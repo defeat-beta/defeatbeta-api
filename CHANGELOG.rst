@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.58
+-------
+- breaking: rewrite ``revenue_by_breakdown`` for the new quarterly/trailing breakdown schema — add ``quarterly_revenue_by_breakdown()`` and ``trailing_revenue_by_breakdown()``, update MCP ``get_revenue_breakdown`` output, and refresh finance examples [`#191 <https://github.com/defeat-beta/defeatbeta-api/issues/191>`_]
+
 0.0.57
 -------
 - feat: add ``form_type`` field to ``revenue_by_breakdown()`` and fix ``period_type`` filtering in MCP — filter now correctly maps ``annual`` → ``10-K/10-K/A`` and ``quarterly`` → ``10-Q/10-Q/A`` via ``form_type`` [`#190 <https://github.com/defeat-beta/defeatbeta-api/issues/190>`_]

@@ -292,36 +292,54 @@ class Ticker:
             self.log_level,
         )
 
-    def revenue_by_breakdown(self) -> pd.DataFrame:
+    def quarterly_revenue_by_breakdown(self) -> pd.DataFrame:
         """
-        Return all revenue breakdown data from SEC filings in long format.
+        Quarterly revenue / KPI breakdowns disclosed by the company, in long format.
 
-        Each row represents one (report_date, breakdown_type, item_name) combination.
-        breakdown_type is the exact XBRL table name from the filing (e.g.
-        "Reconciliation Of Revenue From Segments To Consolidated Table",
-        "Schedule Of Revenues From External Customers And Long Lived Assets Table",
-        "Disaggregation Of Revenue Table"). item_value is in raw USD.
+        Each row is one (breakdown, report_date, series_name) observation for a
+        single fiscal quarter.
+
+        See `_revenue_by_breakdown` for column descriptions.
+        """
+        return self._revenue_by_breakdown('quarterly')
+
+    def trailing_revenue_by_breakdown(self) -> pd.DataFrame:
+        """
+        Trailing-twelve-months revenue / KPI breakdowns, in long format.
+
+        Each row is one (breakdown, report_date, series_name) observation, where
+        the value at `report_date` covers the trailing twelve months ending on
+        that date.
+
+        See `_revenue_by_breakdown` for column descriptions.
+        """
+        return self._revenue_by_breakdown('trailing')
+
+    def _revenue_by_breakdown(self, period_type: str) -> pd.DataFrame:
+        """
+        Internal: fetch breakdown rows for one period_type.
 
         Columns:
-            symbol          — stock ticker
-            report_date     — period end date (e.g. "2024-12-31")
-            period_label    — data period this report covers; "start/end" when both dates are
-                              available (e.g. "2024-01-01/2024-12-31"), or just "end" when only
-                              the end date is present in the filing
-            form_type       — SEC form type (e.g. "10-K", "10-Q", "10-K/A")
-            breakdown_type  — exact XBRL table name from the filing
-            item_name       — dimension member name (e.g. "Automotive", "US", "Cloud")
-            item_value      — revenue in raw USD (e.g. 82056000000 = $82.1B)
-            depth           — hierarchy depth; 1 = root member
-            parent_name     — display name of the parent node; NULL for root members
+            symbol         — stock ticker
+            breakdown      — slug identifying the breakdown table (e.g. "revenue-by-segment")
+            breakdown_name — human-readable name (e.g. "Revenue by Segment")
+            period_type    — "quarterly" or "trailing"
+            report_date    — period end date (string, YYYY-MM-DD)
+            series_name    — dimension member within the breakdown (pivot to columns)
+            value          — numeric value for the (report_date, series_name) cell
+            value_type     — "CURRENCY", "NUMBER", etc.
+            currency       — ISO currency code when value_type is CURRENCY, else NaN
 
-        Within each (report_date, period_label, breakdown_type) group the rows are
-        ordered by depth-first pre-order traversal: a parent row always precedes all
-        of its descendants, and the complete subtree of one node is shown before the
-        next sibling.
+        To produce a wide table for one breakdown, pivot on
+        index=report_date, columns=series_name, values=value.
         """
         url = self.huggingface_client.get_url_path(stock_revenue_breakdown)
-        sql = load_sql("select_revenue_breakdown_by_symbol", ticker=self.ticker, url=url)
+        sql = load_sql(
+            "select_revenue_breakdown_by_symbol",
+            ticker=self.ticker,
+            url=url,
+            period_type=period_type,
+        )
         return self.duckdb_client.query(sql)
 
     def quarterly_revenue_yoy_growth(self) -> pd.DataFrame:

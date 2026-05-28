@@ -1,96 +1,113 @@
 from .util import create_ticker
 
-# Maps period_type filter values to the SEC form types they correspond to.
-# Domestic companies:  10-K / 10-K/A = annual;  10-Q / 10-Q/A = quarterly
-# Foreign private issuers (ADRs etc.): 20-F / 20-F/A = annual;  6-K / 6-K/A = interim (quarterly/semi-annual)
-_ANNUAL_FORM_TYPES = {"10-K", "10-K/A", "20-F", "20-F/A"}
-_QUARTERLY_FORM_TYPES = {"10-Q", "10-Q/A", "6-K", "6-K/A"}
+_VALID_PERIOD_TYPES = {"quarterly", "trailing"}
 
 
-def get_revenue_breakdown(symbol: str, period_type: str = None):
+def _is_missing(value):
+    return value is None or str(value) in ("<NA>", "nan", "NaT")
+
+
+def _optional_str(value):
+    if _is_missing(value):
+        return None
+    return str(value)
+
+
+def _optional_int(value):
+    if _is_missing(value):
+        return None
+    return int(value)
+
+
+def get_revenue_breakdown(symbol: str, period_type: str):
     """
-    Retrieve all revenue breakdown data for a given stock symbol, as reported in SEC filings.
+    Retrieve revenue / KPI breakdown disclosures for a given stock symbol.
 
-    Unlike fixed segment/geography splits, this returns every breakdown table available
-    in the filing (e.g. by segment, by geography, by product line, by service type, etc.).
-    The breakdown_type field identifies which table each row belongs to.
+    Each company discloses one or more breakdowns of its revenue (or other key
+    metrics) — for example by segment, geography, product line, customer type,
+    or deal size. This tool returns every disclosed breakdown table in long
+    format; group by `breakdown` to separate them.
 
     Args:
-        symbol (str): Stock ticker symbol (e.g. "TSLA", "AMD", "NVDA").
-        period_type (str): Optional filter — "annual" or "quarterly".
-                           Filtered by form_type: "annual" keeps 10-K/10-K/A rows,
-                           "quarterly" keeps 10-Q/10-Q/A rows.
-                           If omitted, all rows are returned.
+        symbol (str): Stock ticker symbol (e.g. "PLTR", "AMD", "TSLA").
+        period_type (str): Required. One of:
+            - "quarterly":  values for a single fiscal quarter
+            - "trailing":   values for the trailing twelve months ending on report_date
 
     Returns:
         dict: {
             "symbol": str,
+            "period_type": str,
             "rows_returned": int,
-            "breakdown_types": list[str],   # distinct table names present in the data
-            "data": list[dict]              # each record contains:
-                - report_date (str):        # period end date, e.g. "2024-12-31"
-                - period_label (str):       # the data period this report covers, formatted as
-                                            # "start~end" (e.g. "2024-01-01~2024-12-31") or
-                                            # just "end" when no start date is available
-                - form_type (str):          # SEC form type, e.g. "10-K", "10-Q", "10-K/A"
-                - breakdown_type (str):     # source table name from the SEC filing
-                - item_name (str):          # dimension member, e.g. "Automotive", "US", "Cloud"
-                - item_value (int | None):  # revenue in USD (not scaled)
-                - depth (int):              # hierarchy depth: 1 = root, 2 = child, 3 = grandchild
-                - parent_name (str | None): # display name of the parent node; None for root members
+            "breakdowns": list[dict],   # one entry per distinct breakdown table:
+                - "breakdown" (str):         slug, e.g. "revenue-by-segment"
+                - "breakdown_name" (str):    display name, e.g. "Revenue by Segment"
+                - "value_type" (str):        "CURRENCY", "NUMBER", etc.
+                - "currency" (str | None):   ISO currency code if value_type=CURRENCY, else None
+            "data": list[dict]          # each record:
+                - "breakdown" (str):         which breakdown this row belongs to
+                - "report_date" (str):       period end date, "YYYY-MM-DD"
+                - "series_name" (str):       dimension member, e.g. "Government", "US", "Data Center"
+                - "value" (int | None):      numeric value for (report_date, series_name)
         }
 
     Notes:
-        - Data is sourced directly from XBRL-tagged SEC filings; table names and member
-          names reflect the exact language used by the company in each filing period.
-        - The same economic concept (e.g. geographic revenue) may appear under slightly
-          different table names across filing years — group by breakdown_type to compare.
-        - item_value is in raw USD (e.g. 82056000000 = $82.1B).
-        - Within each (report_date, breakdown_type) group the rows are ordered by
-          depth-first pre-order traversal: parent before children, full subtree before
-          next sibling. Use depth and parent_name to reconstruct the tree structure.
+        - To form a wide table for one breakdown, group `data` by `breakdown`,
+          then pivot rows on `series_name` with `report_date` as the index.
+        - `value` is raw — for CURRENCY breakdowns it is in the unit of `currency`
+          (typically USD); for NUMBER breakdowns it is the raw count.
     """
     symbol = symbol.upper()
+
+    if period_type not in _VALID_PERIOD_TYPES:
+        raise ValueError(
+            f"Invalid period_type: {period_type!r}. "
+            f"Must be one of {sorted(_VALID_PERIOD_TYPES)}."
+        )
+
     ticker = create_ticker(symbol)
 
-    df = ticker.revenue_by_breakdown()
+    if period_type == "quarterly":
+        df = ticker.quarterly_revenue_by_breakdown()
+    else:
+        df = ticker.trailing_revenue_by_breakdown()
 
     if df is None or df.empty:
         return {
             "symbol": symbol,
+            "period_type": period_type,
             "rows_returned": 0,
-            "breakdown_types": [],
-            "data": []
+            "breakdowns": [],
+            "data": [],
         }
 
-    if period_type == "annual":
-        df = df[df["form_type"].isin(_ANNUAL_FORM_TYPES)]
-    elif period_type == "quarterly":
-        df = df[df["form_type"].isin(_QUARTERLY_FORM_TYPES)]
-
-    breakdown_types = sorted(df["breakdown_type"].dropna().unique().tolist())
+    meta_df = (
+        df[["breakdown", "breakdown_name", "value_type", "currency"]]
+        .drop_duplicates(subset=["breakdown"])
+        .sort_values("breakdown")
+    )
+    breakdowns = []
+    for _, row in meta_df.iterrows():
+        breakdowns.append({
+            "breakdown": str(row["breakdown"]),
+            "breakdown_name": _optional_str(row.get("breakdown_name")),
+            "value_type": _optional_str(row.get("value_type")),
+            "currency": _optional_str(row.get("currency")),
+        })
 
     records = []
     for _, row in df.iterrows():
-        val = row.get("item_value")
-        parent = row.get("parent_name")
-        raw_label = row.get("period_label")
-        # period_label from XBRL: "2024-01-01/2024-12-31" (start~end) or "2024-12-31" (end only)
-        period_label = str(raw_label).replace("/", "~") if raw_label else None
         records.append({
+            "breakdown": str(row["breakdown"]),
             "report_date": str(row["report_date"]),
-            "period_label": period_label,
-            "form_type": str(row["form_type"]) if row.get("form_type") else None,
-            "breakdown_type": str(row["breakdown_type"]),
-            "item_name": str(row["item_name"]),
-            "item_value": int(val) if val is not None and str(val) != "<NA>" else None,
-            "depth": int(row["depth"]) if row.get("depth") is not None else 1,
-            "parent_name": str(parent) if parent is not None and str(parent) != "<NA>" else None,
+            "series_name": str(row["series_name"]),
+            "value": _optional_int(row.get("value")),
         })
 
     return {
         "symbol": symbol,
+        "period_type": period_type,
         "rows_returned": len(records),
-        "breakdown_types": breakdown_types,
+        "breakdowns": breakdowns,
         "data": records,
     }
