@@ -347,10 +347,23 @@ class TestTicker(unittest.TestCase):
                 return str(v)
 
             def _approx(xl_val, data_val, label, places=6):
-                """Assert Excel-calculated value matches dcf_data value, and log."""
+                """Assert Excel-calculated value matches dcf_data value, and log.
+
+                Uses a hybrid absolute + relative tolerance. The absolute
+                tolerance (derived from ``places``) keeps the original
+                strictness for normal-sized values, while the relative
+                tolerance permits float64 round-trip noise on huge magnitudes
+                (e.g. enterprise_value ~1e15), where an absolute decimal-place
+                tolerance is unattainable due to float precision (~1 ULP).
+                """
                 xl_f = _num(xl_val)
                 data_f = float(data_val)
-                self.assertAlmostEqual(xl_f, data_f, places=places, msg=label)
+                abs_tol = 0.5 * 10 ** (-places)
+                rel_tol = 1e-9
+                self.assertTrue(
+                    math.isclose(xl_f, data_f, rel_tol=rel_tol, abs_tol=abs_tol),
+                    msg=f"{label}: {xl_f!r} != {data_f!r} (abs_tol={abs_tol}, rel_tol={rel_tol})",
+                )
                 log.append((label, _fmt(xl_f), _fmt(data_f)))
 
             def _str_eq(xl_val, data_val, label):
@@ -527,3 +540,32 @@ class TestTicker(unittest.TestCase):
         for period in periods:
             result = self.ticker.beta(period)
             print(result.to_string())
+
+    def test_beta_parses_data_update_time_formats(self):
+        """beta() must parse both ISO 8601 ('...T..Z') and legacy update_time formats.
+
+        Regression test: the data source switched update_time from
+        '%Y-%m-%d %H:%M:%S' to ISO 8601 '2026-05-29T05:42:24Z', which made
+        strptime raise ValueError. Network access is mocked out so this test
+        only exercises the date-parsing step inside beta().
+        """
+        import pandas as pd
+        from unittest.mock import patch
+
+        dates = pd.date_range(end="2026-05-29", periods=400, freq="D")
+        fake_df = pd.DataFrame({
+            "report_date": dates.strftime("%Y-%m-%d"),
+            "stock_close": range(100, 100 + len(dates)),
+            "benchmark_close": range(200, 200 + len(dates)),
+        })
+
+        for update_time in ("2026-05-29T05:42:24Z", "2026-05-29 05:42:24"):
+            with self.subTest(update_time=update_time):
+                with patch.object(self.ticker.huggingface_client,
+                                  "get_data_update_time", return_value=update_time), \
+                     patch.object(self.ticker.huggingface_client,
+                                  "get_url_path", return_value="dummy.parquet"), \
+                     patch.object(self.ticker.duckdb_client,
+                                  "query", return_value=fake_df.copy()):
+                    result = self.ticker.beta("1y")
+                    self.assertEqual(result.iloc[0]["report_date"], "2026-05-29")

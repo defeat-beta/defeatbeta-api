@@ -110,7 +110,13 @@ class Ticker:
         value, unit = int(match.group(1)), match.group(2)
 
         # Use data update time as end date (data may not be current to today)
-        end_date = datetime.strptime(self.huggingface_client.get_data_update_time(), '%Y-%m-%d %H:%M:%S')
+        raw_update_time = self.huggingface_client.get_data_update_time()
+        try:
+            # New ISO 8601 format, e.g. '2026-05-29T05:42:24Z'
+            end_date = datetime.fromisoformat(raw_update_time.replace('Z', '+00:00'))
+        except ValueError:
+            # Backward compatibility with old '%Y-%m-%d %H:%M:%S' format
+            end_date = datetime.strptime(raw_update_time, '%Y-%m-%d %H:%M:%S')
         if unit == 'd':
             start_date = end_date - timedelta(days=value)
         elif unit == 'm':

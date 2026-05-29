@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.59
+-------
+- fix: ``beta()`` failed to parse data ``update_time`` after the upstream source switched to ISO 8601 (e.g. ``2026-05-29T05:42:24Z``) — parse via ``datetime.fromisoformat`` with backward compatibility for the old ``%Y-%m-%d %H:%M:%S`` format; also harden the DCF test ``_approx`` helper with a hybrid absolute + relative tolerance for huge values [`#192 <https://github.com/defeat-beta/defeatbeta-api/issues/192>`_]
+
 0.0.58
 -------
 - breaking: rewrite ``revenue_by_breakdown`` for the new quarterly/trailing breakdown schema — add ``quarterly_revenue_by_breakdown()`` and ``trailing_revenue_by_breakdown()``, update MCP ``get_revenue_breakdown`` output, and refresh finance examples [`#191 <https://github.com/defeat-beta/defeatbeta-api/issues/191>`_]
