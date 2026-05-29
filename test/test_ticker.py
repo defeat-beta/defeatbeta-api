@@ -4,7 +4,7 @@ import unittest
 from defeatbeta_api.data.ticker import Ticker
 
 class TestTicker(unittest.TestCase):
-    SYMBOL = "AMD"
+    SYMBOL = "PDD"
 
     @classmethod
     def setUpClass(cls):
@@ -358,6 +358,16 @@ class TestTicker(unittest.TestCase):
                 """
                 xl_f = _num(xl_val)
                 data_f = float(data_val)
+                # A NaN in dcf_data (e.g. first-year YoY with no prior year)
+                # cannot be stored in xlsx, so Excel reads it back as 0.0.
+                # Assert that round-trip explicitly instead of comparing NaN.
+                if math.isnan(data_f):
+                    self.assertEqual(
+                        xl_f, 0.0,
+                        msg=f"{label}: data is NaN but Excel is {xl_f!r} (expected 0.0)",
+                    )
+                    log.append((label, _fmt(xl_f), _fmt(data_f)))
+                    return
                 abs_tol = 0.5 * 10 ** (-places)
                 rel_tol = 1e-9
                 self.assertTrue(
