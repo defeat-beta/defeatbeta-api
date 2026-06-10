@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.60
+-------
+- feat: support Windows platform — upgrade ``duckdb`` to 1.5.3 so the community ``cache_httpfs`` extension (v0.14.0, now with Windows support) is available as ``windows_amd64``; this also unpins duckdb from 1.4.3 since the O_DIRECT tail-block EINVAL regression is fixed upstream [`#130 <https://github.com/defeat-beta/defeatbeta-api/issues/130>`_]
+
 0.0.59
 -------
 - fix: ``beta()`` failed to parse data ``update_time`` after the upstream source switched to ISO 8601 (e.g. ``2026-05-29T05:42:24Z``) — parse via ``datetime.fromisoformat`` with backward compatibility for the old ``%Y-%m-%d %H:%M:%S`` format; also harden the DCF test ``_approx`` helper with a hybrid absolute + relative tolerance for huge values [`#192 <https://github.com/defeat-beta/defeatbeta-api/issues/192>`_]
