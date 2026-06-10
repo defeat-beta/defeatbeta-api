@@ -35,27 +35,12 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) using `pip`:
 
-**MacOS / Linux**
+**MacOS / Linux / Windows**
 ``` {.sourceCode .bash}
 $ pip install defeatbeta-api
 ```
 
-**Windows**
-> ⚠️ Requires WSL/Docker Due to dependencies on cache_httpfs (unsupported on Windows):
-
-Option 1: WSL (Recommended)
-1. Install [WSL](https://ubuntu.com/desktop/wsl)
-2. In WSL terminal:
-``` {.sourceCode .bash}
-$ pip install defeatbeta-api
-```
-
-Option 2: Docker
-1. Install [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
-2. Run in Linux container:
-``` {.sourceCode .bash}
-docker run -it python:latest pip install defeatbeta-api
-```
+> 💡 Windows is supported natively since `v0.0.60` (the `cache_httpfs` extension added Windows support). Earlier versions require [WSL](https://ubuntu.com/desktop/wsl) or [Docker](https://docs.docker.com/desktop/setup/install/windows-install/).
 
 ### Usage
 
