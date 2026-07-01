@@ -91,7 +91,8 @@ class DuckDBClient:
 
         except Exception as e:
             self.logger.error(f"Failed to validate httpfs cache: {str(e)}")
-            raise
+            # Don't raise — cache validation failure should not prevent
+            # DuckDBClient from initializing.  Worst case: slightly stale data.
 
     def _read_cached_spec_update_time(self) -> Optional[str]:
         """Read update_time directly from the spec.json file on disk, bypassing DuckDB.
