@@ -1,124 +1,244 @@
 ---
 name: defeatbeta-earnings-preview
-description: "Build pre-earnings analysis with estimate models, scenario frameworks, key metrics, catalysts, historical reactions, and options-implied moves. Use before a company reports quarterly earnings to prepare positioning notes or bilingual three-page PDF reports. Triggers on earnings preview, what to watch for company earnings, pre-earnings, earnings setup, preview Q[X] for a company, or requests for an earnings-preview report/PDF."
+description: Build pre-earnings analysis with normalized baselines, weighted decision models, company-specific veto gates, scenario frameworks, catalysts, historical reactions, and options-implied moves. Use before a company reports quarterly earnings to prepare positioning notes or bilingual three-page PDF reports.
 ---
 
-# Earnings Preview
+# DefeatBeta Earnings Preview
 
-Build pre-earnings analysis with estimate models, scenario frameworks, and key metrics to watch. Use before a company reports quarterly earnings to prepare positioning notes, set up bull/base/bear scenarios, and identify what will move the stock.
+Create a decision-ready pre-earnings report. Anchor every threshold to sourced consensus, management guidance, prior-quarter financial statements, and company-specific operating drivers.
 
-## Workflow
+## 1. Establish the Reporting Context
 
-### Step 1: Gather Context
+1. Confirm the company, ticker, fiscal quarter, reporting date, and expected release timing.
+2. Gather current consensus estimates and link the source.
+3. Use DefeatBeta to retrieve the latest available prior-quarter earnings call:
+   - Call `get_stock_transcript_list` first.
+   - Call `get_stock_transcript` with the exact returned quarter and year.
+   - Extract management guidance, operating targets, risks, and unresolved questions.
+4. Use DefeatBeta to retrieve the latest reported quarterly statements:
+   - `get_stock_quarterly_income_statement`
+   - `get_stock_quarterly_balance_sheet`
+   - `get_stock_quarterly_cash_flow`
+5. Separate three information states:
+   - **Reported:** historical facts from statements or filings.
+   - **Guided:** explicit management targets or qualitative commitments.
+   - **Estimated:** consensus or analyst judgment.
+6. If any required source is unavailable, disclose the gap. Do not replace prior-quarter guidance with web snippets.
 
-- Identify the company and reporting quarter
-- Pull consensus estimates via web search, including revenue, EPS, and key segment metrics
-- Find the earnings date and time, including whether the report is pre-market or after-hours
-- Review management guidance and commentary from the prior quarter's earnings call by using the defeatbeta MCP server transcript tools:
-  - First call `get_stock_earning_call_transcripts_list(symbol)` to identify available earnings call transcripts and select the most recent reported fiscal quarter
-  - Then call `get_stock_earning_call_transcript(symbol, fiscal_year, fiscal_quarter)` to retrieve the full transcript for that fiscal period
-  - Extract management guidance, outlook, demand commentary, margin commentary, capital allocation comments, and any explicit forward-looking statements from the transcript
-  - Do not use web search as a substitute for prior-quarter management guidance; if the MCP transcript tools return no transcript or are unavailable, explicitly state the data gap
+## 2. Build a Normalized Starting Point
 
-### Step 2: Key Metrics Framework
+Create a compact baseline bridge before forecasting the next quarter:
 
-Build a "what to watch" framework specific to the company:
+| Metric | Prior Reported | Normalization Item | Normalized Baseline | Current Hurdle | Source |
+|---|---:|---|---:|---:|---|
 
-**Financial Metrics:**
-- Revenue vs. consensus, total and by segment
-- EPS vs. consensus
-- Margins, including gross, operating, and net margin
+Review at least:
+
+- Revenue and segment mix
+- Gross margin and the company-specific profitability metric
+- Operating expenses, including R&D where material
+- Operating margin
+- Operating cash flow
+- Working-capital contribution
+- Capital expenditures
 - Free cash flow
-- Forward guidance vs. consensus
+- Diluted share count
 
-**Operational Metrics** (sector-specific):
-- Tech/SaaS: ARR, net retention, RPO, customer count
-- Retail: Same-store sales, traffic, basket size
-- Industrials: Backlog, book-to-bill, price vs. volume
-- Financials: NIM, credit quality, loan growth, fee income
-- Healthcare: Scripts, patient volumes, pipeline updates
+Identify material one-time or low-repeatability items such as regulatory credits, warranty adjustments, tariffs, restructuring, asset revaluations, foreign exchange, investment marks, tax effects, and unusual working-capital movements.
 
-### Step 3: Scenario Analysis
+Label every normalization as analyst judgment. Never present a normalized figure as a reported fact.
 
-Build three scenarios with stock price implications:
+## 3. Rank the Decision Metrics
 
-| Scenario | Revenue | EPS | Key Driver | Stock Reaction |
-|----------|---------|-----|------------|----------------|
-| Bull | | | | |
-| Base | | | | |
-| Bear | | | | |
+Select five to eight company-specific dimensions. Rank them by:
 
-For each scenario:
-- What would need to happen operationally
-- What management commentary would signal this
-- Historical context, including how the stock has moved on similar prints
+1. Earnings materiality
+2. Probability of surprise
+3. Expected stock-price sensitivity
 
-### Step 4: Catalyst Checklist
+Cover the following when material:
 
-Identify the three to five things that will determine the stock's reaction:
+- Revenue and segment mix
+- EPS and earnings quality
+- Gross margin and the most relevant unit-economics metric
+- Operating expenses and operating margin
+- Operating cash flow, working capital, capital expenditures, and free cash flow
+- Forward guidance
+- Company-specific operating metrics
 
-1. [Metric] vs. [consensus/whisper number] - why it matters
-2. [Guidance item] - what the buy-side expects to hear
-3. [Narrative shift] - any strategic changes, M&A, restructuring
+Do not use generic metrics when a better company-specific measure exists.
 
-### Step 5: Choose the Output Format
+## 4. Use a Weighted Decision Model
 
-- For a concise chat response or positioning note, produce a one-page earnings preview with the company, quarter, earnings date, consensus table, prior-quarter guidance, ranked metrics, bull/base/bear scenarios, catalysts, recent stock performance, and options-implied move.
-- When the user requests a report/PDF or supplies a reference PDF, produce a three-page A4 PDF using the bundled AMD example as the visual and structural reference.
-- Select the template by the user's requested language. If no language is specified, use the language of the user's request:
-  - Chinese: `assets/earnings-preview-template-zh.pdf`
-  - English: `assets/earnings-preview-template-en.pdf`
-- Treat the bundled template as a complete worked example, not a form. Preserve its design system, content density, section order, tables, and page structure while replacing all company-specific content with the target company's data.
-- Do not strip or neutralize the AMD content inside the template assets. Use it to calibrate the expected level of analytical detail and layout density.
+Assign explicit weights totaling 100%. Use five to eight dimensions. A typical starting range is:
 
-### Step 6: Build the Three-Page PDF
+- Profitability and margin quality: 20% to 35%
+- EPS and earnings quality: 10% to 20%
+- Revenue and mix: 10% to 25%
+- Operating expenses and capital intensity: 10% to 20%
+- Cash conversion: 5% to 15%
+- Company-specific operating or commercial milestones: 10% to 25%
+- Balance-sheet risk: 0% to 10%
 
-Use this structure unless the user explicitly requests another format:
+Score each dimension from -2 to +2:
 
-**Page 1**
-- Title, reporting date and time, data cutoff date
-- Core view
-- Consensus estimates vs. management guidance
-- Prior-quarter management signals from DefeatBeta transcripts
+- `+2`: clear Bull outcome
+- `+1`: modestly positive
+- `0`: Base or in line
+- `-1`: modestly negative
+- `-2`: clear Bear outcome
 
-**Page 2**
-- Five ranked company- and sector-specific metrics
-- Bull/base/bear scenario table with revenue, EPS, operational conditions, and stock reactions
-- Three to five catalysts
+Calculate:
 
-**Page 3**
-- Recent stock performance and four historical earnings reactions
-- Options-implied move and implied price range
-- Suggested manual tracking plan through the reporting date
-- Clickable data sources and risk disclosure
+`Weighted Score = sum(weight × dimension score ÷ 2)`
 
-Adapt operational metrics to the company. Do not mechanically carry semiconductor metrics into software, retail, financial, industrial, or healthcare reports.
+The score ranges from -1.0 to +1.0. Use default bands unless company history supports better thresholds:
 
-If part of the quarter is already known from monthly revenue, regulatory data, unit sales, or another disclosed operating statistic, explicitly separate known results from remaining uncertainties. Refocus the core view and scenarios on the variables that can still surprise the market, such as margins, segment mix, forward guidance, or management commentary.
+- **Bull:** score at or above +0.35 and no veto gate triggered
+- **Base:** score between -0.35 and +0.35 and no veto gate triggered
+- **Bear:** score at or below -0.35, or any Bear veto gate triggered
 
-### Step 7: Add Source Links
+Show the selected weights and score logic in the report. Revenue and EPS ranges are reference outcomes, not a requirement that every scenario condition occur together.
 
-- Make every named public source in the PDF clickable and link directly to the supporting page, not a search-results page.
-- Link `DefeatBeta MCP` to `https://github.com/defeat-beta/defeatbeta-api` wherever it appears as a source.
-- State the access date for consensus estimates, stock prices, and options data.
-- Explicitly state when a reliable public segment consensus or buy-side whisper number cannot be verified.
-- Label inferences, scenario thresholds, and estimated market hurdles as research judgments rather than published consensus.
+### Define Company-Specific Veto Gates
 
-### Step 8: Validate the PDF
+Add two to five objective Bear veto gates. A veto gate overrides the weighted score. Adapt the gates to the company and sector.
 
-- Render every page to images and visually inspect typography, line wrapping, tables, spacing, headers, footers, and page numbers.
-- Confirm the report is three A4 pages with no clipped text, overlaps, missing glyphs, black squares, or broken tables.
-- Verify the PDF contains clickable link annotations for each named source.
-- Search the final text for template leakage. Unless the target company is AMD, remove residual terms such as `AMD`, `MI450`, `Helios`, `EPYC`, and `Instinct`.
-- Confirm the company name, fiscal quarter, reporting date, metrics, scenarios, prices, and sources all belong to the target company.
-- State that a tracking plan is a suggested manual cadence and does not mean an automation, reminder, or monitor was created.
+Examples:
+
+- Profitability falls below a structurally important threshold.
+- Forward guidance is materially below consensus.
+- A core product launch, capacity ramp, approval, or delivery milestone slips.
+- Operating expenses or capital intensity rise without a credible commercialization bridge.
+- Liquidity, leverage, credit loss, subscriber churn, or another sector-specific risk breaches a critical level.
+- Reported earnings are supported by non-operating or low-repeatability items while operating earnings deteriorate.
+
+Use precise thresholds whenever the evidence supports them. Explain why each threshold matters.
+
+### Validate Mixed Signals
+
+Test the model before publishing with at least one mixed case, such as:
+
+- Revenue scores Base.
+- Free cash flow scores Bull.
+- Profitability scores Bear.
+
+The framework must return one overall scenario and explain whether the weighted score or a veto gate determined it. Eliminate overlapping or ambiguous scenario outcomes.
+
+## 5. Separate Progress from Monetization
+
+For every major catalyst, classify the evidence:
+
+1. **Technical progress:** prototype, benchmark, approval, or product readiness
+2. **Operating scale:** capacity, deployment, production, or service availability
+3. **User adoption:** customers, usage, retention, or engagement
+4. **Commercial contribution:** pricing, contracted revenue, recognized revenue, margin, or cash flow
+
+State which evidence level has been reached and what must occur next. Do not allow technical progress alone to offset weak economics unless the investment thesis explicitly supports that trade-off.
+
+## 6. Choose the Deliverable
+
+### Concise Note
+
+Use a compact table-first format when the user requests a quick preview or chat response.
+
+### Three-Page PDF
+
+Use the matching template:
+
+- Chinese: `assets/earnings-preview-template-zh.pdf`
+- English: `assets/earnings-preview-template-en.pdf`
+
+Preserve the template's design system, content density, table hierarchy, and three-page A4 format. Replace all worked-example content and remove all template-company leakage.
+
+## 7. Structure the Three-Page PDF
+
+### Page 1: Setup and Normalized Baseline
+
+- Title, reporting date, and core view
+- Consensus versus management guidance
+- Reported, guided, and estimated information
+- Prior-quarter reported baseline
+- One-time items and normalization bridge
+- Known facts versus unresolved uncertainties
+
+### Page 2: Decision Framework
+
+- Five to eight ranked metrics with weights
+- Weighted score method and scenario bands
+- Bull, Base, and Bear reference ranges
+- Company-specific Bear veto gates
+- Catalysts classified by commercialization maturity
+
+### Page 3: Trading and Release Plan
+
+- Historical post-earnings reactions with consistent measurement windows
+- Options-implied move and method
+- Ten-minute post-release checklist
+- Post-release tracking plan
+- Linked sources and risk disclosure
+
+## 8. Build the Trading Setup Carefully
+
+For historical reactions, use the same observation window across quarters whenever possible. Label whether the move is:
+
+- After-hours
+- Next open
+- Next close
+- Two-day close
+
+For the options-implied move, state:
+
+- Observation date and time
+- Expiration used
+- Calculation method
+- Whether the estimate is an overnight move or a move through expiration
+
+Do not compare inconsistent reaction windows without disclosure.
+
+## 9. Add a Ten-Minute Release Checklist
+
+Organize the checklist by elapsed time:
+
+- **0 to 2 minutes:** headline revenue, EPS, guidance, and veto gates
+- **2 to 5 minutes:** segment mix, margins, operating expenses, and one-time items
+- **5 to 8 minutes:** operating cash flow, working capital, capital expenditures, and free cash flow
+- **8 to 10 minutes:** operating milestones, commercialization evidence, weighted score, and final scenario
+
+The checklist must make the report usable during the release rather than only descriptive before it.
+
+## 10. Cite Sources
+
+Use linked primary or reputable sources. Include:
+
+- DefeatBeta transcript and financial statement data
+- Company investor relations materials
+- Consensus estimate source
+- Historical price-reaction source
+- Options-implied move source or calculation method
+
+Use live clickable links in the PDF.
+
+## 11. Validate Before Delivery
+
+Confirm:
+
+- The PDF contains exactly three A4 pages.
+- Both Chinese and English templates remain readable after rendering.
+- All external links are clickable.
+- Weights total 100%.
+- Scenario bands have no gaps or overlaps.
+- Veto gates produce one unambiguous final scenario.
+- A mixed-signal test resolves to one scenario.
+- Reported, guided, estimated, and normalized values are clearly separated.
+- Quarterly free cash flow is separated from working-capital quality and multi-year capital intensity.
+- Technical milestones are separated from commercial contribution.
+- No worked-example company, ticker, dates, or metrics remain in the final report.
 
 ## Important Notes
 
-- Consensus estimates change, so always note the source and date of estimates
-- Prior-quarter management guidance must come from the defeatbeta MCP server transcript tools, not web search
-- Whisper numbers from buy-side surveys are often more relevant than published consensus
-- Historical earnings reactions help calibrate expectations; search for "[company] earnings reaction history"
-- Options-implied move tells you what the market expects; compare it to your scenarios
-- Options ranges captured well before earnings include ordinary pre-event volatility; do not describe them as pure overnight earnings moves
-- Preserve source dates and data gaps in both the narrative and the PDF
+- This is an earnings preview, not an earnings update.
+- Treat scenario outputs as a decision framework, not a point forecast.
+- Use neutral investment-research language.
+- Do not fabricate missing values.
+- Clearly distinguish sourced facts from analyst judgment.
