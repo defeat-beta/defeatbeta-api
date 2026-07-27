@@ -144,19 +144,12 @@ Use a compact table-first format when the user requests a quick preview or chat 
 
 ### Three-Page PDF
 
-Use the matching template:
-
-- Chinese: `assets/earnings-preview-template-zh.pdf`
-- English: `assets/earnings-preview-template-en.pdf`
-
-Preserve the template's design system, content density, table hierarchy, and three-page A4 format. Replace all worked-example content and remove all template-company leakage.
-
-Use the completed AMD reports as quality references when a realistic example is useful:
+Use the completed AMD reports as the canonical visual and quality references:
 
 - Chinese: `assets/amd-fy2026-q2-earnings-preview-zh.pdf`
 - English: `assets/amd-fy2026-q2-earnings-preview-en.pdf`
 
-Use these completed examples to calibrate evidence separation, normalization detail, weighted scoring, veto gates, source links, and release-day usability. Never reuse their company data, dates, thresholds, consensus, or conclusions in another report.
+Preserve their design system, content density, table hierarchy, and three-page A4 format. Use them to calibrate evidence separation, normalization detail, weighted scoring, veto gates, source links, and release-day usability. Treat them only as structure, design, and quality references. Never reuse their company data, ticker, dates, thresholds, consensus, metrics, judgments, or conclusions in another report.
 
 ## 7. Structure the Three-Page PDF
 
