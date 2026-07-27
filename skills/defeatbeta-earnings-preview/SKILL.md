@@ -151,6 +151,13 @@ Use the matching template:
 
 Preserve the template's design system, content density, table hierarchy, and three-page A4 format. Replace all worked-example content and remove all template-company leakage.
 
+Use the completed AMD reports as quality references when a realistic example is useful:
+
+- Chinese: `assets/amd-fy2026-q2-earnings-preview-zh.pdf`
+- English: `assets/amd-fy2026-q2-earnings-preview-en.pdf`
+
+Use these completed examples to calibrate evidence separation, normalization detail, weighted scoring, veto gates, source links, and release-day usability. Never reuse their company data, dates, thresholds, consensus, or conclusions in another report.
+
 ## 7. Structure the Three-Page PDF
 
 ### Page 1: Setup and Normalized Baseline
