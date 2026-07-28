@@ -1,8 +1,8 @@
 # DefeatBeta Skills
 
 Skills that enhance AI's financial analysis capabilities on top of
-[defeatbeta-api-mcp](../mcp/README.md). Compatible with Claude.ai, Manus,
-and other AI platforms that support skills.
+[defeatbeta-api-mcp](../mcp/README.md). Compatible with Claude Desktop, Manus,
+Codex, Hermes Agent, OpenClaw Agent, and other AI platforms that support skills.
 
 ## Available Skills
 
@@ -32,14 +32,19 @@ flexing the outputs:
 
 ## Prerequisites
 
-Configure the MCP server before using any skill — see
-[../mcp/README.md](../mcp/README.md).
+Before using a skill, ask your agent to install and configure
+[Defeat Beta API MCP](../mcp/README.md#installation).
 
-## Packaging
+## Installation
 
-To upload to Claude Desktop / Manus / etc., zip the skill folder (the
-folder itself must be the zip's root):
+Choose a skill from the table above and send its directory link to your agent:
 
-```bash
-zip -r defeatbeta-dcf.zip defeatbeta-dcf/
+```text
+Install the DefeatBeta skill from <SKILL_DIRECTORY_URL> for this agent and verify that the skill is available.
+```
+
+For example:
+
+```text
+Install the DefeatBeta DCF skill from https://github.com/defeat-beta/defeatbeta-api/tree/main/skills/defeatbeta-dcf for this agent and verify that the skill is available.
 ```
