@@ -47,203 +47,56 @@ Click [here](../doc/mcp/README.md) to discover more ways to use MCP and explore 
 ```
 
 ## Installation
-- Method 1: Run with uvx (Recommended)
-- Method 2: One-line Install Script (Optional)
 
-### Method 1: Run with `uvx` (Recommended)
+Defeat Beta API MCP can be installed through natural language in MCP-capable agents and clients, including **Claude Desktop**, **Manus**, **Codex**, **Hermes Agent**, **OpenClaw Agent**, and others.
 
-The recommended way to run **Defeat Beta API MCP** is using `uvx`. You need to install it first by running `pip install uv`.
+Send the following message to your agent:
 
-This method requires **no manual installation**, **no virtual environment management**, and works seamlessly with MCP-native clients such as **Manus**, **Cherry Studio**, and **Claude Desktop**.
+```text
+Install the Defeat Beta API MCP from https://github.com/defeat-beta/defeatbeta-api/tree/main/mcp. Use uvx to run it, configure it for this agent, and verify that the MCP server connects successfully.
+```
 
-**Step 1: Pre-warm the cache (first time only)**
+The agent will handle the installation and MCP configuration for you.
 
-Before adding the MCP server to your client, run the following command once to download and cache the package locally:
+### Troubleshooting: Installation Timeout
+
+The first startup may take longer while `uvx` downloads the package. If the installation or MCP connection times out, ask your agent to run the following command and then retry:
 
 ```shell
 uvx --refresh "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
 ```
 
-> This step is required because MCP clients have a 60-second initialization timeout. The first download from GitHub may exceed this limit and cause a connection failure. After the cache is warm, subsequent startups take under 2 seconds.
+### Optional: HTTP Proxy
 
-**Step 2: MCP Configuration:**
-
-```json
-{
-  "mcpServers": {
-    "defeatbeta-api": {
-      "command": "uvx",
-      "args": [
-        "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
-      ]
-    }
-  }
-}
-```
-
-Once added, your MCP client will automatically:
-- Load the cached package
-- Launch the MCP server in stdio mode
-No further setup is required.
-
-
-**Set HTTP Proxy (if you’re in a region where cannot access [the Hugging Face Dataset](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data)):**
-
-```json
-{
-  "mcpServers": {
-    "defeatbeta-api": {
-      ...
-      "env": {
-        "DEFEATBETA_GATEWAY": "http://127.0.0.1:8118"
-      }
-    }
-  }
-}
-```
-
-### Method 2: One-line Install Script
-#### macOS or Linux
-Run script to install:
-```shell
-curl -sSL https://raw.githubusercontent.com/defeat-beta/defeatbeta-api/main/mcp/install | bash
-```
-
-#### What this script does
-
-<details>
-<summary>The installation script will automatically perform the following steps:</summary>
-
-
-1. **Installation Location**
-   * The MCP server will be installed to the local directory:
-     ```text
-     ~/.defeatbeta/
-     ```
-   * This directory contains all code and runtime resources required by the MCP server and can be safely removed to uninstall.
-2. **Create an Isolated Python Virtual Environment**
-   * An isolated Python virtual environment will be created at:
-     ```text
-     ~/.defeatbeta/.venv
-     ```
-   * All dependencies are installed exclusively within this environment and will not affect the system Python installation or other projects.
-3. **Download and Install MCP Server Entry Scripts**
-   * MCP-related files are downloaded from the `defeatbeta-api` repository.
-   * The script installs and configures `mcp/run.sh` as the unified entry point for starting the MCP server.
-4. **Install Runtime Dependencies**
-   * Installs the MCP protocol implementation and required runtime dependencies (including `defeatbeta-api`).
-   * Dependencies are resolved and installed once during installation, avoiding repeated downloads or installations at runtime.
-5. **Installed Directory Structure**
-
-> After installation, the directory structure is as follows:
+If your environment cannot access the [Defeat Beta Yahoo Finance Dataset](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data), ask your agent to configure the `DEFEATBETA_GATEWAY` environment variable for the MCP server:
 
 ```text
-~/.defeatbeta/
-├── .venv/                  # Isolated Python virtual environment (used by MCP Server)
-│   ├── bin/
-│   └── lib/
-│
-├── mcp/                    # MCP Server implementation
-│   ├── run.sh              # MCP Server entry script (stdio mode)
-│   ├── install             # Installation script (for curl | bash)
-│   └── src/
-│       └── defeatbeta_mcp/
-│           └── server.py   # MCP Server main entry
-│
-└── README.md               # Local documentation
+Configure the Defeat Beta API MCP to use my HTTP proxy by setting DEFEATBETA_GATEWAY to http://127.0.0.1:8118, then restart the MCP server and verify the connection.
 ```
 
-**Notes:**
-* `run.sh`
-  Serves as the single entry point to start the MCP Server, compatible with stdio-based MCP clients.
-* `.venv/`
-  Contains all dependencies required to run the MCP Server in an isolated environment.
-* `src/defeatbeta_mcp/server.py`
-  Core implementation of the MCP Server, responsible for exposing `defeatbeta-api` data as MCP tools.
-
-</details>
+Replace `http://127.0.0.1:8118` with your proxy address.
 
 ## Usage
-- Use in Claude Desktop
-- Use in Manus
 
-### Use in [Claude Desktop](https://claude.ai/desktop/directory)
+After installation, ask your agent financial data questions directly. The agent will use Defeat Beta API MCP when appropriate.
 
-#### 1. Add MCP Server in Claude Desktop
-Navigate to **Settings → Developer → Local MCP servers → Edit Config**
+Examples:
 
-Open the `claude_desktop_config.json` file and add the following MCP server configuration:
-
-```json
-{
-  "mcpServers": {
-    "defeatbeta-api": {
-      "command": "uvx",
-      "args": [
-        "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
-      ]
-    }
-  }
-}
-```
-
-After saving the file, restart **Claude for Desktop** to apply the changes.
-
-Once the configuration is complete, hover over the **"Connectors"** menu to verify that **`defeatbeta-api`** appears in the list.
-
-![img_2.png](../doc/mcp/claude_config_3.png)
-
-> **Troubleshooting:** If **`defeatbeta-api`** does not appear in the Connectors menu, or shows a **failed** status like below, run the following command to pre-warm the local cache, then restart Claude for Desktop:
->
-> ![claude_mcp_failed.png](../doc/mcp/claude_mcp_failed.png)
->
-> ```shell
-> uvx --refresh "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
-> ```
-
-#### 2. Talk to LLM with MCP
-
-Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Claude, for example:
+- What is Apple's latest stock price?
+- Show NVIDIA's price history for the last month.
+- Compare the key financial metrics of Microsoft and Google.
+- Summarize Tesla's recent market performance.
 
 <details>
-<summary>📷 Click to view example screenshot</summary>
+<summary>📷 View a Claude Desktop example</summary>
 
 ![Claude MCP Example](../doc/mcp/claude_config_4.png)
 
 </details>
 
-
-### Use in [Manus](https://manus.im/app)
-
-#### 1. Add MCP Server in Manus
-Navigate to **Personalization center → Connectors → Add connectors → Custom MCP → Import by JSON** and add the following MCP server configuration:
-```json
-{
-  "mcpServers": {
-    "defeatbeta-api": {
-      "command": "uvx",
-      "args": [
-        "--refresh",
-        "git+https://github.com/defeat-beta/defeatbeta-api.git#subdirectory=mcp"
-      ],
-      "note": "An open-source alternative to Yahoo Finance's market data APIs with higher reliability.",
-      "icon": "https://github.com/defeat-beta/defeatbeta-api/blob/main/doc/favicon.ico?raw=true"
-    }
-  }
-}
-```
-
-**Once configured, the result looks like this:**
-
-![img.png](../doc/mcp/manus_mcp_config.png)
-
-#### 2. Talk to LLM with MCP
-
-Once the MCP Server is configured and successfully connected, you can directly ask questions to the AI in Manus, for example:
-
 <details>
-<summary>📷 Click to view example screenshot</summary>
+<summary>📷 View a Manus example</summary>
 
-![img.png](../doc/mcp/Talk_With_Manus.png)
+![Manus MCP Example](../doc/mcp/Talk_With_Manus.png)
 
 </details>
