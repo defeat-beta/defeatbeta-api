@@ -2,6 +2,8 @@
 
 # Defeat Beta API
 
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2Fdefeat-beta%2Fdefeatbeta-api.svg)](https://mcptoplist.com/server/glama%2Fdefeat-beta%2Fdefeatbeta-api)
+
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/badge/python-3.11+-blue.svg?style=flat" alt="Python version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/v/defeatbeta-api.svg?maxAge=60%" alt="PyPi version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/dm/defeatbeta-api.svg?maxAge=2592000&label=installs&color=%23438546" alt="PyPi downloads"></a>
