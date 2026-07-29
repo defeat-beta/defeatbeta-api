@@ -1,6 +1,7 @@
-from mcp.server.fastmcp import FastMCP
-from mcp.server.models import Icon
 import sys
+
+from mcp.server import MCPServer
+from mcp.types import Icon
 
 from .tools.util import get_http_proxy
 from .tools.officers import get_stock_officers
@@ -44,7 +45,7 @@ from .tools.growth import get_stock_quarterly_revenue_yoy_growth, get_stock_annu
     get_stock_quarterly_diluted_eps_yoy_growth, get_stock_quarterly_ttm_diluted_eps_yoy_growth
 from .tools.dcf import get_stock_dcf_analysis
 
-mcp = FastMCP(
+mcp = MCPServer(
     name="Defeat Beta API",
     instructions="""
                     An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
@@ -53,7 +54,7 @@ mcp = FastMCP(
     icons=[
         Icon(
             src="https://github.com/defeat-beta/defeatbeta-api/blob/main/doc/favicon.ico?raw=true",
-            mimeType="image/x-icon"
+            mime_type="image/x-icon"
         )
     ]
 )
