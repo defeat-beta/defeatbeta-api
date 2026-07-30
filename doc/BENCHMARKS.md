@@ -14,7 +14,7 @@ The following result was observed on July 30, 2026:
 | Machine | Apple M1 Pro, 10 CPU cores, 16 GB memory |
 | Operating system | macOS 26.5.2 |
 | Python | 3.11 |
-| Package | defeatbeta-api 0.0.60 |
+| Package | defeatbeta-api 0.0.61 release candidate |
 | DuckDB | 1.5.3 |
 | Query | `Ticker("AAPL").price()` |
 | Result size | 7,967 rows |

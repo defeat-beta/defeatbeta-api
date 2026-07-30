@@ -1,6 +1,12 @@
 Change Log
 ===========
 
+0.0.61
+-------
+- fix: make package imports silent and network-free while preserving the public ``HuggingFaceClient`` export; download NLTK tokenizer data only when sentence tokenization is used
+- docs: refocus the README on the local-first Parquet and DuckDB architecture; add transparent cache-sensitive benchmarks, data provenance, freshness, and limitations
+- chore: remove the unused ``pyfiglet`` dependency
+
 0.0.60
 -------
 - feat: support Windows platform — upgrade ``duckdb`` to 1.5.3 so the community ``cache_httpfs`` extension (v0.14.0, now with Windows support) is available as ``windows_amd64``; this also unpins duckdb from 1.4.3 since the O_DIRECT tail-block EINVAL regression is fixed upstream [`#130 <https://github.com/defeat-beta/defeatbeta-api/issues/130>`_]
