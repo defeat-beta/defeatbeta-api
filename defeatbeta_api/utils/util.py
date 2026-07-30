@@ -57,6 +57,20 @@ def validate_memory_limit(memory_limit: str) -> str:
     )
 
 def nltk_sentences(content: str) -> List[str]:
+    cache_dir = validate_nltk_directory()
+    if cache_dir not in nltk.data.path:
+        nltk.data.path.insert(0, cache_dir)
+
+    try:
+        nltk.data.find("tokenizers/punkt_tab/english", paths=[cache_dir])
+    except LookupError:
+        nltk.download(
+            "punkt_tab",
+            download_dir=cache_dir,
+            quiet=True,
+            raise_on_error=True,
+        )
+
     return nltk.sent_tokenize(content)
 
 def _get_base_temp_dir() -> str:
