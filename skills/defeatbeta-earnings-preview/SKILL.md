@@ -38,13 +38,17 @@ Review at least:
 - Gross margin and the company-specific profitability metric
 - Operating expenses, including R&D where material
 - Operating margin
+- Net income attributable to common shareholders
+- Diluted EPS
 - Operating cash flow
 - Working-capital contribution
 - Capital expenditures
 - Free cash flow
-- Diluted share count
+- Diluted share count and the net-income-to-EPS bridge
 
 Identify material one-time or low-repeatability items such as regulatory credits, warranty adjustments, tariffs, restructuring, asset revaluations, foreign exchange, investment marks, tax effects, and unusual working-capital movements.
+
+Reconcile diluted EPS to net income attributable to common shareholders and diluted weighted-average shares. Explain material differences caused by buybacks, share issuance, stock-based compensation, convertible securities, noncontrolling interests, or other capital-structure effects.
 
 Label every normalization as analyst judgment. Never present a normalized figure as a reported fact.
 
@@ -59,12 +63,14 @@ Select five to eight company-specific dimensions. Rank them by:
 Cover the following when material:
 
 - Revenue and segment mix
-- EPS and earnings quality
+- Net income, diluted EPS, and earnings quality
 - Gross margin and the most relevant unit-economics metric
 - Operating expenses and operating margin
 - Operating cash flow, working capital, capital expenditures, and free cash flow
 - Forward guidance
 - Company-specific operating metrics
+
+Present both net income attributable to common shareholders and diluted EPS when available. Select the primary scoring metric based on the reliability of market consensus and the company's historical stock-price sensitivity. Use the other metric to test earnings quality and capital-structure effects. If neither measure is decision-useful, use a more relevant company-specific measure such as operating loss, EBITDA, FFO or AFFO, ROTCE, or free cash flow.
 
 Do not use generic metrics when a better company-specific measure exists.
 
@@ -73,7 +79,7 @@ Do not use generic metrics when a better company-specific measure exists.
 Assign explicit weights totaling 100%. Use five to eight dimensions. A typical starting range is:
 
 - Profitability and margin quality: 20% to 35%
-- EPS and earnings quality: 10% to 20%
+- Net income, diluted EPS, and earnings quality: 10% to 20%
 - Revenue and mix: 10% to 25%
 - Operating expenses and capital intensity: 10% to 20%
 - Cash conversion: 5% to 15%
@@ -98,7 +104,7 @@ The score ranges from -1.0 to +1.0. Use default bands unless company history sup
 - **Base:** score between -0.35 and +0.35 and no veto gate triggered
 - **Bear:** score at or below -0.35, or any Bear veto gate triggered
 
-Show the selected weights and score logic in the report. Revenue and EPS ranges are reference outcomes, not a requirement that every scenario condition occur together.
+Show the selected weights and score logic in the report. Revenue, net income, and diluted EPS ranges are reference outcomes, not a requirement that every scenario condition occur together.
 
 ### Define Company-Specific Veto Gates
 
@@ -111,7 +117,7 @@ Examples:
 - A core product launch, capacity ramp, approval, or delivery milestone slips.
 - Operating expenses or capital intensity rise without a credible commercialization bridge.
 - Liquidity, leverage, credit loss, subscriber churn, or another sector-specific risk breaches a critical level.
-- Reported earnings are supported by non-operating or low-repeatability items while operating earnings deteriorate.
+- Reported net income or diluted EPS is supported by non-operating or low-repeatability items while operating earnings deteriorate.
 
 Use precise thresholds whenever the evidence supports them. Explain why each threshold matters.
 
@@ -200,7 +206,7 @@ Do not compare inconsistent reaction windows without disclosure.
 
 Organize the checklist by elapsed time:
 
-- **0 to 2 minutes:** headline revenue, EPS, guidance, and veto gates
+- **0 to 2 minutes:** headline revenue, net income, diluted EPS, guidance, and veto gates
 - **2 to 5 minutes:** segment mix, margins, operating expenses, and one-time items
 - **5 to 8 minutes:** operating cash flow, working capital, capital expenditures, and free cash flow
 - **8 to 10 minutes:** operating milestones, commercialization evidence, weighted score, and final scenario
@@ -231,6 +237,9 @@ Confirm:
 - Veto gates produce one unambiguous final scenario.
 - A mixed-signal test resolves to one scenario.
 - Reported, guided, estimated, and normalized values are clearly separated.
+- Net income attributable to common shareholders, diluted weighted-average shares, and diluted EPS are reconciled.
+- The primary earnings scoring metric is selected using reliable consensus and historical stock-price sensitivity.
+- Material effects from buybacks, share issuance, stock-based compensation, and other dilution are disclosed.
 - Quarterly free cash flow is separated from working-capital quality and multi-year capital intensity.
 - Technical milestones are separated from commercial contribution.
 - No worked-example company, ticker, dates, or metrics remain in the final report.
