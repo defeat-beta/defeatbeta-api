@@ -2,6 +2,15 @@
 
 Read this reference whenever extracting transcript data. Use the fields that fit the requested output; do not force unavailable fields into a human-readable table.
 
+## Contents
+
+- [Record Model](#record-model)
+- [Core Reported Metric Catalog](#core-reported-metric-catalog)
+- [Comparison Records](#comparison-records)
+- [Guidance Records](#guidance-records)
+- [Ambiguity Rules](#ambiguity-rules)
+- [Coverage and Missing-State Rules](#coverage-and-missing-state-rules)
+
 ## Record Model
 
 Represent each extracted item with the following logical fields:
@@ -11,9 +20,11 @@ Represent each extracted item with the following logical fields:
 | `metric_id` | Stable snake_case identifier | Use the core catalog when applicable; create a precise company-specific identifier only when needed. |
 | `metric_label` | Transcript-aligned display label | Preserve company terminology. |
 | `category` | `reported`, `comparison`, `guidance` | Do not combine categories in one record. |
+| `guidance_type` | `formal_quarterly`, `formal_annual`, `quantified_long_term`, `operating_kpi`, `market_assumption`, `directional_outlook`, or null | Keep different kinds of forward-looking information separate. |
 | `period_label` | Exact fiscal or stated period | Preserve the company's fiscal labeling. |
 | `period_type` | `quarter`, `fiscal_year`, `calendar_year`, `multi_year`, `long_term`, `other` | Use `other` when management states a different horizon. |
 | `basis` | `gaap`, `non_gaap`, `adjusted`, `unspecified` | Do not infer GAAP from silence. |
+| `basis_source` | `explicit_metric`, `call_level_default`, `unspecified` | Cite the call-level statement when it establishes the basis. |
 | `value_type` | `point`, `range`, `approximate`, `minimum`, `maximum`, `direction_only` | Preserve qualifiers and range structure. |
 | `raw_value` | Exact value text | Preserve the spoken number and magnitude. |
 | `value` | Number or null | Use for a point value without rescaling. |
@@ -22,14 +33,19 @@ Represent each extracted item with the following logical fields:
 | `midpoint` | Number or null | Calculate only for a bounded range and label it as derived. |
 | `unit` | Transcript unit | Examples: `million`, `billion`, `%`, `bps`, `percentage_points`, `shares`, `per_share`, `per_ADS`. |
 | `currency_code` | ISO 4217 code or null | Require explicit or transcript-defined currency context. |
+| `currency_source` | `explicit`, `transcript_default`, `symbol_only`, `unspecified` | Keep an ambiguous symbol in `raw_value` without assigning an ISO code. |
 | `comparison_type` | `yoy`, `qoq`, `sequential`, `other`, or null | Use only for an explicit comparison. |
 | `direction` | `up`, `down`, `unchanged`, `mixed`, or null | Derive only from explicit comparative language. |
 | `change_raw_value` | Exact change text or null | Keep change magnitude separate from the reported level. |
 | `guidance_status` | Defined guidance-status value or null | Require explicit support. |
+| `call_section` | `prepared_remarks`, `q_and_a`, `unknown` | Use the operator transition to identify Q&A when possible. |
+| `relationship` | `new`, `clarifies`, `reaffirms`, `strengthens`, `corrects`, `supersedes`, or null | Link later statements to earlier evidence when applicable. |
 | `driver_text` | Management's stated driver or empty | Paraphrase minimally and retain a source reference. |
 | `speaker` | Exact returned speaker | Do not promote a name to a role without evidence. |
 | `paragraph_number` | Returned integer | Use multiple references when needed. |
 | `source_excerpt` | Exact transcript excerpt | Quote only the text needed to support the record. |
+| `availability_status` | `available`, `not_mentioned`, `mentioned_without_value`, `not_applicable`, `ambiguous`, `incomplete_coverage` | Distinguish why a requested value is unavailable. |
+| `extraction_confidence` | `high`, `medium`, `low` | Rate evidence explicitness, not management sentiment. |
 | `notes` | Short clarification | Explain ambiguity, conflict, calculation, or classification. |
 
 For machine-readable output, use `source_references` as an array of objects containing `speaker`, `paragraph_number`, and `source_excerpt` rather than flattening multiple citations.
@@ -106,6 +122,17 @@ For each quantitative forward-looking item, capture:
 - Management-stated drivers or assumptions
 - Source references
 
+Assign one guidance type:
+
+| Guidance type | Definition |
+|---|---|
+| `formal_quarterly` | Explicit guidance for the next or another named quarter. |
+| `formal_annual` | Explicit guidance for a fiscal or calendar year. |
+| `quantified_long_term` | Company financial target beyond the normal annual guidance horizon. |
+| `operating_kpi` | Quantified target for units, users, bookings, capacity, or another operating metric. |
+| `market_assumption` | TAM, industry growth, commodity, FX, or other external forecast. |
+| `directional_outlook` | Material non-numerical expectation kept outside numerical guidance tables. |
+
 Use these guidance-status definitions:
 
 | Status | Definition |
@@ -123,8 +150,17 @@ Use these guidance-status definitions:
 ## Ambiguity Rules
 
 - If a metric is called "adjusted" but not explicitly "non-GAAP," use `adjusted`.
-- If a transcript says only "margin," retain the company's exact label and use `unspecified` basis.
+- If the call preamble establishes a default basis, apply it with `basis_source: call_level_default` unless the metric explicitly overrides it. Otherwise retain an unlabeled metric's exact label and use `unspecified` basis.
 - If a range uses different units or currencies at each bound, do not calculate a midpoint.
 - If guidance combines multiple periods or segments, keep the combined scope; do not allocate it.
 - If a value appears to be a transcription error, report it as stated and flag it rather than silently correcting it.
 - If a speaker corrects an earlier number, use the corrected number and cite both paragraphs in the note.
+- If Q&A strengthens or narrows a prepared statement, keep the later value and link both records with `relationship` rather than silently replacing the earlier wording.
+
+## Coverage and Missing-State Rules
+
+- Mark the transcript complete only when all returned paragraph numbers have been inspected and no interface truncation remains.
+- Use `mentioned_without_value` when management discusses a metric but provides only a change, direction, or qualitative description instead of the requested absolute value.
+- Use `ambiguous` when a value is present but its period, sign, basis, or scope cannot be resolved.
+- Use `incomplete_coverage` only when missing transcript content could contain the requested value.
+- Do not convert `incomplete_coverage` into `not_mentioned`.
