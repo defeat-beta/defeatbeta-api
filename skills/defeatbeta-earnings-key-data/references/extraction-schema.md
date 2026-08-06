@@ -1,6 +1,6 @@
 # Extraction Schema
 
-Read this reference whenever extracting transcript data. Use the fields that fit the requested output; do not force unavailable fields into a human-readable table.
+Read this reference only when the user requests JSON, CSV, another machine-readable representation, or a combined normalized dataset. For human-readable output, the selected template in `analysis-templates.md` is authoritative. Use only the fields that fit the requested output; do not force unavailable fields into a table.
 
 ## Contents
 

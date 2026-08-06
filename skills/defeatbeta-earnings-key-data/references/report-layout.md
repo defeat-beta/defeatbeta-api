@@ -1,59 +1,76 @@
 # DOCX and PDF Report Layout
 
-Read this reference only when the user explicitly requests a Word or PDF report.
+Read this reference only when the user explicitly requests a DOCX or PDF artifact.
 
-## Output Selection
+## Preserve the Selected Template
 
 - Use DOCX for an editable analyst working document.
 - Use PDF for fixed-layout sharing or archival.
-- When the user requests both, build both from one validated extraction dataset and keep all values, citations, and notes identical.
-- Use the host's available document and PDF generation capabilities. If the host cannot create the requested format reliably, explain the limitation and provide Markdown rather than returning an unverified file.
+- When the user requests both, build both from one validated extraction dataset.
+- Preserve the selected template's exact table columns, row order, sentence text, counts, and post-table summary.
+- Do not turn Template 12 or Template 13 into a generic research note.
+- When all three templates are requested, render three clearly separated template sections rather than merging their records.
 
-## Recommended Length
+## Recommended Structure
 
-Use two pages for a normal single-quarter extraction and no more than three pages when segment detail or long-term targets are extensive.
+Begin every artifact with:
 
-### Page 1: Quarter and Guidance Dashboard
+- Company and ticker
+- Fiscal period and report date
+- Selected template or templates
+- Earnings-call transcript as the source scope
+- Transcript paragraph coverage and completeness status
 
-- Company, ticker, fiscal period, report date, and source scope
-- One-sentence factual headline without an investment recommendation
-- Current-quarter reported results
-- Formal next-quarter and annual guidance
-- Clearly labeled derived midpoints
+Then use the selected template structure:
 
-### Page 2: Detail and Evidence
+### Template 11
 
-- Segment results and material operating KPIs
-- Quantified long-term outlook and market assumptions in separate sections
-- Directional outlook
-- Requested-but-unavailable metrics and ambiguity notes
-- Evidence excerpts with speaker and paragraph number
+1. This Quarter Results
+2. Next Quarter Guidance
+3. Full Fiscal Year Guidance
+4. Requested but unavailable
+5. Ambiguities, conflicts, and short evidence excerpts
 
-### Optional Page 3: Evidence Appendix
+### Template 12
 
-Use only when the evidence excerpts do not fit legibly on page 2. Keep each excerpt paired with every metric it supports.
+1. Financial Metric Changes table
+2. Reconciled direction counts
+3. Key themes
+4. Coverage and ambiguity notes
+
+### Template 13
+
+1. Financial Metric Forecasts table
+2. Reconciled attitude counts
+3. Overall management tone, labeled as analysis
+4. Key themes
+5. Coverage and ambiguity notes
+
+Use two pages for a normal extraction and no more than three pages when sentence-level tables or evidence are extensive. Use additional pages only when necessary to keep exact sentences legible.
 
 ## Visual System
 
 - Use a restrained research-note style with a white background, dark text, one accent color, and light table rules.
-- Use landscape pages only when a table cannot remain legible in portrait orientation.
-- Keep numbers right-aligned and preserve spoken magnitude, currency symbols, ranges, and qualifiers.
-- Distinguish reported results, formal guidance, quantified outlook, market assumptions, and directional outlook with headings rather than decorative color alone.
-- Put source markers in every data row and full excerpts in the evidence section.
-- Do not add charts for a single-quarter transcript unless the user requests them or historical data is included.
+- Use landscape pages when Template 12 or Template 13 sentence columns cannot remain legible in portrait orientation.
+- Keep numeric values right-aligned where practical.
+- Preserve exact currency symbols, percentages, ranges, qualifiers, and transcript sentences.
+- Put the speaker and paragraph number in every data row.
+- Do not add charts unless the user requests them or the artifact includes historical data beyond the selected transcript.
 
 ## Artifact Validation
 
 Before delivery:
 
-1. Confirm the artifact uses the same validated records as the chat output.
-2. Confirm all tables fit within page margins and no rows, headers, or citations are clipped.
-3. Confirm page breaks do not separate a heading from its table or a source marker from its excerpt.
-4. Confirm special characters, currency symbols, percentages, and en dashes render correctly.
-5. Confirm every source paragraph exists and every quoted excerpt matches the transcript.
-6. Render and visually inspect every page. Fix layout defects before delivery.
-7. If both DOCX and PDF are delivered, compare the rendered pages for content parity.
+1. Confirm the artifact contains the same validated rows as the chat or extraction dataset.
+2. Confirm the selected template's required columns are present and in the documented order.
+3. Confirm all tables fit within page margins and no rows, headers, sentences, or citations are clipped.
+4. Confirm page breaks do not separate a heading from its table or a source marker from its sentence.
+5. Confirm every exact sentence, speaker, and paragraph number matches the transcript.
+6. Confirm special characters, currency symbols, percentages, and direction or attitude indicators render correctly.
+7. Confirm Template 12 direction counts or Template 13 attitude counts reconcile with displayed rows.
+8. Render and visually inspect every page. Fix layout defects before delivery.
+9. If both DOCX and PDF are delivered, compare the rendered outputs for content parity.
 
 ## Delivery
 
-Return a concise chat summary identifying the company, fiscal period, coverage status, and created formats. Link the finished DOCX and PDF files using their absolute paths.
+Return a concise chat summary identifying the company, fiscal period, template, coverage status, and created formats. Link the finished files using absolute paths.
