@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.61
+-------
+- breaking: load the US company catalog and parquet datasets from the market-specific ``data/US/`` directory; the legacy flat ``data/`` paths are no longer supported [`#202 <https://github.com/defeat-beta/defeatbeta-api/issues/202>`_]
+- fix: bound the ``cache_httpfs`` file-handle cache to 64 entries by default so long-lived processes do not exhaust low per-process descriptor limits while retaining file-handle reuse [`#203 <https://github.com/defeat-beta/defeatbeta-api/issues/203>`_]
+
 0.0.60
 -------
 - feat: support Windows platform — upgrade ``duckdb`` to 1.5.3 so the community ``cache_httpfs`` extension (v0.14.0, now with Windows support) is available as ``windows_amd64``; this also unpins duckdb from 1.4.3 since the O_DIRECT tail-block EINVAL regression is fixed upstream [`#130 <https://github.com/defeat-beta/defeatbeta-api/issues/130>`_]

@@ -20,7 +20,7 @@ class Configuration:
             cache_httpfs_metadata_cache_entry_size=1024,
             cache_httpfs_metadata_cache_entry_timeout_millisec=8 * 3600 * 1000,
             cache_httpfs_enable_file_handle_cache=True,
-            cache_httpfs_file_handle_cache_entry_size=1024,
+            cache_httpfs_file_handle_cache_entry_size=64,
             cache_httpfs_file_handle_cache_entry_timeout_millisec=8 * 3600 * 1000,
             cache_httpfs_max_in_mem_cache_block_count=64,
             cache_httpfs_in_mem_cache_block_timeout_millisec=1800 * 1000

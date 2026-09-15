@@ -9,6 +9,12 @@ class TestCompanyMeta(unittest.TestCase):
     def setUpClass(cls):
         cls.company_meta = CompanyMeta(http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
 
+    def test_company_tickers_url_uses_us_market_directory(self):
+        self.assertEqual(
+            self.company_meta.COMPANY_TICKERS_URL,
+            "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/data/US/company_tickers.json"
+        )
+
     def test_get_company_info(self):
         result = self.company_meta.get_company_info("AAPL")
         print(f"Company Info: {result}")

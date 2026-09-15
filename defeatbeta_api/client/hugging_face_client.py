@@ -47,4 +47,4 @@ class HuggingFaceClient:
             raise ValueError(
                 f"Invalid table '{table}'. Valid options are: {', '.join(tables)}"
             )
-        return f"{self.base_url}/resolve/main/data/{table}.parquet"
+        return f"{self.base_url}/resolve/main/data/US/{table}.parquet"
