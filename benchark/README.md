@@ -65,7 +65,7 @@ That leads to the question behind this project:
 
 ## The Challenge
 
-Use **AI + systems engineering + first-principles reasoning** to push DefeatBeta's query performance as far as possible.
+Use **Systems Engineering + First Principles Thinking** to push DefeatBeta's query performance as far as possible.
 
 For now, the primary benchmark is:
 
