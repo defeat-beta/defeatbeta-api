@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.62
+-------
+- feat: add market-aware ``CompanyMeta`` support for US and Hong Kong catalogs, returning ``cik`` for US companies and ``isin`` for HK companies while preserving missing financial currencies as ``None`` [`#197 <https://github.com/defeat-beta/defeatbeta-api/issues/197>`_]
+- test: make the ``cache_httpfs`` file-handle regression test deterministic across cold and warm caches while verifying the applied 64-entry cache limit and bounded total process handle growth [`#203 <https://github.com/defeat-beta/defeatbeta-api/issues/203>`_]
+
 0.0.61
 -------
 - breaking: load the US company catalog and parquet datasets from the market-specific ``data/US/`` directory; the legacy flat ``data/`` paths are no longer supported [`#202 <https://github.com/defeat-beta/defeatbeta-api/issues/202>`_]

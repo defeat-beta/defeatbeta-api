@@ -17,16 +17,35 @@ class TestDuckDBClient(unittest.TestCase):
             http_proxy="http://127.0.0.1:8118", log_level=logging.WARNING, config=config
         )
         try:
-            before = handle_count()
-            client.query(
+            settings = client.query(
+                "SELECT CAST(value AS INTEGER) AS value "
+                "FROM duckdb_settings() "
+                "WHERE name = 'cache_httpfs_file_handle_cache_entry_size'"
+            )
+            applied_cache_limit = int(settings.iloc[0]["value"])
+            client.query("SELECT cache_httpfs_clear_cache()")
+            stock_prices_query = (
                 "SELECT SUM(close) FROM "
                 "'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/"
                 "data/US/stock_prices.parquet'"
             )
+
+            before = handle_count()
+            client.query(stock_prices_query)
             after = handle_count()
+            cold_cache_growth = after - before
+
+            warm_before = handle_count()
+            client.query(stock_prices_query)
+            warm_after = handle_count()
+            warm_cache_growth = warm_after - warm_before
 
             self.assertEqual(config.cache_httpfs_file_handle_cache_entry_size, 64)
-            self.assertLessEqual(after - before, 64)
+            self.assertEqual(applied_cache_limit, 64)
+            # The process also owns DuckDB, HTTP, and data-cache descriptors.
+            max_process_handle_growth = applied_cache_limit * 2
+            self.assertLessEqual(cold_cache_growth, max_process_handle_growth)
+            self.assertLessEqual(warm_cache_growth, max_process_handle_growth)
         finally:
             client.close()
 
