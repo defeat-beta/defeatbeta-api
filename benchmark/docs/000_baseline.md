@@ -20,7 +20,7 @@
 From the project root (dependencies and extensions already installed):
 
 ```bash
-./.venv/bin/python benchmark/bench.py --runs 3 --tag baseline-multi --http-proxy http://127.0.0.1:8118 --revision a46d68650c1f90b7331608350dced8364047b3f7
+./.venv/bin/python benchmark/bench.py run --runs 3 --tag baseline-multi --http-proxy http://127.0.0.1:8118 --revision a46d68650c1f90b7331608350dced8364047b3f7
 ```
 
 Default: AAPL, KDP, ZTS in round-robin order, three trials each. Use `--symbol` for a single stock.

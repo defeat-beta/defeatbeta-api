@@ -21,7 +21,7 @@ from config import (
     DEFAULT_TIMEOUT, stock_prices_url, validate_symbol,
 )
 from queries import fixed_query
-from records import archive_record, prune_local, write_record
+from records import archive_record, prune_local, unpack_reports, write_record
 from reports import render_markdown
 
 ROOT = Path(__file__).resolve().parent
@@ -241,19 +241,33 @@ def cmd_run(args) -> int:
 
 
 def cmd_archive(args) -> int:
-    """Archive the latest local run for a tag and generate a Markdown report."""
+    """Archive a local run and generate a Markdown report."""
     output = args.output.resolve()
-    local_path = _latest_local_run(output, args.tag)
-    if local_path is None:
-        print(f"No local run found for tag '{args.tag}' in {output / 'local'}", file=sys.stderr)
-        return 1
+    if getattr(args, "source", None):
+        local_path = Path(args.source)
+        if not local_path.is_file():
+            print(f"Source run not found: {local_path}", file=sys.stderr)
+            return 1
+    else:
+        local_path = _latest_local_run(output, args.tag)
+        if local_path is None:
+            print(f"No local run found for tag '{args.tag}' in {output / 'local'}", file=sys.stderr)
+            return 1
 
     # Determine archive name
     if args.name:
         archive_name = args.name
     else:
-        seq = _next_archive_number(output, args.tag)
-        archive_name = f"{seq:03d}_{args.tag}"
+        effective_tag = args.tag
+        if getattr(args, "source", None):
+            try:
+                reports = unpack_reports(json.loads(local_path.read_text(encoding="utf-8")))
+                if reports and reports[0].get("tag"):
+                    effective_tag = reports[0]["tag"]
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+                pass
+        seq = _next_archive_number(output, effective_tag)
+        archive_name = f"{seq:03d}_{effective_tag}"
 
     print(f"Archiving {local_path.name} -> {archive_name}")
     archive_path = archive_record(local_path, output, archive_name)
@@ -289,8 +303,9 @@ def main():
     run_parser.add_argument("--output", type=Path, default=ROOT / "results")
 
     # archive subcommand
-    archive_parser = subparsers.add_parser("archive", help="Archive latest local run and generate report")
-    archive_parser.add_argument("--tag", default="baseline", help="Tag to find latest local run for")
+    archive_parser = subparsers.add_parser("archive", help="Archive a local run and generate report")
+    archive_parser.add_argument("--tag", default="baseline", help="Tag to find latest local run for (ignored when --source is given and --name is omitted; tag is then read from the source file)")
+    archive_parser.add_argument("--source", type=Path, default=None, help="Explicit local run file to archive; default: latest local run for --tag")
     archive_parser.add_argument("--name", help="Archive name (default: auto-numbered 001_tag, 002_tag, ...)")
     archive_parser.add_argument("--output", type=Path, default=ROOT / "results")
 

@@ -135,7 +135,7 @@ def render_markdown(archive_json_path: Path, output_md_path: Path) -> None:
     # Build run command
     proxy = first["configured_settings"].get("http_proxy", "")
     proxy_flag = f' --http-proxy "{proxy}"' if proxy else ""
-    run_cmd = f'http_proxy="{proxy}" .venv/bin/python benchmark/bench.py --runs {runs} --tag baseline-multi{proxy_flag} --revision {revision}'
+    run_cmd = f'http_proxy="{proxy}" .venv/bin/python benchmark/bench.py run --runs {runs} --tag baseline-multi{proxy_flag} --revision {revision}'
 
     # Cold state description
     cold_state = first.get("methodology", {}).get("cold", "Fresh process and empty data cache per trial")
