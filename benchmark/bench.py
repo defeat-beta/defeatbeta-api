@@ -21,6 +21,7 @@ from config import (
     DEFAULT_TIMEOUT, stock_prices_url, validate_symbol,
 )
 from queries import fixed_query
+from records import archive_record, prune_local, write_record
 
 ROOT = Path(__file__).resolve().parent
 
@@ -64,7 +65,8 @@ def run_worker(payload, timeout, worker_path=None):
     except (ValueError, TypeError) as exc:
         sample = {"status": "error", "error": str(exc)}
     sample.update({
-        "returncode": completed.returncode, "stdout": completed.stdout,
+        "returncode": completed.returncode,
+        "stdout": "\n".join(line for line in lines if not line.startswith("BENCH_RESULT=")),
         "stderr": completed.stderr,
         "worker_wall_seconds": (time.perf_counter_ns() - payload["launch_ns"]) / 1e9,
     })
@@ -109,58 +111,13 @@ def preflight():
         "extensions": manifest,
         "source_sha256": {
             name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
-            for name in ("config.py", "queries.py", "bench.py")
+            for name in ("config.py", "queries.py", "bench.py", "records.py")
         },
         "proxy_environment_variables_present": sorted(
             key for key in os.environ if key.lower() in ("http_proxy", "https_proxy", "all_proxy", "no_proxy")
         ),
     }
     return environment, {**BASELINE_SETTINGS, "memory_limit": f"{memory_gb}GB"}
-
-
-def write_run(path, report):
-    # Preserve full machine-readable evidence inside the requested Markdown artifact.
-    stats = report["statistics"]
-    lines = [f"# {report['run_id']}", "", f"Status: {report['status']}", ""]
-    if stats:
-        lines += [f"Median cold query: {stats['median_seconds']:.6f} s", ""]
-    lines += [
-        "| Trial | Status | End to end (s) | Initialization (s) | Query (s) | Rows |",
-        "| --- | --- | ---: | ---: | ---: | ---: |",
-    ]
-    for sample in report["samples"]:
-        values = [f"{sample[key]:.6f}" if key in sample else "—" for key in
-                  ("e2e_seconds", "initialization_seconds", "query_seconds")]
-        lines.append(f"| {sample['trial']} | {sample['status']} | {' | '.join(values)} | "
-                     f"{sample.get('result', {}).get('rows', '—')} |")
-    lines += ["", "## Raw report", "", "```json", json.dumps(report, indent=2), "```", ""]
-    temporary = path.with_suffix(".tmp")
-    temporary.write_text("\n".join(lines), encoding="utf-8")
-    temporary.replace(path)
-
-
-def update_summary(output):
-    lines = [
-        "# Cold query benchmark runs", "",
-        "Only complete, consistent runs have a comparison median. No cross-environment speedup is inferred.", "",
-        "| Run | Symbol | Revision | Status | Valid / requested | Median (s) | Min (s) | Max (s) | Sample std (s) |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
-    ]
-    for path in sorted((output / "runs").glob("*.md")):
-        body = path.read_text(encoding="utf-8")
-        report = json.loads(body.split("```json\n", 1)[1].rsplit("\n```", 1)[0])
-        stats = report["statistics"]
-        cells = [f"{stats[key]:.6f}" if stats and stats[key] is not None else "—" for key in
-                 ("median_seconds", "min_seconds", "max_seconds", "std_seconds")]
-        symbol = report["symbol"].replace("|", "&#124;").replace("<", "&lt;")
-        lines.append(
-            f"| [{report['run_id']}](runs/{path.name}) | {symbol} | {report['revision'][:12]} | "
-            f"{report['status']} | {sum(s['status'] == 'ok' for s in report['samples'])} / "
-            f"{report['requested_runs']} | {' | '.join(cells)} |"
-        )
-    temporary = output / "summary.tmp"
-    temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    temporary.replace(output / "summary.md")
 
 
 def main():
@@ -175,7 +132,16 @@ def main():
     )
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="Per-worker wall timeout in seconds")
     parser.add_argument("--output", type=Path, default=ROOT / "results")
+    parser.add_argument("--archive", type=Path, help="Archive an existing local JSON record without running queries")
+    parser.add_argument("--name", help="Archive name, such as 001_connection_reuse")
     args = parser.parse_args()
+    if args.archive is not None:
+        if not args.name:
+            parser.error("--archive requires --name")
+        print(f"Archive: {archive_record(args.archive, args.output, args.name)}")
+        return 0
+    if args.name:
+        parser.error("--name requires --archive")
     try:
         symbols = [args.symbol] if args.symbol is not None else list(DEFAULT_SYMBOLS)
         for symbol in symbols:
@@ -195,7 +161,7 @@ def main():
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     run_id = f"{timestamp}_{args.tag}_{uuid.uuid4().hex[:8]}"
     output = args.output.resolve()
-    (output / "runs").mkdir(parents=True, exist_ok=True)
+    path = output / "local" / f"{run_id}.json"
     report = {
         "format_version": 1, "run_id": run_id, "tag": args.tag, "status": "running",
         "revision": args.revision, "url": url,
@@ -222,11 +188,10 @@ def main():
             **report, "run_id": f"{run_id}_{index}", "symbol": symbol,
             "parameters": [symbol], "samples": [],
         }
-        path = output / "runs" / f"{symbol_report['run_id']}.md"
-        reports.append((path, symbol_report))
-        write_run(path, symbol_report)
+        reports.append(symbol_report)
+    write_record(path, reports)
     for trial in range(1, args.runs + 1):
-        for index, (path, report) in enumerate(reports, 1):
+        for index, report in enumerate(reports, 1):
             symbol = report["symbol"]
             print(f"[{trial}/{args.runs}] {symbol}: starting isolated cold worker", flush=True)
             with tempfile.TemporaryDirectory(prefix="stock-price-cold-") as directory:
@@ -239,18 +204,19 @@ def main():
                 sample["suite_sequence"] = (trial - 1) * len(symbols) + index
                 report["samples"].append(sample)
             check_consistency(report["samples"])
-            write_run(path, report)
+            write_record(path, reports)
             print(f"[{trial}/{args.runs}] {symbol} {sample['status']}: "
                   f"{sample.get('e2e_seconds', 'unavailable')} s", flush=True)
-    for path, report in reports:
+    for report in reports:
         report["status"] = "complete" if all(s["status"] == "ok" for s in report["samples"]) else "invalid"
         report["statistics"] = summarize(report["samples"]) if report["status"] == "complete" else None
-        write_run(path, report)
-        print(f"Report: {path}")
+
         if report["statistics"]:
             print(f"{report['symbol']} median: {report['statistics']['median_seconds']:.6f} s")
-    update_summary(output)
-    return 0 if all(report["status"] == "complete" for _, report in reports) else 1
+    write_record(path, reports)
+    print(f"Report: {path}")
+    prune_local(output)
+    return 0 if all(report["status"] == "complete" for report in reports) else 1
 
 
 if __name__ == "__main__":

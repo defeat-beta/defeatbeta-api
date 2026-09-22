@@ -36,4 +36,4 @@ Default: AAPL, KDP, ZTS in round-robin order, three trials each. Use `--symbol` 
 Timing includes process startup through full DataFrame materialization. All nine trials succeeded;
 checksums matched across trials for each symbol. Baseline only; no optimization applied.
 
-Raw results: [AAPL](../results/runs/20260922T071946.229660Z_baseline-multi_ad032446_1.md), [KDP](../results/runs/20260922T071946.229660Z_baseline-multi_ad032446_2.md), [ZTS](../results/runs/20260922T071946.229660Z_baseline-multi_ad032446_3.md).
+Raw results: [baseline archive](../results/archive/000_baseline.json), including the earlier AAPL-only attempts.
