@@ -76,7 +76,8 @@ class RecordTests(unittest.TestCase):
             return {"status": "ok", "e2e_seconds": 1.0,
                     "result": {"rows": 1, "sha256": payload["symbol"]}}
 
-        args = ["bench.py", "--runs", "2", "--output", str(self.root)]
+        # Test run subcommand
+        args = ["bench.py", "run", "--runs", "2", "--output", str(self.root), "--tag", "test"]
         with patch("sys.argv", args), patch.object(bench, "preflight", return_value=({}, {})), \
                 patch.object(bench, "run_worker", side_effect=worker), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(bench.main(), 0)
@@ -87,7 +88,9 @@ class RecordTests(unittest.TestCase):
         self.assertTrue(all(report["statistics"]["count"] == 2 for report in reports))
         self.assertEqual(calls, ["AAPL", "KDP", "ZTS"] * 2)
         self.assertFalse((self.root / "summary.md").exists())
-        args = ["bench.py", "--archive", str(paths[0]), "--name", "001_example", "--output", str(self.root)]
+
+        # Test archive subcommand
+        args = ["bench.py", "archive", "--tag", "test", "--name", "001_example", "--output", str(self.root)]
         with patch("sys.argv", args), patch.object(bench, "preflight", side_effect=AssertionError), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(bench.main(), 0)

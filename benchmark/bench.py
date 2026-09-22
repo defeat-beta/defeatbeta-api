@@ -22,6 +22,7 @@ from config import (
 )
 from queries import fixed_query
 from records import archive_record, prune_local, write_record
+from reports import render_markdown
 
 ROOT = Path(__file__).resolve().parent
 
@@ -120,28 +121,47 @@ def preflight():
     return environment, {**BASELINE_SETTINGS, "memory_limit": f"{memory_gb}GB"}
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--symbol", help="Run only this symbol; default: AAPL, KDP, ZTS in round-robin order")
-    parser.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="Trials per symbol")
-    parser.add_argument("--tag", default="baseline")
-    parser.add_argument("--revision", default=DEFAULT_REVISION)
-    parser.add_argument(
-        "--http-proxy",
-        help="Override the environment HTTP proxy; pass an empty string to disable it",
-    )
-    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="Per-worker wall timeout in seconds")
-    parser.add_argument("--output", type=Path, default=ROOT / "results")
-    parser.add_argument("--archive", type=Path, help="Archive an existing local JSON record without running queries")
-    parser.add_argument("--name", help="Archive name, such as 001_connection_reuse")
-    args = parser.parse_args()
-    if args.archive is not None:
-        if not args.name:
-            parser.error("--archive requires --name")
-        print(f"Archive: {archive_record(args.archive, args.output, args.name)}")
-        return 0
-    if args.name:
-        parser.error("--name requires --archive")
+def _latest_local_run(output: Path, tag: str) -> Path | None:
+    """Find the most recent local run file for the given tag."""
+    local_dir = output / "local"
+    if not local_dir.exists():
+        return None
+    candidates = []
+    for path in local_dir.glob("*.json"):
+        if path.is_symlink():
+            continue
+        # Filename format: {timestamp}_{tag}_{uuid}.json
+        if f"_{tag}_" in path.name:
+            try:
+                ts_str = path.name.split("_", 1)[0]
+                dt = datetime.strptime(ts_str, "%Y%m%dT%H%M%S.%fZ").replace(tzinfo=timezone.utc)
+                candidates.append((dt, path))
+            except ValueError:
+                continue
+    if not candidates:
+        return None
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+
+def _next_archive_number(output: Path, tag: str) -> int:
+    """Find the next archive sequence number for the given tag."""
+    archive_dir = output / "archive"
+    if not archive_dir.exists():
+        return 1
+    max_num = 0
+    pattern = re.compile(rf"^(\d{{3}})_{re.escape(tag)}\.json$")
+    for path in archive_dir.glob("*.json"):
+        m = pattern.match(path.name)
+        if m:
+            num = int(m.group(1))
+            if num > max_num:
+                max_num = num
+    return max_num + 1
+
+
+def cmd_run(args) -> int:
+    """Run the benchmark."""
     try:
         symbols = [args.symbol] if args.symbol is not None else list(DEFAULT_SYMBOLS)
         for symbol in symbols:
@@ -152,7 +172,8 @@ def main():
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", args.tag):
             raise ValueError("tag must be 1-64 filename-safe characters")
     except ValueError as exc:
-        parser.error(str(exc))
+        return parser_error(exc)
+
     preflight_start = time.perf_counter()
     environment, settings = preflight()
     if args.http_proxy is not None:
@@ -217,6 +238,71 @@ def main():
     print(f"Report: {path}")
     prune_local(output)
     return 0 if all(report["status"] == "complete" for report in reports) else 1
+
+
+def cmd_archive(args) -> int:
+    """Archive the latest local run for a tag and generate a Markdown report."""
+    output = args.output.resolve()
+    local_path = _latest_local_run(output, args.tag)
+    if local_path is None:
+        print(f"No local run found for tag '{args.tag}' in {output / 'local'}", file=sys.stderr)
+        return 1
+
+    # Determine archive name
+    if args.name:
+        archive_name = args.name
+    else:
+        seq = _next_archive_number(output, args.tag)
+        archive_name = f"{seq:03d}_{args.tag}"
+
+    print(f"Archiving {local_path.name} -> {archive_name}")
+    archive_path = archive_record(local_path, output, archive_name)
+
+    # Generate Markdown report
+    md_path = archive_path.with_suffix(".md")
+    render_markdown(archive_path, md_path)
+    print(f"Archive: {archive_path}")
+    return 0
+
+
+def parser_error(msg):
+    """Print error and return error code."""
+    print(f"Error: {msg}", file=sys.stderr)
+    return 1
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # run subcommand
+    run_parser = subparsers.add_parser("run", help="Run benchmark trials")
+    run_parser.add_argument("--symbol", help="Run only this symbol; default: AAPL, KDP, ZTS in round-robin order")
+    run_parser.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="Trials per symbol")
+    run_parser.add_argument("--tag", default="baseline")
+    run_parser.add_argument("--revision", default=DEFAULT_REVISION)
+    run_parser.add_argument(
+        "--http-proxy",
+        help="Override the environment HTTP proxy; pass an empty string to disable it",
+    )
+    run_parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="Per-worker wall timeout in seconds")
+    run_parser.add_argument("--output", type=Path, default=ROOT / "results")
+
+    # archive subcommand
+    archive_parser = subparsers.add_parser("archive", help="Archive latest local run and generate report")
+    archive_parser.add_argument("--tag", default="baseline", help="Tag to find latest local run for")
+    archive_parser.add_argument("--name", help="Archive name (default: auto-numbered 001_tag, 002_tag, ...)")
+    archive_parser.add_argument("--output", type=Path, default=ROOT / "results")
+
+    args = parser.parse_args()
+
+    if args.command == "run":
+        return cmd_run(args)
+    elif args.command == "archive":
+        return cmd_archive(args)
+    else:
+        parser.error(f"Unknown command: {args.command}")
+        return 1
 
 
 if __name__ == "__main__":
