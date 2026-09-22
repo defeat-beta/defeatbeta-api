@@ -4,7 +4,8 @@ import re
 
 DATASET = "defeatbeta/yahoo-finance-data"
 DEFAULT_REVISION = "a46d68650c1f90b7331608350dced8364047b3f7"
-DEFAULT_SYMBOL = "AAPL"
+# Candidate row groups 0, 184, and 367 in DEFAULT_REVISION (368 groups total).
+DEFAULT_SYMBOLS = ("AAPL", "KDP", "ZTS")
 DEFAULT_RUNS = 3
 DEFAULT_TIMEOUT = 600.0
 

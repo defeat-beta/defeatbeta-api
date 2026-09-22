@@ -17,7 +17,7 @@ import time
 import uuid
 
 from config import (
-    BASELINE_SETTINGS, DEFAULT_REVISION, DEFAULT_RUNS, DEFAULT_SYMBOL,
+    BASELINE_SETTINGS, DEFAULT_REVISION, DEFAULT_RUNS, DEFAULT_SYMBOLS,
     DEFAULT_TIMEOUT, stock_prices_url, validate_symbol,
 )
 from queries import fixed_query
@@ -165,15 +165,21 @@ def update_summary(output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--symbol", default=DEFAULT_SYMBOL)
-    parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
+    parser.add_argument("--symbol", help="Run only this symbol; default: AAPL, KDP, ZTS in round-robin order")
+    parser.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="Trials per symbol")
     parser.add_argument("--tag", default="baseline")
     parser.add_argument("--revision", default=DEFAULT_REVISION)
+    parser.add_argument(
+        "--http-proxy",
+        help="Override the environment HTTP proxy; pass an empty string to disable it",
+    )
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="Per-worker wall timeout in seconds")
     parser.add_argument("--output", type=Path, default=ROOT / "results")
     args = parser.parse_args()
     try:
-        validate_symbol(args.symbol)
+        symbols = [args.symbol] if args.symbol is not None else list(DEFAULT_SYMBOLS)
+        for symbol in symbols:
+            validate_symbol(symbol)
         url = stock_prices_url(args.revision)
         if args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
             raise ValueError("runs and timeout must be positive and finite")
@@ -183,16 +189,18 @@ def main():
         parser.error(str(exc))
     preflight_start = time.perf_counter()
     environment, settings = preflight()
+    if args.http_proxy is not None:
+        settings["http_proxy"] = args.http_proxy
     preparation_seconds = time.perf_counter() - preflight_start
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     run_id = f"{timestamp}_{args.tag}_{uuid.uuid4().hex[:8]}"
     output = args.output.resolve()
     (output / "runs").mkdir(parents=True, exist_ok=True)
-    path = output / "runs" / f"{run_id}.md"
     report = {
         "format_version": 1, "run_id": run_id, "tag": args.tag, "status": "running",
-        "revision": args.revision, "url": url, "symbol": args.symbol,
-        "sql": fixed_query(url), "parameters": [args.symbol],
+        "revision": args.revision, "url": url,
+        "sql": fixed_query(url),
+        "suite_id": run_id, "suite_symbols": symbols, "schedule": "round_robin",
         "requested_runs": args.runs, "timeout_seconds": args.timeout,
         "preflight_seconds": preparation_seconds,
         "environment": environment, "configured_settings": settings,
@@ -208,29 +216,41 @@ def main():
         },
         "samples": [], "statistics": None,
     }
-    write_run(path, report)
+    reports = []
+    for index, symbol in enumerate(symbols, 1):
+        symbol_report = {
+            **report, "run_id": f"{run_id}_{index}", "symbol": symbol,
+            "parameters": [symbol], "samples": [],
+        }
+        path = output / "runs" / f"{symbol_report['run_id']}.md"
+        reports.append((path, symbol_report))
+        write_run(path, symbol_report)
     for trial in range(1, args.runs + 1):
-        print(f"[{trial}/{args.runs}] {args.symbol}: starting isolated cold worker", flush=True)
-        with tempfile.TemporaryDirectory(prefix="stock-price-cold-") as directory:
-            cache = Path(directory) / "http-cache"
-            cache.mkdir()
-            sample = run_worker({
-                "url": url, "symbol": args.symbol, "cache_directory": str(cache), "settings": settings,
-            }, args.timeout)
-            sample["trial"] = trial
-            report["samples"].append(sample)
-        check_consistency(report["samples"])
+        for index, (path, report) in enumerate(reports, 1):
+            symbol = report["symbol"]
+            print(f"[{trial}/{args.runs}] {symbol}: starting isolated cold worker", flush=True)
+            with tempfile.TemporaryDirectory(prefix="stock-price-cold-") as directory:
+                cache = Path(directory) / "http-cache"
+                cache.mkdir()
+                sample = run_worker({
+                    "url": url, "symbol": symbol, "cache_directory": str(cache), "settings": settings,
+                }, args.timeout)
+                sample["trial"] = trial
+                sample["suite_sequence"] = (trial - 1) * len(symbols) + index
+                report["samples"].append(sample)
+            check_consistency(report["samples"])
+            write_run(path, report)
+            print(f"[{trial}/{args.runs}] {symbol} {sample['status']}: "
+                  f"{sample.get('e2e_seconds', 'unavailable')} s", flush=True)
+    for path, report in reports:
+        report["status"] = "complete" if all(s["status"] == "ok" for s in report["samples"]) else "invalid"
+        report["statistics"] = summarize(report["samples"]) if report["status"] == "complete" else None
         write_run(path, report)
-        print(f"[{trial}/{args.runs}] {sample['status']}: "
-              f"{sample.get('e2e_seconds', 'unavailable')} s", flush=True)
-    report["status"] = "complete" if all(s["status"] == "ok" for s in report["samples"]) else "invalid"
-    report["statistics"] = summarize(report["samples"]) if report["status"] == "complete" else None
-    write_run(path, report)
+        print(f"Report: {path}")
+        if report["statistics"]:
+            print(f"{report['symbol']} median: {report['statistics']['median_seconds']:.6f} s")
     update_summary(output)
-    print(f"Report: {path}")
-    if report["statistics"]:
-        print(f"Median: {report['statistics']['median_seconds']:.6f} s")
-    return 0 if report["status"] == "complete" else 1
+    return 0 if all(report["status"] == "complete" for _, report in reports) else 1
 
 
 if __name__ == "__main__":
