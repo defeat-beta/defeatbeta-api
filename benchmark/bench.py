@@ -21,7 +21,7 @@ from config import (
     DEFAULT_TIMEOUT, stock_prices_url, validate_symbol,
 )
 from queries import fixed_query
-from records import archive_record, prune_local, unpack_reports, write_record
+from records import archive_comparison, prune_local, write_record
 from reports import render_markdown
 
 ROOT = Path(__file__).resolve().parent
@@ -121,45 +121,6 @@ def preflight():
     return environment, {**BASELINE_SETTINGS, "memory_limit": f"{memory_gb}GB"}
 
 
-def _latest_local_run(output: Path, tag: str) -> Path | None:
-    """Find the most recent local run file for the given tag."""
-    local_dir = output / "local"
-    if not local_dir.exists():
-        return None
-    candidates = []
-    for path in local_dir.glob("*.json"):
-        if path.is_symlink():
-            continue
-        # Filename format: {timestamp}_{tag}_{uuid}.json
-        if f"_{tag}_" in path.name:
-            try:
-                ts_str = path.name.split("_", 1)[0]
-                dt = datetime.strptime(ts_str, "%Y%m%dT%H%M%S.%fZ").replace(tzinfo=timezone.utc)
-                candidates.append((dt, path))
-            except ValueError:
-                continue
-    if not candidates:
-        return None
-    candidates.sort(key=lambda x: x[0], reverse=True)
-    return candidates[0][1]
-
-
-def _next_archive_number(output: Path, tag: str) -> int:
-    """Find the next archive sequence number for the given tag."""
-    archive_dir = output / "archive"
-    if not archive_dir.exists():
-        return 1
-    max_num = 0
-    pattern = re.compile(rf"^(\d{{3}})_{re.escape(tag)}\.json$")
-    for path in archive_dir.glob("*.json"):
-        m = pattern.match(path.name)
-        if m:
-            num = int(m.group(1))
-            if num > max_num:
-                max_num = num
-    return max_num + 1
-
-
 def cmd_run(args) -> int:
     """Run the benchmark."""
     try:
@@ -178,6 +139,8 @@ def cmd_run(args) -> int:
     environment, settings = preflight()
     if args.http_proxy is not None:
         settings["http_proxy"] = args.http_proxy
+    if args.keep_alive:
+        settings["http_keep_alive"] = True
     preparation_seconds = time.perf_counter() - preflight_start
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     run_id = f"{timestamp}_{args.tag}_{uuid.uuid4().hex[:8]}"
@@ -187,6 +150,7 @@ def cmd_run(args) -> int:
         "format_version": 1, "run_id": run_id, "tag": args.tag, "status": "running",
         "revision": args.revision, "url": url,
         "sql": fixed_query(url),
+        "resolve_direct": bool(args.resolve_direct),
         "suite_id": run_id, "suite_symbols": symbols, "schedule": "round_robin",
         "requested_runs": args.runs, "timeout_seconds": args.timeout,
         "preflight_seconds": preparation_seconds,
@@ -220,6 +184,7 @@ def cmd_run(args) -> int:
                 cache.mkdir()
                 sample = run_worker({
                     "url": url, "symbol": symbol, "cache_directory": str(cache), "settings": settings,
+                    "resolve_direct": bool(args.resolve_direct),
                 }, args.timeout)
                 sample["trial"] = trial
                 sample["suite_sequence"] = (trial - 1) * len(symbols) + index
@@ -241,36 +206,31 @@ def cmd_run(args) -> int:
 
 
 def cmd_archive(args) -> int:
-    """Archive a local run and generate a Markdown report."""
+    """Publish one baseline-versus-candidate comparison."""
     output = args.output.resolve()
-    if getattr(args, "source", None):
-        local_path = Path(args.source)
-        if not local_path.is_file():
-            print(f"Source run not found: {local_path}", file=sys.stderr)
-            return 1
-    else:
-        local_path = _latest_local_run(output, args.tag)
-        if local_path is None:
-            print(f"No local run found for tag '{args.tag}' in {output / 'local'}", file=sys.stderr)
+    sources = {
+        "Baseline": Path(args.baseline_source),
+        "Candidate": Path(args.candidate_source),
+    }
+    for label, path in sources.items():
+        if not path.is_file():
+            print(f"{label} run not found: {path}", file=sys.stderr)
             return 1
 
-    # Determine archive name
-    if args.name:
-        archive_name = args.name
-    else:
-        effective_tag = args.tag
-        if getattr(args, "source", None):
-            try:
-                reports = unpack_reports(json.loads(local_path.read_text(encoding="utf-8")))
-                if reports and reports[0].get("tag"):
-                    effective_tag = reports[0]["tag"]
-            except (ValueError, KeyError, TypeError, json.JSONDecodeError):
-                pass
-        seq = _next_archive_number(output, effective_tag)
-        archive_name = f"{seq:03d}_{effective_tag}"
-
-    print(f"Archiving {local_path.name} -> {archive_name}")
-    archive_path = archive_record(local_path, output, archive_name)
+    print(
+        f"Publishing {sources['Baseline'].name} vs {sources['Candidate'].name} "
+        f"-> {args.name}"
+    )
+    try:
+        archive_path = archive_comparison(
+            sources["Baseline"],
+            sources["Candidate"],
+            output,
+            args.name,
+            allowed_setting_differences=args.allow_setting_difference,
+        )
+    except (ValueError, json.JSONDecodeError, FileExistsError) as exc:
+        return parser_error(exc)
 
     # Generate Markdown report
     md_path = archive_path.with_suffix(".md")
@@ -300,13 +260,29 @@ def main():
         help="Override the environment HTTP proxy; pass an empty string to disable it",
     )
     run_parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="Per-worker wall timeout in seconds")
+    run_parser.add_argument("--keep-alive", action="store_true", help="Force http_keep_alive=true (default follows config.py BASELINE_SETTINGS)")
+    run_parser.add_argument("--resolve-direct", action="store_true", help="Resolve the pinned URL once per trial, then query the signed CDN URL through cache_httpfs using an exact file list")
     run_parser.add_argument("--output", type=Path, default=ROOT / "results")
 
     # archive subcommand
-    archive_parser = subparsers.add_parser("archive", help="Archive a local run and generate report")
-    archive_parser.add_argument("--tag", default="baseline", help="Tag to find latest local run for (ignored when --source is given and --name is omitted; tag is then read from the source file)")
-    archive_parser.add_argument("--source", type=Path, default=None, help="Explicit local run file to archive; default: latest local run for --tag")
-    archive_parser.add_argument("--name", help="Archive name (default: auto-numbered 001_tag, 002_tag, ...)")
+    archive_parser = subparsers.add_parser(
+        "archive",
+        help="Publish one baseline-versus-candidate comparison",
+    )
+    archive_parser.add_argument("--baseline-source", type=Path, required=True)
+    archive_parser.add_argument("--candidate-source", type=Path, required=True)
+    archive_parser.add_argument(
+        "--allow-setting-difference",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="Declare one configured setting intentionally changed by the candidate",
+    )
+    archive_parser.add_argument(
+        "--name",
+        required=True,
+        help="Comparison name, for example 001_connection_reuse",
+    )
     archive_parser.add_argument("--output", type=Path, default=ROOT / "results")
 
     args = parser.parse_args()

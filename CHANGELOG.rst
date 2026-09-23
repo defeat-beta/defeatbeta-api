@@ -3,6 +3,7 @@ Change Log
 
 0.0.62
 -------
+- perf: resolve pinned Parquet URLs once and query the signed CDN URL through ``cache_httpfs`` by default, preserving warm-cache behavior within a resolved URL's lifetime and automatically falling back to the pinned URL when direct CDN access fails [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
 - feat: add market-aware ``CompanyMeta`` support for US and Hong Kong catalogs, returning ``cik`` for US companies and ``isin`` for HK companies while preserving missing financial currencies as ``None`` [`#197 <https://github.com/defeat-beta/defeatbeta-api/issues/197>`_]
 - test: make the ``cache_httpfs`` file-handle regression test deterministic across cold and warm caches while verifying the applied 64-entry cache limit and bounded total process handle growth [`#203 <https://github.com/defeat-beta/defeatbeta-api/issues/203>`_]
 

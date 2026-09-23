@@ -1,0 +1,2088 @@
+{
+  "format_version": 3,
+  "allowed_setting_differences": [],
+  "baseline": {
+    "format_version": 2,
+    "shared": {
+      "environment_1": {
+        "python": "3.11.10 (main, Sep  7 2024, 01:03:31) [Clang 15.0.0 (clang-1500.3.9.4)]",
+        "executable": "/Users/kevin.zheng/Work/space/defeatbeta-api/.venv/bin/python",
+        "duckdb": "1.5.3",
+        "pandas": "3.0.1",
+        "platform": "macOS-26.6.2-arm64-arm-64bit",
+        "machine": "arm64",
+        "logical_cpus": 10,
+        "physical_cpus": 10,
+        "memory_bytes": 17179869184,
+        "extensions": [
+          {
+            "name": "cache_httpfs",
+            "version": "e39e73c",
+            "path": "/Users/kevin.zheng/.duckdb/extensions/v1.5.3/osx_arm64/cache_httpfs.duckdb_extension",
+            "sha256": "cd5bed463fdd1a47f3ebb67e1749f367958f46b18312dc7b0e5ec45a4772d403"
+          },
+          {
+            "name": "httpfs",
+            "version": "52afb42",
+            "path": "/Users/kevin.zheng/.duckdb/extensions/v1.5.3/osx_arm64/httpfs.duckdb_extension",
+            "sha256": "5a52cc30c9e5425d40d9f1942ab1a1c5124ad6b9fdd6e8a4498cc29646d8a4f9"
+          }
+        ],
+        "source_sha256": {
+          "config.py": "9289e2d54dd135d335220acf7395464d5692b22ef59bb12ad75e8b0f46aa8fd7",
+          "queries.py": "d77e4729573379cc6706e6d00adb711b41c5962210f8b27d0750957f167d6fba",
+          "bench.py": "6dfe85aba32be5c05e31ca5fc298284a1c49b5345df6372b0e6b5d6d6196c2c3",
+          "records.py": "5d497a00192684dc1a2430085a9a7b6a5a595c19069511d78c97cdffeeea0b4c"
+        },
+        "proxy_environment_variables_present": [
+          "ALL_PROXY",
+          "HTTPS_PROXY",
+          "HTTP_PROXY"
+        ]
+      },
+      "configured_settings_2": {
+        "http_keep_alive": true,
+        "http_timeout": 120,
+        "http_retries": 5,
+        "http_retry_backoff": 2.0,
+        "http_retry_wait_ms": 1000,
+        "threads": 4,
+        "parquet_metadata_cache": true,
+        "cache_httpfs_ignore_sigpipe": true,
+        "cache_httpfs_type": "on_disk",
+        "cache_httpfs_min_disk_bytes_for_cache": 1073741824,
+        "cache_httpfs_cache_block_size": 1048576,
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_enable_metadata_cache": true,
+        "cache_httpfs_metadata_cache_entry_size": 1024,
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": 28800000,
+        "cache_httpfs_enable_file_handle_cache": true,
+        "cache_httpfs_file_handle_cache_entry_size": 64,
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": 28800000,
+        "cache_httpfs_max_in_mem_cache_block_count": 64,
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": 1800000,
+        "memory_limit": "12GB",
+        "http_proxy": "http://127.0.0.1:8118"
+      },
+      "methodology_3": {
+        "cold": "Fresh process and unique empty cache_httpfs directory per trial; no query warmup",
+        "main_metric": "Parent pre-spawn monotonic timestamp to worker DataFrame materialization",
+        "excluded": "Preflight, extension installation, result hashing, report writing, teardown",
+        "uncontrolled_caches": "OS code pages, DNS, proxy and remote CDN caches; not a machine-cold benchmark",
+        "scope": "Fixed SQL with current client settings; excludes Ticker and spec.json validation",
+        "std": "Sample standard deviation; undefined for one sample",
+        "cache_bytes": "On-disk footprint after query; not measured network bytes",
+        "comparison": "Require identical data, symbol, result hash, environment and extension binaries"
+      },
+      "result_4": {
+        "rows": 8004,
+        "schema": [
+          [
+            "symbol",
+            "str"
+          ],
+          [
+            "report_date",
+            "str"
+          ],
+          [
+            "open",
+            "float64"
+          ],
+          [
+            "close",
+            "float64"
+          ],
+          [
+            "high",
+            "float64"
+          ],
+          [
+            "low",
+            "float64"
+          ],
+          [
+            "volume",
+            "int64"
+          ]
+        ],
+        "sha256": "947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1"
+      },
+      "effective_settings_5": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-nviletxf/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-nviletxf/spill",
+        "threads": "4"
+      },
+      "loaded_extensions_6": [
+        [
+          "cache_httpfs",
+          "e39e73c"
+        ],
+        [
+          "core_functions",
+          "v1.5.3"
+        ],
+        [
+          "httpfs",
+          ""
+        ],
+        [
+          "icu",
+          "v1.5.3"
+        ],
+        [
+          "json",
+          "v1.5.3"
+        ],
+        [
+          "parquet",
+          "v1.5.3"
+        ]
+      ],
+      "effective_settings_7": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-kxaid09e/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-kxaid09e/spill",
+        "threads": "4"
+      },
+      "effective_settings_8": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-by3eup8_/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-by3eup8_/spill",
+        "threads": "4"
+      },
+      "result_9": {
+        "rows": 4622,
+        "schema": [
+          [
+            "symbol",
+            "str"
+          ],
+          [
+            "report_date",
+            "str"
+          ],
+          [
+            "open",
+            "float64"
+          ],
+          [
+            "close",
+            "float64"
+          ],
+          [
+            "high",
+            "float64"
+          ],
+          [
+            "low",
+            "float64"
+          ],
+          [
+            "volume",
+            "int64"
+          ]
+        ],
+        "sha256": "f09c26da26e795c0dc5e9e281dcd9ec6edc4540c74a4b2028173dd8bbb55e4d2"
+      },
+      "effective_settings_10": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-hbphudou/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-hbphudou/spill",
+        "threads": "4"
+      },
+      "effective_settings_11": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-qki7n4c6/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-qki7n4c6/spill",
+        "threads": "4"
+      },
+      "effective_settings_12": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-1gr3apgf/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-1gr3apgf/spill",
+        "threads": "4"
+      },
+      "result_13": {
+        "rows": 3429,
+        "schema": [
+          [
+            "symbol",
+            "str"
+          ],
+          [
+            "report_date",
+            "str"
+          ],
+          [
+            "open",
+            "float64"
+          ],
+          [
+            "close",
+            "float64"
+          ],
+          [
+            "high",
+            "float64"
+          ],
+          [
+            "low",
+            "float64"
+          ],
+          [
+            "volume",
+            "int64"
+          ]
+        ],
+        "sha256": "edcda943aa424bc7e92b86c49d5470d2752cc25d943cc89b885d8bb43ce7108c"
+      },
+      "effective_settings_14": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-w4lsgeoz/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-w4lsgeoz/spill",
+        "threads": "4"
+      },
+      "effective_settings_15": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-3_to2n3q/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-3_to2n3q/spill",
+        "threads": "4"
+      },
+      "effective_settings_16": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-kjsj1726/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-kjsj1726/spill",
+        "threads": "4"
+      }
+    },
+    "runs": [
+      {
+        "format_version": 1,
+        "run_id": "20260923T023848.859879Z_h5_cache_baseline_d27c00d2_1",
+        "tag": "h5_cache_baseline",
+        "status": "complete",
+        "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
+        "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
+        "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
+        "resolve_direct": false,
+        "suite_id": "20260923T023848.859879Z_h5_cache_baseline_d27c00d2",
+        "suite_symbols": [
+          "AAPL",
+          "KDP",
+          "ZTS"
+        ],
+        "schedule": "round_robin",
+        "requested_runs": 3,
+        "timeout_seconds": 120.0,
+        "preflight_seconds": 0.5087686659535393,
+        "environment": {
+          "$ref": "environment_1"
+        },
+        "configured_settings": {
+          "$ref": "configured_settings_2"
+        },
+        "methodology": {
+          "$ref": "methodology_3"
+        },
+        "samples": [
+          {
+            "status": "ok",
+            "pid": 27558,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-nviletxf/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 12.055770334,
+            "process_start_seconds": 0.022884667,
+            "initialization_seconds": 0.28849475,
+            "query_seconds": 11.744390917,
+            "cpu_user_seconds": 0.34132199999999996,
+            "cpu_system_seconds": 0.102271,
+            "peak_rss_bytes": 104071168,
+            "minor_faults": 13712,
+            "major_faults": 163,
+            "result": {
+              "$ref": "result_4"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_5"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 12.137701417,
+            "trial": 1,
+            "suite_sequence": 1
+          },
+          {
+            "status": "ok",
+            "pid": 28001,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-kxaid09e/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 11.775662167,
+            "process_start_seconds": 0.026377542,
+            "initialization_seconds": 0.361545417,
+            "query_seconds": 11.387739208,
+            "cpu_user_seconds": 7.071665,
+            "cpu_system_seconds": 0.136264,
+            "peak_rss_bytes": 105791488,
+            "minor_faults": 15287,
+            "major_faults": 168,
+            "result": {
+              "$ref": "result_4"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_7"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 11.848328625,
+            "trial": 2,
+            "suite_sequence": 4
+          },
+          {
+            "status": "ok",
+            "pid": 28441,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-by3eup8_/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 13.123806334,
+            "process_start_seconds": 0.023555959,
+            "initialization_seconds": 0.370140541,
+            "query_seconds": 12.730109834,
+            "cpu_user_seconds": 0.363672,
+            "cpu_system_seconds": 0.119991,
+            "peak_rss_bytes": 102842368,
+            "minor_faults": 15616,
+            "major_faults": 97,
+            "result": {
+              "$ref": "result_4"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_8"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 13.278930084,
+            "trial": 3,
+            "suite_sequence": 7
+          }
+        ],
+        "statistics": {
+          "count": 3,
+          "median_seconds": 12.055770334,
+          "min_seconds": 11.775662167,
+          "max_seconds": 13.123806334,
+          "std_seconds": 0.7114134027333919
+        },
+        "symbol": "AAPL",
+        "parameters": [
+          "AAPL"
+        ]
+      },
+      {
+        "format_version": 1,
+        "run_id": "20260923T023848.859879Z_h5_cache_baseline_d27c00d2_2",
+        "tag": "h5_cache_baseline",
+        "status": "complete",
+        "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
+        "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
+        "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
+        "resolve_direct": false,
+        "suite_id": "20260923T023848.859879Z_h5_cache_baseline_d27c00d2",
+        "suite_symbols": [
+          "AAPL",
+          "KDP",
+          "ZTS"
+        ],
+        "schedule": "round_robin",
+        "requested_runs": 3,
+        "timeout_seconds": 120.0,
+        "preflight_seconds": 0.5087686659535393,
+        "environment": {
+          "$ref": "environment_1"
+        },
+        "configured_settings": {
+          "$ref": "configured_settings_2"
+        },
+        "methodology": {
+          "$ref": "methodology_3"
+        },
+        "samples": [
+          {
+            "status": "ok",
+            "pid": 27727,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-hbphudou/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 11.702303292,
+            "process_start_seconds": 0.024531917,
+            "initialization_seconds": 0.385229333,
+            "query_seconds": 11.292542042,
+            "cpu_user_seconds": 6.722057,
+            "cpu_system_seconds": 0.145839,
+            "peak_rss_bytes": 104873984,
+            "minor_faults": 13685,
+            "major_faults": 95,
+            "result": {
+              "$ref": "result_9"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_10"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 11.763112625,
+            "trial": 1,
+            "suite_sequence": 2
+          },
+          {
+            "status": "ok",
+            "pid": 28157,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-qki7n4c6/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 15.380870958,
+            "process_start_seconds": 0.026085958,
+            "initialization_seconds": 0.3566065,
+            "query_seconds": 14.9981785,
+            "cpu_user_seconds": 0.366175,
+            "cpu_system_seconds": 0.109647,
+            "peak_rss_bytes": 104267776,
+            "minor_faults": 14738,
+            "major_faults": 186,
+            "result": {
+              "$ref": "result_9"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_11"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 15.460797542,
+            "trial": 2,
+            "suite_sequence": 5
+          },
+          {
+            "status": "ok",
+            "pid": 28608,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-1gr3apgf/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 11.458069166,
+            "process_start_seconds": 0.025374333,
+            "initialization_seconds": 0.389106583,
+            "query_seconds": 11.04358825,
+            "cpu_user_seconds": 0.395851,
+            "cpu_system_seconds": 0.119128,
+            "peak_rss_bytes": 104726528,
+            "minor_faults": 13598,
+            "major_faults": 91,
+            "result": {
+              "$ref": "result_9"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_12"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 11.525963375,
+            "trial": 3,
+            "suite_sequence": 8
+          }
+        ],
+        "statistics": {
+          "count": 3,
+          "median_seconds": 11.702303292,
+          "min_seconds": 11.458069166,
+          "max_seconds": 15.380870958,
+          "std_seconds": 2.1977217097470914
+        },
+        "symbol": "KDP",
+        "parameters": [
+          "KDP"
+        ]
+      },
+      {
+        "format_version": 1,
+        "run_id": "20260923T023848.859879Z_h5_cache_baseline_d27c00d2_3",
+        "tag": "h5_cache_baseline",
+        "status": "complete",
+        "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
+        "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
+        "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
+        "resolve_direct": false,
+        "suite_id": "20260923T023848.859879Z_h5_cache_baseline_d27c00d2",
+        "suite_symbols": [
+          "AAPL",
+          "KDP",
+          "ZTS"
+        ],
+        "schedule": "round_robin",
+        "requested_runs": 3,
+        "timeout_seconds": 120.0,
+        "preflight_seconds": 0.5087686659535393,
+        "environment": {
+          "$ref": "environment_1"
+        },
+        "configured_settings": {
+          "$ref": "configured_settings_2"
+        },
+        "methodology": {
+          "$ref": "methodology_3"
+        },
+        "samples": [
+          {
+            "status": "ok",
+            "pid": 27862,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-w4lsgeoz/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 2,
+            "cache_bytes_after_query": 1726845,
+            "e2e_seconds": 10.458619084,
+            "process_start_seconds": 0.031338084,
+            "initialization_seconds": 0.4142295,
+            "query_seconds": 10.0130515,
+            "cpu_user_seconds": 0.4004,
+            "cpu_system_seconds": 0.113006,
+            "peak_rss_bytes": 102842368,
+            "minor_faults": 13507,
+            "major_faults": 173,
+            "result": {
+              "$ref": "result_13"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_14"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 10.528230542,
+            "trial": 1,
+            "suite_sequence": 3
+          },
+          {
+            "status": "ok",
+            "pid": 28312,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-3_to2n3q/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 2,
+            "cache_bytes_after_query": 1726845,
+            "e2e_seconds": 10.442542417,
+            "process_start_seconds": 0.027832792,
+            "initialization_seconds": 0.363495333,
+            "query_seconds": 10.051214292,
+            "cpu_user_seconds": 4.959993,
+            "cpu_system_seconds": 0.12634599999999999,
+            "peak_rss_bytes": 104267776,
+            "minor_faults": 14295,
+            "major_faults": 200,
+            "result": {
+              "$ref": "result_13"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_15"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 10.504392917,
+            "trial": 2,
+            "suite_sequence": 6
+          },
+          {
+            "status": "ok",
+            "pid": 28755,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-kjsj1726/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 2,
+            "cache_bytes_after_query": 1726845,
+            "e2e_seconds": 11.47536925,
+            "process_start_seconds": 0.031070916,
+            "initialization_seconds": 0.366543834,
+            "query_seconds": 11.0777545,
+            "cpu_user_seconds": 0.395406,
+            "cpu_system_seconds": 0.107234,
+            "peak_rss_bytes": 104185856,
+            "minor_faults": 14769,
+            "major_faults": 171,
+            "result": {
+              "$ref": "result_13"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_16"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": false,
+            "resolve_seconds": null,
+            "resolved_url_redacted": null,
+            "resolved_host": null,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 11.543726791,
+            "trial": 3,
+            "suite_sequence": 9
+          }
+        ],
+        "statistics": {
+          "count": 3,
+          "median_seconds": 10.458619084,
+          "min_seconds": 10.442542417,
+          "max_seconds": 11.47536925,
+          "std_seconds": 0.5917165180286453
+        },
+        "symbol": "ZTS",
+        "parameters": [
+          "ZTS"
+        ]
+      }
+    ]
+  },
+  "candidate": {
+    "format_version": 2,
+    "shared": {
+      "environment_1": {
+        "python": "3.11.10 (main, Sep  7 2024, 01:03:31) [Clang 15.0.0 (clang-1500.3.9.4)]",
+        "executable": "/Users/kevin.zheng/Work/space/defeatbeta-api/.venv/bin/python",
+        "duckdb": "1.5.3",
+        "pandas": "3.0.1",
+        "platform": "macOS-26.6.2-arm64-arm-64bit",
+        "machine": "arm64",
+        "logical_cpus": 10,
+        "physical_cpus": 10,
+        "memory_bytes": 17179869184,
+        "extensions": [
+          {
+            "name": "cache_httpfs",
+            "version": "e39e73c",
+            "path": "/Users/kevin.zheng/.duckdb/extensions/v1.5.3/osx_arm64/cache_httpfs.duckdb_extension",
+            "sha256": "cd5bed463fdd1a47f3ebb67e1749f367958f46b18312dc7b0e5ec45a4772d403"
+          },
+          {
+            "name": "httpfs",
+            "version": "52afb42",
+            "path": "/Users/kevin.zheng/.duckdb/extensions/v1.5.3/osx_arm64/httpfs.duckdb_extension",
+            "sha256": "5a52cc30c9e5425d40d9f1942ab1a1c5124ad6b9fdd6e8a4498cc29646d8a4f9"
+          }
+        ],
+        "source_sha256": {
+          "config.py": "9289e2d54dd135d335220acf7395464d5692b22ef59bb12ad75e8b0f46aa8fd7",
+          "queries.py": "d77e4729573379cc6706e6d00adb711b41c5962210f8b27d0750957f167d6fba",
+          "bench.py": "6dfe85aba32be5c05e31ca5fc298284a1c49b5345df6372b0e6b5d6d6196c2c3",
+          "records.py": "5d497a00192684dc1a2430085a9a7b6a5a595c19069511d78c97cdffeeea0b4c"
+        },
+        "proxy_environment_variables_present": [
+          "ALL_PROXY",
+          "HTTPS_PROXY",
+          "HTTP_PROXY"
+        ]
+      },
+      "configured_settings_2": {
+        "http_keep_alive": true,
+        "http_timeout": 120,
+        "http_retries": 5,
+        "http_retry_backoff": 2.0,
+        "http_retry_wait_ms": 1000,
+        "threads": 4,
+        "parquet_metadata_cache": true,
+        "cache_httpfs_ignore_sigpipe": true,
+        "cache_httpfs_type": "on_disk",
+        "cache_httpfs_min_disk_bytes_for_cache": 1073741824,
+        "cache_httpfs_cache_block_size": 1048576,
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_enable_metadata_cache": true,
+        "cache_httpfs_metadata_cache_entry_size": 1024,
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": 28800000,
+        "cache_httpfs_enable_file_handle_cache": true,
+        "cache_httpfs_file_handle_cache_entry_size": 64,
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": 28800000,
+        "cache_httpfs_max_in_mem_cache_block_count": 64,
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": 1800000,
+        "memory_limit": "12GB",
+        "http_proxy": "http://127.0.0.1:8118"
+      },
+      "methodology_3": {
+        "cold": "Fresh process and unique empty cache_httpfs directory per trial; no query warmup",
+        "main_metric": "Parent pre-spawn monotonic timestamp to worker DataFrame materialization",
+        "excluded": "Preflight, extension installation, result hashing, report writing, teardown",
+        "uncontrolled_caches": "OS code pages, DNS, proxy and remote CDN caches; not a machine-cold benchmark",
+        "scope": "Fixed SQL with current client settings; excludes Ticker and spec.json validation",
+        "std": "Sample standard deviation; undefined for one sample",
+        "cache_bytes": "On-disk footprint after query; not measured network bytes",
+        "comparison": "Require identical data, symbol, result hash, environment and extension binaries"
+      },
+      "result_4": {
+        "rows": 8004,
+        "schema": [
+          [
+            "symbol",
+            "str"
+          ],
+          [
+            "report_date",
+            "str"
+          ],
+          [
+            "open",
+            "float64"
+          ],
+          [
+            "close",
+            "float64"
+          ],
+          [
+            "high",
+            "float64"
+          ],
+          [
+            "low",
+            "float64"
+          ],
+          [
+            "volume",
+            "int64"
+          ]
+        ],
+        "sha256": "947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1"
+      },
+      "effective_settings_5": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-iiy0kdmf/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-iiy0kdmf/spill",
+        "threads": "4"
+      },
+      "loaded_extensions_6": [
+        [
+          "cache_httpfs",
+          "e39e73c"
+        ],
+        [
+          "core_functions",
+          "v1.5.3"
+        ],
+        [
+          "httpfs",
+          ""
+        ],
+        [
+          "icu",
+          "v1.5.3"
+        ],
+        [
+          "json",
+          "v1.5.3"
+        ],
+        [
+          "parquet",
+          "v1.5.3"
+        ]
+      ],
+      "effective_settings_7": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-e_5rhr64/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-e_5rhr64/spill",
+        "threads": "4"
+      },
+      "effective_settings_8": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-0dlsaga6/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-0dlsaga6/spill",
+        "threads": "4"
+      },
+      "result_9": {
+        "rows": 4622,
+        "schema": [
+          [
+            "symbol",
+            "str"
+          ],
+          [
+            "report_date",
+            "str"
+          ],
+          [
+            "open",
+            "float64"
+          ],
+          [
+            "close",
+            "float64"
+          ],
+          [
+            "high",
+            "float64"
+          ],
+          [
+            "low",
+            "float64"
+          ],
+          [
+            "volume",
+            "int64"
+          ]
+        ],
+        "sha256": "f09c26da26e795c0dc5e9e281dcd9ec6edc4540c74a4b2028173dd8bbb55e4d2"
+      },
+      "effective_settings_10": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-cm_a8n9v/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-cm_a8n9v/spill",
+        "threads": "4"
+      },
+      "effective_settings_11": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-01hp1521/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-01hp1521/spill",
+        "threads": "4"
+      },
+      "effective_settings_12": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-ph3g355d/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-ph3g355d/spill",
+        "threads": "4"
+      },
+      "result_13": {
+        "rows": 3429,
+        "schema": [
+          [
+            "symbol",
+            "str"
+          ],
+          [
+            "report_date",
+            "str"
+          ],
+          [
+            "open",
+            "float64"
+          ],
+          [
+            "close",
+            "float64"
+          ],
+          [
+            "high",
+            "float64"
+          ],
+          [
+            "low",
+            "float64"
+          ],
+          [
+            "volume",
+            "int64"
+          ]
+        ],
+        "sha256": "edcda943aa424bc7e92b86c49d5470d2752cc25d943cc89b885d8bb43ce7108c"
+      },
+      "effective_settings_14": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-xy8cricg/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-xy8cricg/spill",
+        "threads": "4"
+      },
+      "effective_settings_15": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-axebtqvr/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-axebtqvr/spill",
+        "threads": "4"
+      },
+      "effective_settings_16": {
+        "cache_httpfs_cache_block_size": "1048576",
+        "cache_httpfs_cache_directories_config": "",
+        "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-wx283jd3/http-cache",
+        "cache_httpfs_clear_cache_on_write": "0",
+        "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+        "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
+        "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
+        "cache_httpfs_enable_cache_validation": "0",
+        "cache_httpfs_enable_file_handle_cache": "true",
+        "cache_httpfs_enable_glob_cache": "1",
+        "cache_httpfs_enable_metadata_cache": "true",
+        "cache_httpfs_evict_policy": "creation_timestamp",
+        "cache_httpfs_file_handle_cache_entry_size": "64",
+        "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_glob_cache_entry_size": "64",
+        "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
+        "cache_httpfs_ignore_sigpipe": "true",
+        "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
+        "cache_httpfs_in_mem_cache_storage": "extension",
+        "cache_httpfs_max_fanout_subrequest": "0",
+        "cache_httpfs_max_in_mem_cache_block_count": "64",
+        "cache_httpfs_metadata_cache_entry_size": "1024",
+        "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
+        "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
+        "cache_httpfs_parallel_read_mode": "internal_thread_pool",
+        "cache_httpfs_profile_type": "temp",
+        "cache_httpfs_type": "on_disk",
+        "http_keep_alive": "true",
+        "http_logging_output": "",
+        "http_proxy": "http://127.0.0.1:8118",
+        "http_proxy_password": "",
+        "http_proxy_username": "",
+        "http_retries": "5",
+        "http_retry_backoff": "2.0",
+        "http_retry_wait_ms": "1000",
+        "http_timeout": "120",
+        "memory_limit": "11.1 GiB",
+        "parquet_metadata_cache": "true",
+        "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-wx283jd3/spill",
+        "threads": "4"
+      }
+    },
+    "runs": [
+      {
+        "format_version": 1,
+        "run_id": "20260923T023424.251195Z_h5_resolve_cache_5b3e9361_1",
+        "tag": "h5_resolve_cache",
+        "status": "complete",
+        "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
+        "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
+        "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
+        "resolve_direct": true,
+        "suite_id": "20260923T023424.251195Z_h5_resolve_cache_5b3e9361",
+        "suite_symbols": [
+          "AAPL",
+          "KDP",
+          "ZTS"
+        ],
+        "schedule": "round_robin",
+        "requested_runs": 3,
+        "timeout_seconds": 120.0,
+        "preflight_seconds": 0.5773809580132365,
+        "environment": {
+          "$ref": "environment_1"
+        },
+        "configured_settings": {
+          "$ref": "configured_settings_2"
+        },
+        "methodology": {
+          "$ref": "methodology_3"
+        },
+        "samples": [
+          {
+            "status": "ok",
+            "pid": 24342,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-iiy0kdmf/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 8.662071167,
+            "process_start_seconds": 0.030002875,
+            "initialization_seconds": 0.3046075,
+            "query_seconds": 8.327460792,
+            "cpu_user_seconds": 0.391646,
+            "cpu_system_seconds": 0.11892799999999999,
+            "peak_rss_bytes": 108347392,
+            "minor_faults": 15550,
+            "major_faults": 248,
+            "result": {
+              "$ref": "result_4"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_5"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 0.884367208,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 8.949439292,
+            "trial": 1,
+            "suite_sequence": 1
+          },
+          {
+            "status": "ok",
+            "pid": 24687,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-e_5rhr64/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 17.729711333,
+            "process_start_seconds": 0.026428291,
+            "initialization_seconds": 0.339688334,
+            "query_seconds": 17.363594708,
+            "cpu_user_seconds": 0.394346,
+            "cpu_system_seconds": 0.123579,
+            "peak_rss_bytes": 118243328,
+            "minor_faults": 15467,
+            "major_faults": 169,
+            "result": {
+              "$ref": "result_4"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_7"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 0.807387791,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 17.828969833,
+            "trial": 2,
+            "suite_sequence": 4
+          },
+          {
+            "status": "ok",
+            "pid": 25806,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-0dlsaga6/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 8.121322333,
+            "process_start_seconds": 0.037192041,
+            "initialization_seconds": 0.391825167,
+            "query_seconds": 7.692305125,
+            "cpu_user_seconds": 0.388439,
+            "cpu_system_seconds": 0.11698299999999999,
+            "peak_rss_bytes": 108363776,
+            "minor_faults": 14088,
+            "major_faults": 174,
+            "result": {
+              "$ref": "result_4"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_8"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 0.82915375,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 8.194081,
+            "trial": 3,
+            "suite_sequence": 7
+          }
+        ],
+        "statistics": {
+          "count": 3,
+          "median_seconds": 8.662071167,
+          "min_seconds": 8.121322333,
+          "max_seconds": 17.729711333,
+          "std_seconds": 5.3980806258158385
+        },
+        "symbol": "AAPL",
+        "parameters": [
+          "AAPL"
+        ]
+      },
+      {
+        "format_version": 1,
+        "run_id": "20260923T023424.251195Z_h5_resolve_cache_5b3e9361_2",
+        "tag": "h5_resolve_cache",
+        "status": "complete",
+        "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
+        "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
+        "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
+        "resolve_direct": true,
+        "suite_id": "20260923T023424.251195Z_h5_resolve_cache_5b3e9361",
+        "suite_symbols": [
+          "AAPL",
+          "KDP",
+          "ZTS"
+        ],
+        "schedule": "round_robin",
+        "requested_runs": 3,
+        "timeout_seconds": 120.0,
+        "preflight_seconds": 0.5773809580132365,
+        "environment": {
+          "$ref": "environment_1"
+        },
+        "configured_settings": {
+          "$ref": "configured_settings_2"
+        },
+        "methodology": {
+          "$ref": "methodology_3"
+        },
+        "samples": [
+          {
+            "status": "ok",
+            "pid": 24458,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-cm_a8n9v/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 9.820398292,
+            "process_start_seconds": 0.08820225,
+            "initialization_seconds": 0.324453042,
+            "query_seconds": 9.407743,
+            "cpu_user_seconds": 5.734896,
+            "cpu_system_seconds": 0.134291,
+            "peak_rss_bytes": 107954176,
+            "minor_faults": 14146,
+            "major_faults": 194,
+            "result": {
+              "$ref": "result_9"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_10"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 1.044563041,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 9.945320292,
+            "trial": 1,
+            "suite_sequence": 2
+          },
+          {
+            "status": "ok",
+            "pid": 24870,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-01hp1521/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 21.962782041,
+            "process_start_seconds": 0.040747333,
+            "initialization_seconds": 0.613390375,
+            "query_seconds": 21.308644333,
+            "cpu_user_seconds": 6.353903,
+            "cpu_system_seconds": 0.16161999999999999,
+            "peak_rss_bytes": 100646912,
+            "minor_faults": 15872,
+            "major_faults": 209,
+            "result": {
+              "$ref": "result_9"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_11"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 7.48101175,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 22.035768416,
+            "trial": 2,
+            "suite_sequence": 5
+          },
+          {
+            "status": "ok",
+            "pid": 25909,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-ph3g355d/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 3,
+            "cache_bytes_after_query": 2775421,
+            "e2e_seconds": 9.81936725,
+            "process_start_seconds": 0.029459833,
+            "initialization_seconds": 0.401309959,
+            "query_seconds": 9.388597458,
+            "cpu_user_seconds": 5.844112,
+            "cpu_system_seconds": 0.13765,
+            "peak_rss_bytes": 100155392,
+            "minor_faults": 14599,
+            "major_faults": 167,
+            "result": {
+              "$ref": "result_9"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_12"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 1.184172875,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 9.880149458,
+            "trial": 3,
+            "suite_sequence": 8
+          }
+        ],
+        "statistics": {
+          "count": 3,
+          "median_seconds": 9.820398292,
+          "min_seconds": 9.81936725,
+          "max_seconds": 21.962782041,
+          "std_seconds": 7.010706181231014
+        },
+        "symbol": "KDP",
+        "parameters": [
+          "KDP"
+        ]
+      },
+      {
+        "format_version": 1,
+        "run_id": "20260923T023424.251195Z_h5_resolve_cache_5b3e9361_3",
+        "tag": "h5_resolve_cache",
+        "status": "complete",
+        "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
+        "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
+        "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
+        "resolve_direct": true,
+        "suite_id": "20260923T023424.251195Z_h5_resolve_cache_5b3e9361",
+        "suite_symbols": [
+          "AAPL",
+          "KDP",
+          "ZTS"
+        ],
+        "schedule": "round_robin",
+        "requested_runs": 3,
+        "timeout_seconds": 120.0,
+        "preflight_seconds": 0.5773809580132365,
+        "environment": {
+          "$ref": "environment_1"
+        },
+        "configured_settings": {
+          "$ref": "configured_settings_2"
+        },
+        "methodology": {
+          "$ref": "methodology_3"
+        },
+        "samples": [
+          {
+            "status": "ok",
+            "pid": 24583,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-xy8cricg/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 2,
+            "cache_bytes_after_query": 1726845,
+            "e2e_seconds": 7.528043583,
+            "process_start_seconds": 0.028270333,
+            "initialization_seconds": 0.310512459,
+            "query_seconds": 7.189260791,
+            "cpu_user_seconds": 3.499801,
+            "cpu_system_seconds": 0.126464,
+            "peak_rss_bytes": 108822528,
+            "minor_faults": 13711,
+            "major_faults": 170,
+            "result": {
+              "$ref": "result_13"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_14"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 0.804546833,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 7.597801958,
+            "trial": 1,
+            "suite_sequence": 3
+          },
+          {
+            "status": "ok",
+            "pid": 25120,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-axebtqvr/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 2,
+            "cache_bytes_after_query": 1726845,
+            "e2e_seconds": 47.975588292,
+            "process_start_seconds": 0.033420833,
+            "initialization_seconds": 0.393286667,
+            "query_seconds": 47.548880792,
+            "cpu_user_seconds": 3.497037,
+            "cpu_system_seconds": 0.14240999999999998,
+            "peak_rss_bytes": 100548608,
+            "minor_faults": 16443,
+            "major_faults": 178,
+            "result": {
+              "$ref": "result_13"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_15"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 32.830823167,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 48.036425292,
+            "trial": 2,
+            "suite_sequence": 6
+          },
+          {
+            "status": "ok",
+            "pid": 26044,
+            "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-wx283jd3/http-cache",
+            "cache_empty_before_query": true,
+            "cache_files_after_query": 2,
+            "cache_bytes_after_query": 1726845,
+            "e2e_seconds": 9.71203225,
+            "process_start_seconds": 0.027787833,
+            "initialization_seconds": 0.373042208,
+            "query_seconds": 9.311202209,
+            "cpu_user_seconds": 4.3821579999999996,
+            "cpu_system_seconds": 0.124668,
+            "peak_rss_bytes": 109985792,
+            "minor_faults": 14617,
+            "major_faults": 184,
+            "result": {
+              "$ref": "result_13"
+            },
+            "effective_settings": {
+              "$ref": "effective_settings_16"
+            },
+            "loaded_extensions": {
+              "$ref": "loaded_extensions_6"
+            },
+            "pandas_version": "3.0.1",
+            "resolve_direct": true,
+            "resolve_seconds": 0.786620875,
+            "resolved_url_redacted": "https://us.aws.cdn.hf.co/xet-bridge-us/67482ec5e9d3466929bc50af/aa49744809efee62f83b317e627dfea9cfa73c16b982d4c456f1c37843e791c4",
+            "resolved_host": "us.aws.cdn.hf.co",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "worker_wall_seconds": 9.778559541,
+            "trial": 3,
+            "suite_sequence": 9
+          }
+        ],
+        "statistics": {
+          "count": 3,
+          "median_seconds": 9.71203225,
+          "min_seconds": 7.528043583,
+          "max_seconds": 47.975588292,
+          "std_seconds": 22.748162564858628
+        },
+        "symbol": "ZTS",
+        "parameters": [
+          "ZTS"
+        ]
+      }
+    ]
+  }
+}

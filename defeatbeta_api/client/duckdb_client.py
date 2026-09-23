@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import sys
 import time
 from contextlib import contextmanager
@@ -14,16 +15,79 @@ from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.utils.util import validate_httpfs_cache_directory
 
-_instance = None
+# Pinned Parquet URLs. DuckDB re-resolves the 302 on every range request, so
+# cold queries pay the redirect cost repeatedly. Resolve only Parquet inputs:
+# JSON and other readers have different URL/glob semantics.
+_RESOLVE_URL_RE = re.compile(
+    r"https://huggingface\.co/datasets/defeatbeta/yahoo-finance-data/resolve/[^\s'\"]+\.parquet"
+)
+_FROM_URL_RE = re.compile(
+    rf"(FROM|JOIN)\s+'({_RESOLVE_URL_RE.pattern})'",
+    re.IGNORECASE,
+)
+_READ_PARQUET_URL_RE = re.compile(
+    rf"read_parquet\s*\(\s*'({_RESOLVE_URL_RE.pattern})'\s*\)",
+    re.IGNORECASE,
+)
+_SIGNED_URL_RE = re.compile(r"(https?://[^\s'\"?]+)\?[^\s'\"]*")
+
+
+def redact_signed_urls(text: str) -> str:
+    """Strip URL query strings so logs never persist signed parameters."""
+    return _SIGNED_URL_RE.sub(r"\1?<redacted>", text)
+
+
+def rewrite_resolve_urls(sql: str, resolve) -> str:
+    """Replace pinned resolve URLs using `resolve(url)`; keep original on failure.
+
+    Exact file-list syntax avoids cache_httpfs treating signed query strings as
+    glob patterns. Non-Parquet URLs are deliberately left unchanged.
+    """
+
+    def _resolve_url(resolve_url):
+        try:
+            return resolve(resolve_url)
+        except Exception:
+            return resolve_url
+
+    def _reader(match):
+        resolve_url = match.group(1)
+        cdn_url = _resolve_url(resolve_url)
+        if cdn_url == resolve_url:
+            return match.group(0)
+        escaped = cdn_url.replace("'", "''")
+        return f"read_parquet(['{escaped}'])"
+
+    sql = _READ_PARQUET_URL_RE.sub(_reader, sql)
+
+    def _from(match):
+        resolve_url = match.group(2)
+        cdn_url = _resolve_url(resolve_url)
+        if cdn_url == resolve_url:
+            return match.group(0)
+        escaped = cdn_url.replace("'", "''")
+        return f"{match.group(1)} read_parquet(['{escaped}'])"
+
+    return _FROM_URL_RE.sub(_from, sql)
+
+_instances = {}
 _lock = Lock()
 
+
+def _config_key(config: Configuration):
+    return tuple(sorted(vars(config).items()))
+
+
 def get_duckdb_client(http_proxy=None, log_level=None, config=None):
-    global _instance
-    if _instance is None:
-        with _lock:
-            if _instance is None:
-                _instance = DuckDBClient(http_proxy, log_level, config)
-    return _instance
+    effective_config = config if config is not None else Configuration()
+    key = (http_proxy, log_level, _config_key(effective_config))
+    with _lock:
+        client = _instances.get(key)
+        if client is None or client.connection is None:
+            client = DuckDBClient(http_proxy, log_level, effective_config)
+            _instances[key] = client
+        return client
+
 
 class DuckDBClient:
     def __init__(self, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO,
@@ -39,6 +103,11 @@ class DuckDBClient:
             stream=sys.stdout
         )
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.resolve_direct = bool(self.config.resolve_direct)
+        self._resolve_ttl = self.config.resolve_ttl_seconds
+        self._cdn_cache = {}
+        self._cdn_lock = Lock()
+        self._hf_client = HuggingFaceClient()
         self._initialize_connection()
         self._validate_httpfs_cache()
 
@@ -125,6 +194,40 @@ class DuckDBClient:
         self.query("SELECT cache_httpfs_clear_cache()")
         self.logger.info("httpfs cache cleared")
 
+    def _resolve_one(self, resolve_url: str) -> str:
+        """Resolve once per TTL; fall back to the pinned URL on any failure."""
+        now = time.monotonic()
+        with self._cdn_lock:
+            hit = self._cdn_cache.get(resolve_url)
+            if hit is not None and now - hit[1] < self._resolve_ttl:
+                return hit[0]
+        try:
+            if self.http_proxy is None:
+                proxies = None  # requests falls back to environment
+            elif self.http_proxy:
+                proxies = {"http": self.http_proxy, "https": self.http_proxy}
+            else:
+                proxies = {"http": None, "https": None}
+            cdn_url = self._hf_client.resolve_cdn_url(resolve_url, proxies=proxies)
+        except Exception as exc:
+            self.logger.warning(
+                "CDN resolve failed, using pinned URL: %s",
+                redact_signed_urls(str(exc)),
+            )
+            return resolve_url
+        with self._cdn_lock:
+            self._cdn_cache[resolve_url] = (cdn_url, time.monotonic())
+        return cdn_url
+
+    def _to_cdn_sql(self, sql: str) -> str:
+        return rewrite_resolve_urls(sql, self._resolve_one)
+
+    def _invalidate_resolved_urls(self, sql: str) -> None:
+        resolve_urls = set(_RESOLVE_URL_RE.findall(sql))
+        with self._cdn_lock:
+            for resolve_url in resolve_urls:
+                self._cdn_cache.pop(resolve_url, None)
+
     @contextmanager
     def _get_cursor(self):
         cursor = self.connection.cursor()
@@ -133,20 +236,37 @@ class DuckDBClient:
         finally:
             cursor.close()
 
+    def _execute_query(self, sql: str) -> pd.DataFrame:
+        self.logger.debug(f"Executing query: {redact_signed_urls(sql)}")
+        start_time = time.perf_counter()
+        with self._get_cursor() as cursor:
+            result = cursor.sql(sql).df()
+        duration = time.perf_counter() - start_time
+        self.logger.debug(
+            f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
+        return result
+
     def query(self, sql: str) -> pd.DataFrame:
-        self.logger.debug(f"Executing query: {sql}")
+        original_sql = sql
+        rewritten_sql = self._to_cdn_sql(sql) if self.resolve_direct else sql
         try:
-            start_time = time.perf_counter()
-            with self._get_cursor() as cursor:
-                result = cursor.sql(sql).df()
-                end_time = time.perf_counter()
-                duration = end_time - start_time
-                self.logger.debug(
-                    f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
-                return result
-        except Exception as e:
-            self.logger.error(f"Query failed: {str(e)}")
-            raise Exception(f"Query failed: {str(e)}")
+            return self._execute_query(rewritten_sql)
+        except Exception as direct_error:
+            if rewritten_sql != original_sql:
+                self._invalidate_resolved_urls(original_sql)
+                self.logger.warning(
+                    "CDN query failed, retrying pinned URL: %s",
+                    redact_signed_urls(str(direct_error)),
+                )
+                try:
+                    return self._execute_query(original_sql)
+                except Exception as fallback_error:
+                    error = fallback_error
+            else:
+                error = direct_error
+            message = redact_signed_urls(str(error))
+            self.logger.error(f"Query failed: {message}")
+            raise Exception(f"Query failed: {message}")
 
     def close(self) -> None:
         if self.connection:

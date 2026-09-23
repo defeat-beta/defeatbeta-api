@@ -2,38 +2,40 @@
   "format_version": 2,
   "shared": {
     "environment_1": {
-      "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
-      "executable": "/Users/bowen/Work/space/defeatbeta-api/.venv/bin/python",
-      "duckdb": "1.5.3",
-      "pandas": "3.0.3",
-      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "python": "3.11.10 (main, Sep  7 2024, 01:03:31) [Clang 15.0.0 (clang-1500.3.9.4)]",
+      "executable": "/Users/kevin.zheng/Work/space/defeatbeta-api/.venv/bin/python",
+      "duckdb": "1.4.3",
+      "pandas": "3.0.1",
+      "platform": "macOS-26.6.2-arm64-arm-64bit",
       "machine": "arm64",
       "logical_cpus": 10,
       "physical_cpus": 10,
-      "memory_bytes": 25769803776,
+      "memory_bytes": 17179869184,
       "extensions": [
         {
           "name": "cache_httpfs",
-          "version": "e39e73c",
-          "path": "/Users/bowen/.duckdb/extensions/v1.5.3/osx_arm64/cache_httpfs.duckdb_extension",
-          "sha256": "cd5bed463fdd1a47f3ebb67e1749f367958f46b18312dc7b0e5ec45a4772d403"
+          "version": "9c7a709",
+          "path": "/Users/kevin.zheng/.duckdb/extensions/v1.4.3/osx_arm64/cache_httpfs.duckdb_extension",
+          "sha256": "1647d9016b5113a1a44c05b6a72f9f9cdabdca580efac80553c504ff78b74a0b"
         },
         {
           "name": "httpfs",
-          "version": "52afb42",
-          "path": "/Users/bowen/.duckdb/extensions/v1.5.3/osx_arm64/httpfs.duckdb_extension",
-          "sha256": "5a52cc30c9e5425d40d9f1942ab1a1c5124ad6b9fdd6e8a4498cc29646d8a4f9"
+          "version": "9c7d349",
+          "path": "/Users/kevin.zheng/.duckdb/extensions/v1.4.3/osx_arm64/httpfs.duckdb_extension",
+          "sha256": "85e04428625ca38eded2a86fd950817f22351cf15c4aa3f99cf4610d53347b55"
         }
       ],
       "source_sha256": {
-        "config.py": "00161ba488b9b715c878ada85e2749afa80e7e6ff19d3639e7a84c3dd89b3e83",
+        "config.py": "9289e2d54dd135d335220acf7395464d5692b22ef59bb12ad75e8b0f46aa8fd7",
         "queries.py": "151c0d13fe49704031529fa2d8c06302dfddcd34f7cc4dec6092f2c208f23eba",
-        "bench.py": "8d7949da34b07566c4efd19253aa06fa4ac2a33132ea616c4d7dd8cb59a3d541"
+        "bench.py": "469ed6f08f24d9d3052f3df19c37331ade8289eda74e40fa911d0cfdb27b1d89",
+        "records.py": "172b32ce7927a61ee574aedf6a9eef5022cc3a25339c6c65c22e26a1a611c991"
       },
       "proxy_environment_variables_present": [
         "ALL_PROXY",
         "HTTPS_PROXY",
-        "HTTP_PROXY"
+        "HTTP_PROXY",
+        "http_proxy"
       ]
     },
     "configured_settings_2": {
@@ -57,7 +59,8 @@
       "cache_httpfs_file_handle_cache_entry_timeout_millisec": 28800000,
       "cache_httpfs_max_in_mem_cache_block_count": 64,
       "cache_httpfs_in_mem_cache_block_timeout_millisec": 1800000,
-      "memory_limit": "19GB"
+      "memory_limit": "12GB",
+      "http_proxy": "http://127.0.0.1:8118"
     },
     "methodology_3": {
       "cold": "Fresh process and unique empty cache_httpfs directory per trial; no query warmup",
@@ -106,9 +109,8 @@
     "effective_settings_5": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cp8m8lrb/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-74my1w82/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -122,13 +124,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -140,19 +140,19 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cp8m8lrb/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-74my1w82/spill",
       "threads": "4"
     },
     "loaded_extensions_6": [
       [
         "cache_httpfs",
-        "e39e73c"
+        "9c7a709"
       ],
       [
         "core_functions",
-        "v1.5.3"
+        "v1.4.3"
       ],
       [
         "httpfs",
@@ -160,23 +160,22 @@
       ],
       [
         "icu",
-        "v1.5.3"
+        "v1.4.3"
       ],
       [
         "json",
-        "v1.5.3"
+        "v1.4.3"
       ],
       [
         "parquet",
-        "v1.5.3"
+        "v1.4.3"
       ]
     ],
     "effective_settings_7": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ou5d9egy/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-7vi_zlqo/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -190,13 +189,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -208,17 +205,16 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ou5d9egy/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-7vi_zlqo/spill",
       "threads": "4"
     },
     "effective_settings_8": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-h5oxs4im/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-yc4usp2n/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -232,13 +228,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -250,197 +244,12 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-h5oxs4im/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-yc4usp2n/spill",
       "threads": "4"
     },
-    "environment_9": {
-      "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
-      "executable": "/Users/bowen/Work/space/defeatbeta-api/.venv/bin/python",
-      "duckdb": "1.5.3",
-      "pandas": "3.0.3",
-      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
-      "machine": "arm64",
-      "logical_cpus": 10,
-      "physical_cpus": 10,
-      "memory_bytes": 25769803776,
-      "extensions": [
-        {
-          "name": "cache_httpfs",
-          "version": "e39e73c",
-          "path": "/Users/bowen/.duckdb/extensions/v1.5.3/osx_arm64/cache_httpfs.duckdb_extension",
-          "sha256": "cd5bed463fdd1a47f3ebb67e1749f367958f46b18312dc7b0e5ec45a4772d403"
-        },
-        {
-          "name": "httpfs",
-          "version": "52afb42",
-          "path": "/Users/bowen/.duckdb/extensions/v1.5.3/osx_arm64/httpfs.duckdb_extension",
-          "sha256": "5a52cc30c9e5425d40d9f1942ab1a1c5124ad6b9fdd6e8a4498cc29646d8a4f9"
-        }
-      ],
-      "source_sha256": {
-        "config.py": "9289e2d54dd135d335220acf7395464d5692b22ef59bb12ad75e8b0f46aa8fd7",
-        "queries.py": "151c0d13fe49704031529fa2d8c06302dfddcd34f7cc4dec6092f2c208f23eba",
-        "bench.py": "0b9fc07ffbbdb629a30e5155994b789bc2b6961ad6dc13ddfcba16eff99cccf0"
-      },
-      "proxy_environment_variables_present": [
-        "ALL_PROXY",
-        "HTTPS_PROXY",
-        "HTTP_PROXY"
-      ]
-    },
-    "configured_settings_10": {
-      "http_keep_alive": false,
-      "http_timeout": 120,
-      "http_retries": 5,
-      "http_retry_backoff": 2.0,
-      "http_retry_wait_ms": 1000,
-      "threads": 4,
-      "parquet_metadata_cache": true,
-      "cache_httpfs_ignore_sigpipe": true,
-      "cache_httpfs_type": "on_disk",
-      "cache_httpfs_min_disk_bytes_for_cache": 1073741824,
-      "cache_httpfs_cache_block_size": 1048576,
-      "cache_httpfs_profile_type": "temp",
-      "cache_httpfs_enable_metadata_cache": true,
-      "cache_httpfs_metadata_cache_entry_size": 1024,
-      "cache_httpfs_metadata_cache_entry_timeout_millisec": 28800000,
-      "cache_httpfs_enable_file_handle_cache": true,
-      "cache_httpfs_file_handle_cache_entry_size": 64,
-      "cache_httpfs_file_handle_cache_entry_timeout_millisec": 28800000,
-      "cache_httpfs_max_in_mem_cache_block_count": 64,
-      "cache_httpfs_in_mem_cache_block_timeout_millisec": 1800000,
-      "memory_limit": "19GB",
-      "http_proxy": "http://127.0.0.1:8118"
-    },
-    "effective_settings_11": {
-      "cache_httpfs_cache_block_size": "1048576",
-      "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ef5s4gzp/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
-      "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
-      "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
-      "cache_httpfs_enable_cache_validation": "0",
-      "cache_httpfs_enable_file_handle_cache": "true",
-      "cache_httpfs_enable_glob_cache": "1",
-      "cache_httpfs_enable_metadata_cache": "true",
-      "cache_httpfs_evict_policy": "creation_timestamp",
-      "cache_httpfs_file_handle_cache_entry_size": "64",
-      "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
-      "cache_httpfs_glob_cache_entry_size": "64",
-      "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
-      "cache_httpfs_ignore_sigpipe": "true",
-      "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
-      "cache_httpfs_max_fanout_subrequest": "0",
-      "cache_httpfs_max_in_mem_cache_block_count": "64",
-      "cache_httpfs_metadata_cache_entry_size": "1024",
-      "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
-      "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
-      "cache_httpfs_profile_type": "temp",
-      "cache_httpfs_type": "on_disk",
-      "http_keep_alive": "false",
-      "http_logging_output": "",
-      "http_proxy": "http://127.0.0.1:8118",
-      "http_proxy_password": "",
-      "http_proxy_username": "",
-      "http_retries": "5",
-      "http_retry_backoff": "2.0",
-      "http_retry_wait_ms": "1000",
-      "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
-      "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ef5s4gzp/spill",
-      "threads": "4"
-    },
-    "effective_settings_12": {
-      "cache_httpfs_cache_block_size": "1048576",
-      "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-n9i1_v49/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
-      "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
-      "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
-      "cache_httpfs_enable_cache_validation": "0",
-      "cache_httpfs_enable_file_handle_cache": "true",
-      "cache_httpfs_enable_glob_cache": "1",
-      "cache_httpfs_enable_metadata_cache": "true",
-      "cache_httpfs_evict_policy": "creation_timestamp",
-      "cache_httpfs_file_handle_cache_entry_size": "64",
-      "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
-      "cache_httpfs_glob_cache_entry_size": "64",
-      "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
-      "cache_httpfs_ignore_sigpipe": "true",
-      "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
-      "cache_httpfs_max_fanout_subrequest": "0",
-      "cache_httpfs_max_in_mem_cache_block_count": "64",
-      "cache_httpfs_metadata_cache_entry_size": "1024",
-      "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
-      "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
-      "cache_httpfs_profile_type": "temp",
-      "cache_httpfs_type": "on_disk",
-      "http_keep_alive": "false",
-      "http_logging_output": "",
-      "http_proxy": "http://127.0.0.1:8118",
-      "http_proxy_password": "",
-      "http_proxy_username": "",
-      "http_retries": "5",
-      "http_retry_backoff": "2.0",
-      "http_retry_wait_ms": "1000",
-      "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
-      "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-n9i1_v49/spill",
-      "threads": "4"
-    },
-    "effective_settings_13": {
-      "cache_httpfs_cache_block_size": "1048576",
-      "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-u0e7hahl/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
-      "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
-      "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
-      "cache_httpfs_enable_cache_validation": "0",
-      "cache_httpfs_enable_file_handle_cache": "true",
-      "cache_httpfs_enable_glob_cache": "1",
-      "cache_httpfs_enable_metadata_cache": "true",
-      "cache_httpfs_evict_policy": "creation_timestamp",
-      "cache_httpfs_file_handle_cache_entry_size": "64",
-      "cache_httpfs_file_handle_cache_entry_timeout_millisec": "28800000",
-      "cache_httpfs_glob_cache_entry_size": "64",
-      "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
-      "cache_httpfs_ignore_sigpipe": "true",
-      "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
-      "cache_httpfs_max_fanout_subrequest": "0",
-      "cache_httpfs_max_in_mem_cache_block_count": "64",
-      "cache_httpfs_metadata_cache_entry_size": "1024",
-      "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
-      "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
-      "cache_httpfs_profile_type": "temp",
-      "cache_httpfs_type": "on_disk",
-      "http_keep_alive": "false",
-      "http_logging_output": "",
-      "http_proxy": "http://127.0.0.1:8118",
-      "http_proxy_password": "",
-      "http_proxy_username": "",
-      "http_retries": "5",
-      "http_retry_backoff": "2.0",
-      "http_retry_wait_ms": "1000",
-      "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
-      "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-u0e7hahl/spill",
-      "threads": "4"
-    },
-    "result_14": {
+    "result_9": {
       "rows": 4622,
       "schema": [
         [
@@ -474,12 +283,11 @@
       ],
       "sha256": "f09c26da26e795c0dc5e9e281dcd9ec6edc4540c74a4b2028173dd8bbb55e4d2"
     },
-    "effective_settings_15": {
+    "effective_settings_10": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-8w2y0wtw/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-qgari5of/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -493,13 +301,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -511,17 +317,16 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-8w2y0wtw/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-qgari5of/spill",
       "threads": "4"
     },
-    "effective_settings_16": {
+    "effective_settings_11": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-5yq7g32k/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-ifvvqvbm/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -535,13 +340,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -553,17 +356,16 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-5yq7g32k/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-ifvvqvbm/spill",
       "threads": "4"
     },
-    "effective_settings_17": {
+    "effective_settings_12": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-x9iatig_/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-yrubskzg/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -577,13 +379,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -595,12 +395,12 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-x9iatig_/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-yrubskzg/spill",
       "threads": "4"
     },
-    "result_18": {
+    "result_13": {
       "rows": 3429,
       "schema": [
         [
@@ -634,12 +434,11 @@
       ],
       "sha256": "edcda943aa424bc7e92b86c49d5470d2752cc25d943cc89b885d8bb43ce7108c"
     },
-    "effective_settings_19": {
+    "effective_settings_14": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-q86juxf3/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-6kdvpwjn/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -653,13 +452,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -671,17 +468,16 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-q86juxf3/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-6kdvpwjn/spill",
       "threads": "4"
     },
-    "effective_settings_20": {
+    "effective_settings_15": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-uz8w35s8/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-82y4zwag/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -695,13 +491,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -713,17 +507,16 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-uz8w35s8/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-82y4zwag/spill",
       "threads": "4"
     },
-    "effective_settings_21": {
+    "effective_settings_16": {
       "cache_httpfs_cache_block_size": "1048576",
       "cache_httpfs_cache_directories_config": "",
-      "cache_httpfs_cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cxwquhu3/http-cache",
-      "cache_httpfs_clear_cache_on_write": "0",
-      "cache_httpfs_disk_cache_reader_enable_memory_cache": "1",
+      "cache_httpfs_cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-a__bp0_e/http-cache",
+      "cache_httpfs_disk_cache_reader_enable_memory_cache": "0",
       "cache_httpfs_disk_cache_reader_mem_cache_block_count": "256",
       "cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec": "1800000",
       "cache_httpfs_enable_cache_validation": "0",
@@ -737,13 +530,11 @@
       "cache_httpfs_glob_cache_entry_timeout_millisec": "1800000",
       "cache_httpfs_ignore_sigpipe": "true",
       "cache_httpfs_in_mem_cache_block_timeout_millisec": "1800000",
-      "cache_httpfs_in_mem_cache_storage": "extension",
       "cache_httpfs_max_fanout_subrequest": "0",
       "cache_httpfs_max_in_mem_cache_block_count": "64",
       "cache_httpfs_metadata_cache_entry_size": "1024",
       "cache_httpfs_metadata_cache_entry_timeout_millisec": "28800000",
       "cache_httpfs_min_disk_bytes_for_cache": "1073741824",
-      "cache_httpfs_parallel_read_mode": "internal_thread_pool",
       "cache_httpfs_profile_type": "temp",
       "cache_httpfs_type": "on_disk",
       "http_keep_alive": "false",
@@ -755,86 +546,31 @@
       "http_retry_backoff": "2.0",
       "http_retry_wait_ms": "1000",
       "http_timeout": "120",
-      "memory_limit": "17.6 GiB",
+      "memory_limit": "11.1 GiB",
       "parquet_metadata_cache": "true",
-      "temp_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cxwquhu3/spill",
+      "temp_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-a__bp0_e/spill",
       "threads": "4"
     }
   },
   "runs": [
     {
       "format_version": 1,
-      "run_id": "20260922T065748.379525Z_baseline_e9560a79",
-      "tag": "baseline",
-      "status": "invalid",
-      "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
-      "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
-      "symbol": "AAPL",
-      "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
-      "parameters": [
-        "AAPL"
-      ],
-      "requested_runs": 3,
-      "timeout_seconds": 600.0,
-      "preflight_seconds": 0.18903054180555046,
-      "environment": {
-        "$ref": "environment_1"
-      },
-      "configured_settings": {
-        "$ref": "configured_settings_2"
-      },
-      "methodology": {
-        "$ref": "methodology_3"
-      },
-      "samples": [
-        {
-          "status": "error",
-          "error": "IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'",
-          "traceback": "Traceback (most recent call last):\n  File \"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\", line 102, in <module>\n    outcome = execute_once(request)\n  File \"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\", line 52, in execute_once\n    frame = connection.execute(fixed_query(payload[\"url\"]), [payload[\"symbol\"]]).df()\n            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_duckdb.IOException: IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\n",
-          "returncode": 1,
-          "stdout": "BENCH_RESULT={\"status\": \"error\", \"error\": \"IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\", \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\\\", line 102, in <module>\\n    outcome = execute_once(request)\\n  File \\\"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\\\", line 52, in execute_once\\n    frame = connection.execute(fixed_query(payload[\\\"url\\\"]), [payload[\\\"symbol\\\"]]).df()\\n            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n_duckdb.IOException: IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\\n\"}\n",
-          "stderr": "",
-          "worker_wall_seconds": 15.323712792,
-          "trial": 1
-        },
-        {
-          "status": "error",
-          "error": "IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'",
-          "traceback": "Traceback (most recent call last):\n  File \"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\", line 102, in <module>\n    outcome = execute_once(request)\n  File \"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\", line 52, in execute_once\n    frame = connection.execute(fixed_query(payload[\"url\"]), [payload[\"symbol\"]]).df()\n            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_duckdb.IOException: IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\n",
-          "returncode": 1,
-          "stdout": "BENCH_RESULT={\"status\": \"error\", \"error\": \"IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\", \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\\\", line 102, in <module>\\n    outcome = execute_once(request)\\n  File \\\"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\\\", line 52, in execute_once\\n    frame = connection.execute(fixed_query(payload[\\\"url\\\"]), [payload[\\\"symbol\\\"]]).df()\\n            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n_duckdb.IOException: IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\\n\"}\n",
-          "stderr": "",
-          "worker_wall_seconds": 15.395667375,
-          "trial": 2
-        },
-        {
-          "status": "error",
-          "error": "IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'",
-          "traceback": "Traceback (most recent call last):\n  File \"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\", line 102, in <module>\n    outcome = execute_once(request)\n  File \"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\", line 52, in execute_once\n    frame = connection.execute(fixed_query(payload[\"url\"]), [payload[\"symbol\"]]).df()\n            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_duckdb.IOException: IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\n",
-          "returncode": 1,
-          "stdout": "BENCH_RESULT={\"status\": \"error\", \"error\": \"IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\", \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\\\", line 102, in <module>\\n    outcome = execute_once(request)\\n  File \\\"/Users/bowen/Work/space/defeatbeta-api/benchmark/queries.py\\\", line 52, in execute_once\\n    frame = connection.execute(fixed_query(payload[\\\"url\\\"]), [payload[\\\"symbol\\\"]]).df()\\n            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n_duckdb.IOException: IO Error: Could not connect to server error for HTTP HEAD to 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet'\\n\"}\n",
-          "stderr": "",
-          "worker_wall_seconds": 15.329534958,
-          "trial": 3
-        }
-      ],
-      "statistics": null
-    },
-    {
-      "format_version": 1,
-      "run_id": "20260922T065915.037912Z_baseline_fe24771a",
-      "tag": "baseline",
+      "run_id": "20260922T080849.031464Z_baseline-multi_41a3a4f3_1",
+      "tag": "baseline-multi",
       "status": "complete",
       "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
       "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
-      "symbol": "AAPL",
       "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
-      "parameters": [
-        "AAPL"
+      "suite_id": "20260922T080849.031464Z_baseline-multi_41a3a4f3",
+      "suite_symbols": [
+        "AAPL",
+        "KDP",
+        "ZTS"
       ],
+      "schedule": "round_robin",
       "requested_runs": 3,
       "timeout_seconds": 600.0,
-      "preflight_seconds": 0.1887047910131514,
+      "preflight_seconds": 0.5156756670330651,
       "environment": {
         "$ref": "environment_1"
       },
@@ -847,20 +583,20 @@
       "samples": [
         {
           "status": "ok",
-          "pid": 7569,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cp8m8lrb/http-cache",
+          "pid": 96353,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-74my1w82/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 3,
           "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 15.879953167,
-          "process_start_seconds": 0.017119375,
-          "initialization_seconds": 0.186228125,
-          "query_seconds": 15.676605667,
-          "cpu_user_seconds": 0.391328,
-          "cpu_system_seconds": 0.08802299999999999,
-          "peak_rss_bytes": 129482752,
-          "minor_faults": 13306,
-          "major_faults": 52,
+          "e2e_seconds": 19.06910025,
+          "process_start_seconds": 0.022391666,
+          "initialization_seconds": 0.399119917,
+          "query_seconds": 18.647588667,
+          "cpu_user_seconds": 0.31354299999999996,
+          "cpu_system_seconds": 0.098911,
+          "peak_rss_bytes": 98353152,
+          "minor_faults": 12929,
+          "major_faults": 164,
           "result": {
             "$ref": "result_4"
           },
@@ -870,29 +606,30 @@
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 7569, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cp8m8lrb/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 15.879953167, \"process_start_seconds\": 0.017119375, \"initialization_seconds\": 0.186228125, \"query_seconds\": 15.676605667, \"cpu_user_seconds\": 0.391328, \"cpu_system_seconds\": 0.08802299999999999, \"peak_rss_bytes\": 129482752, \"minor_faults\": 13306, \"major_faults\": 52, \"result\": {\"rows\": 8004, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cp8m8lrb/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cp8m8lrb/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 15.958278708,
-          "trial": 1
+          "worker_wall_seconds": 19.144099625,
+          "trial": 1,
+          "suite_sequence": 1
         },
         {
           "status": "ok",
-          "pid": 7748,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ou5d9egy/http-cache",
+          "pid": 96825,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-7vi_zlqo/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 3,
           "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 14.181340333,
-          "process_start_seconds": 0.02561975,
-          "initialization_seconds": 0.237117333,
-          "query_seconds": 13.91860325,
-          "cpu_user_seconds": 0.383677,
-          "cpu_system_seconds": 0.088349,
-          "peak_rss_bytes": 129826816,
-          "minor_faults": 13243,
-          "major_faults": 120,
+          "e2e_seconds": 12.618432209,
+          "process_start_seconds": 0.02708925,
+          "initialization_seconds": 0.366540334,
+          "query_seconds": 12.224802625,
+          "cpu_user_seconds": 0.327766,
+          "cpu_system_seconds": 0.103978,
+          "peak_rss_bytes": 110985216,
+          "minor_faults": 12200,
+          "major_faults": 180,
           "result": {
             "$ref": "result_4"
           },
@@ -902,29 +639,30 @@
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 7748, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ou5d9egy/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 14.181340333, \"process_start_seconds\": 0.02561975, \"initialization_seconds\": 0.237117333, \"query_seconds\": 13.91860325, \"cpu_user_seconds\": 0.383677, \"cpu_system_seconds\": 0.088349, \"peak_rss_bytes\": 129826816, \"minor_faults\": 13243, \"major_faults\": 120, \"result\": {\"rows\": 8004, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ou5d9egy/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ou5d9egy/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 14.256385541,
-          "trial": 2
+          "worker_wall_seconds": 12.681362875,
+          "trial": 2,
+          "suite_sequence": 4
         },
         {
           "status": "ok",
-          "pid": 7901,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-h5oxs4im/http-cache",
+          "pid": 97234,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-yc4usp2n/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 3,
           "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 19.437633917,
-          "process_start_seconds": 0.025354042,
-          "initialization_seconds": 0.235898208,
-          "query_seconds": 19.176381667,
-          "cpu_user_seconds": 0.397443,
-          "cpu_system_seconds": 0.080414,
-          "peak_rss_bytes": 129531904,
-          "minor_faults": 13223,
-          "major_faults": 120,
+          "e2e_seconds": 15.078103375,
+          "process_start_seconds": 0.025538791,
+          "initialization_seconds": 0.356946625,
+          "query_seconds": 14.695617959,
+          "cpu_user_seconds": 8.152052,
+          "cpu_system_seconds": 0.139849,
+          "peak_rss_bytes": 107069440,
+          "minor_faults": 13113,
+          "major_faults": 171,
           "result": {
             "$ref": "result_4"
           },
@@ -934,156 +672,21 @@
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 7901, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-h5oxs4im/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 19.437633917, \"process_start_seconds\": 0.025354042, \"initialization_seconds\": 0.235898208, \"query_seconds\": 19.176381667, \"cpu_user_seconds\": 0.397443, \"cpu_system_seconds\": 0.080414, \"peak_rss_bytes\": 129531904, \"minor_faults\": 13223, \"major_faults\": 120, \"result\": {\"rows\": 8004, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-h5oxs4im/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-h5oxs4im/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 19.51000425,
-          "trial": 3
-        }
-      ],
-      "statistics": {
-        "count": 3,
-        "median_seconds": 15.879953167,
-        "min_seconds": 14.181340333,
-        "max_seconds": 19.437633917,
-        "std_seconds": 2.682380787035702
-      }
-    },
-    {
-      "format_version": 1,
-      "run_id": "20260922T071946.229660Z_baseline-multi_ad032446_1",
-      "tag": "baseline-multi",
-      "status": "complete",
-      "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
-      "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
-      "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
-      "suite_id": "20260922T071946.229660Z_baseline-multi_ad032446",
-      "suite_symbols": [
-        "AAPL",
-        "KDP",
-        "ZTS"
-      ],
-      "schedule": "round_robin",
-      "requested_runs": 3,
-      "timeout_seconds": 600.0,
-      "preflight_seconds": 0.1773994171526283,
-      "environment": {
-        "$ref": "environment_9"
-      },
-      "configured_settings": {
-        "$ref": "configured_settings_10"
-      },
-      "methodology": {
-        "$ref": "methodology_3"
-      },
-      "samples": [
-        {
-          "status": "ok",
-          "pid": 20562,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ef5s4gzp/http-cache",
-          "cache_empty_before_query": true,
-          "cache_files_after_query": 3,
-          "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 13.566593042,
-          "process_start_seconds": 0.016565625,
-          "initialization_seconds": 0.176202125,
-          "query_seconds": 13.373825292,
-          "cpu_user_seconds": 0.388447,
-          "cpu_system_seconds": 0.081813,
-          "peak_rss_bytes": 129564672,
-          "minor_faults": 13288,
-          "major_faults": 51,
-          "result": {
-            "$ref": "result_4"
-          },
-          "effective_settings": {
-            "$ref": "effective_settings_11"
-          },
-          "loaded_extensions": {
-            "$ref": "loaded_extensions_6"
-          },
-          "pandas_version": "3.0.3",
-          "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 20562, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ef5s4gzp/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 13.566593042, \"process_start_seconds\": 0.016565625, \"initialization_seconds\": 0.176202125, \"query_seconds\": 13.373825292, \"cpu_user_seconds\": 0.388447, \"cpu_system_seconds\": 0.081813, \"peak_rss_bytes\": 129564672, \"minor_faults\": 13288, \"major_faults\": 51, \"result\": {\"rows\": 8004, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ef5s4gzp/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-ef5s4gzp/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
-          "stderr": "",
-          "worker_wall_seconds": 13.646842834,
-          "trial": 1,
-          "suite_sequence": 1
-        },
-        {
-          "status": "ok",
-          "pid": 21020,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-n9i1_v49/http-cache",
-          "cache_empty_before_query": true,
-          "cache_files_after_query": 3,
-          "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 15.172548458,
-          "process_start_seconds": 0.017654708,
-          "initialization_seconds": 0.187246167,
-          "query_seconds": 14.967647583,
-          "cpu_user_seconds": 0.393526,
-          "cpu_system_seconds": 0.080399,
-          "peak_rss_bytes": 129695744,
-          "minor_faults": 13272,
-          "major_faults": 44,
-          "result": {
-            "$ref": "result_4"
-          },
-          "effective_settings": {
-            "$ref": "effective_settings_12"
-          },
-          "loaded_extensions": {
-            "$ref": "loaded_extensions_6"
-          },
-          "pandas_version": "3.0.3",
-          "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 21020, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-n9i1_v49/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 15.172548458, \"process_start_seconds\": 0.017654708, \"initialization_seconds\": 0.187246167, \"query_seconds\": 14.967647583, \"cpu_user_seconds\": 0.393526, \"cpu_system_seconds\": 0.080399, \"peak_rss_bytes\": 129695744, \"minor_faults\": 13272, \"major_faults\": 44, \"result\": {\"rows\": 8004, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-n9i1_v49/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-n9i1_v49/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
-          "stderr": "",
-          "worker_wall_seconds": 15.245086458,
-          "trial": 2,
-          "suite_sequence": 4
-        },
-        {
-          "status": "ok",
-          "pid": 21472,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-u0e7hahl/http-cache",
-          "cache_empty_before_query": true,
-          "cache_files_after_query": 3,
-          "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 15.983449458,
-          "process_start_seconds": 0.017930875,
-          "initialization_seconds": 0.1802135,
-          "query_seconds": 15.785305083,
-          "cpu_user_seconds": 0.388391,
-          "cpu_system_seconds": 0.07617,
-          "peak_rss_bytes": 129695744,
-          "minor_faults": 13304,
-          "major_faults": 44,
-          "result": {
-            "$ref": "result_4"
-          },
-          "effective_settings": {
-            "$ref": "effective_settings_13"
-          },
-          "loaded_extensions": {
-            "$ref": "loaded_extensions_6"
-          },
-          "pandas_version": "3.0.3",
-          "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 21472, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-u0e7hahl/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 15.983449458, \"process_start_seconds\": 0.017930875, \"initialization_seconds\": 0.1802135, \"query_seconds\": 15.785305083, \"cpu_user_seconds\": 0.388391, \"cpu_system_seconds\": 0.07617, \"peak_rss_bytes\": 129695744, \"minor_faults\": 13304, \"major_faults\": 44, \"result\": {\"rows\": 8004, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"947f24337467c764459d3f78f296dfc4791cea1e3aeab68197a0e9d13a3662a1\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-u0e7hahl/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-u0e7hahl/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
-          "stderr": "",
-          "worker_wall_seconds": 16.058725292,
+          "worker_wall_seconds": 15.155034958,
           "trial": 3,
           "suite_sequence": 7
         }
       ],
       "statistics": {
         "count": 3,
-        "median_seconds": 15.172548458,
-        "min_seconds": 13.566593042,
-        "max_seconds": 15.983449458,
-        "std_seconds": 1.2300303631442808
+        "median_seconds": 15.078103375,
+        "min_seconds": 12.618432209,
+        "max_seconds": 19.06910025,
+        "std_seconds": 3.2554865605694636
       },
       "symbol": "AAPL",
       "parameters": [
@@ -1092,13 +695,13 @@
     },
     {
       "format_version": 1,
-      "run_id": "20260922T071946.229660Z_baseline-multi_ad032446_2",
+      "run_id": "20260922T080849.031464Z_baseline-multi_41a3a4f3_2",
       "tag": "baseline-multi",
       "status": "complete",
       "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
       "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
       "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
-      "suite_id": "20260922T071946.229660Z_baseline-multi_ad032446",
+      "suite_id": "20260922T080849.031464Z_baseline-multi_41a3a4f3",
       "suite_symbols": [
         "AAPL",
         "KDP",
@@ -1107,12 +710,12 @@
       "schedule": "round_robin",
       "requested_runs": 3,
       "timeout_seconds": 600.0,
-      "preflight_seconds": 0.1773994171526283,
+      "preflight_seconds": 0.5156756670330651,
       "environment": {
-        "$ref": "environment_9"
+        "$ref": "environment_1"
       },
       "configured_settings": {
-        "$ref": "configured_settings_10"
+        "$ref": "configured_settings_2"
       },
       "methodology": {
         "$ref": "methodology_3"
@@ -1120,110 +723,110 @@
       "samples": [
         {
           "status": "ok",
-          "pid": 20701,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-8w2y0wtw/http-cache",
+          "pid": 96561,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-qgari5of/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 3,
           "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 18.165889417,
-          "process_start_seconds": 0.018499584,
-          "initialization_seconds": 0.178109333,
-          "query_seconds": 17.9692805,
-          "cpu_user_seconds": 8.187712,
-          "cpu_system_seconds": 0.067491,
-          "peak_rss_bytes": 128073728,
-          "minor_faults": 13199,
-          "major_faults": 44,
+          "e2e_seconds": 12.165868583,
+          "process_start_seconds": 0.029209667,
+          "initialization_seconds": 0.369074833,
+          "query_seconds": 11.767584083,
+          "cpu_user_seconds": 7.437925,
+          "cpu_system_seconds": 0.129995,
+          "peak_rss_bytes": 109527040,
+          "minor_faults": 12108,
+          "major_faults": 185,
           "result": {
-            "$ref": "result_14"
+            "$ref": "result_9"
           },
           "effective_settings": {
-            "$ref": "effective_settings_15"
+            "$ref": "effective_settings_10"
           },
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 20701, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-8w2y0wtw/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 18.165889417, \"process_start_seconds\": 0.018499584, \"initialization_seconds\": 0.178109333, \"query_seconds\": 17.9692805, \"cpu_user_seconds\": 8.187712, \"cpu_system_seconds\": 0.067491, \"peak_rss_bytes\": 128073728, \"minor_faults\": 13199, \"major_faults\": 44, \"result\": {\"rows\": 4622, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"f09c26da26e795c0dc5e9e281dcd9ec6edc4540c74a4b2028173dd8bbb55e4d2\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-8w2y0wtw/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-8w2y0wtw/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 18.208040709,
+          "worker_wall_seconds": 12.218502042,
           "trial": 1,
           "suite_sequence": 2
         },
         {
           "status": "ok",
-          "pid": 21183,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-5yq7g32k/http-cache",
+          "pid": 96986,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-ifvvqvbm/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 3,
           "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 15.884403,
-          "process_start_seconds": 0.01841675,
-          "initialization_seconds": 0.181101042,
-          "query_seconds": 15.684885208,
-          "cpu_user_seconds": 8.89662,
-          "cpu_system_seconds": 0.07087299999999999,
-          "peak_rss_bytes": 127729664,
-          "minor_faults": 13192,
-          "major_faults": 44,
+          "e2e_seconds": 12.145378875,
+          "process_start_seconds": 0.024773625,
+          "initialization_seconds": 0.360034333,
+          "query_seconds": 11.760570917,
+          "cpu_user_seconds": 6.700985,
+          "cpu_system_seconds": 0.130788,
+          "peak_rss_bytes": 104759296,
+          "minor_faults": 12958,
+          "major_faults": 180,
           "result": {
-            "$ref": "result_14"
+            "$ref": "result_9"
           },
           "effective_settings": {
-            "$ref": "effective_settings_16"
+            "$ref": "effective_settings_11"
           },
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 21183, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-5yq7g32k/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 15.884403, \"process_start_seconds\": 0.01841675, \"initialization_seconds\": 0.181101042, \"query_seconds\": 15.684885208, \"cpu_user_seconds\": 8.89662, \"cpu_system_seconds\": 0.07087299999999999, \"peak_rss_bytes\": 127729664, \"minor_faults\": 13192, \"major_faults\": 44, \"result\": {\"rows\": 4622, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"f09c26da26e795c0dc5e9e281dcd9ec6edc4540c74a4b2028173dd8bbb55e4d2\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-5yq7g32k/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-5yq7g32k/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 15.925645084,
+          "worker_wall_seconds": 12.20456225,
           "trial": 2,
           "suite_sequence": 5
         },
         {
           "status": "ok",
-          "pid": 21637,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-x9iatig_/http-cache",
+          "pid": 97466,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-yrubskzg/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 3,
           "cache_bytes_after_query": 2775421,
-          "e2e_seconds": 18.694261625,
-          "process_start_seconds": 0.017823708,
-          "initialization_seconds": 0.180583084,
-          "query_seconds": 18.495854833,
-          "cpu_user_seconds": 13.783821,
-          "cpu_system_seconds": 0.072792,
-          "peak_rss_bytes": 127811584,
-          "minor_faults": 13192,
-          "major_faults": 44,
+          "e2e_seconds": 13.12405825,
+          "process_start_seconds": 0.03340475,
+          "initialization_seconds": 0.47981175,
+          "query_seconds": 12.61084175,
+          "cpu_user_seconds": 8.050472,
+          "cpu_system_seconds": 0.18804099999999999,
+          "peak_rss_bytes": 97992704,
+          "minor_faults": 12304,
+          "major_faults": 181,
           "result": {
-            "$ref": "result_14"
+            "$ref": "result_9"
           },
           "effective_settings": {
-            "$ref": "effective_settings_17"
+            "$ref": "effective_settings_12"
           },
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 21637, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-x9iatig_/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 3, \"cache_bytes_after_query\": 2775421, \"e2e_seconds\": 18.694261625, \"process_start_seconds\": 0.017823708, \"initialization_seconds\": 0.180583084, \"query_seconds\": 18.495854833, \"cpu_user_seconds\": 13.783821, \"cpu_system_seconds\": 0.072792, \"peak_rss_bytes\": 127811584, \"minor_faults\": 13192, \"major_faults\": 44, \"result\": {\"rows\": 4622, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"f09c26da26e795c0dc5e9e281dcd9ec6edc4540c74a4b2028173dd8bbb55e4d2\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-x9iatig_/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-x9iatig_/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 18.73350975,
+          "worker_wall_seconds": 13.194812292,
           "trial": 3,
           "suite_sequence": 8
         }
       ],
       "statistics": {
         "count": 3,
-        "median_seconds": 18.165889417,
-        "min_seconds": 15.884403,
-        "max_seconds": 18.694261625,
-        "std_seconds": 1.4932996436097015
+        "median_seconds": 12.165868583,
+        "min_seconds": 12.145378875,
+        "max_seconds": 13.12405825,
+        "std_seconds": 0.5592197816496782
       },
       "symbol": "KDP",
       "parameters": [
@@ -1232,13 +835,13 @@
     },
     {
       "format_version": 1,
-      "run_id": "20260922T071946.229660Z_baseline-multi_ad032446_3",
+      "run_id": "20260922T080849.031464Z_baseline-multi_41a3a4f3_3",
       "tag": "baseline-multi",
       "status": "complete",
       "revision": "a46d68650c1f90b7331608350dced8364047b3f7",
       "url": "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet",
       "sql": "SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/a46d68650c1f90b7331608350dced8364047b3f7/data/US/stock_prices.parquet' WHERE symbol = ?",
-      "suite_id": "20260922T071946.229660Z_baseline-multi_ad032446",
+      "suite_id": "20260922T080849.031464Z_baseline-multi_41a3a4f3",
       "suite_symbols": [
         "AAPL",
         "KDP",
@@ -1247,12 +850,12 @@
       "schedule": "round_robin",
       "requested_runs": 3,
       "timeout_seconds": 600.0,
-      "preflight_seconds": 0.1773994171526283,
+      "preflight_seconds": 0.5156756670330651,
       "environment": {
-        "$ref": "environment_9"
+        "$ref": "environment_1"
       },
       "configured_settings": {
-        "$ref": "configured_settings_10"
+        "$ref": "configured_settings_2"
       },
       "methodology": {
         "$ref": "methodology_3"
@@ -1260,137 +863,115 @@
       "samples": [
         {
           "status": "ok",
-          "pid": 20887,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-q86juxf3/http-cache",
+          "pid": 96730,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-6kdvpwjn/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 2,
           "cache_bytes_after_query": 1726845,
-          "e2e_seconds": 13.175298917,
-          "process_start_seconds": 0.017351375,
-          "initialization_seconds": 0.181108375,
-          "query_seconds": 12.976839167,
-          "cpu_user_seconds": 5.299817,
-          "cpu_system_seconds": 0.061373,
-          "peak_rss_bytes": 127156224,
-          "minor_faults": 13169,
-          "major_faults": 44,
+          "e2e_seconds": 9.121177209,
+          "process_start_seconds": 0.030107792,
+          "initialization_seconds": 0.371062917,
+          "query_seconds": 8.7200065,
+          "cpu_user_seconds": 4.314873,
+          "cpu_system_seconds": 0.11609299999999999,
+          "peak_rss_bytes": 107986944,
+          "minor_faults": 12031,
+          "major_faults": 169,
           "result": {
-            "$ref": "result_18"
+            "$ref": "result_13"
           },
           "effective_settings": {
-            "$ref": "effective_settings_19"
+            "$ref": "effective_settings_14"
           },
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 20887, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-q86juxf3/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 2, \"cache_bytes_after_query\": 1726845, \"e2e_seconds\": 13.175298917, \"process_start_seconds\": 0.017351375, \"initialization_seconds\": 0.181108375, \"query_seconds\": 12.976839167, \"cpu_user_seconds\": 5.299817, \"cpu_system_seconds\": 0.061373, \"peak_rss_bytes\": 127156224, \"minor_faults\": 13169, \"major_faults\": 44, \"result\": {\"rows\": 3429, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"edcda943aa424bc7e92b86c49d5470d2752cc25d943cc89b885d8bb43ce7108c\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-q86juxf3/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-q86juxf3/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 13.213366209,
+          "worker_wall_seconds": 9.170184709,
           "trial": 1,
           "suite_sequence": 3
         },
         {
           "status": "ok",
-          "pid": 21354,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-uz8w35s8/http-cache",
+          "pid": 97127,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-82y4zwag/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 2,
           "cache_bytes_after_query": 1726845,
-          "e2e_seconds": 10.416439333,
-          "process_start_seconds": 0.026330083,
-          "initialization_seconds": 0.22937275,
-          "query_seconds": 10.1607365,
-          "cpu_user_seconds": 0.35351,
-          "cpu_system_seconds": 0.069996,
-          "peak_rss_bytes": 127647744,
-          "minor_faults": 13121,
-          "major_faults": 115,
+          "e2e_seconds": 8.5074435,
+          "process_start_seconds": 0.022632083,
+          "initialization_seconds": 0.355663917,
+          "query_seconds": 8.1291475,
+          "cpu_user_seconds": 0.32209899999999997,
+          "cpu_system_seconds": 0.098359,
+          "peak_rss_bytes": 109625344,
+          "minor_faults": 12210,
+          "major_faults": 90,
           "result": {
-            "$ref": "result_18"
+            "$ref": "result_13"
           },
           "effective_settings": {
-            "$ref": "effective_settings_20"
+            "$ref": "effective_settings_15"
           },
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 21354, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-uz8w35s8/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 2, \"cache_bytes_after_query\": 1726845, \"e2e_seconds\": 10.416439333, \"process_start_seconds\": 0.026330083, \"initialization_seconds\": 0.22937275, \"query_seconds\": 10.1607365, \"cpu_user_seconds\": 0.35351, \"cpu_system_seconds\": 0.069996, \"peak_rss_bytes\": 127647744, \"minor_faults\": 13121, \"major_faults\": 115, \"result\": {\"rows\": 3429, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"edcda943aa424bc7e92b86c49d5470d2752cc25d943cc89b885d8bb43ce7108c\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-uz8w35s8/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-uz8w35s8/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 10.494205333,
+          "worker_wall_seconds": 8.573993375,
           "trial": 2,
           "suite_sequence": 6
         },
         {
           "status": "ok",
-          "pid": 21826,
-          "cache_directory": "/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cxwquhu3/http-cache",
+          "pid": 97638,
+          "cache_directory": "/var/folders/fh/b120hb7x2ts00x24s54ktsdm0000gn/T/stock-price-cold-a__bp0_e/http-cache",
           "cache_empty_before_query": true,
           "cache_files_after_query": 2,
           "cache_bytes_after_query": 1726845,
-          "e2e_seconds": 17.701866792,
-          "process_start_seconds": 0.017487084,
-          "initialization_seconds": 0.187722041,
-          "query_seconds": 17.496657667,
-          "cpu_user_seconds": 4.441011,
-          "cpu_system_seconds": 0.063031,
-          "peak_rss_bytes": 127025152,
-          "minor_faults": 13143,
-          "major_faults": 44,
+          "e2e_seconds": 12.126243041,
+          "process_start_seconds": 0.035856958,
+          "initialization_seconds": 0.403132,
+          "query_seconds": 11.687254083,
+          "cpu_user_seconds": 4.590764,
+          "cpu_system_seconds": 0.12861699999999998,
+          "peak_rss_bytes": 104497152,
+          "minor_faults": 12412,
+          "major_faults": 176,
           "result": {
-            "$ref": "result_18"
+            "$ref": "result_13"
           },
           "effective_settings": {
-            "$ref": "effective_settings_21"
+            "$ref": "effective_settings_16"
           },
           "loaded_extensions": {
             "$ref": "loaded_extensions_6"
           },
-          "pandas_version": "3.0.3",
+          "pandas_version": "3.0.1",
           "returncode": 0,
-          "stdout": "BENCH_RESULT={\"status\": \"ok\", \"pid\": 21826, \"cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cxwquhu3/http-cache\", \"cache_empty_before_query\": true, \"cache_files_after_query\": 2, \"cache_bytes_after_query\": 1726845, \"e2e_seconds\": 17.701866792, \"process_start_seconds\": 0.017487084, \"initialization_seconds\": 0.187722041, \"query_seconds\": 17.496657667, \"cpu_user_seconds\": 4.441011, \"cpu_system_seconds\": 0.063031, \"peak_rss_bytes\": 127025152, \"minor_faults\": 13143, \"major_faults\": 44, \"result\": {\"rows\": 3429, \"schema\": [[\"symbol\", \"str\"], [\"report_date\", \"str\"], [\"open\", \"float64\"], [\"close\", \"float64\"], [\"high\", \"float64\"], [\"low\", \"float64\"], [\"volume\", \"int64\"]], \"sha256\": \"edcda943aa424bc7e92b86c49d5470d2752cc25d943cc89b885d8bb43ce7108c\"}, \"effective_settings\": {\"cache_httpfs_cache_block_size\": \"1048576\", \"cache_httpfs_cache_directories_config\": \"\", \"cache_httpfs_cache_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cxwquhu3/http-cache\", \"cache_httpfs_clear_cache_on_write\": \"0\", \"cache_httpfs_disk_cache_reader_enable_memory_cache\": \"1\", \"cache_httpfs_disk_cache_reader_mem_cache_block_count\": \"256\", \"cache_httpfs_disk_cache_reader_mem_cache_timeout_millisec\": \"1800000\", \"cache_httpfs_enable_cache_validation\": \"0\", \"cache_httpfs_enable_file_handle_cache\": \"true\", \"cache_httpfs_enable_glob_cache\": \"1\", \"cache_httpfs_enable_metadata_cache\": \"true\", \"cache_httpfs_evict_policy\": \"creation_timestamp\", \"cache_httpfs_file_handle_cache_entry_size\": \"64\", \"cache_httpfs_file_handle_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_glob_cache_entry_size\": \"64\", \"cache_httpfs_glob_cache_entry_timeout_millisec\": \"1800000\", \"cache_httpfs_ignore_sigpipe\": \"true\", \"cache_httpfs_in_mem_cache_block_timeout_millisec\": \"1800000\", \"cache_httpfs_in_mem_cache_storage\": \"extension\", \"cache_httpfs_max_fanout_subrequest\": \"0\", \"cache_httpfs_max_in_mem_cache_block_count\": \"64\", \"cache_httpfs_metadata_cache_entry_size\": \"1024\", \"cache_httpfs_metadata_cache_entry_timeout_millisec\": \"28800000\", \"cache_httpfs_min_disk_bytes_for_cache\": \"1073741824\", \"cache_httpfs_parallel_read_mode\": \"internal_thread_pool\", \"cache_httpfs_profile_type\": \"temp\", \"cache_httpfs_type\": \"on_disk\", \"http_keep_alive\": \"false\", \"http_logging_output\": \"\", \"http_proxy\": \"http://127.0.0.1:8118\", \"http_proxy_password\": \"\", \"http_proxy_username\": \"\", \"http_retries\": \"5\", \"http_retry_backoff\": \"2.0\", \"http_retry_wait_ms\": \"1000\", \"http_timeout\": \"120\", \"memory_limit\": \"17.6 GiB\", \"parquet_metadata_cache\": \"true\", \"temp_directory\": \"/var/folders/0g/nq2s891s30s7_36xyn8sk_lc0000gn/T/stock-price-cold-cxwquhu3/spill\", \"threads\": \"4\"}, \"loaded_extensions\": [[\"cache_httpfs\", \"e39e73c\"], [\"core_functions\", \"v1.5.3\"], [\"httpfs\", \"\"], [\"icu\", \"v1.5.3\"], [\"json\", \"v1.5.3\"], [\"parquet\", \"v1.5.3\"]], \"pandas_version\": \"3.0.3\"}\n",
+          "stdout": "",
           "stderr": "",
-          "worker_wall_seconds": 17.740587292,
+          "worker_wall_seconds": 12.175333625,
           "trial": 3,
           "suite_sequence": 9
         }
       ],
       "statistics": {
         "count": 3,
-        "median_seconds": 13.175298917,
-        "min_seconds": 10.416439333,
-        "max_seconds": 17.701866792,
-        "std_seconds": 3.6782825745983203
+        "median_seconds": 9.121177209,
+        "min_seconds": 8.5074435,
+        "max_seconds": 12.126243041,
+        "std_seconds": 1.936612155206378
       },
       "symbol": "ZTS",
       "parameters": [
         "ZTS"
       ]
-    }
-  ],
-  "legacy_sources": [
-    {
-      "path": "results/runs/20260922T065748.379525Z_baseline_e9560a79.md",
-      "sha256": "aaacda57675062f6618e3b05c63d50ef76f1a343871ddd091eaba5b1f014431b"
-    },
-    {
-      "path": "results/runs/20260922T065915.037912Z_baseline_fe24771a.md",
-      "sha256": "2175705dd35bc240132315482da15b520fd25d668896ea8a6bf13eebca1302eb"
-    },
-    {
-      "path": "results/runs/20260922T071946.229660Z_baseline-multi_ad032446_1.md",
-      "sha256": "f9cc8385fbe594fc1bd6c506954e7d6cde70e2cc837da37f36e0611161e7e266"
-    },
-    {
-      "path": "results/runs/20260922T071946.229660Z_baseline-multi_ad032446_2.md",
-      "sha256": "a5dd04460c4b95d06c4e70d54f432ee1a48e08cb9cfb49090cdaa7b59d9b8ac2"
-    },
-    {
-      "path": "results/runs/20260922T071946.229660Z_baseline-multi_ad032446_3.md",
-      "sha256": "a34b1ce7e5225c079ca32c65c87dac4996cb42ed359bf7da104130c7e5357763"
     }
   ]
 }
