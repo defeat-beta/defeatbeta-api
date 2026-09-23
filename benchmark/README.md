@@ -71,7 +71,12 @@ For now, the primary benchmark is:
 
 > **Cold Query Latency**
 
-No warm-cache advantage. The goal is to optimize the latency of a real query when the required data is not already available locally.
+The goal is to minimize the time from starting a real query until its result
+is fully materialized, when the required data is not already cached locally.
+
+Each published benchmark result must document its preparation, cache state,
+and timing boundary so that the result can be reproduced and interpreted
+correctly.
 
 Explore aggressively. Measure everything. Question every implementation detail.
 

@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Optional
+
 from defeatbeta_api.utils.util import validate_memory_limit, validate_httpfs_cache_directory
 
 
@@ -30,6 +33,7 @@ class Configuration:
     cache_httpfs_file_handle_cache_entry_timeout_millisec: int
     cache_httpfs_max_in_mem_cache_block_count: int
     cache_httpfs_in_mem_cache_block_timeout_millisec: int
+    cache_httpfs_cache_directory: Optional[str]
     resolve_direct: bool
     resolve_ttl_seconds: int
 
@@ -55,6 +59,7 @@ class Configuration:
             cache_httpfs_file_handle_cache_entry_timeout_millisec=8 * 3600 * 1000,
             cache_httpfs_max_in_mem_cache_block_count=64,
             cache_httpfs_in_mem_cache_block_timeout_millisec=1800 * 1000,
+            cache_httpfs_cache_directory=None,
             resolve_direct=True,
             resolve_ttl_seconds=1800,
     ):
@@ -64,7 +69,15 @@ class Configuration:
         for key, value in configs.items():
             setattr(self, key, value)
 
+    def get_cache_directory(self) -> str:
+        if self.cache_httpfs_cache_directory is None:
+            return validate_httpfs_cache_directory()
+        cache_directory = Path(self.cache_httpfs_cache_directory).expanduser().resolve()
+        cache_directory.mkdir(parents=True, exist_ok=True)
+        return str(cache_directory)
+
     def get_duckdb_settings(self):
+        cache_directory = self.get_cache_directory().replace("'", "''")
         base = [
             f"SET GLOBAL http_keep_alive = {self.http_keep_alive}",
             f"SET GLOBAL http_timeout = {self.http_timeout}",
@@ -84,7 +97,7 @@ class Configuration:
             *base,
             f"SET GLOBAL cache_httpfs_ignore_sigpipe={self.cache_httpfs_ignore_sigpipe}",
             f"SET GLOBAL cache_httpfs_type='{self.cache_httpfs_type}'",
-            f"SET GLOBAL cache_httpfs_cache_directory='{validate_httpfs_cache_directory()}'",
+            f"SET GLOBAL cache_httpfs_cache_directory='{cache_directory}'",
             f"SET GLOBAL cache_httpfs_min_disk_bytes_for_cache={self.cache_httpfs_disk_size}",
             f"SET GLOBAL cache_httpfs_cache_block_size={self.cache_httpfs_cache_block_size}",
             f"SET GLOBAL cache_httpfs_profile_type='temp'",

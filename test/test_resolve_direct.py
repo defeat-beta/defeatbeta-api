@@ -1,6 +1,7 @@
 """Unit tests for resolve-once CDN routing and fallback behavior."""
 
 import unittest
+import tempfile
 from types import SimpleNamespace
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -9,6 +10,7 @@ import pandas as pd
 
 from defeatbeta_api.client.duckdb_client import (
     DuckDBClient,
+    capture_performance,
     redact_signed_urls,
     rewrite_resolve_urls,
 )
@@ -83,6 +85,53 @@ class TestConfiguration(unittest.TestCase):
         settings = Configuration(resolve_direct=True).get_duckdb_settings()
         self.assertIn("LOAD cache_httpfs", settings)
         self.assertTrue(any("cache_httpfs_cache_directory" in s for s in settings))
+
+    def test_custom_cache_directory_is_applied(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Configuration(cache_httpfs_cache_directory=directory)
+            settings = config.get_duckdb_settings()
+
+        self.assertTrue(any(directory in setting for setting in settings))
+
+
+class TestPerformanceCapture(unittest.TestCase):
+    class _Cursor:
+        def sql(self, sql):
+            result = Mock()
+            result.df.return_value = pd.DataFrame([{"value": 1}])
+            return result
+
+        def close(self):
+            pass
+
+    class _Connection:
+        def cursor(self):
+            return TestPerformanceCapture._Cursor()
+
+    def test_execute_query_emits_precise_phase_timings(self):
+        import logging
+
+        client = DuckDBClient.__new__(DuckDBClient)
+        client.connection = self._Connection()
+        client.logger = logging.getLogger("test")
+        events = []
+
+        with capture_performance(events.append):
+            result = client._execute_query("SELECT 1")
+
+        self.assertEqual(result.to_dict("records"), [{"value": 1}])
+        names = [event["name"] for event in events]
+        self.assertEqual(
+            names,
+            [
+                "duckdb.cursor.open",
+                "duckdb.sql_to_dataframe",
+                "duckdb.cursor.close",
+                "duckdb.execute_query",
+            ],
+        )
+        self.assertTrue(all(event["duration_ns"] >= 0 for event in events))
+        self.assertEqual(events[-1]["rows"], 1)
 
 
 class TestMemo(unittest.TestCase):

@@ -5,15 +5,15 @@ import re
 import sys
 import time
 from contextlib import contextmanager
+from contextvars import ContextVar
 from threading import Lock
-from typing import Optional
+from typing import Callable, Dict, Optional
 
 import duckdb
 import pandas as pd
 
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
-from defeatbeta_api.utils.util import validate_httpfs_cache_directory
 
 # Pinned Parquet URLs. DuckDB re-resolves the 302 on every range request, so
 # cold queries pay the redirect cost repeatedly. Resolve only Parquet inputs:
@@ -72,6 +72,35 @@ def rewrite_resolve_urls(sql: str, resolve) -> str:
 
 _instances = {}
 _lock = Lock()
+_performance_recorder = ContextVar("defeatbeta_performance_recorder", default=None)
+
+
+@contextmanager
+def capture_performance(recorder: Callable[[Dict], None]):
+    """Capture opt-in client timing events in the current execution context."""
+    token = _performance_recorder.set(recorder)
+    try:
+        yield
+    finally:
+        _performance_recorder.reset(token)
+
+
+def _record_performance(name: str, started_ns: int, ended_ns: int, **details) -> None:
+    recorder = _performance_recorder.get()
+    if recorder is None:
+        return
+    event = {
+        "name": name,
+        "started_ns": started_ns,
+        "ended_ns": ended_ns,
+        "duration_ns": max(0, ended_ns - started_ns),
+        **details,
+    }
+    try:
+        recorder(event)
+    except Exception:
+        # Diagnostics must never change query behavior.
+        return
 
 
 def _config_key(config: Configuration):
@@ -112,6 +141,8 @@ class DuckDBClient:
         self._validate_httpfs_cache()
 
     def _initialize_connection(self) -> None:
+        started_ns = time.perf_counter_ns()
+        status = "ok"
         try:
             self.connection = duckdb.connect(":memory:")
             self.logger.debug("DuckDB connection initialized.")
@@ -127,8 +158,16 @@ class DuckDBClient:
                 self.logger.debug(f"DuckDB settings: {query}")
                 self.connection.execute(query)
         except Exception as e:
+            status = "error"
             self.logger.error(f"Failed to initialize connection: {str(e)}")
             raise
+        finally:
+            _record_performance(
+                "duckdb.initialize_connection",
+                started_ns,
+                time.perf_counter_ns(),
+                status=status,
+            )
 
     def _validate_httpfs_cache(self):
         """Validate httpfs cache against remote data; clear cache if outdated.
@@ -141,6 +180,8 @@ class DuckDBClient:
         """
         spec_url = "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/resolve/main/spec.json"
 
+        started_ns = time.perf_counter_ns()
+        status = "ok"
         try:
             remote_update_time = HuggingFaceClient().get_data_update_time()
             cached_update_time = self._read_cached_spec_update_time()
@@ -159,8 +200,16 @@ class DuckDBClient:
                 self.logger.info(f"Cache refreshed. Update time: {remote_update_time}")
 
         except Exception as e:
+            status = "error"
             self.logger.error(f"Failed to validate httpfs cache: {str(e)}")
             raise
+        finally:
+            _record_performance(
+                "duckdb.validate_httpfs_cache",
+                started_ns,
+                time.perf_counter_ns(),
+                status=status,
+            )
 
     def _read_cached_spec_update_time(self) -> Optional[str]:
         """Read update_time directly from the spec.json file on disk, bypassing DuckDB.
@@ -171,7 +220,7 @@ class DuckDBClient:
         and parse it as JSON.  Returns None when the file is absent or unreadable
         (e.g. first run, or corrupted by a killed write).
         """
-        cache_dir = validate_httpfs_cache_directory()
+        cache_dir = self.config.get_cache_directory()
         try:
             for filename in os.listdir(cache_dir):
                 if 'spec.json' in filename:
@@ -191,15 +240,29 @@ class DuckDBClient:
 
     def _clear_cache(self):
         """Clear httpfs cache via DuckDB API."""
+        started_ns = time.perf_counter_ns()
         self.query("SELECT cache_httpfs_clear_cache()")
+        _record_performance(
+            "duckdb.clear_httpfs_cache",
+            started_ns,
+            time.perf_counter_ns(),
+        )
         self.logger.info("httpfs cache cleared")
 
     def _resolve_one(self, resolve_url: str) -> str:
         """Resolve once per TTL; fall back to the pinned URL on any failure."""
+        started_ns = time.perf_counter_ns()
         now = time.monotonic()
         with self._cdn_lock:
             hit = self._cdn_cache.get(resolve_url)
             if hit is not None and now - hit[1] < self._resolve_ttl:
+                _record_performance(
+                    "duckdb.resolve_url",
+                    started_ns,
+                    time.perf_counter_ns(),
+                    cache_hit=True,
+                    status="ok",
+                )
                 return hit[0]
         try:
             if self.http_proxy is None:
@@ -214,13 +277,35 @@ class DuckDBClient:
                 "CDN resolve failed, using pinned URL: %s",
                 redact_signed_urls(str(exc)),
             )
+            _record_performance(
+                "duckdb.resolve_url",
+                started_ns,
+                time.perf_counter_ns(),
+                cache_hit=False,
+                status="fallback",
+            )
             return resolve_url
         with self._cdn_lock:
             self._cdn_cache[resolve_url] = (cdn_url, time.monotonic())
+        _record_performance(
+            "duckdb.resolve_url",
+            started_ns,
+            time.perf_counter_ns(),
+            cache_hit=False,
+            status="ok",
+        )
         return cdn_url
 
     def _to_cdn_sql(self, sql: str) -> str:
-        return rewrite_resolve_urls(sql, self._resolve_one)
+        started_ns = time.perf_counter_ns()
+        rewritten = rewrite_resolve_urls(sql, self._resolve_one)
+        _record_performance(
+            "duckdb.rewrite_urls",
+            started_ns,
+            time.perf_counter_ns(),
+            changed=rewritten != sql,
+        )
+        return rewritten
 
     def _invalidate_resolved_urls(self, sql: str) -> None:
         resolve_urls = set(_RESOLVE_URL_RE.findall(sql))
@@ -238,19 +323,47 @@ class DuckDBClient:
 
     def _execute_query(self, sql: str) -> pd.DataFrame:
         self.logger.debug(f"Executing query: {redact_signed_urls(sql)}")
-        start_time = time.perf_counter()
-        with self._get_cursor() as cursor:
-            result = cursor.sql(sql).df()
-        duration = time.perf_counter() - start_time
+        started_ns = time.perf_counter_ns()
+        cursor_opened_ns = started_ns
+        materialized_ns = started_ns
+        ended_ns = started_ns
+        status = "error"
+        result = None
+        try:
+            with self._get_cursor() as cursor:
+                cursor_opened_ns = time.perf_counter_ns()
+                result = cursor.sql(sql).df()
+                materialized_ns = time.perf_counter_ns()
+            ended_ns = time.perf_counter_ns()
+            status = "ok"
+        finally:
+            if ended_ns == started_ns:
+                ended_ns = time.perf_counter_ns()
+                if materialized_ns == started_ns:
+                    materialized_ns = ended_ns
+            rows = len(result) if result is not None else 0
+            events = (
+                ("duckdb.cursor.open", started_ns, cursor_opened_ns, {}),
+                ("duckdb.sql_to_dataframe", cursor_opened_ns, materialized_ns, {"rows": rows}),
+                ("duckdb.cursor.close", materialized_ns, ended_ns, {}),
+                ("duckdb.execute_query", started_ns, ended_ns, {"status": status, "rows": rows}),
+            )
+            for name, event_start, event_end, details in events:
+                _record_performance(name, event_start, event_end, **details)
+        duration = (ended_ns - started_ns) / 1e9
         self.logger.debug(
             f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
         return result
 
     def query(self, sql: str) -> pd.DataFrame:
+        started_ns = time.perf_counter_ns()
+        status = "error"
         original_sql = sql
         rewritten_sql = self._to_cdn_sql(sql) if self.resolve_direct else sql
         try:
-            return self._execute_query(rewritten_sql)
+            result = self._execute_query(rewritten_sql)
+            status = "ok"
+            return result
         except Exception as direct_error:
             if rewritten_sql != original_sql:
                 self._invalidate_resolved_urls(original_sql)
@@ -259,7 +372,9 @@ class DuckDBClient:
                     redact_signed_urls(str(direct_error)),
                 )
                 try:
-                    return self._execute_query(original_sql)
+                    result = self._execute_query(original_sql)
+                    status = "fallback"
+                    return result
                 except Exception as fallback_error:
                     error = fallback_error
             else:
@@ -267,6 +382,13 @@ class DuckDBClient:
             message = redact_signed_urls(str(error))
             self.logger.error(f"Query failed: {message}")
             raise Exception(f"Query failed: {message}")
+        finally:
+            _record_performance(
+                "duckdb.query",
+                started_ns,
+                time.perf_counter_ns(),
+                status=status,
+            )
 
     def close(self) -> None:
         if self.connection:
