@@ -114,8 +114,9 @@ def _breakdown(report):
         "connection_init": _event_phase(
             initialization_events, "duckdb.initialize_connection"
         ),
-        "cache_validation": _event_phase(
-            initialization_events, "duckdb.validate_httpfs_cache"
+        "cache_validation": (
+            _event_phase(initialization_events, "duckdb.load_dataset_version")
+            or _event_phase(initialization_events, "duckdb.validate_httpfs_cache")
         ),
         "resolve": resolve,
         "rewrite": _phase(sample, "duckdb.rewrite_urls"),
@@ -168,6 +169,11 @@ def _command(report):
     proxy_flag = f' --http-proxy "{proxy}"' if proxy else ""
     keep_alive = "" if settings.get("http_keep_alive", True) else " --no-keep-alive"
     resolve = "" if report.get("resolve_direct", True) else " --no-resolve-direct"
+    block_size = settings.get("cache_block_size")
+    block_flag = f" --cache-block-size {block_size}" if block_size else ""
+    cache_flag = " --no-cache" if settings.get("cache_enabled") is False else ""
+    warm_repeats = settings.get("warm_repeats", 0)
+    warm_flag = f" --warm-repeats {warm_repeats}" if warm_repeats else ""
     executable = "benchmark/benchmark.py" if report.get("api_call") else "benchmark/bench.py"
     revision = (
         f" --revision {report['revision']}"
@@ -175,14 +181,22 @@ def _command(report):
     )
     return (
         f".venv/bin/python {executable} run --runs {report.get('requested_runs', 3)} "
-        f"--tag {report.get('tag', 'unknown')}{symbol}{proxy_flag}{keep_alive}{resolve}{revision}"
+        f"--tag {report.get('tag', 'unknown')}{symbol}{proxy_flag}{keep_alive}"
+        f"{resolve}{block_flag}{cache_flag}{warm_flag}{revision}"
     )
 
 
 def _cache_description(sample):
     after = sample.get("cache_after_query")
     if after:
-        return f"{after.get('files', 0)} / {_format_bytes(after.get('bytes', 0))}"
+        footprint = f"{after.get('files', 0)} / {_format_bytes(after.get('bytes', 0))}"
+        metrics = sample.get("cache_metrics")
+        if isinstance(metrics, dict):
+            return (
+                f"{footprint}; {metrics.get('range_requests', 0)} ranges / "
+                f"{_format_bytes(metrics.get('downloaded_bytes', 0))} downloaded"
+            )
+        return footprint
     return (
         f"{sample.get('cache_files_after_query', 0)} / "
         f"{_format_bytes(sample.get('cache_bytes_after_query', 0))}"
@@ -225,7 +239,7 @@ def _single_markdown(reports, archive_path):
 | OS / machine | {env['platform']} / {env['machine']} |
 | CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
 | Python / DuckDB / pandas | {env['versions']} |
-| cache_httpfs / httpfs | {env['extensions']} |
+| HTTP extensions | {env['extensions']} |
 | API workload | {first.get('api_call', 'legacy direct DuckDB workload')} |
 | Primary metric | `{metric}` |
 | Cold state | {method.get('cold', 'unknown')} |
@@ -250,7 +264,7 @@ def _single_markdown(reports, archive_path):
 | Package import | {breakdown['import']:.6f} |
 | Ticker initialization | {breakdown['ticker_init']:.6f} |
 | DuckDB connection initialization | {breakdown['connection_init']:.6f} |
-| Cache validation | {breakdown['cache_validation']:.6f} |
+| Dataset version / cache validation | {breakdown['cache_validation']:.6f} |
 | URL resolve | {breakdown['resolve']:.6f} |
 | URL rewrite | {breakdown['rewrite']:.6f} |
 | Cursor open | {breakdown['cursor_open']:.6f} |
@@ -263,7 +277,7 @@ def _single_markdown(reports, archive_path):
 
 ### Cache Footprint
 
-| Symbol | Files / bytes after query |
+| Symbol | Files / bytes after query; range transfers |
 | --- | ---: |
 {chr(10).join(cache_rows)}
 
@@ -321,7 +335,7 @@ def _comparison_markdown(record, archive_path):
         ("import", "Package import"),
         ("ticker_init", "Ticker initialization"),
         ("connection_init", "DuckDB connection initialization"),
-        ("cache_validation", "Cache validation"),
+        ("cache_validation", "Dataset version / cache validation"),
         ("resolve", "URL resolve"),
         ("rewrite", "URL rewrite"),
         ("cursor_open", "Cursor open"),
@@ -348,7 +362,7 @@ def _comparison_markdown(record, archive_path):
 | OS / machine | {env['platform']} / {env['machine']} |
 | CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
 | Python / DuckDB / pandas | {env['versions']} |
-| cache_httpfs / httpfs | {env['extensions']} |
+| HTTP extensions | {env['extensions']} |
 | API workload | {candidate_reports[0].get('api_call', 'legacy direct DuckDB workload')} |
 | Primary metric | `{metric}` |
 | Cold state | {method.get('cold', 'unknown')} |
@@ -382,7 +396,7 @@ Candidate:
 
 ### Cache Footprint
 
-| Symbol | Baseline files / bytes | Candidate files / bytes |
+| Symbol | Baseline cache footprint / transfers | Candidate cache footprint / transfers |
 | --- | ---: | ---: |
 {chr(10).join(cache_rows)}
 

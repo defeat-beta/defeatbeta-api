@@ -49,7 +49,11 @@ environments, revisions, symbols, or result hashes reject publication.
 The executable benchmark calls `Ticker(symbol).price()` through the real
 `defeatbeta_api` package. Its primary metric is the time emitted by
 `DuckDBClient._execute_query`; package import, client initialization, the full
-API call, cache state, and cache_httpfs diagnostics are recorded separately.
+API call, cache state, range transfers, and DefeatBeta cache metrics are recorded separately.
+
+The `archive/000_*` and `archive/001_*` files are historical records from the
+previous `cache_httpfs` reader. They are kept unchanged so past measurements
+are not presented as measurements of the current reader.
 
 Local run JSON uses format version 2 with deduplicated `shared` entries. Paired
 comparison archives use format version 3 and embed the exact version 2 baseline

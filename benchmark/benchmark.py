@@ -2,7 +2,6 @@
 
 import argparse
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import AsyncExitStack, contextmanager
 import hashlib
 import json
@@ -12,18 +11,39 @@ import os
 from pathlib import Path
 import platform
 import re
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 import statistics
 import subprocess
 import sys
 import tempfile
-from threading import Lock
 import time
 import traceback
 from datetime import datetime, timedelta, timezone
 from typing import NamedTuple
 from urllib.parse import urlsplit
 import uuid
+
+
+def process_usage():
+    """Expose comparable process counters on Unix and Windows."""
+    if resource is not None:
+        return resource.getrusage(resource.RUSAGE_SELF)
+    import psutil
+    from types import SimpleNamespace
+
+    process = psutil.Process()
+    cpu = process.cpu_times()
+    memory = process.memory_info()
+    return SimpleNamespace(
+        ru_utime=cpu.user,
+        ru_stime=cpu.system,
+        ru_maxrss=getattr(memory, "peak_wset", memory.rss),
+        ru_minflt=getattr(memory, "pfaults", 0),
+        ru_majflt=getattr(memory, "pageins", 0),
+    )
 
 
 WORKER_ENTRY_NS = time.perf_counter_ns()
@@ -286,7 +306,7 @@ async def run_network_probe(url, proxy, runs, timeout, block_size):
         "median_wall_seconds": statistics.median(item["wall_seconds"] for item in samples),
         "samples": samples,
         "limitations": (
-            "Network-only diagnostic; it excludes DuckDB, cache_httpfs, Parquet decoding, "
+            "Network-only diagnostic; it excludes DuckDB, the dataset cache, Parquet decoding, "
             "and DataFrame materialization. The first byte of the file is fetched only "
             "to warm the connection and is not stored in a local data cache."
         ),
@@ -534,7 +554,7 @@ async def run_network_transport_probe(url, proxy, runs, timeout, block_size):
         "limitations": (
             "Network-only diagnostic over one signed URL and identical ranges. "
             "Connections are warmed with one neutral byte, and no local data cache is used. "
-            "It excludes DuckDB, cache_httpfs, Parquet decoding, and DataFrame materialization. "
+            "It excludes DuckDB, the dataset cache, Parquet decoding, and DataFrame materialization. "
             "The proxy or CDN may cache requested ranges between modes."
         ),
     }
@@ -693,257 +713,8 @@ async def run_network_fanout_probe(url, proxy, runs, timeout, block_size):
         "limitations": (
             "Network-only diagnostic using the same exact remote bytes in every mode. "
             "One neutral byte is used to warm each connection; no local data cache is used. "
-            "It excludes DuckDB, cache_httpfs, Parquet decoding, and DataFrame materialization. "
+            "It excludes DuckDB, the dataset cache, Parquet decoding, and DataFrame materialization. "
             "Shared proxy traffic and remote caches are uncontrolled."
-        ),
-    }
-
-
-def make_range_probe_filesystem(client, signed_url, file_size, block_size):
-    """Build an isolated read-through fsspec adapter for a DuckDB experiment."""
-    try:
-        import fsspec
-    except ImportError as exc:
-        raise RuntimeError("install the optional fsspec benchmark dependency") from exc
-
-    class RangeProbeFileSystem(fsspec.AbstractFileSystem):
-        protocol = "rangeprobe"
-        root_marker = ""
-
-        def __init__(self, **kwargs):
-            super().__init__(skip_instance_cache=True, **kwargs)
-            self.client = client
-            self.signed_url = signed_url
-            self.file_size = file_size
-            self.block_size = block_size
-            self.blocks = {}
-            self.pending = {}
-            self.transfer_events = []
-            self.read_events = []
-            self.lock = Lock()
-            self.executor = ThreadPoolExecutor(max_workers=3)
-
-        def info(self, path, **kwargs):
-            return {"name": path, "size": self.file_size, "type": "file"}
-
-        def ls(self, path, detail=True, **kwargs):
-            entry = self.info(path)
-            return [entry] if detail else [entry["name"]]
-
-        def modified(self, path):
-            return datetime.fromtimestamp(0, timezone.utc)
-
-        def created(self, path):
-            return self.modified(path)
-
-        def _open(self, path, mode="rb", **kwargs):
-            if mode != "rb":
-                raise ValueError("range probe filesystem is read-only")
-            return fsspec.spec.AbstractBufferedFile(
-                self, path, mode=mode, block_size=self.block_size,
-                cache_type="none", size=self.file_size,
-            )
-
-        def _download_block(self, start):
-            import httpx
-
-            end = min(start + self.block_size, self.file_size) - 1
-            started_ns = time.perf_counter_ns()
-            for attempt in range(2):
-                try:
-                    response = self.client.get(
-                        self.signed_url,
-                        headers={"Range": f"bytes={start}-{end}", "Accept-Encoding": "identity"},
-                    )
-                    break
-                except httpx.TransportError:
-                    if attempt == 1:
-                        raise
-            content = response.content
-            validate_range_response(
-                response.status_code, response.headers.get("Content-Range"),
-                len(content), start, end, self.file_size,
-                response.headers.get("Content-Encoding"),
-            )
-            with self.lock:
-                self.transfer_events.append({
-                    "start": start,
-                    "bytes": len(content),
-                    "seconds": (time.perf_counter_ns() - started_ns) / 1e9,
-                    "http_version": response.http_version,
-                })
-            return content
-
-        def _block(self, start):
-            with self.lock:
-                if start in self.blocks:
-                    return self.blocks[start]
-                future = self.pending.get(start)
-                if future is None:
-                    future = self.executor.submit(self._download_block, start)
-                    self.pending[start] = future
-            content = future.result()
-            with self.lock:
-                self.blocks[start] = content
-            return content
-
-        def prefetch(self):
-            for _, start, _ in network_range_plan(self.file_size, self.block_size):
-                with self.lock:
-                    if start not in self.pending:
-                        self.pending[start] = self.executor.submit(self._download_block, start)
-
-        def cat_file(self, path, start=None, end=None, **kwargs):
-            started_ns = time.perf_counter_ns()
-            start = 0 if start is None else max(0, start)
-            end = self.file_size if end is None else min(self.file_size, end)
-            if end <= start:
-                return b""
-            pieces = []
-            for offset in range((start // self.block_size) * self.block_size, end, self.block_size):
-                block = self._block(offset)
-                left = max(start - offset, 0)
-                right = min(end - offset, len(block))
-                pieces.append(block[left:right])
-            content = b"".join(pieces)
-            with self.lock:
-                self.read_events.append({
-                    "start": start,
-                    "end": end,
-                    "seconds": (time.perf_counter_ns() - started_ns) / 1e9,
-                })
-            return content
-
-        def close(self):
-            self.executor.shutdown(wait=True)
-
-    return RangeProbeFileSystem()
-
-
-def run_fsspec_probe(proxy, runs, timeout, block_size):
-    """Measure Ticker.price through an isolated speculative fsspec adapter."""
-    try:
-        import duckdb
-        import httpx
-        import h2  # noqa: F401 - required by httpx HTTP/2 support
-    except ImportError as exc:
-        raise RuntimeError("install duckdb, fsspec, and httpx[http2] to run this probe") from exc
-
-    sys.path.insert(0, str(ROOT.parent))
-    api = load_api_bindings()
-    from defeatbeta_api.utils.const import stock_prices
-
-    client = httpx.Client(
-        http2=True, timeout=timeout, **httpx_proxy_options(proxy),
-        limits=httpx.Limits(max_connections=3, max_keepalive_connections=3, keepalive_expiry=120),
-    )
-    try:
-        resolve_started_ns = time.perf_counter_ns()
-        resolved = client.head(STOCK_PRICES_URL, follow_redirects=False)
-        signed_url = resolved.headers.get("Location")
-        parts = urlsplit(signed_url or "")
-        if resolved.status_code not in (301, 302, 303, 307, 308):
-            raise ValueError(f"resolve HEAD returned HTTP {resolved.status_code}")
-        if parts.scheme != "https" or not parts.hostname or parts.username or parts.password:
-            raise ValueError("resolve HEAD returned an unsafe Location")
-        resolve_seconds = (time.perf_counter_ns() - resolve_started_ns) / 1e9
-        warm_started_ns = time.perf_counter_ns()
-        warm = client.get(
-            signed_url, headers={"Range": "bytes=0-0", "Accept-Encoding": "identity"}
-        )
-        warm_seconds = (time.perf_counter_ns() - warm_started_ns) / 1e9
-        _, _, file_size = parse_content_range(warm.headers.get("Content-Range"))
-        validate_range_response(
-            warm.status_code, warm.headers.get("Content-Range"), len(warm.content),
-            0, 0, file_size, warm.headers.get("Content-Encoding"),
-        )
-        samples = []
-        expected_result = None
-        for trial in range(1, runs + 1):
-            with tempfile.TemporaryDirectory(prefix="defeatbeta-fsspec-probe-") as directory:
-                cache = Path(directory) / "http-cache"
-                cache.mkdir()
-                config = api.Configuration(
-                    cache_httpfs_cache_directory=str(cache), resolve_direct=False
-                )
-                ticker = api.Ticker(
-                    "AAPL", http_proxy=proxy, log_level=logging.WARNING, config=config
-                )
-                filesystem = make_range_probe_filesystem(client, signed_url, file_size, block_size)
-                try:
-                    connection = ticker.duckdb_client.connection
-                    connection.register_filesystem(filesystem)
-                    cache_status_before = _frame_records(
-                        connection, "SELECT * FROM cache_httpfs_cache_status_query()"
-                    )
-                    validate_cold_cache_status(cache_status_before)
-                    original_get_url_path = ticker.huggingface_client.get_url_path
-                    ticker.huggingface_client.get_url_path = lambda table: (
-                        "rangeprobe://stock_prices.parquet"
-                        if table == stock_prices else original_get_url_path(table)
-                    )
-                    original_execute = ticker.duckdb_client._execute_query
-                    wrapped_timing = {}
-
-                    def execute_with_prefetch(sql):
-                        started_ns = time.perf_counter_ns()
-                        filesystem.prefetch()
-                        result_frame = original_execute(sql)
-                        wrapped_timing["seconds"] = (
-                            time.perf_counter_ns() - started_ns
-                        ) / 1e9
-                        return result_frame
-
-                    ticker.duckdb_client._execute_query = execute_with_prefetch
-                    events = []
-                    cpu_before = resource.getrusage(resource.RUSAGE_SELF)
-                    api_started_ns = time.perf_counter_ns()
-                    with api.capture_performance(events.append):
-                        frame = ticker.price()
-                    api_seconds = (time.perf_counter_ns() - api_started_ns) / 1e9
-                    cpu_after = resource.getrusage(resource.RUSAGE_SELF)
-                    result = result_fingerprint(frame)
-                    if expected_result is not None and result != expected_result:
-                        raise ValueError("Ticker.price result changed between trials")
-                    expected_result = result
-                    phases = _event_totals(events)
-                    samples.append({
-                        "trial": trial,
-                        "query_seconds": wrapped_timing["seconds"],
-                        "execute_query_seconds": phases["duckdb.execute_query"]["seconds"],
-                        "api_call_seconds": api_seconds,
-                        "performance": phases,
-                        "cpu_user_seconds": cpu_after.ru_utime - cpu_before.ru_utime,
-                        "cpu_system_seconds": cpu_after.ru_stime - cpu_before.ru_stime,
-                        "cache_status_before_query": cache_status_before,
-                        "cache_after_query": cache_snapshot(cache),
-                        "cached_blocks": len(filesystem.blocks),
-                        "cached_bytes": sum(map(len, filesystem.blocks.values())),
-                        "transfer_events": sorted(
-                            filesystem.transfer_events, key=lambda item: item["start"]
-                        ),
-                        "read_events": filesystem.read_events,
-                        "result": result,
-                    })
-                finally:
-                    ticker.duckdb_client.close()
-                    filesystem.close()
-    finally:
-        client.close()
-    return {
-        "probe": "ticker_price_fsspec_parallel_range_prototype",
-        "proxy": redact_proxy(proxy),
-        "resolve_seconds": resolve_seconds,
-        "warmup_seconds": warm_seconds,
-        "warmup_http_version": warm.http_version,
-        "file_size": file_size,
-        "block_size": block_size,
-        "samples": samples,
-        "median_query_seconds": statistics.median(item["query_seconds"] for item in samples),
-        "limitations": (
-            "Real Ticker.price and DuckDBClient._execute_query with a benchmark-only "
-            "URL substitution and fsspec adapter. This is not shipped API behavior. "
-            "Each trial uses a new empty local data cache and a shared warmed HTTP client."
         ),
     }
 
@@ -1004,35 +775,12 @@ def _frame_records(connection, sql):
         return {"error": redact_secrets(str(exc))}
 
 
-def validate_cold_cache_status(records):
-    if not isinstance(records, list):
-        raise ValueError("could not verify cache status before the measured API call")
-    unexpected = []
-    for record in records:
-        remote_path = str(record.get("original_remote_path", ""))
-        path_without_query = remote_path.split("?", 1)[0]
-        if not path_without_query.endswith("/spec.json"):
-            unexpected.append(remote_path or "<missing remote path>")
-    if unexpected:
-        raise ValueError("remote data block was cached before the measured API call")
-
-
-def select_cache_profile(parent_profile, cursor_diagnostics):
-    for entry in reversed(cursor_diagnostics or []):
-        if isinstance(entry.get("cache_profile"), list):
-            return entry["cache_profile"], "query_cursor"
-    return parent_profile, "parent_connection"
-
-
-def collect_diagnostics(ticker, cache_profile, http_events=None, cursor_diagnostics=None):
+def collect_diagnostics(ticker, http_events=None, cursor_diagnostics=None):
     connection = ticker.duckdb_client.connection
-    selected_profile, profile_scope = select_cache_profile(
-        cache_profile, cursor_diagnostics
-    )
     settings = _frame_records(
         connection,
         "SELECT name, value FROM duckdb_settings() "
-        "WHERE name LIKE 'cache_httpfs%' OR name LIKE 'http_%' "
+        "WHERE name LIKE 'http_%' "
         "OR name IN ('threads', 'memory_limit', 'parquet_metadata_cache') ORDER BY name",
     )
     if isinstance(settings, list):
@@ -1045,14 +793,8 @@ def collect_diagnostics(ticker, cache_profile, http_events=None, cursor_diagnost
         }
     return {
         "effective_settings": settings,
-        "cache_status": _frame_records(
-            connection, "SELECT * FROM cache_httpfs_cache_status_query()"
-        ),
-        "cache_access": _frame_records(
-            connection, "SELECT * FROM cache_httpfs_cache_access_info_query()"
-        ),
-        "cache_profile": selected_profile,
-        "cache_profile_scope": profile_scope,
+        "cache_metrics": ticker.duckdb_client._dataset_fs.metrics()
+        if getattr(ticker.duckdb_client, "_dataset_fs", None) is not None else None,
         "http_events": http_events or [],
         "cursor_diagnostics": cursor_diagnostics or [],
         "loaded_extensions": _frame_records(
@@ -1131,13 +873,9 @@ def trace_query_cursor(original_get_cursor, sink):
         finally:
             started_ns = time.perf_counter_ns()
             try:
-                profile = _frame_records(
-                    cursor, "SELECT cache_httpfs_get_profile() AS profile"
-                )
                 http_events = collect_http_events(cursor)
                 filesystem_events = collect_filesystem_events(cursor)
                 sink.append({
-                    "cache_profile": profile,
                     "http_events": http_events,
                     "filesystem_events": filesystem_events,
                     "capture_seconds": (time.perf_counter_ns() - started_ns) / 1e9,
@@ -1161,7 +899,7 @@ def run_api_workload(payload, api=None, diagnostics=True):
     imported_ns = time.perf_counter_ns()
     events = []
     configuration_values = dict(payload.get("configuration", {}))
-    configuration_values["cache_httpfs_cache_directory"] = str(cache_directory)
+    configuration_values["cache_directory"] = str(cache_directory)
     config = api.Configuration(**configuration_values)
     ticker = None
 
@@ -1181,14 +919,8 @@ def run_api_workload(payload, api=None, diagnostics=True):
                 + ("true" if connection_caching else "false")
             )
         cache_before = cache_snapshot(cache_directory)
-        if diagnostics:
-            cache_status_before = _frame_records(
-                ticker.duckdb_client.connection,
-                "SELECT * FROM cache_httpfs_cache_status_query()",
-            )
-            validate_cold_cache_status(cache_status_before)
-        else:
-            cache_status_before = []
+        if cache_before["files"]:
+            raise ValueError("dataset block cache was not empty before the API call")
         trace_io = diagnostics and bool(payload.get("trace_io"))
         cursor_diagnostics = []
         if trace_io:
@@ -1206,13 +938,6 @@ def run_api_workload(payload, api=None, diagnostics=True):
         frame = ticker.price()
         api_ended_ns = time.perf_counter_ns()
         query_events = events[query_event_offset:]
-        cache_profile = (
-            _frame_records(
-                ticker.duckdb_client.connection,
-                "SELECT cache_httpfs_get_profile() AS profile",
-            )
-            if diagnostics else []
-        )
         http_events = (
             collect_http_events(ticker.duckdb_client.connection) if trace_io else []
         )
@@ -1223,11 +948,30 @@ def run_api_workload(payload, api=None, diagnostics=True):
         if "symbol" not in frame or not frame["symbol"].eq(symbol).all():
             raise ValueError("Ticker.price returned data for an unexpected symbol")
         diagnostic_data = collect_diagnostics(
-            ticker, cache_profile, http_events, cursor_diagnostics
+            ticker, http_events, cursor_diagnostics
         )
     else:
         fingerprint = {"rows": len(frame)}
         diagnostic_data = {}
+
+    warm_samples = []
+    for trial in range(1, payload.get("warm_repeats", 0) + 1):
+        warm_events = []
+        warm_started_ns = time.perf_counter_ns()
+        with api.capture_performance(warm_events.append):
+            warm_frame = ticker.price()
+        warm_ended_ns = time.perf_counter_ns()
+        if diagnostics and result_fingerprint(warm_frame) != fingerprint:
+            raise ValueError("Warm query result differs from the cold query")
+        warm_totals = _event_totals(warm_events)
+        warm_samples.append({
+            "trial": trial,
+            "api_call_seconds": (warm_ended_ns - warm_started_ns) / 1e9,
+            "execute_query_seconds": warm_totals.get(
+                "duckdb.execute_query", {"seconds": 0.0}
+            )["seconds"],
+            "performance": warm_totals,
+        })
 
     phase_totals = _event_totals(query_events)
     execute_query_seconds = phase_totals.get(
@@ -1239,7 +983,7 @@ def run_api_workload(payload, api=None, diagnostics=True):
     if diagnostics and execute_attempts < 1:
         raise ValueError("Ticker.price did not emit a DuckDBClient._execute_query event")
 
-    usage = resource.getrusage(resource.RUSAGE_SELF)
+    usage = process_usage()
     outcome = {
         "status": "ok" if len(frame) else "empty_result",
         "pid": os.getpid(),
@@ -1247,7 +991,6 @@ def run_api_workload(payload, api=None, diagnostics=True):
         "cache_directory": str(cache_directory),
         "cache_empty_at_worker_start": True,
         "cache_before_query": cache_before,
-        "cache_status_before_query": cache_status_before,
         "cache_after_query": cache_after,
         "import_seconds": (imported_ns - import_started_ns) / 1e9,
         "ticker_initialization_seconds": (
@@ -1261,10 +1004,11 @@ def run_api_workload(payload, api=None, diagnostics=True):
         "initialization_performance": redact_secrets(events[:query_event_offset]),
         "cpu_user_seconds": usage.ru_utime,
         "cpu_system_seconds": usage.ru_stime,
-        "peak_rss_bytes": usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024),
+        "peak_rss_bytes": usage.ru_maxrss * (1 if sys.platform in ("darwin", "win32") else 1024),
         "minor_faults": usage.ru_minflt,
         "major_faults": usage.ru_majflt,
         "result": fingerprint,
+        "warm_samples": warm_samples,
         **diagnostic_data,
     }
     if ticker is not None and diagnostics:
@@ -1529,6 +1273,9 @@ def source_hashes():
         ROOT / "report.py",
         ROOT.parent / "defeatbeta_api" / "client" / "duckdb_client.py",
         ROOT.parent / "defeatbeta_api" / "client" / "duckdb_conf.py",
+        ROOT.parent / "defeatbeta_api" / "client" / "dataset_cache_fs.py",
+        ROOT.parent / "defeatbeta_api" / "client" / "hugging_face_client.py",
+        ROOT.parent / "defeatbeta_api" / "utils" / "util.py",
         ROOT.parent / "defeatbeta_api" / "data" / "ticker.py",
     )
     return {
@@ -1545,12 +1292,10 @@ def environment_info():
     connection = duckdb.connect(":memory:")
     extensions = connection.execute(
         "SELECT extension_name, installed, extension_version, install_path "
-        "FROM duckdb_extensions() WHERE extension_name IN ('httpfs', 'cache_httpfs') "
+        "FROM duckdb_extensions() WHERE extension_name = 'httpfs' "
         "ORDER BY extension_name"
     ).fetchall()
     connection.close()
-    if len(extensions) != 2 or not all(row[1] for row in extensions):
-        raise RuntimeError("Install httpfs and cache_httpfs before benchmarking")
     return {
         "python": sys.version,
         "executable": sys.executable,
@@ -1565,7 +1310,8 @@ def environment_info():
             {
                 "name": name,
                 "version": version,
-                "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest(),
+                "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest()
+                if installed and path and Path(path).is_file() else None,
             }
             for name, installed, version, path in extensions
         ],
@@ -1579,6 +1325,8 @@ def cmd_run(args):
             raise ValueError("runs and timeout must be positive and finite")
         if args.cache_block_size < 1:
             raise ValueError("cache block size must be positive")
+        if args.warm_repeats < 0:
+            raise ValueError("warm repeats must not be negative")
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", args.tag):
             raise ValueError("tag must be 1-64 filename-safe characters")
     except ValueError as exc:
@@ -1591,7 +1339,8 @@ def cmd_run(args):
         "http_keep_alive": args.keep_alive,
         "resolve_direct": args.resolve_direct,
         "threads": args.threads,
-        "cache_httpfs_cache_block_size": args.cache_block_size,
+        "cache_block_size": args.cache_block_size,
+        "cache_enabled": args.cache,
     }
     configured_settings = {
         **configuration,
@@ -1599,6 +1348,8 @@ def cmd_run(args):
     }
     if args.trace_io:
         configured_settings["trace_io"] = True
+    if args.warm_repeats:
+        configured_settings["warm_repeats"] = args.warm_repeats
     if args.httpfs_connection_caching is not None:
         configured_settings["httpfs_connection_caching"] = args.httpfs_connection_caching
     methodology = {
@@ -1611,7 +1362,7 @@ def cmd_run(args):
             "Sum of DuckDBClient._execute_query timing events emitted during Ticker.price()"
         ),
         "secondary_metrics": (
-            "Package import, Ticker initialization, API call, cache state, and cache_httpfs profile"
+            "Package import, Ticker initialization, API call, cache state, and range events"
         ),
         "excluded": "Result hashing, diagnostics, report writing, and teardown",
         "uncontrolled": "DNS, proxy state, operating-system caches, and remote CDN caches",
@@ -1663,7 +1414,7 @@ def cmd_run(args):
             symbol = report["symbol"]
             print(f"[{trial}/{args.runs}] {symbol}: starting API benchmark", flush=True)
             with tempfile.TemporaryDirectory(prefix="defeatbeta-api-benchmark-") as directory:
-                cache = Path(directory) / "http-cache"
+                cache = Path(directory) / "dataset-cache"
                 cache.mkdir()
                 sample = run_worker(
                     {
@@ -1672,6 +1423,7 @@ def cmd_run(args):
                         "http_proxy": args.http_proxy,
                         "configuration": configuration,
                         "trace_io": args.trace_io,
+                        "warm_repeats": args.warm_repeats,
                         "httpfs_connection_caching": args.httpfs_connection_caching,
                     },
                     args.timeout,
@@ -1821,35 +1573,6 @@ def cmd_network_fanout(args):
     return 0
 
 
-def cmd_fsspec_probe(args):
-    try:
-        if args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
-            raise ValueError("runs and timeout must be positive and finite")
-        if args.block_size < 1:
-            raise ValueError("block size must be positive")
-        outcome = run_fsspec_probe(args.http_proxy, args.runs, args.timeout, args.block_size)
-        if args.output is not None:
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            with args.output.open("x", encoding="utf-8") as handle:
-                json.dump(outcome, handle, indent=2, ensure_ascii=True)
-                handle.write("\n")
-    except Exception as exc:
-        print(f"Error: {redact_secrets(str(exc))}", file=sys.stderr)
-        return 1
-    print(
-        f"DuckDB/fsspec prototype median: {outcome['median_query_seconds']:.6f} s; "
-        f"HTTP: {outcome['warmup_http_version']}"
-    )
-    for sample in outcome["samples"]:
-        print(
-            f"[{sample['trial']}/{len(outcome['samples'])}] "
-            f"{sample['cached_bytes']} bytes in {sample['query_seconds']:.6f} s"
-        )
-    if args.output is not None:
-        print(f"Record: {args.output}")
-    return 0
-
-
 def cmd_archive(args):
     try:
         destination = archive_comparison(
@@ -1897,6 +1620,9 @@ def build_parser():
     run_parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     run_parser.add_argument("--threads", type=int, default=4)
     run_parser.add_argument("--cache-block-size", type=int, default=1024 * 1024)
+    run_parser.add_argument(
+        "--cache", action=argparse.BooleanOptionalAction, default=True
+    )
     run_parser.add_argument("--trace-io", action="store_true")
     run_parser.add_argument(
         "--httpfs-connection-caching",
@@ -1909,6 +1635,7 @@ def build_parser():
     run_parser.add_argument(
         "--resolve-direct", action=argparse.BooleanOptionalAction, default=True
     )
+    run_parser.add_argument("--warm-repeats", type=int, default=0)
     run_parser.add_argument("--output", type=Path, default=ROOT / "results")
 
     probe_parser = subparsers.add_parser(
@@ -1951,15 +1678,6 @@ def build_parser():
     fanout_parser.add_argument("--block-size", type=int, default=1024 * 1024)
     fanout_parser.add_argument("--output", type=Path)
 
-    fsspec_parser = subparsers.add_parser(
-        "fsspec-probe", help="Measure experimental DuckDB reads over parallel HTTP/2 ranges"
-    )
-    fsspec_parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
-    fsspec_parser.add_argument("--http-proxy")
-    fsspec_parser.add_argument("--timeout", type=float, default=60.0)
-    fsspec_parser.add_argument("--block-size", type=int, default=1024 * 1024)
-    fsspec_parser.add_argument("--output", type=Path)
-
     archive_parser = subparsers.add_parser(
         "archive", help="Publish one selected baseline-versus-candidate comparison"
     )
@@ -1987,8 +1705,6 @@ def main():
         return cmd_network_transport(args)
     if args.command == "network-fanout":
         return cmd_network_fanout(args)
-    if args.command == "fsspec-probe":
-        return cmd_fsspec_probe(args)
     if args.command == "archive":
         return cmd_archive(args)
     raise AssertionError(f"unknown command: {args.command}")

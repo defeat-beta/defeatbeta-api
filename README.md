@@ -19,7 +19,7 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ## Introduction
 
-✅ **High-Performance & Reliable Data Engine**: Provides a stable, reproducible market data source fully hosted on Hugging Face’s [yahoo-finance-data](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data) dataset—eliminating scraping issues and rate limits. Powered by [DuckDB’s OLAP engine](https://duckdb.org/) and the [`cache_httpfs`](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension, the system delivers sub-second analytical queries with full SQL compatibility, giving you a unified, high-performance workflow for large-scale financial data.
+✅ **High-Performance & Reliable Data Engine**: Provides a stable, reproducible market data source fully hosted on Hugging Face’s [yahoo-finance-data](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data) dataset—eliminating scraping issues and rate limits. DuckDB runs the queries, while DefeatBeta's demand-driven local block cache fetches only the Parquet and JSON ranges needed by each query.
 
 ✅ **Extended Financial Data**: Includes [TTM EPS](doc/api/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/api/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/api/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/api/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/api/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/api/Value_Examples.md#6-stock-historical-peg-ratio), [ROE](doc/api/Value_Examples.md#7-stock-historical-roe), [ROIC](doc/api/Value_Examples.md#9-stock-historical-roic), [WACC](doc/api/Value_Examples.md#12-stock-historical-wacc), [ROA](doc/api/Value_Examples.md#8-stock-historical-roa), [Equity Multiplier](doc/api/Value_Examples.md#10-stock-historical-equity-multiplier), [Assert Turnover](doc/api/Value_Examples.md#11-stock-historical-assert-turnover), [SEC Filings](doc/api/Info_Examples.md#2-sec-filing), [Earnings call transcripts](doc/api/Info_Examples.md#4-accessing-earnings-call-transcripts), [Stock News](doc/api/Info_Examples.md#5-accessing-financial-news), [Revenue by segment](doc/api/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/api/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
 
@@ -42,7 +42,7 @@ Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) u
 $ pip install defeatbeta-api
 ```
 
-> 💡 Windows is supported natively since `v0.0.60` (the `cache_httpfs` extension added Windows support). Earlier versions require [WSL](https://ubuntu.com/desktop/wsl) or [Docker](https://docs.docker.com/desktop/setup/install/windows-install/).
+> 💡 Windows is supported natively since `v0.0.60`. The current dataset cache uses the same Python filesystem interface on Windows, macOS, and Linux.
 
 ### Usage
 
@@ -400,7 +400,7 @@ See [Advanced Usage](doc/api/Advanced_Usage.md) for details.
 
 **2. Efficient data format:** It uses the Parquet format, supporting flexible SQL queries via `DuckDB`.
 
-**3. High-performance caching:** Data is stored remotely on `Hugging Face` but leverages `cache_httpfs` for local disk caching, ensuring excellent performance.
+**3. High-performance caching:** Data stays on Hugging Face. DefeatBeta downloads 1 MiB blocks on demand, stores them locally, and reuses them for subsequent queries. Cache keys include the dataset update time, not the short-lived signed CDN URL. Direct access and HTTP proxies are both supported; a cache transport failure falls back to DuckDB's standard HTTP reader without local caching.
 
 **4. Multi-source data:** defeat-beta integrates additional data sources, unlike `yfinance` which relies solely on Yahoo Finance data.
 

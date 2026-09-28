@@ -78,6 +78,13 @@ Each published benchmark result must document its preparation, cache state,
 and timing boundary so that the result can be reproduced and interpreted
 correctly.
 
+The current production reader is DefeatBeta's demand-driven block cache. A
+fresh worker gets an isolated empty cache directory for each cold sample;
+optional warm repeats reuse that directory and connection. The benchmark
+records downloaded bytes, Range GET events, cache hits and misses, and the
+time spent inside `DuckDBClient._execute_query`. A signed CDN URL is not part
+of the persistent cache key.
+
 Explore aggressively. Measure everything. Question every implementation detail.
 
 But there is one fundamental constraint.

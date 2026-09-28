@@ -2,7 +2,6 @@
 
 import asyncio
 from contextlib import contextmanager
-from datetime import datetime
 import hashlib
 import importlib.util
 import json
@@ -10,6 +9,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import httpx
@@ -40,6 +40,34 @@ def load_report_module():
 
 
 class BenchmarkApiContractTests(unittest.TestCase):
+    def test_report_displays_project_cache_transfer_metrics(self):
+        report = load_report_module()
+        description = report._cache_description({
+            "cache_after_query": {"files": 4, "bytes": 2_967_427},
+            "cache_metrics": {"range_requests": 3, "downloaded_bytes": 2_967_312},
+        })
+        self.assertIn("3 ranges", description)
+        self.assertIn("downloaded", description)
+
+    def test_run_parser_can_disable_project_cache(self):
+        benchmark = load_benchmark_module()
+        enabled = benchmark.build_parser().parse_args(["run"])
+        disabled = benchmark.build_parser().parse_args(["run", "--no-cache"])
+        self.assertTrue(enabled.cache)
+        self.assertFalse(disabled.cache)
+
+    def test_process_usage_has_windows_fallback(self):
+        benchmark = load_benchmark_module()
+        process = SimpleNamespace(
+            cpu_times=lambda: SimpleNamespace(user=1.5, system=0.5),
+            memory_info=lambda: SimpleNamespace(rss=123, peak_wset=456, pfaults=7),
+        )
+        with patch.object(benchmark, "resource", None), \
+                patch("psutil.Process", return_value=process):
+            usage = benchmark.process_usage()
+        self.assertEqual((usage.ru_utime, usage.ru_stime), (1.5, 0.5))
+        self.assertEqual(usage.ru_maxrss, 456)
+
     def test_httpx_transport_inherits_environment_only_without_explicit_proxy(self):
         benchmark = load_benchmark_module()
 
@@ -68,7 +96,7 @@ class BenchmarkApiContractTests(unittest.TestCase):
         self.assertEqual(event["pos"], 0)
         self.assertNotIn("secret", json.dumps(event))
 
-    def test_trace_profile_uses_the_query_cursor(self):
+    def test_trace_collects_io_from_query_cursor_without_extension_profile(self):
         benchmark = load_benchmark_module()
         query_cursor = object()
         captured = []
@@ -77,26 +105,15 @@ class BenchmarkApiContractTests(unittest.TestCase):
         def original_get_cursor():
             yield query_cursor
 
-        def fake_frame_records(connection, sql):
-            self.assertIs(connection, query_cursor)
-            self.assertIn("cache_httpfs_get_profile", sql)
-            return [{"profile": "data cache miss count = 3"}]
+        with patch.object(benchmark, "collect_http_events", return_value=[]) as http:
+            with patch.object(benchmark, "collect_filesystem_events", return_value=[]) as fs:
+                with benchmark.trace_query_cursor(original_get_cursor, captured) as cursor:
+                    self.assertIs(cursor, query_cursor)
 
-        with patch.object(benchmark, "_frame_records", side_effect=fake_frame_records):
-            with patch.object(benchmark, "collect_http_events", return_value=[]):
-                with patch.object(benchmark, "collect_filesystem_events", return_value=[]):
-                    with benchmark.trace_query_cursor(original_get_cursor, captured) as cursor:
-                        self.assertIs(cursor, query_cursor)
-
-        self.assertEqual(
-            captured[0]["cache_profile"],
-            [{"profile": "data cache miss count = 3"}],
-        )
-        selected, scope = benchmark.select_cache_profile(
-            [{"profile": "data cache miss count = 0"}], captured
-        )
-        self.assertEqual(selected, [{"profile": "data cache miss count = 3"}])
-        self.assertEqual(scope, "query_cursor")
+        http.assert_called_once_with(query_cursor)
+        fs.assert_called_once_with(query_cursor)
+        self.assertEqual(captured[0]["http_events"], [])
+        self.assertNotIn("cache_profile", captured[0])
 
     def test_http_trace_keeps_timing_and_range_without_signed_secrets(self):
         benchmark = load_benchmark_module()
@@ -188,7 +205,7 @@ class BenchmarkApiContractTests(unittest.TestCase):
 
         self.assertEqual(calls, ["SET GLOBAL httpfs_connection_caching = true", "price"])
 
-    def test_cold_query_profile_is_captured_before_diagnostic_queries(self):
+    def test_cold_query_uses_project_cache_metrics(self):
         benchmark = load_benchmark_module()
         calls = []
 
@@ -205,6 +222,7 @@ class BenchmarkApiContractTests(unittest.TestCase):
 
         class FakeDuckDBClient:
             connection = object()
+            _dataset_fs = SimpleNamespace(metrics=lambda: {"cache_misses": 1})
 
             def close(self):
                 pass
@@ -219,9 +237,6 @@ class BenchmarkApiContractTests(unittest.TestCase):
 
         def fake_frame_records(connection, sql):
             calls.append(sql)
-            if "cache_httpfs_get_profile" in sql:
-                profile = "data cache miss count = 1" if calls[-2] == "price" else "data cache miss count = 0"
-                return [{"profile": profile}]
             return []
 
         api = benchmark.ApiBindings(
@@ -241,9 +256,8 @@ class BenchmarkApiContractTests(unittest.TestCase):
                         "configuration": {},
                     }, api=api)
 
-        self.assertEqual(
-            outcome["cache_profile"], [{"profile": "data cache miss count = 1"}]
-        )
+        self.assertEqual(outcome["cache_metrics"], {"cache_misses": 1})
+        self.assertFalse(any("cache_httpfs" in sql for sql in calls))
 
     def test_network_fanout_preserves_exact_query_bytes(self):
         benchmark = load_benchmark_module()
@@ -473,39 +487,6 @@ class BenchmarkApiContractTests(unittest.TestCase):
                 206, "bytes 10-12/20", 3, 10, 12, 20, "gzip"
             )
 
-    def test_fsspec_probe_reads_across_blocks_without_missing_bytes(self):
-        benchmark = load_benchmark_module()
-        payload = b"abcdefghij"
-
-        class FakeClient:
-            fail_first = True
-
-            def get(self, url, headers):
-                start, end = map(int, headers["Range"][6:].split("-"))
-                if start == 0 and self.fail_first:
-                    self.fail_first = False
-                    raise httpx.RemoteProtocolError("Server disconnected")
-
-                class FakeResponse:
-                    status_code = 206
-                    http_version = "HTTP/2"
-                    content = payload[start:end + 1]
-                    headers = {"Content-Range": f"bytes {start}-{end}/{len(payload)}"}
-
-                return FakeResponse()
-
-        filesystem = benchmark.make_range_probe_filesystem(
-            FakeClient(), "https://cdn.example/file.parquet", len(payload), 4
-        )
-        try:
-            filesystem.prefetch()
-            self.assertIsInstance(filesystem.modified("rangeprobe://file.parquet"), datetime)
-            self.assertEqual(filesystem.cat_file("rangeprobe://file.parquet", 2, 9), b"cdefghi")
-            self.assertEqual(filesystem.cat_file("rangeprobe://file.parquet", 0, 10), payload)
-            self.assertEqual(len(filesystem.blocks), 3)
-        finally:
-            filesystem.close()
-
     def test_workload_calls_ticker_price(self):
         benchmark = load_benchmark_module()
         calls = []
@@ -547,13 +528,15 @@ class BenchmarkApiContractTests(unittest.TestCase):
                     "cache_directory": directory,
                     "http_proxy": "http://127.0.0.1:8118",
                     "configuration": {},
+                    "warm_repeats": 2,
                 },
                 api=api,
                 diagnostics=False,
             )
 
         self.assertEqual(outcome["status"], "ok")
-        self.assertIn(("price",), calls)
+        self.assertEqual(calls.count(("price",)), 3)
+        self.assertEqual(len(outcome["warm_samples"]), 2)
 
     def test_primary_summary_uses_execute_query_time(self):
         benchmark = load_benchmark_module()
@@ -606,18 +589,6 @@ class BenchmarkApiContractTests(unittest.TestCase):
         paths = environment["PYTHONPATH"].split(os.pathsep)
         self.assertEqual(paths[0], str(ROOT))
         self.assertEqual(paths[1], "/existing/path")
-
-    def test_cold_cache_validation_rejects_non_spec_remote_blocks(self):
-        benchmark = load_benchmark_module()
-        benchmark.validate_cold_cache_status([
-            {"original_remote_path": "https://huggingface.co/data/spec.json"},
-        ])
-
-        with self.assertRaisesRegex(ValueError, "remote data block"):
-            benchmark.validate_cold_cache_status([
-                {"original_remote_path": "https://cdn.example/content-hash?<redacted>"},
-            ])
-
 
 class BenchmarkArchiveTests(unittest.TestCase):
     def setUp(self):

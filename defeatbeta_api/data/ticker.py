@@ -3551,11 +3551,11 @@ class Ticker:
         return final_map
 
     def download_data_performance(self) -> str:
-        res = f"-------------- Download Data Performance ---------------"
-        res += f"\n"
-        res += self.duckdb_client.query(
-            "SELECT * FROM cache_httpfs_cache_access_info_query()"
-        ).to_string()
-        res += f"\n"
-        res += f"--------------------------------------------------------"
-        return res
+        filesystem = getattr(self.duckdb_client, "_dataset_fs", None)
+        if filesystem is None:
+            return "Dataset cache is disabled"
+        metrics = filesystem.metrics()
+        lines = ["-------------- Download Data Performance ---------------"]
+        lines.extend(f"{key}: {value}" for key, value in sorted(metrics.items()))
+        lines.append("--------------------------------------------------------")
+        return "\n".join(lines)

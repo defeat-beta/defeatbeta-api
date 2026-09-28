@@ -3,10 +3,10 @@ Change Log
 
 0.0.62
 -------
-- perf: resolve pinned Parquet URLs once and query the signed CDN URL through ``cache_httpfs`` by default, preserving warm-cache behavior within a resolved URL's lifetime and automatically falling back to the pinned URL when direct CDN access fails [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
+- perf: replace the community ``cache_httpfs`` dependency with DefeatBeta's demand-driven Parquet and JSON block cache, keyed by pinned URL and dataset update time; retain uncached standard HTTP fallback and support direct or proxied connections [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
+- breaking: replace ``cache_httpfs_*`` configuration keys with ``cache_enabled``, ``cache_directory``, ``cache_block_size``, ``cache_max_disk_bytes``, ``cache_max_memory_blocks``, and ``cache_workers`` [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
 - fix: defer network access until client initialization, respect explicit and environment proxies for dataset metadata, and replace runtime NLTK model downloads with an offline sentence splitter; include SQL and report resources in the wheel and install MCP dependencies through its own project [`#207 <https://github.com/defeat-beta/defeatbeta-api/issues/207>`_]
 - feat: add market-aware ``CompanyMeta`` support for US and Hong Kong catalogs, returning ``cik`` for US companies and ``isin`` for HK companies while preserving missing financial currencies as ``None`` [`#197 <https://github.com/defeat-beta/defeatbeta-api/issues/197>`_]
-- test: make the ``cache_httpfs`` file-handle regression test deterministic across cold and warm caches while verifying the applied 64-entry cache limit and bounded total process handle growth [`#203 <https://github.com/defeat-beta/defeatbeta-api/issues/203>`_]
 
 0.0.61
 -------

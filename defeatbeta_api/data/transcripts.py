@@ -41,7 +41,7 @@ class Transcripts:
         already UNNESTed to (paragraph_number, speaker, content)
 
     The metadata list is memoised on the instance; transcript bodies are not
-    cached here because DuckDB's httpfs cache already handles repeat reads.
+    cached here because DefeatBeta's block cache handles repeat reads.
     """
 
     def __init__(
