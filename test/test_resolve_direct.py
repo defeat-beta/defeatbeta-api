@@ -81,6 +81,7 @@ class TestConfiguration(unittest.TestCase):
         settings = config.get_duckdb_settings()
         self.assertTrue(config.cache_enabled)
         self.assertFalse(any("cache_httpfs" in setting for setting in settings))
+        self.assertLess(settings.index("INSTALL httpfs"), settings.index("LOAD httpfs"))
         self.assertTrue(any("http_keep_alive = True" in s for s in settings))
 
     def test_old_extension_settings_are_not_public_configuration(self):

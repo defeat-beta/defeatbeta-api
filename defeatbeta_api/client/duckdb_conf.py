@@ -41,6 +41,7 @@ class Configuration:
 
     def get_duckdb_settings(self):
         return [
+            "INSTALL httpfs",
             "LOAD httpfs",
             # Signed CDN URLs may contain literal asterisks in query parameters.
             "SET GLOBAL allow_asterisks_in_http_paths = true",
