@@ -1,6 +1,9 @@
 """End-to-end DefeatBeta API benchmark and immutable result archive CLI."""
 
 import argparse
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import AsyncExitStack, contextmanager
 import hashlib
 import json
 import logging
@@ -14,10 +17,12 @@ import statistics
 import subprocess
 import sys
 import tempfile
+from threading import Lock
 import time
 import traceback
 from datetime import datetime, timedelta, timezone
 from typing import NamedTuple
+from urllib.parse import urlsplit
 import uuid
 
 
@@ -28,6 +33,10 @@ DEFAULT_RUNS = 3
 DEFAULT_TIMEOUT = 600.0
 RESULT_MARKER = "BENCH_RESULT="
 PRIMARY_METRIC = "execute_query_seconds"
+STOCK_PRICES_URL = (
+    "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/"
+    "resolve/main/data/US/stock_prices.parquet"
+)
 
 SHARED_FIELDS = {
     "environment",
@@ -103,6 +112,842 @@ def redact_proxy(proxy):
     return f"{parts.scheme}://{parts.hostname}{port}"
 
 
+def httpx_proxy_options(proxy):
+    """Use the environment unless an explicit transport route was requested."""
+    return {"proxy": proxy or None, "trust_env": proxy is None}
+
+
+def network_range_plan(file_size, block_size):
+    """Select distinct cache-sized blocks used by the stock price query."""
+    if file_size <= 0 or block_size <= 0:
+        raise ValueError("file size and block size must be positive")
+    plan = []
+    for index in range(min(2, (file_size + block_size - 1) // block_size)):
+        start = index * block_size
+        plan.append((f"front_{index}", start, min(start + block_size, file_size) - 1))
+    tail_start = ((file_size - 1) // block_size) * block_size
+    if tail_start >= 2 * block_size:
+        plan.append(("tail", tail_start, file_size - 1))
+    return plan
+
+
+def causal_control_plan(file_size, block_size, first_block, reference):
+    """Create disjoint control ranges with the reference transfer lengths."""
+    plan = []
+    for index, (_, reference_start, reference_end) in enumerate(reference):
+        start = (first_block + index) * block_size
+        end = start + reference_end - reference_start
+        if end >= file_size:
+            raise ValueError("file is too small for the selected control ranges")
+        plan.append((f"control_{first_block}_{index}", start, end))
+    return plan
+
+
+def parse_content_range(value):
+    match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", value or "")
+    if match is None:
+        raise ValueError("invalid Content-Range")
+    start, end, total = map(int, match.groups())
+    if total <= 0 or start > end or end >= total:
+        raise ValueError("invalid Content-Range bounds")
+    return start, end, total
+
+
+def validate_range_response(status, content_range, length, start, end, total, encoding):
+    if status != 206:
+        raise ValueError(f"expected HTTP 206, received {status}")
+    if parse_content_range(content_range) != (start, end, total):
+        raise ValueError("unexpected Content-Range")
+    if encoding not in (None, "identity"):
+        raise ValueError("unexpected content encoding")
+    if length != end - start + 1:
+        raise ValueError("unexpected response length")
+
+
+async def _probe_range(
+    client, url, name, start, end, total, sample_started_ns, include_body=False
+):
+    request_started_ns = time.perf_counter_ns()
+    first_body_ns = None
+    length = 0
+    digest = hashlib.sha256()
+    body = bytearray() if include_body else None
+    headers = {"Range": f"bytes={start}-{end}", "Accept-Encoding": "identity"}
+    async with client.stream("GET", url, headers=headers) as response:
+        headers_received_ns = time.perf_counter_ns()
+        status = response.status_code
+        content_range = response.headers.get("Content-Range")
+        encoding = response.headers.get("Content-Encoding")
+        http_version = response.http_version
+        try:
+            network_stream = response.extensions["network_stream"]
+            local_port = network_stream.get_extra_info("socket").getsockname()[1]
+        except (AttributeError, KeyError, OSError, TypeError):
+            local_port = None
+        async for chunk in response.aiter_raw():
+            if first_body_ns is None:
+                first_body_ns = time.perf_counter_ns()
+            length += len(chunk)
+            digest.update(chunk)
+            if body is not None:
+                body.extend(chunk)
+    finished_ns = time.perf_counter_ns()
+    validate_range_response(status, content_range, length, start, end, total, encoding)
+    result = {
+        "name": name,
+        "start": start,
+        "end": end,
+        "bytes": length,
+        "sha256": digest.hexdigest(),
+        "http_version": http_version,
+        "local_port": local_port,
+        "request_start_seconds": (request_started_ns - sample_started_ns) / 1e9,
+        "headers_seconds": (headers_received_ns - sample_started_ns) / 1e9,
+        "first_body_seconds": (
+            (first_body_ns - sample_started_ns) / 1e9
+            if first_body_ns is not None else None
+        ),
+        "finish_seconds": (finished_ns - sample_started_ns) / 1e9,
+    }
+    if body is not None:
+        result["body"] = bytes(body)
+    return result
+
+
+async def resolve_signed_url(client, url):
+    response = await client.head(url, follow_redirects=False)
+    if response.status_code not in (301, 302, 303, 307, 308):
+        raise ValueError(f"resolve HEAD returned HTTP {response.status_code}")
+    location = response.headers.get("Location")
+    parts = urlsplit(location or "")
+    if parts.scheme != "https" or not parts.hostname or parts.username or parts.password:
+        raise ValueError("resolve HEAD returned an unsafe Location")
+    return location
+
+
+async def run_network_probe(url, proxy, runs, timeout, block_size):
+    """Measure warmed, uncached Range transfers without changing the API cache."""
+    try:
+        import httpx
+        import h2  # noqa: F401 - required by httpx HTTP/2 support
+    except ImportError as exc:
+        raise RuntimeError("install the optional httpx[http2] benchmark dependency") from exc
+
+    limits = httpx.Limits(max_connections=3, max_keepalive_connections=3, keepalive_expiry=120)
+    async with httpx.AsyncClient(
+        http2=True, timeout=timeout, limits=limits, **httpx_proxy_options(proxy)
+    ) as client:
+        resolve_started_ns = time.perf_counter_ns()
+        signed_url = await resolve_signed_url(client, url)
+        resolve_seconds = (time.perf_counter_ns() - resolve_started_ns) / 1e9
+        warm_started_ns = time.perf_counter_ns()
+        warm = await client.get(
+            signed_url,
+            headers={"Range": "bytes=0-0", "Accept-Encoding": "identity"},
+        )
+        warm_seconds = (time.perf_counter_ns() - warm_started_ns) / 1e9
+        _, _, file_size = parse_content_range(warm.headers.get("Content-Range"))
+        validate_range_response(
+            warm.status_code, warm.headers.get("Content-Range"), len(warm.content),
+            0, 0, file_size, warm.headers.get("Content-Encoding"),
+        )
+        plan = network_range_plan(file_size, block_size)
+        samples = []
+        expected_digests = None
+        for trial in range(1, runs + 1):
+            sample_started_ns = time.perf_counter_ns()
+            transfers = await asyncio.gather(*(
+                _probe_range(client, signed_url, name, start, end, file_size, sample_started_ns)
+                for name, start, end in plan
+            ))
+            wall_seconds = (time.perf_counter_ns() - sample_started_ns) / 1e9
+            digests = {item["name"]: item["sha256"] for item in transfers}
+            if expected_digests is not None and digests != expected_digests:
+                raise ValueError("Range content changed between trials")
+            expected_digests = digests
+            samples.append({
+                "trial": trial,
+                "wall_seconds": wall_seconds,
+                "bytes": sum(item["bytes"] for item in transfers),
+                "transfers": transfers,
+            })
+    return {
+        "probe": "warm_connection_parallel_range_get",
+        "url": url,
+        "cdn_host": urlsplit(signed_url).hostname,
+        "proxy": redact_proxy(proxy),
+        "resolve_seconds": resolve_seconds,
+        "warmup_seconds": warm_seconds,
+        "warmup_http_version": warm.http_version,
+        "file_size": file_size,
+        "block_size": block_size,
+        "ranges": [{"name": name, "start": start, "end": end} for name, start, end in plan],
+        "runs": runs,
+        "median_wall_seconds": statistics.median(item["wall_seconds"] for item in samples),
+        "samples": samples,
+        "limitations": (
+            "Network-only diagnostic; it excludes DuckDB, cache_httpfs, Parquet decoding, "
+            "and DataFrame materialization. The first byte of the file is fetched only "
+            "to warm the connection and is not stored in a local data cache."
+        ),
+    }
+
+
+async def run_network_causality_probe(
+    url, proxy, timeout, block_size, new_warmup_bytes=1, idle_seconds=0.0
+):
+    """Cross connection age with previously requested and new byte ranges."""
+    try:
+        import httpx
+        import h2  # noqa: F401 - required by httpx HTTP/2 support
+    except ImportError as exc:
+        raise RuntimeError("install the optional httpx[http2] benchmark dependency") from exc
+
+    limits = httpx.Limits(max_connections=3, max_keepalive_connections=3, keepalive_expiry=120)
+
+    def new_client():
+        return httpx.AsyncClient(
+            http2=True, timeout=timeout, limits=limits, **httpx_proxy_options(proxy)
+        )
+
+    async def measure_stage(client, signed_url, label, plan, file_size):
+        started_ns = time.perf_counter_ns()
+        transfers = await asyncio.gather(*(
+            _probe_range(client, signed_url, name, start, end, file_size, started_ns)
+            for name, start, end in plan
+        ))
+        return {
+            "label": label,
+            "wall_seconds": (time.perf_counter_ns() - started_ns) / 1e9,
+            "bytes": sum(item["bytes"] for item in transfers),
+            "transfers": transfers,
+        }
+
+    async with new_client() as old_client:
+        signed_url = await resolve_signed_url(old_client, url)
+        warm = await old_client.get(
+            signed_url,
+            headers={"Range": "bytes=0-0", "Accept-Encoding": "identity"},
+        )
+        _, _, file_size = parse_content_range(warm.headers.get("Content-Range"))
+        validate_range_response(
+            warm.status_code, warm.headers.get("Content-Range"), len(warm.content),
+            0, 0, file_size, warm.headers.get("Content-Encoding"),
+        )
+        reference = network_range_plan(file_size, block_size)
+        if len(reference) != 3:
+            raise ValueError("file is too small for three-range causality probe")
+        control_b = causal_control_plan(file_size, block_size, 8, reference)
+        control_c = causal_control_plan(file_size, block_size, 16, reference)
+        neutral_offset = 24 * block_size
+        neutral_end = neutral_offset + new_warmup_bytes - 1
+        if neutral_end >= file_size:
+            raise ValueError("file is too small for a neutral connection warmup")
+        stages = [
+            await measure_stage(old_client, signed_url, "old_connection_first_ranges", reference, file_size)
+        ]
+        idle_started_ns = time.perf_counter_ns()
+        await asyncio.sleep(idle_seconds)
+        actual_idle_seconds = (time.perf_counter_ns() - idle_started_ns) / 1e9
+        stages.append(
+            await measure_stage(old_client, signed_url, "old_connection_new_ranges", control_b, file_size)
+        )
+        async with new_client() as fresh_client:
+            fresh_warm_started_ns = time.perf_counter_ns()
+            fresh_warm = await fresh_client.get(
+                signed_url,
+                headers={
+                    "Range": f"bytes={neutral_offset}-{neutral_end}",
+                    "Accept-Encoding": "identity",
+                },
+            )
+            fresh_warm_seconds = (time.perf_counter_ns() - fresh_warm_started_ns) / 1e9
+            validate_range_response(
+                fresh_warm.status_code, fresh_warm.headers.get("Content-Range"),
+                len(fresh_warm.content), neutral_offset, neutral_end, file_size,
+                fresh_warm.headers.get("Content-Encoding"),
+            )
+            stages.extend([
+                await measure_stage(fresh_client, signed_url, "new_connection_repeated_ranges", reference, file_size),
+                await measure_stage(fresh_client, signed_url, "new_connection_new_ranges", control_c, file_size),
+            ])
+    first_hashes = [item["sha256"] for item in stages[0]["transfers"]]
+    repeat_hashes = [item["sha256"] for item in stages[2]["transfers"]]
+    if first_hashes != repeat_hashes:
+        raise ValueError("repeated Range content changed across connections")
+    return {
+        "probe": "range_connection_vs_remote_cache_causality",
+        "url": url,
+        "cdn_host": urlsplit(signed_url).hostname,
+        "proxy": redact_proxy(proxy),
+        "file_size": file_size,
+        "block_size": block_size,
+        "idle_seconds_requested": idle_seconds,
+        "idle_seconds_actual": actual_idle_seconds,
+        "new_connection_warmup_bytes": new_warmup_bytes,
+        "new_connection_warmup_seconds": fresh_warm_seconds,
+        "http_version": warm.http_version,
+        "stages": stages,
+        "limitations": (
+            "All stages download complete response bodies without a local data cache. "
+            "The proxy and CDN may cache ranges at an unknown granularity; this "
+            "single-object crossover is diagnostic, not a proof of cache location."
+        ),
+    }
+
+
+TRANSPORT_MODES = (
+    "http2_multiplexed",
+    "http2_independent",
+    "http1_independent",
+)
+
+
+def transport_probe_schedule(runs):
+    """Rotate mode order so time-varying network conditions affect each mode."""
+    if runs < 1:
+        raise ValueError("runs must be positive")
+    return [
+        (trial + 1, mode)
+        for trial in range(runs)
+        for mode in TRANSPORT_MODES[trial % len(TRANSPORT_MODES):]
+        + TRANSPORT_MODES[:trial % len(TRANSPORT_MODES)]
+    ]
+
+
+def validate_transport_sample(mode, transfers):
+    expected_version = "HTTP/1.1" if mode == "http1_independent" else "HTTP/2"
+    if any(item["http_version"] != expected_version for item in transfers):
+        raise ValueError(f"{mode} did not use {expected_version}")
+    ports = [item["local_port"] for item in transfers]
+    expected_ports = 1 if mode == "http2_multiplexed" else len(transfers)
+    if None in ports or len(set(ports)) != expected_ports:
+        raise ValueError(f"{mode} did not use {expected_ports} verifiable connections")
+
+
+def transport_client_index(trial, range_index, client_count):
+    return (range_index + trial - 1) % client_count
+
+
+async def run_network_transport_probe(url, proxy, runs, timeout, block_size):
+    """Compare multiplexing and independent warm connections for identical ranges."""
+    try:
+        import httpx
+        import h2  # noqa: F401 - required by httpx HTTP/2 support
+    except ImportError as exc:
+        raise RuntimeError("install the optional httpx[http2] benchmark dependency") from exc
+
+    schedule = transport_probe_schedule(runs)
+    limits = httpx.Limits(max_connections=1, max_keepalive_connections=1, keepalive_expiry=120)
+
+    def new_client(http2):
+        return httpx.AsyncClient(
+            http2=http2, timeout=timeout, limits=limits, **httpx_proxy_options(proxy)
+        )
+
+    async with new_client(True) as resolver:
+        signed_url = await resolve_signed_url(resolver, url)
+        size_response = await resolver.get(
+            signed_url, headers={"Range": "bytes=0-0", "Accept-Encoding": "identity"}
+        )
+        _, _, file_size = parse_content_range(size_response.headers.get("Content-Range"))
+        validate_range_response(
+            size_response.status_code, size_response.headers.get("Content-Range"),
+            len(size_response.content), 0, 0, file_size,
+            size_response.headers.get("Content-Encoding"),
+        )
+    neutral_offset = 24 * block_size
+    if neutral_offset >= file_size:
+        raise ValueError("file is too small for the neutral warmup range")
+    plan = network_range_plan(file_size, block_size)
+    if len(plan) != 3:
+        raise ValueError("file is too small for three-range transport probe")
+
+    async with AsyncExitStack() as stack:
+        clients = {
+            mode: [
+                await stack.enter_async_context(new_client(mode != "http1_independent"))
+                for _ in range(1 if mode == "http2_multiplexed" else 3)
+            ]
+            for mode in TRANSPORT_MODES
+        }
+        warm_start = time.perf_counter_ns()
+        warm_responses = await asyncio.gather(*(
+            client.get(
+                signed_url,
+                headers={"Range": f"bytes={neutral_offset}-{neutral_offset}",
+                         "Accept-Encoding": "identity"},
+            )
+            for group in clients.values() for client in group
+        ))
+        warm_seconds = (time.perf_counter_ns() - warm_start) / 1e9
+        for response in warm_responses:
+            validate_range_response(
+                response.status_code, response.headers.get("Content-Range"),
+                len(response.content), neutral_offset, neutral_offset,
+                file_size, response.headers.get("Content-Encoding"),
+            )
+        samples = []
+        expected_digests = None
+        for trial, mode in schedule:
+            started_ns = time.perf_counter_ns()
+            group = clients[mode]
+            transfers = await asyncio.gather(*(
+                _probe_range(
+                    group[transport_client_index(trial, index, len(group))],
+                    signed_url, name, start, end,
+                    file_size, started_ns,
+                )
+                for index, (name, start, end) in enumerate(plan)
+            ))
+            wall_seconds = (time.perf_counter_ns() - started_ns) / 1e9
+            validate_transport_sample(mode, transfers)
+            digests = {item["name"]: item["sha256"] for item in transfers}
+            if expected_digests is not None and digests != expected_digests:
+                raise ValueError("Range content changed between transport modes")
+            expected_digests = digests
+            samples.append({
+                "trial": trial,
+                "mode": mode,
+                "wall_seconds": wall_seconds,
+                "bytes": sum(item["bytes"] for item in transfers),
+                "effective_mbps": sum(item["bytes"] for item in transfers) * 8 / wall_seconds / 1e6,
+                "transfers": transfers,
+            })
+    return {
+        "probe": "http_transport_concurrency_comparison",
+        "url": url,
+        "cdn_host": urlsplit(signed_url).hostname,
+        "proxy": redact_proxy(proxy),
+        "file_size": file_size,
+        "block_size": block_size,
+        "warmup_seconds": warm_seconds,
+        "ranges": [{"name": name, "start": start, "end": end} for name, start, end in plan],
+        "runs_per_mode": runs,
+        "median_by_mode": {
+            mode: statistics.median(
+                item["wall_seconds"] for item in samples if item["mode"] == mode
+            )
+            for mode in TRANSPORT_MODES
+        },
+        "samples": samples,
+        "limitations": (
+            "Network-only diagnostic over one signed URL and identical ranges. "
+            "Connections are warmed with one neutral byte, and no local data cache is used. "
+            "It excludes DuckDB, cache_httpfs, Parquet decoding, and DataFrame materialization. "
+            "The proxy or CDN may cache requested ranges between modes."
+        ),
+    }
+
+
+def network_fanout_plan(file_size, block_size, chunk_size):
+    """Split the query's exact remote byte ranges without changing total bytes."""
+    if chunk_size < 1:
+        raise ValueError("chunk size must be positive")
+    chunks = []
+    for name, start, end in network_range_plan(file_size, block_size):
+        for part, offset in enumerate(range(start, end + 1, chunk_size)):
+            chunks.append((f"{name}_part_{part}", offset, min(offset + chunk_size - 1, end)))
+    return chunks
+
+
+def fanout_probe_schedule(runs, modes):
+    if runs < 1:
+        raise ValueError("runs must be positive")
+    return [
+        (trial + 1, mode)
+        for trial in range(runs)
+        for mode in modes[trial % len(modes):] + modes[:trial % len(modes)]
+    ]
+
+
+def validate_fanout_connections(transfers, warm_ports, assigned_indices):
+    if len(transfers) != len(assigned_indices) or None in warm_ports:
+        raise ValueError("fanout sample cannot verify warm connections")
+    if len(set(warm_ports)) != len(warm_ports):
+        raise ValueError("fanout warm connections are not distinct")
+    for item, index in zip(transfers, assigned_indices):
+        if item["http_version"] != "HTTP/2" or item["local_port"] != warm_ports[index]:
+            raise ValueError("fanout sample did not reuse the expected warm connection")
+    if {item["local_port"] for item in transfers} != set(warm_ports):
+        raise ValueError("fanout sample did not use every warm connection")
+
+
+async def run_network_fanout_probe(url, proxy, runs, timeout, block_size):
+    """Separate the effects of HTTP/2 connection count and Range chunk size."""
+    try:
+        import httpx
+        import h2  # noqa: F401 - required by httpx HTTP/2 support
+    except ImportError as exc:
+        raise RuntimeError("install the optional httpx[http2] benchmark dependency") from exc
+
+    limits = httpx.Limits(max_connections=1, max_keepalive_connections=1, keepalive_expiry=120)
+
+    def new_client():
+        return httpx.AsyncClient(
+            http2=True, timeout=timeout, limits=limits, **httpx_proxy_options(proxy)
+        )
+
+    async with new_client() as resolver:
+        signed_url = await resolve_signed_url(resolver, url)
+        size_response = await resolver.get(
+            signed_url, headers={"Range": "bytes=0-0", "Accept-Encoding": "identity"}
+        )
+        _, _, file_size = parse_content_range(size_response.headers.get("Content-Range"))
+        validate_range_response(
+            size_response.status_code, size_response.headers.get("Content-Range"),
+            len(size_response.content), 0, 0, file_size,
+            size_response.headers.get("Content-Encoding"),
+        )
+    neutral_offset = 24 * block_size
+    if neutral_offset >= file_size:
+        raise ValueError("file is too small for the neutral warmup range")
+    if len(network_range_plan(file_size, block_size)) != 3:
+        raise ValueError("file is too small for three-range fanout probe")
+
+    plans = {
+        size: network_fanout_plan(file_size, block_size, size)
+        for size in (block_size, max(1, block_size // 2), max(1, block_size // 4))
+    }
+    modes = [
+        (size, count)
+        for size, plan in plans.items()
+        for count in (3, 6, 12)
+        if count <= len(plan)
+    ]
+    schedule = fanout_probe_schedule(runs, modes)
+    async with AsyncExitStack() as stack:
+        clients = {
+            count: [await stack.enter_async_context(new_client()) for _ in range(count)]
+            for count in (3, 6, 12)
+        }
+        warm_started_ns = time.perf_counter_ns()
+        warm_ports = {}
+        for count, group in clients.items():
+            warm_results = await asyncio.gather(*(
+                _probe_range(
+                    client, signed_url, "warm", neutral_offset, neutral_offset,
+                    file_size, warm_started_ns,
+                )
+                for client in group
+            ))
+            ports = [item["local_port"] for item in warm_results]
+            if (any(item["http_version"] != "HTTP/2" for item in warm_results)
+                    or None in ports or len(set(ports)) != count):
+                raise ValueError("fanout warmup did not create distinct HTTP/2 connections")
+            warm_ports[count] = ports
+        warm_seconds = (time.perf_counter_ns() - warm_started_ns) / 1e9
+        samples = []
+        expected_sha256 = None
+        for trial, (chunk_size, count) in schedule:
+            plan = plans[chunk_size]
+            group = clients[count]
+            assigned_indices = [
+                transport_client_index(trial, index, count)
+                for index in range(len(plan))
+            ]
+            started_ns = time.perf_counter_ns()
+            transfers = await asyncio.gather(*(
+                _probe_range(
+                    group[assigned_indices[index]],
+                    signed_url, name, start, end, file_size, started_ns,
+                    include_body=True,
+                )
+                for index, (name, start, end) in enumerate(plan)
+            ))
+            wall_seconds = (time.perf_counter_ns() - started_ns) / 1e9
+            validate_fanout_connections(transfers, warm_ports[count], assigned_indices)
+            digest = hashlib.sha256()
+            for item in transfers:
+                digest.update(item.pop("body"))
+            payload_sha256 = digest.hexdigest()
+            if expected_sha256 is not None and payload_sha256 != expected_sha256:
+                raise ValueError("Range content changed between fanout modes")
+            expected_sha256 = payload_sha256
+            total_bytes = sum(item["bytes"] for item in transfers)
+            samples.append({
+                "trial": trial,
+                "chunk_size": chunk_size,
+                "connections": count,
+                "requests": len(plan),
+                "wall_seconds": wall_seconds,
+                "bytes": total_bytes,
+                "effective_mbps": total_bytes * 8 / wall_seconds / 1e6,
+                "payload_sha256": payload_sha256,
+                "transfers": transfers,
+            })
+    return {
+        "probe": "http2_range_fanout_comparison",
+        "url": url,
+        "cdn_host": urlsplit(signed_url).hostname,
+        "proxy": redact_proxy(proxy),
+        "file_size": file_size,
+        "block_size": block_size,
+        "warmup_seconds": warm_seconds,
+        "runs_per_mode": runs,
+        "modes": [
+            {"chunk_size": size, "connections": count, "requests": len(plans[size])}
+            for size, count in modes
+        ],
+        "samples": samples,
+        "limitations": (
+            "Network-only diagnostic using the same exact remote bytes in every mode. "
+            "One neutral byte is used to warm each connection; no local data cache is used. "
+            "It excludes DuckDB, cache_httpfs, Parquet decoding, and DataFrame materialization. "
+            "Shared proxy traffic and remote caches are uncontrolled."
+        ),
+    }
+
+
+def make_range_probe_filesystem(client, signed_url, file_size, block_size):
+    """Build an isolated read-through fsspec adapter for a DuckDB experiment."""
+    try:
+        import fsspec
+    except ImportError as exc:
+        raise RuntimeError("install the optional fsspec benchmark dependency") from exc
+
+    class RangeProbeFileSystem(fsspec.AbstractFileSystem):
+        protocol = "rangeprobe"
+        root_marker = ""
+
+        def __init__(self, **kwargs):
+            super().__init__(skip_instance_cache=True, **kwargs)
+            self.client = client
+            self.signed_url = signed_url
+            self.file_size = file_size
+            self.block_size = block_size
+            self.blocks = {}
+            self.pending = {}
+            self.transfer_events = []
+            self.read_events = []
+            self.lock = Lock()
+            self.executor = ThreadPoolExecutor(max_workers=3)
+
+        def info(self, path, **kwargs):
+            return {"name": path, "size": self.file_size, "type": "file"}
+
+        def ls(self, path, detail=True, **kwargs):
+            entry = self.info(path)
+            return [entry] if detail else [entry["name"]]
+
+        def modified(self, path):
+            return datetime.fromtimestamp(0, timezone.utc)
+
+        def created(self, path):
+            return self.modified(path)
+
+        def _open(self, path, mode="rb", **kwargs):
+            if mode != "rb":
+                raise ValueError("range probe filesystem is read-only")
+            return fsspec.spec.AbstractBufferedFile(
+                self, path, mode=mode, block_size=self.block_size,
+                cache_type="none", size=self.file_size,
+            )
+
+        def _download_block(self, start):
+            import httpx
+
+            end = min(start + self.block_size, self.file_size) - 1
+            started_ns = time.perf_counter_ns()
+            for attempt in range(2):
+                try:
+                    response = self.client.get(
+                        self.signed_url,
+                        headers={"Range": f"bytes={start}-{end}", "Accept-Encoding": "identity"},
+                    )
+                    break
+                except httpx.TransportError:
+                    if attempt == 1:
+                        raise
+            content = response.content
+            validate_range_response(
+                response.status_code, response.headers.get("Content-Range"),
+                len(content), start, end, self.file_size,
+                response.headers.get("Content-Encoding"),
+            )
+            with self.lock:
+                self.transfer_events.append({
+                    "start": start,
+                    "bytes": len(content),
+                    "seconds": (time.perf_counter_ns() - started_ns) / 1e9,
+                    "http_version": response.http_version,
+                })
+            return content
+
+        def _block(self, start):
+            with self.lock:
+                if start in self.blocks:
+                    return self.blocks[start]
+                future = self.pending.get(start)
+                if future is None:
+                    future = self.executor.submit(self._download_block, start)
+                    self.pending[start] = future
+            content = future.result()
+            with self.lock:
+                self.blocks[start] = content
+            return content
+
+        def prefetch(self):
+            for _, start, _ in network_range_plan(self.file_size, self.block_size):
+                with self.lock:
+                    if start not in self.pending:
+                        self.pending[start] = self.executor.submit(self._download_block, start)
+
+        def cat_file(self, path, start=None, end=None, **kwargs):
+            started_ns = time.perf_counter_ns()
+            start = 0 if start is None else max(0, start)
+            end = self.file_size if end is None else min(self.file_size, end)
+            if end <= start:
+                return b""
+            pieces = []
+            for offset in range((start // self.block_size) * self.block_size, end, self.block_size):
+                block = self._block(offset)
+                left = max(start - offset, 0)
+                right = min(end - offset, len(block))
+                pieces.append(block[left:right])
+            content = b"".join(pieces)
+            with self.lock:
+                self.read_events.append({
+                    "start": start,
+                    "end": end,
+                    "seconds": (time.perf_counter_ns() - started_ns) / 1e9,
+                })
+            return content
+
+        def close(self):
+            self.executor.shutdown(wait=True)
+
+    return RangeProbeFileSystem()
+
+
+def run_fsspec_probe(proxy, runs, timeout, block_size):
+    """Measure Ticker.price through an isolated speculative fsspec adapter."""
+    try:
+        import duckdb
+        import httpx
+        import h2  # noqa: F401 - required by httpx HTTP/2 support
+    except ImportError as exc:
+        raise RuntimeError("install duckdb, fsspec, and httpx[http2] to run this probe") from exc
+
+    sys.path.insert(0, str(ROOT.parent))
+    api = load_api_bindings()
+    from defeatbeta_api.utils.const import stock_prices
+
+    client = httpx.Client(
+        http2=True, timeout=timeout, **httpx_proxy_options(proxy),
+        limits=httpx.Limits(max_connections=3, max_keepalive_connections=3, keepalive_expiry=120),
+    )
+    try:
+        resolve_started_ns = time.perf_counter_ns()
+        resolved = client.head(STOCK_PRICES_URL, follow_redirects=False)
+        signed_url = resolved.headers.get("Location")
+        parts = urlsplit(signed_url or "")
+        if resolved.status_code not in (301, 302, 303, 307, 308):
+            raise ValueError(f"resolve HEAD returned HTTP {resolved.status_code}")
+        if parts.scheme != "https" or not parts.hostname or parts.username or parts.password:
+            raise ValueError("resolve HEAD returned an unsafe Location")
+        resolve_seconds = (time.perf_counter_ns() - resolve_started_ns) / 1e9
+        warm_started_ns = time.perf_counter_ns()
+        warm = client.get(
+            signed_url, headers={"Range": "bytes=0-0", "Accept-Encoding": "identity"}
+        )
+        warm_seconds = (time.perf_counter_ns() - warm_started_ns) / 1e9
+        _, _, file_size = parse_content_range(warm.headers.get("Content-Range"))
+        validate_range_response(
+            warm.status_code, warm.headers.get("Content-Range"), len(warm.content),
+            0, 0, file_size, warm.headers.get("Content-Encoding"),
+        )
+        samples = []
+        expected_result = None
+        for trial in range(1, runs + 1):
+            with tempfile.TemporaryDirectory(prefix="defeatbeta-fsspec-probe-") as directory:
+                cache = Path(directory) / "http-cache"
+                cache.mkdir()
+                config = api.Configuration(
+                    cache_httpfs_cache_directory=str(cache), resolve_direct=False
+                )
+                ticker = api.Ticker(
+                    "AAPL", http_proxy=proxy, log_level=logging.WARNING, config=config
+                )
+                filesystem = make_range_probe_filesystem(client, signed_url, file_size, block_size)
+                try:
+                    connection = ticker.duckdb_client.connection
+                    connection.register_filesystem(filesystem)
+                    cache_status_before = _frame_records(
+                        connection, "SELECT * FROM cache_httpfs_cache_status_query()"
+                    )
+                    validate_cold_cache_status(cache_status_before)
+                    original_get_url_path = ticker.huggingface_client.get_url_path
+                    ticker.huggingface_client.get_url_path = lambda table: (
+                        "rangeprobe://stock_prices.parquet"
+                        if table == stock_prices else original_get_url_path(table)
+                    )
+                    original_execute = ticker.duckdb_client._execute_query
+                    wrapped_timing = {}
+
+                    def execute_with_prefetch(sql):
+                        started_ns = time.perf_counter_ns()
+                        filesystem.prefetch()
+                        result_frame = original_execute(sql)
+                        wrapped_timing["seconds"] = (
+                            time.perf_counter_ns() - started_ns
+                        ) / 1e9
+                        return result_frame
+
+                    ticker.duckdb_client._execute_query = execute_with_prefetch
+                    events = []
+                    cpu_before = resource.getrusage(resource.RUSAGE_SELF)
+                    api_started_ns = time.perf_counter_ns()
+                    with api.capture_performance(events.append):
+                        frame = ticker.price()
+                    api_seconds = (time.perf_counter_ns() - api_started_ns) / 1e9
+                    cpu_after = resource.getrusage(resource.RUSAGE_SELF)
+                    result = result_fingerprint(frame)
+                    if expected_result is not None and result != expected_result:
+                        raise ValueError("Ticker.price result changed between trials")
+                    expected_result = result
+                    phases = _event_totals(events)
+                    samples.append({
+                        "trial": trial,
+                        "query_seconds": wrapped_timing["seconds"],
+                        "execute_query_seconds": phases["duckdb.execute_query"]["seconds"],
+                        "api_call_seconds": api_seconds,
+                        "performance": phases,
+                        "cpu_user_seconds": cpu_after.ru_utime - cpu_before.ru_utime,
+                        "cpu_system_seconds": cpu_after.ru_stime - cpu_before.ru_stime,
+                        "cache_status_before_query": cache_status_before,
+                        "cache_after_query": cache_snapshot(cache),
+                        "cached_blocks": len(filesystem.blocks),
+                        "cached_bytes": sum(map(len, filesystem.blocks.values())),
+                        "transfer_events": sorted(
+                            filesystem.transfer_events, key=lambda item: item["start"]
+                        ),
+                        "read_events": filesystem.read_events,
+                        "result": result,
+                    })
+                finally:
+                    ticker.duckdb_client.close()
+                    filesystem.close()
+    finally:
+        client.close()
+    return {
+        "probe": "ticker_price_fsspec_parallel_range_prototype",
+        "proxy": redact_proxy(proxy),
+        "resolve_seconds": resolve_seconds,
+        "warmup_seconds": warm_seconds,
+        "warmup_http_version": warm.http_version,
+        "file_size": file_size,
+        "block_size": block_size,
+        "samples": samples,
+        "median_query_seconds": statistics.median(item["query_seconds"] for item in samples),
+        "limitations": (
+            "Real Ticker.price and DuckDBClient._execute_query with a benchmark-only "
+            "URL substitution and fsspec adapter. This is not shipped API behavior. "
+            "Each trial uses a new empty local data cache and a shared warmed HTTP client."
+        ),
+    }
+
+
 def cache_snapshot(directory):
     root = Path(directory)
     files = [path for path in root.rglob("*") if path.is_file()]
@@ -172,8 +1017,18 @@ def validate_cold_cache_status(records):
         raise ValueError("remote data block was cached before the measured API call")
 
 
-def collect_diagnostics(ticker):
+def select_cache_profile(parent_profile, cursor_diagnostics):
+    for entry in reversed(cursor_diagnostics or []):
+        if isinstance(entry.get("cache_profile"), list):
+            return entry["cache_profile"], "query_cursor"
+    return parent_profile, "parent_connection"
+
+
+def collect_diagnostics(ticker, cache_profile, http_events=None, cursor_diagnostics=None):
     connection = ticker.duckdb_client.connection
+    selected_profile, profile_scope = select_cache_profile(
+        cache_profile, cursor_diagnostics
+    )
     settings = _frame_records(
         connection,
         "SELECT name, value FROM duckdb_settings() "
@@ -196,15 +1051,102 @@ def collect_diagnostics(ticker):
         "cache_access": _frame_records(
             connection, "SELECT * FROM cache_httpfs_cache_access_info_query()"
         ),
-        "cache_profile": _frame_records(
-            connection, "SELECT cache_httpfs_get_profile() AS profile"
-        ),
+        "cache_profile": selected_profile,
+        "cache_profile_scope": profile_scope,
+        "http_events": http_events or [],
+        "cursor_diagnostics": cursor_diagnostics or [],
         "loaded_extensions": _frame_records(
             connection,
             "SELECT extension_name, extension_version FROM duckdb_extensions() "
             "WHERE loaded ORDER BY extension_name",
         ),
     }
+
+
+def sanitize_http_event(row):
+    """Keep request timing and numeric ranges without persisting signed URLs."""
+    request = row.get("request") or {}
+    response = row.get("response") or {}
+
+    def header(headers, name, pattern):
+        if not isinstance(headers, dict):
+            return None
+        value = next(
+            (value for key, value in headers.items() if str(key).lower() == name),
+            None,
+        )
+        return value if isinstance(value, str) and re.fullmatch(pattern, value) else None
+
+    return {
+        "method": request.get("type"),
+        "host": urlsplit(request.get("url") or "").hostname,
+        "start_time": str(request.get("start_time")),
+        "duration_ms": request.get("duration_ms"),
+        "range": header(request.get("headers"), "range", r"bytes=\d+-\d*"),
+        "status": response.get("status"),
+        "content_range": header(
+            response.get("headers"), "content-range", r"bytes \d+-\d+/\d+"
+        ),
+    }
+
+
+def collect_http_events(connection):
+    rows = _frame_records(
+        connection,
+        "SELECT request, response FROM duckdb_logs_parsed('HTTP') ORDER BY timestamp",
+    )
+    return [sanitize_http_event(row) for row in rows] if isinstance(rows, list) else []
+
+
+def sanitize_filesystem_event(row):
+    """Preserve filesystem offsets while discarding signed remote paths."""
+    def safe_name(value):
+        return value if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_.:-]{1,80}", value) else None
+
+    return {
+        "timestamp": str(row.get("timestamp")),
+        "fs": safe_name(row.get("fs")),
+        "host": urlsplit(row.get("path") or "").hostname,
+        "op": safe_name(row.get("op")),
+        "bytes": row.get("bytes") if isinstance(row.get("bytes"), int) else None,
+        "pos": row.get("pos") if isinstance(row.get("pos"), int) else None,
+    }
+
+
+def collect_filesystem_events(connection):
+    rows = _frame_records(
+        connection,
+        "SELECT timestamp, fs, path, op, bytes, pos "
+        "FROM duckdb_logs_parsed('FileSystem') ORDER BY timestamp",
+    )
+    return [sanitize_filesystem_event(row) for row in rows] if isinstance(rows, list) else []
+
+
+@contextmanager
+def trace_query_cursor(original_get_cursor, sink):
+    """Read per-query diagnostics before the query cursor is closed."""
+    with original_get_cursor() as cursor:
+        try:
+            yield cursor
+        finally:
+            started_ns = time.perf_counter_ns()
+            try:
+                profile = _frame_records(
+                    cursor, "SELECT cache_httpfs_get_profile() AS profile"
+                )
+                http_events = collect_http_events(cursor)
+                filesystem_events = collect_filesystem_events(cursor)
+                sink.append({
+                    "cache_profile": profile,
+                    "http_events": http_events,
+                    "filesystem_events": filesystem_events,
+                    "capture_seconds": (time.perf_counter_ns() - started_ns) / 1e9,
+                })
+            except Exception as exc:
+                sink.append({
+                    "error": redact_secrets(str(exc)),
+                    "capture_seconds": (time.perf_counter_ns() - started_ns) / 1e9,
+                })
 
 
 def run_api_workload(payload, api=None, diagnostics=True):
@@ -232,6 +1174,12 @@ def run_api_workload(payload, api=None, diagnostics=True):
             config=config,
         )
         ticker_initialized_ns = time.perf_counter_ns()
+        connection_caching = payload.get("httpfs_connection_caching")
+        if connection_caching is not None:
+            ticker.duckdb_client.connection.execute(
+                "SET GLOBAL httpfs_connection_caching = "
+                + ("true" if connection_caching else "false")
+            )
         cache_before = cache_snapshot(cache_directory)
         if diagnostics:
             cache_status_before = _frame_records(
@@ -241,19 +1189,42 @@ def run_api_workload(payload, api=None, diagnostics=True):
             validate_cold_cache_status(cache_status_before)
         else:
             cache_status_before = []
+        trace_io = diagnostics and bool(payload.get("trace_io"))
+        cursor_diagnostics = []
+        if trace_io:
+            ticker.duckdb_client.connection.execute(
+                "CALL enable_logging(['HTTP', 'FileSystem'], "
+                "storage='memory', storage_buffer_size=0)"
+            )
+            original_get_cursor = ticker.duckdb_client._get_cursor
+            ticker.duckdb_client._get_cursor = lambda: trace_query_cursor(
+                original_get_cursor, cursor_diagnostics
+            )
 
         query_event_offset = len(events)
         api_started_ns = time.perf_counter_ns()
         frame = ticker.price()
         api_ended_ns = time.perf_counter_ns()
         query_events = events[query_event_offset:]
+        cache_profile = (
+            _frame_records(
+                ticker.duckdb_client.connection,
+                "SELECT cache_httpfs_get_profile() AS profile",
+            )
+            if diagnostics else []
+        )
+        http_events = (
+            collect_http_events(ticker.duckdb_client.connection) if trace_io else []
+        )
 
     cache_after = cache_snapshot(cache_directory)
     if diagnostics:
         fingerprint = result_fingerprint(frame)
         if "symbol" not in frame or not frame["symbol"].eq(symbol).all():
             raise ValueError("Ticker.price returned data for an unexpected symbol")
-        diagnostic_data = collect_diagnostics(ticker)
+        diagnostic_data = collect_diagnostics(
+            ticker, cache_profile, http_events, cursor_diagnostics
+        )
     else:
         fingerprint = {"rows": len(frame)}
         diagnostic_data = {}
@@ -606,6 +1577,8 @@ def cmd_run(args):
         symbols = [validate_symbol(args.symbol)] if args.symbol else list(DEFAULT_SYMBOLS)
         if args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
             raise ValueError("runs and timeout must be positive and finite")
+        if args.cache_block_size < 1:
+            raise ValueError("cache block size must be positive")
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", args.tag):
             raise ValueError("tag must be 1-64 filename-safe characters")
     except ValueError as exc:
@@ -618,11 +1591,36 @@ def cmd_run(args):
         "http_keep_alive": args.keep_alive,
         "resolve_direct": args.resolve_direct,
         "threads": args.threads,
+        "cache_httpfs_cache_block_size": args.cache_block_size,
     }
     configured_settings = {
         **configuration,
         "http_proxy": redact_proxy(args.http_proxy),
     }
+    if args.trace_io:
+        configured_settings["trace_io"] = True
+    if args.httpfs_connection_caching is not None:
+        configured_settings["httpfs_connection_caching"] = args.httpfs_connection_caching
+    methodology = {
+        "workload": "Ticker(symbol).price() through the installed defeatbeta_api package",
+        "cold": (
+            "Fresh worker and isolated cache directory per sample; stock_prices cache "
+            "verified absent immediately before the measured API call"
+        ),
+        "main_metric": (
+            "Sum of DuckDBClient._execute_query timing events emitted during Ticker.price()"
+        ),
+        "secondary_metrics": (
+            "Package import, Ticker initialization, API call, cache state, and cache_httpfs profile"
+        ),
+        "excluded": "Result hashing, diagnostics, report writing, and teardown",
+        "uncontrolled": "DNS, proxy state, operating-system caches, and remote CDN caches",
+    }
+    if args.trace_io:
+        methodology["secondary_metrics"] += ", and sanitized filesystem events"
+        methodology["trace_effect"] = (
+            "Filesystem logging and cursor diagnostics run inside the measured query"
+        )
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     run_id = f"{timestamp}_{args.tag}_{uuid.uuid4().hex[:8]}"
     path = args.output.resolve() / "local" / f"{run_id}.json"
@@ -646,21 +1644,7 @@ def cmd_run(args):
         "environment": environment,
         "implementation": implementation,
         "configured_settings": configured_settings,
-        "methodology": {
-            "workload": "Ticker(symbol).price() through the installed defeatbeta_api package",
-            "cold": (
-                "Fresh worker and isolated cache directory per sample; stock_prices cache "
-                "verified absent immediately before the measured API call"
-            ),
-            "main_metric": (
-                "Sum of DuckDBClient._execute_query timing events emitted during Ticker.price()"
-            ),
-            "secondary_metrics": (
-                "Package import, Ticker initialization, API call, cache state, and cache_httpfs profile"
-            ),
-            "excluded": "Result hashing, diagnostics, report writing, and teardown",
-            "uncontrolled": "DNS, proxy state, operating-system caches, and remote CDN caches",
-        },
+        "methodology": methodology,
     }
     reports = [
         {
@@ -687,6 +1671,8 @@ def cmd_run(args):
                         "cache_directory": str(cache),
                         "http_proxy": args.http_proxy,
                         "configuration": configuration,
+                        "trace_io": args.trace_io,
+                        "httpfs_connection_caching": args.httpfs_connection_caching,
                     },
                     args.timeout,
                 )
@@ -714,6 +1700,154 @@ def cmd_run(args):
     print(f"Record: {path}")
     prune_local(args.output)
     return 0 if all(report["status"] == "complete" for report in reports) else 1
+
+
+def cmd_network_probe(args):
+    try:
+        if args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
+            raise ValueError("runs and timeout must be positive and finite")
+        if args.block_size < 1:
+            raise ValueError("block size must be positive")
+        outcome = asyncio.run(run_network_probe(
+            STOCK_PRICES_URL, args.http_proxy, args.runs, args.timeout, args.block_size
+        ))
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            with args.output.open("x", encoding="utf-8") as handle:
+                json.dump(outcome, handle, indent=2, ensure_ascii=True)
+                handle.write("\n")
+    except Exception as exc:
+        print(f"Error: {redact_secrets(str(exc))}", file=sys.stderr)
+        return 1
+    print(
+        f"Network-only median: {outcome['median_wall_seconds']:.6f} s; "
+        f"warmup: {outcome['warmup_seconds']:.6f} s; "
+        f"HTTP: {outcome['warmup_http_version']}"
+    )
+    for sample in outcome["samples"]:
+        print(
+            f"[{sample['trial']}/{outcome['runs']}] "
+            f"{sample['bytes']} bytes in {sample['wall_seconds']:.6f} s"
+        )
+    if args.output is not None:
+        print(f"Record: {args.output}")
+    return 0
+
+
+def cmd_network_causality(args):
+    try:
+        if (not math.isfinite(args.timeout) or args.timeout <= 0
+                or args.block_size < 1 or args.new_warmup_bytes < 1
+                or not math.isfinite(args.idle_seconds) or args.idle_seconds < 0):
+            raise ValueError("timeout, block size, warmup bytes, and idle seconds are invalid")
+        outcome = asyncio.run(run_network_causality_probe(
+            STOCK_PRICES_URL, args.http_proxy, args.timeout, args.block_size,
+            args.new_warmup_bytes, args.idle_seconds,
+        ))
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            with args.output.open("x", encoding="utf-8") as handle:
+                json.dump(outcome, handle, indent=2, ensure_ascii=True)
+                handle.write("\n")
+    except Exception as exc:
+        print(f"Error: {redact_secrets(str(exc))}", file=sys.stderr)
+        return 1
+    for stage in outcome["stages"]:
+        ports = sorted({
+            item["local_port"] for item in stage["transfers"]
+            if item["local_port"] is not None
+        })
+        print(
+            f"{stage['label']}: {stage['bytes']} bytes in "
+            f"{stage['wall_seconds']:.6f} s; local ports: {ports}"
+        )
+    if args.output is not None:
+        print(f"Record: {args.output}")
+    return 0
+
+
+def cmd_network_transport(args):
+    try:
+        if (args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0
+                or args.block_size < 1):
+            raise ValueError("runs, timeout, and block size must be positive")
+        outcome = asyncio.run(run_network_transport_probe(
+            STOCK_PRICES_URL, args.http_proxy, args.runs, args.timeout, args.block_size
+        ))
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            with args.output.open("x", encoding="utf-8") as handle:
+                json.dump(outcome, handle, indent=2, ensure_ascii=True)
+                handle.write("\n")
+    except Exception as exc:
+        print(f"Error: {redact_secrets(str(exc))}", file=sys.stderr)
+        return 1
+    for sample in outcome["samples"]:
+        print(
+            f"[{sample['trial']}/{outcome['runs_per_mode']}] {sample['mode']}: "
+            f"{sample['bytes']} bytes in {sample['wall_seconds']:.6f} s "
+            f"({sample['effective_mbps']:.3f} Mbit/s)"
+        )
+    if args.output is not None:
+        print(f"Record: {args.output}")
+    return 0
+
+
+def cmd_network_fanout(args):
+    try:
+        if (args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0
+                or args.block_size < 1):
+            raise ValueError("runs, timeout, and block size must be positive")
+        outcome = asyncio.run(run_network_fanout_probe(
+            STOCK_PRICES_URL, args.http_proxy, args.runs, args.timeout, args.block_size
+        ))
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            with args.output.open("x", encoding="utf-8") as handle:
+                json.dump(outcome, handle, indent=2, ensure_ascii=True)
+                handle.write("\n")
+    except Exception as exc:
+        print(f"Error: {redact_secrets(str(exc))}", file=sys.stderr)
+        return 1
+    for sample in outcome["samples"]:
+        print(
+            f"[{sample['trial']}/{outcome['runs_per_mode']}] "
+            f"{sample['chunk_size']} B x {sample['connections']} connections "
+            f"({sample['requests']} requests): {sample['bytes']} bytes in "
+            f"{sample['wall_seconds']:.6f} s ({sample['effective_mbps']:.3f} Mbit/s)"
+        )
+    if args.output is not None:
+        print(f"Record: {args.output}")
+    return 0
+
+
+def cmd_fsspec_probe(args):
+    try:
+        if args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
+            raise ValueError("runs and timeout must be positive and finite")
+        if args.block_size < 1:
+            raise ValueError("block size must be positive")
+        outcome = run_fsspec_probe(args.http_proxy, args.runs, args.timeout, args.block_size)
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            with args.output.open("x", encoding="utf-8") as handle:
+                json.dump(outcome, handle, indent=2, ensure_ascii=True)
+                handle.write("\n")
+    except Exception as exc:
+        print(f"Error: {redact_secrets(str(exc))}", file=sys.stderr)
+        return 1
+    print(
+        f"DuckDB/fsspec prototype median: {outcome['median_query_seconds']:.6f} s; "
+        f"HTTP: {outcome['warmup_http_version']}"
+    )
+    for sample in outcome["samples"]:
+        print(
+            f"[{sample['trial']}/{len(outcome['samples'])}] "
+            f"{sample['cached_bytes']} bytes in {sample['query_seconds']:.6f} s"
+        )
+    if args.output is not None:
+        print(f"Record: {args.output}")
+    return 0
 
 
 def cmd_archive(args):
@@ -762,6 +1896,13 @@ def build_parser():
     run_parser.add_argument("--http-proxy")
     run_parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     run_parser.add_argument("--threads", type=int, default=4)
+    run_parser.add_argument("--cache-block-size", type=int, default=1024 * 1024)
+    run_parser.add_argument("--trace-io", action="store_true")
+    run_parser.add_argument(
+        "--httpfs-connection-caching",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
     run_parser.add_argument(
         "--keep-alive", action=argparse.BooleanOptionalAction, default=True
     )
@@ -769,6 +1910,55 @@ def build_parser():
         "--resolve-direct", action=argparse.BooleanOptionalAction, default=True
     )
     run_parser.add_argument("--output", type=Path, default=ROOT / "results")
+
+    probe_parser = subparsers.add_parser(
+        "network-probe", help="Measure three parallel Range GETs over a warmed HTTP pool"
+    )
+    probe_parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
+    probe_parser.add_argument("--http-proxy")
+    probe_parser.add_argument("--timeout", type=float, default=60.0)
+    probe_parser.add_argument("--block-size", type=int, default=1024 * 1024)
+    probe_parser.add_argument("--output", type=Path)
+
+    causality_parser = subparsers.add_parser(
+        "network-causality",
+        help="Cross connection reuse with repeated and fresh Range requests",
+    )
+    causality_parser.add_argument("--http-proxy")
+    causality_parser.add_argument("--timeout", type=float, default=60.0)
+    causality_parser.add_argument("--block-size", type=int, default=1024 * 1024)
+    causality_parser.add_argument("--new-warmup-bytes", type=int, default=1)
+    causality_parser.add_argument("--idle-seconds", type=float, default=0.0)
+    causality_parser.add_argument("--output", type=Path)
+
+    transport_parser = subparsers.add_parser(
+        "network-transport",
+        help="Compare multiplexed HTTP/2 with independent HTTP/2 and HTTP/1.1 connections",
+    )
+    transport_parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
+    transport_parser.add_argument("--http-proxy")
+    transport_parser.add_argument("--timeout", type=float, default=60.0)
+    transport_parser.add_argument("--block-size", type=int, default=1024 * 1024)
+    transport_parser.add_argument("--output", type=Path)
+
+    fanout_parser = subparsers.add_parser(
+        "network-fanout",
+        help="Compare HTTP/2 Range chunk sizes over 3, 6, and 12 warm connections",
+    )
+    fanout_parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
+    fanout_parser.add_argument("--http-proxy")
+    fanout_parser.add_argument("--timeout", type=float, default=60.0)
+    fanout_parser.add_argument("--block-size", type=int, default=1024 * 1024)
+    fanout_parser.add_argument("--output", type=Path)
+
+    fsspec_parser = subparsers.add_parser(
+        "fsspec-probe", help="Measure experimental DuckDB reads over parallel HTTP/2 ranges"
+    )
+    fsspec_parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
+    fsspec_parser.add_argument("--http-proxy")
+    fsspec_parser.add_argument("--timeout", type=float, default=60.0)
+    fsspec_parser.add_argument("--block-size", type=int, default=1024 * 1024)
+    fsspec_parser.add_argument("--output", type=Path)
 
     archive_parser = subparsers.add_parser(
         "archive", help="Publish one selected baseline-versus-candidate comparison"
@@ -789,6 +1979,16 @@ def main():
     args = build_parser().parse_args()
     if args.command == "run":
         return cmd_run(args)
+    if args.command == "network-probe":
+        return cmd_network_probe(args)
+    if args.command == "network-causality":
+        return cmd_network_causality(args)
+    if args.command == "network-transport":
+        return cmd_network_transport(args)
+    if args.command == "network-fanout":
+        return cmd_network_fanout(args)
+    if args.command == "fsspec-probe":
+        return cmd_fsspec_probe(args)
     if args.command == "archive":
         return cmd_archive(args)
     raise AssertionError(f"unknown command: {args.command}")

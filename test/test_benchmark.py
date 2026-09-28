@@ -1,11 +1,19 @@
 """Contract tests for the executable performance benchmark."""
 
+import asyncio
+from contextlib import contextmanager
+from datetime import datetime
+import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+
+import httpx
+import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +40,472 @@ def load_report_module():
 
 
 class BenchmarkApiContractTests(unittest.TestCase):
+    def test_httpx_transport_inherits_environment_only_without_explicit_proxy(self):
+        benchmark = load_benchmark_module()
+
+        self.assertEqual(
+            benchmark.httpx_proxy_options(None),
+            {"proxy": None, "trust_env": True},
+        )
+        self.assertEqual(
+            benchmark.httpx_proxy_options("http://proxy.example:8123"),
+            {"proxy": "http://proxy.example:8123", "trust_env": False},
+        )
+
+    def test_filesystem_trace_keeps_offsets_without_signed_url(self):
+        benchmark = load_benchmark_module()
+        event = benchmark.sanitize_filesystem_event({
+            "timestamp": "2026-09-28 10:00:00+00:00",
+            "fs": "HTTPFileSystem",
+            "path": "https://us.aws.cdn.hf.co/object?Signature=secret",
+            "op": "Read",
+            "bytes": 1048576,
+            "pos": 0,
+        })
+
+        self.assertEqual(event["host"], "us.aws.cdn.hf.co")
+        self.assertEqual(event["bytes"], 1048576)
+        self.assertEqual(event["pos"], 0)
+        self.assertNotIn("secret", json.dumps(event))
+
+    def test_trace_profile_uses_the_query_cursor(self):
+        benchmark = load_benchmark_module()
+        query_cursor = object()
+        captured = []
+
+        @contextmanager
+        def original_get_cursor():
+            yield query_cursor
+
+        def fake_frame_records(connection, sql):
+            self.assertIs(connection, query_cursor)
+            self.assertIn("cache_httpfs_get_profile", sql)
+            return [{"profile": "data cache miss count = 3"}]
+
+        with patch.object(benchmark, "_frame_records", side_effect=fake_frame_records):
+            with patch.object(benchmark, "collect_http_events", return_value=[]):
+                with patch.object(benchmark, "collect_filesystem_events", return_value=[]):
+                    with benchmark.trace_query_cursor(original_get_cursor, captured) as cursor:
+                        self.assertIs(cursor, query_cursor)
+
+        self.assertEqual(
+            captured[0]["cache_profile"],
+            [{"profile": "data cache miss count = 3"}],
+        )
+        selected, scope = benchmark.select_cache_profile(
+            [{"profile": "data cache miss count = 0"}], captured
+        )
+        self.assertEqual(selected, [{"profile": "data cache miss count = 3"}])
+        self.assertEqual(scope, "query_cursor")
+
+    def test_http_trace_keeps_timing_and_range_without_signed_secrets(self):
+        benchmark = load_benchmark_module()
+        event = benchmark.sanitize_http_event({
+            "request": {
+                "type": "GET",
+                "url": "https://us.aws.cdn.hf.co/object?Signature=secret",
+                "start_time": "2026-09-28 10:00:00+00:00",
+                "duration_ms": 1250,
+                "headers": {"Range": "bytes=0-262143", "Authorization": "Bearer secret"},
+            },
+            "response": {
+                "status": "PartialContent_206",
+                "headers": {"Content-Range": "bytes 0-262143/466390118"},
+            },
+        })
+
+        self.assertEqual(event["host"], "us.aws.cdn.hf.co")
+        self.assertEqual(event["range"], "bytes=0-262143")
+        self.assertEqual(event["duration_ms"], 1250)
+        self.assertNotIn("secret", json.dumps(event))
+        self.assertNotIn("Authorization", json.dumps(event))
+
+    def test_api_run_parser_accepts_io_trace(self):
+        benchmark = load_benchmark_module()
+
+        args = benchmark.build_parser().parse_args(["run", "--trace-io"])
+
+        self.assertTrue(args.trace_io)
+
+    def test_api_run_parser_accepts_connection_cache_toggle(self):
+        benchmark = load_benchmark_module()
+
+        enabled = benchmark.build_parser().parse_args([
+            "run", "--httpfs-connection-caching"
+        ])
+        disabled = benchmark.build_parser().parse_args([
+            "run", "--no-httpfs-connection-caching"
+        ])
+        default = benchmark.build_parser().parse_args(["run"])
+
+        self.assertTrue(enabled.httpfs_connection_caching)
+        self.assertFalse(disabled.httpfs_connection_caching)
+        self.assertIsNone(default.httpfs_connection_caching)
+
+    def test_connection_cache_setting_precedes_measured_price_call(self):
+        benchmark = load_benchmark_module()
+        calls = []
+
+        class FakeConnection:
+            def execute(self, sql):
+                calls.append(sql)
+
+        class FakeDuckDBClient:
+            connection = FakeConnection()
+
+        class FakeConfiguration:
+            def __init__(self, **kwargs):
+                pass
+
+        class FakeTicker:
+            def __init__(self, symbol, **kwargs):
+                self.duckdb_client = FakeDuckDBClient()
+
+            def price(self):
+                calls.append("price")
+                return pd.DataFrame({"symbol": ["AAPL"]})
+
+        class FakeRecorder:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                return False
+
+        api = benchmark.ApiBindings(
+            Configuration=FakeConfiguration,
+            Ticker=FakeTicker,
+            capture_performance=lambda sink: FakeRecorder(),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            benchmark.run_api_workload({
+                "symbol": "AAPL",
+                "cache_directory": directory,
+                "http_proxy": None,
+                "configuration": {},
+                "httpfs_connection_caching": True,
+            }, api=api, diagnostics=False)
+
+        self.assertEqual(calls, ["SET GLOBAL httpfs_connection_caching = true", "price"])
+
+    def test_cold_query_profile_is_captured_before_diagnostic_queries(self):
+        benchmark = load_benchmark_module()
+        calls = []
+
+        class FakeRecorder:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                return False
+
+        class FakeConfiguration:
+            def __init__(self, **kwargs):
+                pass
+
+        class FakeDuckDBClient:
+            connection = object()
+
+            def close(self):
+                pass
+
+        class FakeTicker:
+            def __init__(self, symbol, **kwargs):
+                self.duckdb_client = FakeDuckDBClient()
+
+            def price(self):
+                calls.append("price")
+                return pd.DataFrame({"symbol": ["AAPL"]})
+
+        def fake_frame_records(connection, sql):
+            calls.append(sql)
+            if "cache_httpfs_get_profile" in sql:
+                profile = "data cache miss count = 1" if calls[-2] == "price" else "data cache miss count = 0"
+                return [{"profile": profile}]
+            return []
+
+        api = benchmark.ApiBindings(
+            Configuration=FakeConfiguration,
+            Ticker=FakeTicker,
+            capture_performance=lambda sink: FakeRecorder(),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(benchmark, "_frame_records", side_effect=fake_frame_records):
+                with patch.object(benchmark, "_event_totals", return_value={
+                    "duckdb.execute_query": {"seconds": 1.0, "calls": 1}
+                }):
+                    outcome = benchmark.run_api_workload({
+                        "symbol": "AAPL",
+                        "cache_directory": directory,
+                        "http_proxy": None,
+                        "configuration": {},
+                    }, api=api)
+
+        self.assertEqual(
+            outcome["cache_profile"], [{"profile": "data cache miss count = 1"}]
+        )
+
+    def test_network_fanout_preserves_exact_query_bytes(self):
+        benchmark = load_benchmark_module()
+        reference = benchmark.network_range_plan(466390118, 1048576)
+
+        for chunk_size, expected_count in ((1048576, 3), (524288, 6), (262144, 12)):
+            with self.subTest(chunk_size=chunk_size):
+                chunks = benchmark.network_fanout_plan(466390118, 1048576, chunk_size)
+                self.assertEqual(len(chunks), expected_count)
+                self.assertEqual(
+                    [(start, end) for _, start, end in chunks],
+                    [
+                        (start, min(start + chunk_size - 1, end))
+                        for _, original_start, end in reference
+                        for start in range(original_start, end + 1, chunk_size)
+                    ],
+                )
+                self.assertEqual(
+                    sum(end - start + 1 for _, start, end in chunks), 2919526
+                )
+        with self.assertRaisesRegex(ValueError, "positive"):
+            benchmark.network_fanout_plan(466390118, 1048576, 0)
+
+    def test_network_fanout_schedule_rotates_modes(self):
+        benchmark = load_benchmark_module()
+        modes = [(1048576, 3), (524288, 3), (524288, 6)]
+
+        self.assertEqual(benchmark.fanout_probe_schedule(2, modes), [
+            (1, modes[0]), (1, modes[1]), (1, modes[2]),
+            (2, modes[1]), (2, modes[2]), (2, modes[0]),
+        ])
+
+    def test_network_fanout_rejects_replaced_warm_connection(self):
+        benchmark = load_benchmark_module()
+        warm_ports = [51001, 51002, 51003]
+        transfers = [
+            {"http_version": "HTTP/2", "local_port": port}
+            for port in warm_ports
+        ]
+
+        benchmark.validate_fanout_connections(transfers, warm_ports, [0, 1, 2])
+        with self.assertRaisesRegex(ValueError, "warm connection"):
+            benchmark.validate_fanout_connections(
+                [dict(transfers[0], local_port=51004), *transfers[1:]],
+                warm_ports,
+                [0, 1, 2],
+            )
+
+    def test_network_range_probe_can_return_body_for_cross_mode_hash(self):
+        benchmark = load_benchmark_module()
+
+        class FakeResponse:
+            status_code = 206
+            headers = {"Content-Range": "bytes 0-2/5"}
+            http_version = "HTTP/2"
+            extensions = {}
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc_value, traceback):
+                return False
+
+            async def aiter_raw(self):
+                yield b"ab"
+                yield b"c"
+
+        class FakeClient:
+            def stream(self, method, url, headers):
+                return FakeResponse()
+
+        result = asyncio.run(benchmark._probe_range(
+            FakeClient(), "https://cdn.example/file", "sample", 0, 2, 5, 0,
+            include_body=True,
+        ))
+
+        self.assertEqual(result["body"], b"abc")
+        self.assertEqual(result["sha256"], hashlib.sha256(b"abc").hexdigest())
+
+    def test_network_fanout_parser_accepts_runs_and_proxy(self):
+        benchmark = load_benchmark_module()
+
+        args = benchmark.build_parser().parse_args([
+            "network-fanout", "--runs", "2", "--http-proxy", "http://127.0.0.1:8118"
+        ])
+
+        self.assertEqual(args.runs, 2)
+        self.assertEqual(args.http_proxy, "http://127.0.0.1:8118")
+
+    def test_network_transport_rotates_mode_order(self):
+        benchmark = load_benchmark_module()
+
+        self.assertEqual(benchmark.transport_probe_schedule(3), [
+            (1, "http2_multiplexed"),
+            (1, "http2_independent"),
+            (1, "http1_independent"),
+            (2, "http2_independent"),
+            (2, "http1_independent"),
+            (2, "http2_multiplexed"),
+            (3, "http1_independent"),
+            (3, "http2_multiplexed"),
+            (3, "http2_independent"),
+        ])
+        with self.assertRaisesRegex(ValueError, "positive"):
+            benchmark.transport_probe_schedule(0)
+        self.assertEqual(
+            [benchmark.transport_client_index(trial, 0, 3) for trial in (1, 2, 3)],
+            [0, 1, 2],
+        )
+
+    def test_network_transport_requires_expected_protocol_and_connections(self):
+        benchmark = load_benchmark_module()
+        transfers = [
+            {"http_version": "HTTP/2", "local_port": port}
+            for port in (50001, 50002, 50003)
+        ]
+
+        benchmark.validate_transport_sample("http2_independent", transfers)
+        with self.assertRaisesRegex(ValueError, "verifiable connections"):
+            benchmark.validate_transport_sample(
+                "http2_independent", [dict(item, local_port=50001) for item in transfers]
+            )
+        with self.assertRaisesRegex(ValueError, "HTTP/1.1"):
+            benchmark.validate_transport_sample("http1_independent", transfers)
+        benchmark.validate_transport_sample(
+            "http2_multiplexed", [dict(item, local_port=50001) for item in transfers]
+        )
+
+    def test_network_transport_parser_accepts_runs_and_proxy(self):
+        benchmark = load_benchmark_module()
+
+        args = benchmark.build_parser().parse_args([
+            "network-transport", "--runs", "3", "--http-proxy", "http://127.0.0.1:8118"
+        ])
+
+        self.assertEqual(args.runs, 3)
+        self.assertEqual(args.http_proxy, "http://127.0.0.1:8118")
+
+    def test_network_causality_parser_accepts_idle_duration(self):
+        benchmark = load_benchmark_module()
+
+        args = benchmark.build_parser().parse_args([
+            "network-causality", "--idle-seconds", "30"
+        ])
+
+        self.assertEqual(args.idle_seconds, 30.0)
+
+    def test_network_probe_resolves_without_importing_installed_api(self):
+        benchmark = load_benchmark_module()
+
+        class FakeResponse:
+            status_code = 302
+            headers = {"Location": "https://cdn.example/data.parquet?Signature=secret"}
+
+        class FakeClient:
+            async def head(self, url, **kwargs):
+                self.url = url
+                return FakeResponse()
+
+        client = FakeClient()
+        resolved = asyncio.run(benchmark.resolve_signed_url(
+            client, "https://huggingface.co/file.parquet"
+        ))
+
+        self.assertEqual(client.url, "https://huggingface.co/file.parquet")
+        self.assertEqual(resolved, FakeResponse.headers["Location"])
+
+    def test_network_probe_range_plan_uses_distinct_cache_blocks(self):
+        benchmark = load_benchmark_module()
+
+        self.assertEqual(
+            benchmark.network_range_plan(466278373, 1048576),
+            [
+                ("front_0", 0, 1048575),
+                ("front_1", 1048576, 2097151),
+                ("tail", 465567744, 466278372),
+            ],
+        )
+        self.assertEqual(
+            benchmark.network_range_plan(1048577, 1048576),
+            [("front_0", 0, 1048575), ("front_1", 1048576, 1048576)],
+        )
+        self.assertEqual(
+            benchmark.network_range_plan(2**60 + 1, 2**60)[1],
+            ("front_1", 2**60, 2**60),
+        )
+
+    def test_causal_control_ranges_match_reference_transfer_lengths(self):
+        benchmark = load_benchmark_module()
+        reference = benchmark.network_range_plan(466278373, 1048576)
+        control = benchmark.causal_control_plan(
+            466278373, 1048576, 8, reference
+        )
+
+        self.assertEqual([end - start + 1 for _, start, end in control],
+                         [end - start + 1 for _, start, end in reference])
+        self.assertEqual(control[0][1], 8 * 1048576)
+        with self.assertRaisesRegex(ValueError, "too small"):
+            benchmark.causal_control_plan(1048577, 1048576, 8, reference)
+
+    def test_network_probe_rejects_invalid_content_range(self):
+        benchmark = load_benchmark_module()
+
+        self.assertEqual(
+            benchmark.parse_content_range("bytes 0-0/466278373"),
+            (0, 0, 466278373),
+        )
+        for invalid in ("bytes */466278373", "bytes 1-0/10", "bytes 0-10/10"):
+            with self.subTest(value=invalid), self.assertRaises(ValueError):
+                benchmark.parse_content_range(invalid)
+
+    def test_network_probe_validates_exact_range_and_length(self):
+        benchmark = load_benchmark_module()
+        benchmark.validate_range_response(
+            206, "bytes 10-12/20", 3, 10, 12, 20, None
+        )
+        with self.assertRaisesRegex(ValueError, "Content-Range"):
+            benchmark.validate_range_response(
+                206, "bytes 9-12/20", 4, 10, 12, 20, None
+            )
+        with self.assertRaisesRegex(ValueError, "length"):
+            benchmark.validate_range_response(
+                206, "bytes 10-12/20", 2, 10, 12, 20, None
+            )
+        with self.assertRaisesRegex(ValueError, "encoding"):
+            benchmark.validate_range_response(
+                206, "bytes 10-12/20", 3, 10, 12, 20, "gzip"
+            )
+
+    def test_fsspec_probe_reads_across_blocks_without_missing_bytes(self):
+        benchmark = load_benchmark_module()
+        payload = b"abcdefghij"
+
+        class FakeClient:
+            fail_first = True
+
+            def get(self, url, headers):
+                start, end = map(int, headers["Range"][6:].split("-"))
+                if start == 0 and self.fail_first:
+                    self.fail_first = False
+                    raise httpx.RemoteProtocolError("Server disconnected")
+
+                class FakeResponse:
+                    status_code = 206
+                    http_version = "HTTP/2"
+                    content = payload[start:end + 1]
+                    headers = {"Content-Range": f"bytes {start}-{end}/{len(payload)}"}
+
+                return FakeResponse()
+
+        filesystem = benchmark.make_range_probe_filesystem(
+            FakeClient(), "https://cdn.example/file.parquet", len(payload), 4
+        )
+        try:
+            filesystem.prefetch()
+            self.assertIsInstance(filesystem.modified("rangeprobe://file.parquet"), datetime)
+            self.assertEqual(filesystem.cat_file("rangeprobe://file.parquet", 2, 9), b"cdefghi")
+            self.assertEqual(filesystem.cat_file("rangeprobe://file.parquet", 0, 10), payload)
+            self.assertEqual(len(filesystem.blocks), 3)
+        finally:
+            filesystem.close()
+
     def test_workload_calls_ticker_price(self):
         benchmark = load_benchmark_module()
         calls = []
