@@ -40,6 +40,17 @@ def load_report_module():
 
 
 class BenchmarkApiContractTests(unittest.TestCase):
+    def test_cache_snapshot_excludes_version_and_lock_control_files(self):
+        benchmark = load_benchmark_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".dataset-cache.lock").write_bytes(b"\0")
+            (root / ".dataset-version.json").write_text(
+                '{"version":"dataset-v1"}', encoding="utf-8"
+            )
+            (root / "sample.block").write_bytes(b"data")
+            self.assertEqual(benchmark.cache_snapshot(root), {"files": 1, "bytes": 4})
+
     def test_report_displays_project_cache_transfer_metrics(self):
         report = load_report_module()
         description = report._cache_description({

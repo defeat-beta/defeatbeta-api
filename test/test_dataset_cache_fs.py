@@ -3,6 +3,7 @@
 import tempfile
 import threading
 import unittest
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -192,6 +193,8 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
     def test_new_dataset_version_does_not_reuse_old_block(self):
         path = self.filesystem.register(PINNED)
         self.filesystem.cat_file(path, 10, 20)
+        old_files = list(Path(self.temporary.name).glob("*.block"))
+        self.assertEqual(len(old_files), 1)
         replacement = DatasetCacheFileSystem(
             directory=self.temporary.name,
             version="dataset-v2",
@@ -204,8 +207,157 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         try:
             replacement.cat_file(replacement.register(PINNED), 10, 20)
             self.assertEqual(len(self.remote.calls), 4)
+            self.assertTrue(all(not old_file.exists() for old_file in old_files))
+            self.assertEqual(len(list(Path(self.temporary.name).glob("*.block"))), 1)
         finally:
             replacement.close()
+
+    def test_cache_files_are_flat_and_named_for_the_dataset(self):
+        path = self.filesystem.register(PINNED)
+        self.filesystem.cat_file(path, 10, 20)
+        root = Path(self.temporary.name)
+        self.assertFalse(any(entry.is_dir() for entry in root.iterdir()))
+        self.assertEqual(len(list(root.glob("*stock_prices.parquet-*.block"))), 1)
+        self.assertEqual(len(list(root.glob("*stock_prices.parquet-size.json"))), 1)
+
+    def test_old_nested_layout_is_cleaned_without_touching_other_files(self):
+        root = Path(self.temporary.name)
+        legacy = root / hashlib.sha256(b"old dataset").hexdigest()
+        legacy.mkdir()
+        (legacy / "size.json").write_text('{"size": 10}', encoding="utf-8")
+        (legacy / "0-10.block").write_bytes(b"old")
+        unrelated = root / "user-notes.txt"
+        unrelated.write_text("keep", encoding="utf-8")
+        replacement = DatasetCacheFileSystem(
+            directory=self.temporary.name,
+            version="dataset-v2",
+            resolve=self._resolve,
+            http_client=self.remote,
+            block_size=MIB,
+            max_disk_bytes=16 * MIB,
+        )
+        try:
+            self.assertFalse(legacy.exists())
+            self.assertEqual(unrelated.read_text(encoding="utf-8"), "keep")
+        finally:
+            replacement.close()
+
+    def test_running_filesystem_switches_version_and_discards_old_blocks(self):
+        old_path = self.filesystem.register(PINNED)
+        self.filesystem.cat_file(old_path, 10, 20)
+        self.filesystem.update_version("dataset-v2")
+        new_path = self.filesystem.register(PINNED)
+        self.assertNotEqual(old_path, new_path)
+        self.filesystem.cat_file(new_path, 10, 20)
+        self.assertEqual(len(self.remote.calls), 4)
+        self.assertEqual(len(list(Path(self.temporary.name).glob("*.block"))), 1)
+
+    def test_running_client_rechecks_dataset_version_before_cached_query(self):
+        client = DuckDBClient.__new__(DuckDBClient)
+        client.config = Configuration(cache_version_check_seconds=60)
+        client._data_update_time = "dataset-v1"
+        client._last_version_check = 0
+        client._version_lock = threading.Lock()
+        client._hf_client = Mock()
+        client._hf_client.get_data_update_time.return_value = "dataset-v2"
+        client._dataset_fs = Mock()
+        with patch("defeatbeta_api.client.duckdb_client.time.monotonic", return_value=100):
+            client._refresh_dataset_version_if_due()
+            client._refresh_dataset_version_if_due()
+        client._dataset_fs.update_version.assert_called_once_with("dataset-v2")
+        self.assertEqual(client._data_update_time, "dataset-v2")
+        self.assertEqual(client._hf_client.get_data_update_time.call_count, 1)
+
+    def test_occupied_stale_block_is_removed_on_next_cleanup(self):
+        path = self.filesystem.register(PINNED)
+        self.filesystem.cat_file(path, 10, 20)
+        old_block = next(Path(self.temporary.name).glob("*.block"))
+        original_unlink = Path.unlink
+
+        def occupied_once(target, *args, **kwargs):
+            if target == old_block:
+                raise PermissionError("open on Windows")
+            return original_unlink(target, *args, **kwargs)
+
+        with patch.object(Path, "unlink", occupied_once):
+            self.filesystem.update_version("dataset-v2")
+        self.assertTrue(old_block.exists())
+        self.filesystem.cleanup_stale()
+        self.assertFalse(old_block.exists())
+
+    def test_legacy_directory_with_unknown_file_is_preserved(self):
+        legacy = Path(self.temporary.name) / hashlib.sha256(b"other").hexdigest()
+        legacy.mkdir()
+        (legacy / "notes.txt").write_text("keep", encoding="utf-8")
+        self.filesystem.cleanup_stale()
+        self.assertTrue((legacy / "notes.txt").exists())
+
+    def test_encoded_dataset_name_is_safe_and_still_cleaned(self):
+        encoded = PINNED.replace("stock_prices.parquet", "stock%20prices.parquet")
+        path = self.filesystem.register(encoded)
+        self.filesystem.cat_file(path, 10, 20)
+        old_files = list(Path(self.temporary.name).glob("*.block"))
+        self.assertEqual(len(old_files), 1)
+        self.filesystem.update_version("dataset-v2")
+        self.assertFalse(old_files[0].exists())
+
+    def test_version_switch_does_not_leave_in_flight_old_block(self):
+        self.filesystem.resolve = lambda url, refresh=False: (SIGNED, self.remote.size)
+        path = self.filesystem.register(PINNED)
+        entered = threading.Event()
+        release = threading.Event()
+        original_write = self.filesystem._atomic_write
+
+        def delayed_write(target, content):
+            if target.suffix == ".block":
+                entered.set()
+                self.assertTrue(release.wait(5))
+            return original_write(target, content)
+
+        with patch.object(self.filesystem, "_atomic_write", side_effect=delayed_write):
+            with ThreadPoolExecutor(max_workers=2) as tasks:
+                reader = tasks.submit(self.filesystem.cat_file, path, 10, 20)
+                self.assertTrue(entered.wait(5))
+                updater = tasks.submit(self.filesystem.update_version, "dataset-v2")
+                release.set()
+                self.assertEqual(reader.result(timeout=5), b"\0" * 10)
+                updater.result(timeout=5)
+        self.assertFalse(list(Path(self.temporary.name).glob("*.block")))
+
+    def test_older_filesystem_cannot_repopulate_after_new_version_wins(self):
+        old_path = self.filesystem.register(PINNED)
+        self.filesystem.cat_file(old_path, 10, 20)
+        replacement = DatasetCacheFileSystem(
+            directory=self.temporary.name,
+            version="dataset-v2",
+            resolve=self._resolve,
+            http_client=self.remote,
+            block_size=MIB,
+            max_disk_bytes=16 * MIB,
+        )
+        try:
+            self.assertFalse(list(Path(self.temporary.name).glob("*.block")))
+            self.filesystem.max_memory_blocks = 0
+            self.filesystem.cat_file(old_path, MIB + 10, MIB + 20)
+            self.assertFalse(list(Path(self.temporary.name).glob("*.block")))
+        finally:
+            replacement.close()
+
+    def test_stale_remote_metadata_cannot_roll_cache_version_back(self):
+        newer = DatasetCacheFileSystem(
+            directory=self.temporary.name,
+            version="2026-09-28T05:48:48Z",
+            resolve=self._resolve,
+            http_client=self.remote,
+            block_size=MIB,
+            max_disk_bytes=16 * MIB,
+        )
+        try:
+            with self.assertRaisesRegex(ValueError, "older than the active"):
+                newer.update_version("2026-09-27T05:48:48Z")
+            self.assertEqual(newer.version, "2026-09-28T05:48:48Z")
+        finally:
+            newer.close()
 
     def test_same_version_reuses_disk_blocks_after_filesystem_restart(self):
         path = self.filesystem.register(PINNED)

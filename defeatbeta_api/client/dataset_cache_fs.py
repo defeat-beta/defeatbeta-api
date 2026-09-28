@@ -8,9 +8,10 @@ import tempfile
 import time
 from collections import OrderedDict, deque
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import Lock
+from threading import Lock, RLock
 from typing import Callable, Optional
 from urllib.parse import urlsplit
 
@@ -20,6 +21,12 @@ import httpx
 
 _CONTENT_RANGE = re.compile(r"bytes (\d+)-(\d+)/(\d+)")
 _BLOCK_DIGEST_BYTES = hashlib.sha256().digest_size
+_LEGACY_OBJECT_DIR = re.compile(r"[0-9a-f]{64}")
+_LEGACY_OBJECT_FILE = re.compile(r"(?:size\.json|\d+-\d+\.block)")
+_FLAT_CACHE_FILE = re.compile(
+    r"(?P<version>[0-9a-f]{16})-[0-9a-f]{64}-[A-Za-z0-9_.-]+-"
+    r"(?:size\.json|\d+-\d+\.block)"
+)
 
 
 class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
@@ -56,7 +63,10 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             raise ValueError("Disk cache limit must hold at least one block size")
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
+        self._version_file = self.directory / ".dataset-version.json"
+        self._lock_file = self.directory / ".dataset-cache.lock"
         self.version = version
+        self._version_tag = hashlib.sha256(version.encode()).hexdigest()[:16]
         self.resolve = resolve
         self.block_size = block_size
         self.max_disk_bytes = max_disk_bytes
@@ -75,11 +85,13 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         self._owns_client = http_client is None
         self._executor = ThreadPoolExecutor(max_workers=workers)
         self._files = {}
+        self._file_version_tags = {}
         self._metadata_locks = {}
         self._pending = {}
         self._sizes = {}
         self._memory_blocks = OrderedDict()
         self._guard = Lock()
+        self._generation_lock = RLock()
         self._metrics = {
             "cache_hits": 0,
             "cache_misses": 0,
@@ -89,6 +101,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         }
         self._range_events = deque(maxlen=1024)
         self._range_sequence = 0
+        self._sync_version(version)
 
     def close(self) -> None:
         self._executor.shutdown(wait=True)
@@ -117,10 +130,130 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                 ) or not parts.path.endswith((".parquet", ".json"))
                 or parts.query or parts.fragment):
             raise ValueError("Only pinned DefeatBeta data URLs can be cached")
-        key = hashlib.sha256(f"{self.version}\n{resolve_url}".encode()).hexdigest()
         with self._guard:
+            key = hashlib.sha256(
+                f"{self.version}\n{resolve_url}".encode()
+            ).hexdigest()
             self._files[key] = resolve_url
+            self._file_version_tags[key] = self._version_tag
         return f"{self.protocol}://{key}/{Path(parts.path).name}"
+
+    def update_version(self, version: str) -> None:
+        """Move new reads to the current dataset and discard stale disk blocks."""
+        if not version:
+            raise ValueError("Dataset cache version must not be empty")
+        self._sync_version(version)
+
+    @contextmanager
+    def _cache_lock(self):
+        """Serialize cache publication and eviction across local processes."""
+        self.directory.mkdir(parents=True, exist_ok=True)
+        with self._lock_file.open("a+b") as stream:
+            if os.name == "nt":
+                import msvcrt
+
+                if os.fstat(stream.fileno()).st_size == 0:
+                    stream.write(b"\0")
+                    stream.flush()
+                stream.seek(0)
+                msvcrt.locking(stream.fileno(), msvcrt.LK_LOCK, 1)
+                try:
+                    yield
+                finally:
+                    stream.seek(0)
+                    msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
+    def _stored_version(self):
+        try:
+            version = json.loads(self._version_file.read_text(encoding="utf-8"))["version"]
+            return version if isinstance(version, str) and version else None
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    def _sync_version(self, version):
+        with self._generation_lock:
+            with self._cache_lock():
+                stored = self._stored_version()
+                candidate_time = self._version_time(version)
+                for active in (stored, self.version):
+                    active_time = self._version_time(active)
+                    if (candidate_time is not None and active_time is not None
+                            and candidate_time < active_time):
+                        raise ValueError("Remote dataset version is older than the active cache")
+                if stored != version:
+                    self._atomic_write(
+                        self._version_file, json.dumps({"version": version}).encode()
+                    )
+                with self._guard:
+                    if version != self.version:
+                        self.version = version
+                        self._version_tag = hashlib.sha256(version.encode()).hexdigest()[:16]
+                        self._memory_blocks.clear()
+                        self._sizes.clear()
+                self._cleanup_stale_locked()
+
+    @staticmethod
+    def _version_time(version):
+        if not isinstance(version, str):
+            return None
+        try:
+            parsed = datetime.fromisoformat(version.replace("Z", "+00:00"))
+            return parsed if parsed.tzinfo is not None else None
+        except ValueError:
+            return None
+
+    def cleanup_stale(self) -> None:
+        """Remove only stale cache-owned files, retrying occupied files later."""
+        with self._generation_lock:
+            with self._cache_lock():
+                if self._stored_version() == self.version:
+                    self._cleanup_stale_locked()
+
+    def _cleanup_stale_locked(self) -> None:
+        for entry in self.directory.iterdir():
+            if entry.is_symlink():
+                continue
+            match = _FLAT_CACHE_FILE.fullmatch(entry.name)
+            if match is not None and entry.is_file():
+                if match.group("version") != self._version_tag:
+                    try:
+                        entry.unlink()
+                    except OSError:
+                        pass
+                continue
+            if not _LEGACY_OBJECT_DIR.fullmatch(entry.name) or not entry.is_dir():
+                continue
+            try:
+                children = list(entry.iterdir())
+            except OSError:
+                continue
+            if not all(
+                not child.is_symlink() and child.is_file()
+                and _LEGACY_OBJECT_FILE.fullmatch(child.name)
+                for child in children
+            ):
+                continue
+            for child in children:
+                try:
+                    child.unlink()
+                except OSError:
+                    pass
+            try:
+                entry.rmdir()
+            except OSError:
+                pass
+
+    def _current_key(self, key):
+        with self._guard:
+            return self._file_version_tags[key] == self._version_tag
 
     def _key_and_url(self, path):
         stripped = self._strip_protocol(str(path)).lstrip("/")
@@ -131,10 +264,12 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             raise FileNotFoundError("Unknown DefeatBeta dataset cache path")
         return key, url
 
-    def _object_dir(self, key):
-        directory = self.directory / key
-        directory.mkdir(parents=True, exist_ok=True)
-        return directory
+    def _object_name(self, key):
+        with self._guard:
+            url = self._files[key]
+            version_tag = self._file_version_tags[key]
+        name = re.sub(r"[^A-Za-z0-9_.-]", "_", Path(urlsplit(url).path).name)[:48]
+        return f"{version_tag}-{key}-{name}"
 
     @staticmethod
     def _check_response(response, start, end, expected_total=None):
@@ -186,7 +321,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             cached_size = self._sizes.get(key)
         if cached_size is not None:
             return cached_size
-        metadata = self._object_dir(key) / "size.json"
+        metadata = self.directory / f"{self._object_name(key)}-size.json"
         try:
             size = json.loads(metadata.read_text(encoding="utf-8"))["size"]
             if isinstance(size, int) and size > 0:
@@ -210,19 +345,22 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             size = resolved[1] if isinstance(resolved, tuple) else None
             if not isinstance(size, int) or size <= 0:
                 _, size = self._request_range(url, 0, 0)
-            try:
-                self._atomic_write(metadata, json.dumps({"size": size}).encode())
-            except OSError:
-                try:
-                    existing_size = json.loads(
-                        metadata.read_text(encoding="utf-8")
-                    )["size"]
-                except (OSError, ValueError, KeyError, TypeError):
-                    raise
-                if existing_size != size:
-                    raise
-            with self._guard:
-                self._sizes[key] = size
+            with self._generation_lock:
+                with self._cache_lock():
+                    if self._current_key(key) and self._stored_version() == self.version:
+                        try:
+                            self._atomic_write(metadata, json.dumps({"size": size}).encode())
+                        except OSError:
+                            try:
+                                existing_size = json.loads(
+                                    metadata.read_text(encoding="utf-8")
+                                )["size"]
+                            except (OSError, ValueError, KeyError, TypeError):
+                                raise
+                            if existing_size != size:
+                                raise
+                        with self._guard:
+                            self._sizes[key] = size
             return size
 
     @staticmethod
@@ -269,7 +407,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         )
 
     def _block_path(self, key, start, length):
-        return self._object_dir(key) / f"{start}-{length}.block"
+        return self.directory / f"{self._object_name(key)}-{start}-{length}.block"
 
     def _read_block(self, path, length):
         try:
@@ -316,16 +454,20 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             self._memory_put(cache_key, existing)
             return existing
         content, _ = self._request_range(url, start, start + length - 1, total)
-        try:
-            self._atomic_write(target, hashlib.sha256(content).digest() + content)
-        except OSError:
-            existing = self._read_block(target, length)
-            if existing is None:
-                raise
-            self._memory_put(cache_key, existing)
-            return existing
-        self._memory_put(cache_key, content)
-        self._prune(target)
+        with self._generation_lock:
+            with self._cache_lock():
+                if not self._current_key(key) or self._stored_version() != self.version:
+                    return content
+                try:
+                    self._atomic_write(target, hashlib.sha256(content).digest() + content)
+                except OSError:
+                    existing = self._read_block(target, length)
+                    if existing is None:
+                        raise
+                    self._memory_put(cache_key, existing)
+                    return existing
+                self._memory_put(cache_key, content)
+                self._prune(target)
         return content
 
     def _prune(self, keep):

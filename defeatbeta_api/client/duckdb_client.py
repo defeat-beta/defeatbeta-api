@@ -164,8 +164,11 @@ class DuckDBClient:
         self._hf_client = HuggingFaceClient(http_proxy=http_proxy)
         self._dataset_fs = None
         self._data_update_time = None
+        self._version_lock = Lock()
+        self._last_version_check = 0.0
         self._initialize_connection()
         self._load_dataset_version()
+        self._last_version_check = time.monotonic()
         if self.config.cache_enabled:
             self._dataset_fs = DatasetCacheFileSystem(
                 directory=self.config.get_cache_directory(),
@@ -234,6 +237,18 @@ class DuckDBClient:
                 time.perf_counter_ns(),
                 status=status,
             )
+
+    def _refresh_dataset_version_if_due(self) -> None:
+        interval = self.config.cache_version_check_seconds
+        if time.monotonic() - self._last_version_check < interval:
+            return
+        with self._version_lock:
+            if time.monotonic() - self._last_version_check < interval:
+                return
+            version = self._hf_client.get_data_update_time()
+            self._dataset_fs.update_version(version)
+            self._data_update_time = version
+            self._last_version_check = time.monotonic()
 
     def _resolve_one(self, resolve_url: str) -> str:
         """Resolve once per TTL; fall back to the pinned URL on any failure."""
@@ -421,6 +436,7 @@ class DuckDBClient:
         if (getattr(self, "_dataset_fs", None) is not None
                 and _DATASET_URL_RE.search(sql)):
             try:
+                self._refresh_dataset_version_if_due()
                 result = self._execute_query(original_sql, use_dataset_cache=True)
                 _record_performance(
                     "duckdb.query", started_ns, time.perf_counter_ns(),

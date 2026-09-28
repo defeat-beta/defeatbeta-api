@@ -101,6 +101,10 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(config.cache_block_size, 2048)
         self.assertEqual(config.cache_max_memory_blocks, 2)
 
+    def test_negative_cache_version_check_interval_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "version check interval"):
+            Configuration(cache_version_check_seconds=-1)
+
 
 class TestPerformanceCapture(unittest.TestCase):
     class _Cursor:
@@ -234,6 +238,7 @@ class TestQueryFallback(unittest.TestCase):
         client = DuckDBClient.__new__(DuckDBClient)
         client.logger = logging.getLogger("dataset-cache-fallback-test")
         client._dataset_fs = object()
+        client._refresh_dataset_version_if_due = Mock()
         client.resolve_direct = True
         client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
         expected = pd.DataFrame([{"value": 1}])
@@ -243,6 +248,7 @@ class TestQueryFallback(unittest.TestCase):
         with self.assertLogs(client.logger, level="WARNING") as logs:
             self.assertTrue(client.query(sql).equals(expected))
         self.assertIn("Dataset cache query failed", logs.output[0])
+        client._refresh_dataset_version_if_due.assert_called_once_with()
         self.assertEqual(client._execute_query.call_args_list[0].args, (sql,))
         self.assertEqual(
             client._execute_query.call_args_list[0].kwargs,

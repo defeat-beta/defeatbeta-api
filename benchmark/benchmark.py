@@ -721,7 +721,11 @@ async def run_network_fanout_probe(url, proxy, runs, timeout, block_size):
 
 def cache_snapshot(directory):
     root = Path(directory)
-    files = [path for path in root.rglob("*") if path.is_file()]
+    control_files = {".dataset-cache.lock", ".dataset-version.json"}
+    files = [
+        path for path in root.rglob("*")
+        if path.is_file() and path.name not in control_files
+    ]
     return {
         "files": len(files),
         "bytes": sum(path.stat().st_size for path in files),

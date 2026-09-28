@@ -73,11 +73,12 @@ ticker = Ticker("BABA", config=Configuration())
 | threads                                               | The number of total threads used by the system.                                                                                                                                                                                                                                                                               |       4        |
 | parquet_metadata_cache                                | Cache Parquet metadata - useful when reading the same files multiple times                                                                                                                                                                                                                                                    |      True      |
 | cache_enabled | Enable the project's on-demand local cache for pinned Parquet and JSON files. Set to false for uncached standard HTTP reads. | True |
-| cache_directory | Cache root. Defaults to `/tmp/defeatbeta/dataset-cache/{version}/` on macOS/Linux and `<tempdir>/defeatbeta/dataset-cache/{version}/` on Windows. Legacy extension files are not reused or deleted. | None |
+| cache_directory | Cache root. Defaults to `/tmp/defeatbeta/dataset-cache/{version}/` on macOS/Linux and `<tempdir>/defeatbeta/dataset-cache/{version}/` on Windows. Blocks are stored as flat files. Cache-owned files from older dataset versions are removed after an update is detected; legacy `cache_httpfs` files in the separate `cache/` root are untouched. | None |
 | cache_block_size | Downloaded range block size in bytes. | 1048576 |
 | cache_max_disk_bytes | Maximum retained block bytes; older blocks are evicted as needed. | 1073741824 |
 | cache_max_memory_blocks | Maximum recently used blocks kept in memory. Zero disables the memory tier. | 64 |
 | cache_workers | Maximum concurrent Range GET workers and HTTP connections. | 3 |
+| cache_version_check_seconds | Minimum time between remote dataset-version checks for a running client. Set to zero to check before every cached query. | 300 |
 | resolve_direct | Resolve pinned Parquet URLs to CDN URLs for the uncached fallback reader. | True |
 | resolve_ttl_seconds | Lifetime of the in-process CDN resolution cache, in seconds. | 1800 |
 

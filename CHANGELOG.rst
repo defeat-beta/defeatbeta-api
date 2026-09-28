@@ -3,8 +3,9 @@ Change Log
 
 0.0.62
 -------
+- fix: store dataset blocks in a flat cache directory and remove stale cache-owned blocks and metadata when the remote dataset version changes; recheck versions in long-running clients [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
 - perf: replace the community ``cache_httpfs`` dependency with DefeatBeta's demand-driven Parquet and JSON block cache, keyed by pinned URL and dataset update time; retain uncached standard HTTP fallback and support direct or proxied connections [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
-- breaking: replace ``cache_httpfs_*`` configuration keys with ``cache_enabled``, ``cache_directory``, ``cache_block_size``, ``cache_max_disk_bytes``, ``cache_max_memory_blocks``, and ``cache_workers`` [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
+- breaking: replace ``cache_httpfs_*`` configuration keys with ``cache_enabled``, ``cache_directory``, ``cache_block_size``, ``cache_max_disk_bytes``, ``cache_max_memory_blocks``, ``cache_workers``, and ``cache_version_check_seconds`` [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
 - fix: defer network access until client initialization, respect explicit and environment proxies for dataset metadata, and replace runtime NLTK model downloads with an offline sentence splitter; include SQL and report resources in the wheel and install MCP dependencies through its own project [`#207 <https://github.com/defeat-beta/defeatbeta-api/issues/207>`_]
 - feat: add market-aware ``CompanyMeta`` support for US and Hong Kong catalogs, returning ``cik`` for US companies and ``isin`` for HK companies while preserving missing financial currencies as ``None`` [`#197 <https://github.com/defeat-beta/defeatbeta-api/issues/197>`_]
 

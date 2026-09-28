@@ -25,7 +25,10 @@ class Configuration:
             cache_max_disk_bytes=1024 * 1024 * 1024,
             cache_max_memory_blocks=64,
             cache_workers=3,
+            cache_version_check_seconds=300,
     ):
+        if cache_version_check_seconds < 0:
+            raise ValueError("Cache version check interval must not be negative")
         configs = locals()
         configs.pop('self')
 
