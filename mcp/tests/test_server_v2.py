@@ -1,14 +1,27 @@
+import os
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
 from mcp import Client, StdioServerParameters, stdio_client
 from mcp.server import MCPServer
 
 from defeatbeta_mcp.server import mcp
+from defeatbeta_mcp.tools.meta import get_latest_data_update_date
 
 
 class ServerV2Tests(unittest.IsolatedAsyncioTestCase):
+    def test_metadata_tool_uses_gateway_proxy(self):
+        proxy = "http://proxy.example:8123"
+        with patch.dict(os.environ, {"DEFEATBETA_GATEWAY": proxy}):
+            with patch("defeatbeta_mcp.tools.meta.HuggingFaceClient") as reader:
+                reader.return_value.get_data_update_time.return_value = "2026-09-28"
+                result = get_latest_data_update_date()
+
+        reader.assert_called_once_with(http_proxy=proxy)
+        self.assertEqual(result["latest_data_date"], "2026-09-28")
+
     def test_server_import_does_not_write_to_stdout(self):
         completed = subprocess.run(
             [sys.executable, "-c", "import defeatbeta_mcp.server"],

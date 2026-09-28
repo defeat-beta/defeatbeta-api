@@ -7,10 +7,10 @@ import tempfile
 from importlib.resources import files
 from typing import List, Dict, Any
 
-import nltk
 import numpy as np
 import pandas as pd
 import psutil
+import pysbd
 import requests
 from pandas import DataFrame
 from tabulate import tabulate
@@ -56,8 +56,16 @@ def validate_memory_limit(memory_limit: str) -> str:
         f"Valid units: {', '.join(valid_units)}"
     )
 
-def nltk_sentences(content: str) -> List[str]:
-    return nltk.sent_tokenize(content)
+def split_sentences(content: str) -> List[str]:
+    """Split English transcript text without runtime model downloads."""
+    return [
+        sentence.strip()
+        for sentence in pysbd.Segmenter(language="en", clean=False).segment(content)
+        if sentence.strip()
+    ]
+
+
+nltk_sentences = split_sentences
 
 def _get_base_temp_dir() -> str:
     """Get the base temporary directory based on platform."""

@@ -25,7 +25,7 @@ from defeatbeta_api.data.sql.sql_loader import load_sql
 from defeatbeta_api.utils.const import stock_earning_call_transcripts
 from defeatbeta_api.utils.util import load_transcripts_summary_prompt_temp, load_transcripts_summary_tools_def, \
     unit_map, load_transcripts_analyze_change_prompt, load_transcripts_analyze_change_tools, \
-    load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools, nltk_sentences, in_notebook
+    load_transcripts_analyze_forecast_prompt, load_transcripts_analyze_forecast_tools, split_sentences, in_notebook
 
 
 @dataclass
@@ -92,7 +92,7 @@ class Transcripts:
         transcript_json = transcript.to_dict(orient="records")
         for paragraph in transcript_json:
             content = paragraph.pop("content")
-            sentences = nltk_sentences(content)
+            sentences = split_sentences(content)
             paragraph["sentences"] = sentences
         transcript_str = json.dumps(transcript_json, ensure_ascii=False, indent=2)
         prompt = re.sub(pattern_transcripts, transcript_str, template)
@@ -216,7 +216,7 @@ class Transcripts:
         transcript_json = transcript.to_dict(orient="records")
         for paragraph in transcript_json:
             content = paragraph.pop("content")
-            sentences = nltk_sentences(content)
+            sentences = split_sentences(content)
             paragraph["sentences"] = sentences
         transcript_str = json.dumps(transcript_json, ensure_ascii=False, indent=2)
         prompt = re.sub(pattern_transcripts, transcript_str, template)

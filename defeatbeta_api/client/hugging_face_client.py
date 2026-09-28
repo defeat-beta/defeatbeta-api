@@ -9,9 +9,10 @@ from defeatbeta_api.utils.const import tables
 
 
 class HuggingFaceClient:
-    def __init__(self, max_retries: int = 3, timeout: int = 30):
+    def __init__(self, max_retries: int = 3, timeout: int = 30, http_proxy: str = None):
         self.base_url = "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data"
         self.timeout = timeout
+        self.http_proxy = http_proxy
         self.session = requests.Session()
 
         retry_strategy = Retry(
@@ -24,11 +25,16 @@ class HuggingFaceClient:
 
     def _make_request(self, url: str) -> Dict[str, Any]:
         try:
+            proxy_options = (
+                {"proxies": {"http": self.http_proxy, "https": self.http_proxy}}
+                if self.http_proxy else {}
+            )
             response = self.session.get(
                 url,
                 timeout=self.timeout,
                 headers={"User-Agent": "HuggingFaceClient/1.0"},
-                verify=True
+                verify=True,
+                **proxy_options,
             )
             response.raise_for_status()
             return response.json()

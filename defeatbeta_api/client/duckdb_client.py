@@ -12,6 +12,7 @@ from typing import Callable, Dict, Optional
 import duckdb
 import pandas as pd
 
+from defeatbeta_api import _print_welcome
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 
@@ -136,7 +137,7 @@ class DuckDBClient:
         self._resolve_ttl = self.config.resolve_ttl_seconds
         self._cdn_cache = {}
         self._cdn_lock = Lock()
-        self._hf_client = HuggingFaceClient()
+        self._hf_client = HuggingFaceClient(http_proxy=http_proxy)
         self._initialize_connection()
         self._validate_httpfs_cache()
 
@@ -183,7 +184,8 @@ class DuckDBClient:
         started_ns = time.perf_counter_ns()
         status = "ok"
         try:
-            remote_update_time = HuggingFaceClient().get_data_update_time()
+            remote_update_time = self._hf_client.get_data_update_time()
+            _print_welcome(remote_update_time)
             cached_update_time = self._read_cached_spec_update_time()
 
             if cached_update_time == remote_update_time:

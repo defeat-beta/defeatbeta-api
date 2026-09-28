@@ -2,6 +2,8 @@
 
 import unittest
 import tempfile
+import importlib
+import sys
 from types import SimpleNamespace
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -218,6 +220,26 @@ class TestQueryFallback(unittest.TestCase):
 
 
 class TestClientRegistry(unittest.TestCase):
+    def test_explicit_proxies_use_separate_clients(self):
+        from defeatbeta_api.client import duckdb_client as module
+
+        created = []
+
+        def make_client(http_proxy, log_level, config):
+            client = SimpleNamespace(connection=object(), http_proxy=http_proxy)
+            created.append(client)
+            return client
+
+        with patch.object(module, "DuckDBClient", side_effect=make_client), \
+                patch.object(module, "_instances", {}):
+            first = module.get_duckdb_client(http_proxy="http://proxy-one.example:8123")
+            second = module.get_duckdb_client(http_proxy="http://proxy-two.example:8123")
+            first_again = module.get_duckdb_client(http_proxy="http://proxy-one.example:8123")
+
+        self.assertIsNot(first, second)
+        self.assertIs(first, first_again)
+        self.assertEqual(len(created), 2)
+
     def test_different_configurations_do_not_share_a_client(self):
         from defeatbeta_api.client import duckdb_client as module
 
@@ -240,6 +262,40 @@ class TestClientRegistry(unittest.TestCase):
 
 
 class TestHuggingFaceResolver(unittest.TestCase):
+    def test_client_passes_explicit_proxy_to_spec_reader(self):
+        proxy = "http://proxy.example:8123"
+
+        with patch.object(DuckDBClient, "_initialize_connection"), \
+                patch.object(DuckDBClient, "_validate_httpfs_cache"), \
+                patch("defeatbeta_api.client.duckdb_client.HuggingFaceClient") as reader:
+            DuckDBClient(http_proxy=proxy)
+
+        reader.assert_called_once_with(http_proxy=proxy)
+
+    def test_spec_request_uses_explicit_proxy(self):
+        proxy = "http://proxy.example:8123"
+        client = HuggingFaceClient(http_proxy=proxy)
+        client.session.get = Mock(return_value=SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"update_time": "2026-09-28T00:00:00Z"},
+        ))
+
+        self.assertEqual(client.get_data_update_time(), "2026-09-28T00:00:00Z")
+        self.assertEqual(client.session.get.call_args.kwargs["proxies"], {
+            "http": proxy, "https": proxy,
+        })
+
+    def test_spec_request_inherits_environment_without_explicit_proxy(self):
+        client = HuggingFaceClient()
+        client.session.get = Mock(return_value=SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"update_time": "2026-09-28T00:00:00Z"},
+        ))
+
+        client.get_data_update_time()
+
+        self.assertNotIn("proxies", client.session.get.call_args.kwargs)
+
     def test_rejects_non_https_redirects(self):
         client = HuggingFaceClient.__new__(HuggingFaceClient)
         response = SimpleNamespace(
@@ -251,6 +307,24 @@ class TestHuggingFaceResolver(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "Unsafe redirect"):
             client.resolve_cdn_url(PINNED)
+
+
+class TestImportSideEffects(unittest.TestCase):
+    def test_package_retains_hugging_face_client_export(self):
+        import defeatbeta_api
+
+        self.assertIs(defeatbeta_api.HuggingFaceClient, HuggingFaceClient)
+
+    def test_import_does_not_access_network_or_download_nltk_data(self):
+        import defeatbeta_api
+        fake_nltk = Mock()
+
+        with patch.object(HuggingFaceClient, "get_data_update_time", return_value="test") as fetch:
+            with patch.dict(sys.modules, {"nltk": fake_nltk}):
+                importlib.reload(defeatbeta_api)
+
+        fetch.assert_not_called()
+        fake_nltk.download.assert_not_called()
 
 
 if __name__ == "__main__":

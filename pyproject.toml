@@ -23,7 +23,7 @@ dependencies = [
     "numpy >= 2.2.5",
     "rich >= 14.0.0",
     "openai >= 1.106.1",
-    "nltk >= 3.9.4",
+    "pysbd == 0.3.4",
     "ipython>=8.0.0,<=8.37.0",
     "matplotlib>=3.10.7",
     "openpyxl>=3.1.5"
@@ -33,10 +33,18 @@ dependencies = [
 version = {attr = "defeatbeta_api.__version__.__version__"}
 
 [tool.setuptools]
-packages = ["defeatbeta_api"]
+
+[tool.setuptools.packages.find]
+include = ["defeatbeta_api*"]
+namespaces = false
 
 [tool.setuptools.package-data]
-"defeatbeta_api" = ["**"]
+"defeatbeta_api.data.sql" = ["*.sql"]
+"defeatbeta_api.data.template" = ["*.json", "*.md"]
+"defeatbeta_api.reports" = ["*.html"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc"]
 
 [project.urls]
 "Homepage" = "https://github.com/defeat-beta/defeatbeta-api"

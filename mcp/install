@@ -44,8 +44,7 @@ pip install --upgrade pip
 
 # 6. Install runtime dependencies
 echo "📦 Installing dependencies..."
-pip install \
-  defeatbeta-api
+pip install "$INSTALL_DIR/mcp"
 
 # 7. Permissions
 chmod +x "$INSTALL_DIR/mcp/run.sh"
