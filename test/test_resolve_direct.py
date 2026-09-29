@@ -1,5 +1,6 @@
 """Unit tests for resolve-once CDN routing and fallback behavior."""
 
+import io
 import unittest
 import tempfile
 import importlib
@@ -10,6 +11,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pandas as pd
+import defeatbeta_api
 
 from defeatbeta_api.client.duckdb_client import (
     DuckDBClient,
@@ -27,6 +29,30 @@ CDN = ("https://us.aws.cdn.hf.co/xet-bridge-us/abc/stock_prices.parquet"
        "?Expires=1&Signature=secret")
 JSON = ("https://huggingface.co/datasets/defeatbeta/yahoo-finance-data"
         "/resolve/main/data/US/company_tickers.json")
+
+
+class TestWelcome(unittest.TestCase):
+    def test_welcome_supports_cp1252_stdout(self):
+        output = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+        with patch.object(defeatbeta_api, "_welcome_printed", False), \
+             patch("sys.stdout", output):
+            defeatbeta_api._print_welcome("2026-09-29")
+            output.flush()
+            rendered = output.buffer.getvalue().decode("cp1252")
+
+        self.assertIn("2026-09-29", rendered)
+        self.assertIn(defeatbeta_api.__version__, rendered)
+        self.assertIn("*:: Data Update Time ::", rendered)
+
+    def test_welcome_keeps_icon_on_utf8_stdout(self):
+        output = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+        with patch.object(defeatbeta_api, "_welcome_printed", False), \
+             patch("sys.stdout", output):
+            defeatbeta_api._print_welcome("2026-09-29")
+            output.flush()
+            rendered = output.buffer.getvalue().decode("utf-8")
+
+        self.assertIn("📈:: Data Update Time ::", rendered)
 
 
 class TestRewrite(unittest.TestCase):

@@ -1,3 +1,5 @@
+import sys
+
 import pyfiglet
 
 from defeatbeta_api.__version__ import __version__
@@ -12,7 +14,13 @@ def _print_welcome(data_update_time: str):
         ascii_lines = pyfiglet.figlet_format(text, font="doom").split('\n')
         ascii_art = '\n'.join(line for line in ascii_lines if line.strip())
         colored_art = "\033[38;5;10m" + ascii_art + "\033[0m"
+        icon = "📈"
+        if sys.stdout.encoding:
+            try:
+                icon.encode(sys.stdout.encoding)
+            except UnicodeEncodeError:
+                icon = "*"
         print(f"{colored_art}\n"
-              f"\033[1;38;5;10m📈:: Data Update Time ::\033[0m\t{data_update_time} \033[1;38;5;10m::\033[0m\n"
-              f"\033[1;38;5;10m📈:: Software Version ::\033[0m\t{__version__}      \033[1;38;5;10m::\033[0m")
+              f"\033[1;38;5;10m{icon}:: Data Update Time ::\033[0m\t{data_update_time} \033[1;38;5;10m::\033[0m\n"
+              f"\033[1;38;5;10m{icon}:: Software Version ::\033[0m\t{__version__}      \033[1;38;5;10m::\033[0m")
         _welcome_printed = True

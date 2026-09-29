@@ -456,7 +456,8 @@ class BenchmarkApiContractTests(unittest.TestCase):
 
         self.assertEqual(args.runs, 2)
         self.assertEqual(args.http_proxy, "http://127.0.0.1:8118")
-        self.assertEqual(str(args.output), "/private/tmp/cold-read.json")
+        self.assertEqual(args.output.name, "cold-read.json")
+        self.assertEqual(args.output.parent.name, "tmp")
 
     def test_connection_crossover_uses_disjoint_fresh_ranges(self):
         benchmark = load_benchmark_module()
