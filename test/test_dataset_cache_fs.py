@@ -4,15 +4,18 @@ import tempfile
 import threading
 import unittest
 import hashlib
-from concurrent.futures import ThreadPoolExecutor
+import httpx
+from contextlib import nullcontext
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import urlsplit
 from unittest.mock import Mock, patch
 
 import duckdb
 
 from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem
-from defeatbeta_api.client.duckdb_client import DuckDBClient
+from defeatbeta_api.client.duckdb_client import DuckDBClient, plan_symbol_column_chunks
 from defeatbeta_api.client.duckdb_conf import Configuration
 
 
@@ -26,6 +29,7 @@ CATALOG = (
     "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data"
     "/resolve/main/data/US/company_tickers.json"
 )
+PROFILE = PINNED.replace("stock_prices.parquet", "stock_profile.parquet")
 
 
 class FakeRangeClient:
@@ -53,6 +57,9 @@ class FakeRangeClient:
             content=content,
             http_version="HTTP/2",
         )
+
+    def close(self):
+        pass
 
 
 class TestDatasetCacheFileSystem(unittest.TestCase):
@@ -106,6 +113,314 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         self.assertNotIn("Signature", " ".join(
             str(item) for item in Path(self.temporary.name).rglob("*")
         ))
+
+    def test_io_cache_downloads_only_missing_byte_intervals(self):
+        payload = bytes(range(256)) * (4 * MIB // 256)
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "io-intervals"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote,
+            block_size=MIB,
+            max_disk_bytes=16 * MIB,
+            cache_layout="io",
+        )
+        try:
+            self.assertEqual(filesystem.cache_layout, "extent")
+            path = filesystem.register(PINNED)
+            self.assertEqual(filesystem.cat_file(path, 100, 200), payload[100:200])
+            self.assertEqual(filesystem.cat_file(path, 150, 250), payload[150:250])
+            self.assertEqual(filesystem.cat_file(path, 120, 240), payload[120:240])
+            self.assertEqual([call[1:] for call in remote.calls], [(100, 199), (200, 249)])
+            self.assertEqual(filesystem.metrics()["downloaded_bytes"], 150)
+        finally:
+            filesystem.close()
+
+    def test_io_cache_reuses_variable_extents_after_restart(self):
+        payload = bytes(range(256)) * (4 * MIB // 256)
+        directory = str(Path(self.temporary.name) / "io-restart")
+        remote = FakeRangeClient(len(payload), payload=payload)
+        settings = dict(
+            directory=directory, version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        first = DatasetCacheFileSystem(**settings)
+        try:
+            path = first.register(PINNED)
+            first.cat_file(path, 10, 20)
+            first.cat_file(path, 20, 30)
+        finally:
+            first.close()
+        second = DatasetCacheFileSystem(**settings)
+        try:
+            path = second.register(PINNED)
+            self.assertEqual(second.cat_file(path, 12, 28), payload[12:28])
+            self.assertEqual([call[1:] for call in remote.calls], [(10, 19), (20, 29)])
+        finally:
+            second.close()
+
+    def test_io_cache_concurrent_readers_share_one_exact_range(self):
+        remote = FakeRangeClient(4 * MIB)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "io-concurrent"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, 4 * MIB),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        try:
+            path = filesystem.register(PINNED)
+            with ThreadPoolExecutor(max_workers=10) as readers:
+                results = list(readers.map(
+                    lambda _: filesystem.cat_file(path, 100, 200), range(10)
+                ))
+            self.assertEqual(results, [b"\0" * 100] * 10)
+            self.assertEqual([call[1:] for call in remote.calls], [(100, 199)])
+        finally:
+            filesystem.close()
+
+    def test_io_cache_rejects_corruption_and_keeps_version_isolation(self):
+        payload = bytes(range(256)) * (MIB // 256)
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "io-version"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, max_memory_blocks=0,
+            cache_layout="io",
+        )
+        try:
+            path = filesystem.register(PINNED)
+            filesystem.cat_file(path, 100, 200)
+            block = next(Path(filesystem.directory).glob("*.block"))
+            block.write_bytes(b"x" * block.stat().st_size)
+            self.assertEqual(filesystem.cat_file(path, 100, 200), payload[100:200])
+            self.assertEqual(len(remote.calls), 2)
+            filesystem.update_version("dataset-v2")
+            path = filesystem.register(PINNED)
+            self.assertEqual(filesystem.cat_file(path, 100, 200), payload[100:200])
+            self.assertEqual(len(remote.calls), 3)
+        finally:
+            filesystem.close()
+
+    def test_io_cache_records_reader_ranges_without_signed_urls(self):
+        remote = FakeRangeClient(4 * MIB)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "io-observations"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, 4 * MIB),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        try:
+            path = filesystem.register(PINNED)
+            previous = filesystem.read_event_sequence()
+            filesystem.cat_file(path, 100, 200)
+            self.assertEqual(filesystem.read_events(previous), [{
+                "sequence": previous + 1,
+                "file": "stock_prices.parquet",
+                "start": 100,
+                "end": 200,
+                "bytes": 100,
+            }])
+            self.assertNotIn("Signature", str(filesystem.read_events(previous)))
+        finally:
+            filesystem.close()
+
+    def test_io_cache_prefetches_unaligned_ranges_concurrently(self):
+        payload = bytes(range(256)) * (4 * MIB // 256)
+        gate = threading.Barrier(2, timeout=3)
+
+        class ConcurrentClient(FakeRangeClient):
+            def get(self, url, headers):
+                gate.wait()
+                return super().get(url, headers)
+
+        remote = ConcurrentClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "io-prefetch"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io", workers=2,
+        )
+        try:
+            path = filesystem.register(PINNED)
+            filesystem.prefetch_ranges(path, [(100, 200), (1000, 1100)])
+            self.assertEqual(filesystem.cat_file(path, 125, 175), payload[125:175])
+            self.assertEqual(filesystem.cat_file(path, 1025, 1075), payload[1025:1075])
+            self.assertEqual(sorted(call[1:] for call in remote.calls),
+                             [(100, 199), (1000, 1099)])
+        finally:
+            filesystem.close()
+
+    def test_footer_warmup_persists_validated_bytes_and_index_across_restart(self):
+        footer = b"m" * (300 * 1024)
+        payload = (b"PAR1" + b"d" * MIB + footer
+                   + len(footer).to_bytes(4, "little") + b"PAR1")
+        remote = FakeRangeClient(len(payload), payload=payload)
+        directory = str(Path(self.temporary.name) / "footer-warmup")
+        settings = dict(
+            directory=directory, version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        first = DatasetCacheFileSystem(**settings)
+        rows = [(0, "symbol", "AAPL", "AAPL", 4, 100)]
+        try:
+            path = first.register(PINNED)
+            self.assertEqual(first.prepare_footer(path), len(footer))
+            first.store_parquet_index(path, rows)
+            self.assertEqual(first.load_parquet_index(path), rows)
+            self.assertEqual(first.cat_file(path, len(payload) - 100, len(payload)),
+                             payload[-100:])
+            self.assertEqual(len(remote.calls), 2)
+            self.assertEqual(len(list(Path(directory).glob("*.footer"))), 1)
+            self.assertEqual(len(list(Path(directory).glob("*.block"))), 0)
+        finally:
+            first.close()
+
+        second = DatasetCacheFileSystem(**settings)
+        try:
+            path = second.register(PINNED)
+            self.assertEqual(second.prepare_footer(path), len(footer))
+            self.assertEqual(second.load_parquet_index(path), rows)
+            self.assertEqual(second.cat_file(path, len(payload) - 100, len(payload)),
+                             payload[-100:])
+            self.assertEqual(len(remote.calls), 2)
+        finally:
+            second.close()
+
+    def test_invalid_footer_is_not_published(self):
+        payload = b"d" * MIB + b"invalid!"
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "invalid-footer"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        try:
+            with self.assertRaisesRegex(ValueError, "footer"):
+                filesystem.prepare_footer(filesystem.register(PINNED))
+            self.assertFalse(list(Path(filesystem.directory).glob("*.footer")))
+        finally:
+            filesystem.close()
+
+    def test_prepared_footer_is_served_from_memory_without_disk_lookup(self):
+        footer = b"m" * 4096
+        payload = b"PAR1" + b"d" * MIB + footer + len(footer).to_bytes(4, "little") + b"PAR1"
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "memory-footer"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        try:
+            path = filesystem.register(PINNED)
+            filesystem.prepare_footer(path)
+            footer_file = next(filesystem.directory.glob("*.footer"))
+            footer_file.unlink()
+            before = len(remote.calls)
+            start = len(payload) - 100
+            self.assertEqual(filesystem.cat_file(path, start, len(payload)), payload[start:])
+            self.assertEqual(len(remote.calls), before)
+            self.assertGreater(filesystem.metrics()["cache_hits"], 0)
+        finally:
+            filesystem.close()
+
+    def test_corrupt_parquet_index_is_ignored(self):
+        footer = b"m" * 4096
+        payload = b"PAR1" + b"d" * MIB + footer + len(footer).to_bytes(4, "little") + b"PAR1"
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "corrupt-index"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        try:
+            path = filesystem.register(PINNED)
+            filesystem.prepare_footer(path)
+            filesystem.store_parquet_index(path, [(0, "symbol", "AAPL", "AAPL", 4, 100)])
+            next(filesystem.directory.glob("*-index.json")).write_text("{broken", encoding="utf-8")
+            self.assertIsNone(filesystem.load_parquet_index(path))
+        finally:
+            filesystem.close()
+
+    def test_footer_and_index_are_not_reused_after_version_change(self):
+        footer = b"m" * 4096
+        payload = b"PAR1" + b"d" * MIB + footer + len(footer).to_bytes(4, "little") + b"PAR1"
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "footer-version"),
+            version="2026-09-28T00:00:00Z",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        try:
+            old_path = filesystem.register(PINNED)
+            filesystem.prepare_footer(old_path)
+            filesystem.store_parquet_index(old_path, [(0, "symbol", "AAPL", "AAPL", 4, 100)])
+            filesystem.update_version("2026-09-29T00:00:00Z")
+            new_path = filesystem.register(PINNED)
+            self.assertIsNone(filesystem.load_parquet_index(new_path))
+            self.assertFalse(list(filesystem.directory.glob("*.footer")))
+        finally:
+            filesystem.close()
+
+    def test_concurrent_footer_preparation_fetches_once(self):
+        footer = b"m" * 4096
+        payload = b"PAR1" + b"d" * MIB + footer + len(footer).to_bytes(4, "little") + b"PAR1"
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "concurrent-footer"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        try:
+            path = filesystem.register(PINNED)
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                sizes = list(executor.map(filesystem.prepare_footer, [path] * 8))
+            self.assertEqual(sizes, [len(footer)] * 8)
+            self.assertEqual(len(remote.calls), 1)
+        finally:
+            filesystem.close()
+
+    def test_parquet_chunk_plan_selects_symbol_groups_and_merges_adjacent_columns(self):
+        chunks = [
+            (0, "symbol", "AAPL", "AAPL", 4, 100),
+            (0, "price", None, None, 104, 200),
+            (1, "symbol", "KDP", "MSFT", 304, 60),
+            (1, "price", None, None, 364, 140),
+            (2, "symbol", None, None, 504, 40),
+            (2, "price", None, None, 544, 80),
+        ]
+        self.assertEqual(plan_symbol_column_chunks(chunks, "AAPL"),
+                         [(4, 304), (504, 624)])
+        self.assertEqual(plan_symbol_column_chunks(chunks, "KDP"),
+                         [(304, 504), (504, 624)])
+        self.assertEqual(plan_symbol_column_chunks(
+            chunks, "AAPL", columns={"symbol"}),
+            [(4, 104), (504, 544)],
+        )
+
+    def test_parquet_chunk_plan_rejects_incomplete_metadata(self):
+        self.assertEqual(plan_symbol_column_chunks([], "AAPL"), [])
+        self.assertEqual(plan_symbol_column_chunks(
+            [(0, "price", None, None, 4, 100)], "AAPL"), [])
 
     def test_bad_range_does_not_publish_block(self):
         self.remote.corrupt = True
@@ -166,6 +481,390 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             ))
         self.assertEqual(results, [b"\0" * 10] * 10)
         self.assertEqual(len(self.remote.calls), 1)
+
+    def test_split_ranges_publish_one_validated_block_and_keep_hot_reads_local(self):
+        payload = bytes(range(256)) * (MIB // 256)
+        clients = [FakeRangeClient(MIB * 30, payload=payload * 30) for _ in range(2)]
+        candidate_directory = Path(self.temporary.name) / "split-candidate"
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(candidate_directory), version="dataset-v1",
+                resolve=lambda url, refresh=False: (SIGNED, MIB * 30),
+                block_size=MIB, max_disk_bytes=16 * MIB,
+                network_connections=2, network_chunk_size=MIB // 2,
+            )
+        try:
+            path = filesystem.register(PINNED)
+            self.assertEqual(filesystem.cat_file(path, 0, MIB), payload)
+            self.assertEqual(sorted(call[1:] for client in clients for call in client.calls),
+                             [(0, MIB // 2 - 1), (MIB // 2, MIB - 1)])
+            self.assertEqual(len(list(candidate_directory.glob("*.block"))), 1)
+            filesystem.cat_file(path, 100, 200)
+            self.assertEqual(sum(len(client.calls) for client in clients), 2)
+        finally:
+            filesystem.close()
+
+    def test_bad_subrange_never_publishes_partial_block(self):
+        clients = [FakeRangeClient(MIB * 30, corrupt=True) for _ in range(2)]
+        candidate_directory = Path(self.temporary.name) / "bad-subrange-candidate"
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(candidate_directory), version="dataset-v1",
+                resolve=lambda url, refresh=False: (SIGNED, MIB * 30),
+                block_size=MIB, max_disk_bytes=16 * MIB,
+                network_connections=2, network_chunk_size=MIB // 2,
+            )
+        try:
+            with self.assertRaisesRegex(ValueError, "range"):
+                filesystem.cat_file(filesystem.register(PINNED), 0, 10)
+            self.assertFalse(list(candidate_directory.glob("*.block")))
+        finally:
+            filesystem.close()
+
+    def test_connection_warmup_does_not_fill_the_local_block_cache(self):
+        clients = [FakeRangeClient(MIB * 30) for _ in range(2)]
+        candidate_directory = Path(self.temporary.name) / "warmup-candidate"
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(candidate_directory), version="dataset-v1",
+                resolve=lambda url, refresh=False: (SIGNED, MIB * 30),
+                block_size=MIB, max_disk_bytes=16 * MIB,
+                network_connections=2, network_chunk_size=MIB // 2,
+            )
+        try:
+            filesystem.prepare_connections(PINNED, 256 * 1024)
+            self.assertEqual([len(client.calls) for client in clients], [1, 1])
+            self.assertNotEqual(clients[0].calls[0][1:], clients[1].calls[0][1:])
+            self.assertFalse(list(candidate_directory.glob("*.block")))
+            self.assertEqual(filesystem.metrics()["cache_misses"], 0)
+        finally:
+            filesystem.close()
+
+    def test_failed_warmup_waits_for_other_connection_attempts(self):
+        second_started = threading.Event()
+        release_second = threading.Event()
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=[FakeRangeClient(MIB * 30) for _ in range(2)]):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "failed-warmup"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (SIGNED, MIB * 30),
+                block_size=MIB, max_disk_bytes=16 * MIB,
+                network_connections=2,
+            )
+
+        def request(_url, _start, _end, _total, lane):
+            if lane == 0:
+                second_started.wait(1)
+                raise ValueError("warmup failed")
+            second_started.set()
+            release_second.wait(1)
+            return b"x", MIB * 30
+
+        try:
+            with patch.object(filesystem, "_request_range", side_effect=request):
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(filesystem.prepare_connections, PINNED, 1)
+                    self.assertTrue(second_started.wait(1))
+                    with self.assertRaises(FutureTimeoutError):
+                        future.result(timeout=0.1)
+                    release_second.set()
+                    with self.assertRaisesRegex(ValueError, "warmup failed"):
+                        future.result()
+        finally:
+            release_second.set()
+            filesystem.close()
+
+    def test_dead_idle_connection_retries_once_without_refreshing_signed_url(self):
+        class StaleClient(FakeRangeClient):
+            def get(self, url, headers):
+                if not self.calls:
+                    self.calls.append((url, *(
+                        int(part) for part in headers["Range"][6:].split("-")
+                    )))
+                    raise httpx.RemoteProtocolError("stale connection")
+                return super().get(url, headers)
+
+        remote = StaleClient(MIB * 30)
+        self.filesystem._clients = [remote]
+        self.filesystem._client = remote
+        self.filesystem.resolve = lambda url, refresh=False: (SIGNED, remote.size)
+        path = self.filesystem.register(PINNED)
+
+        self.assertEqual(self.filesystem.cat_file(path, 0, 10), b"\0" * 10)
+        self.assertEqual(len(remote.calls), 2)
+        self.assertEqual({url for url, _, _ in remote.calls}, {SIGNED})
+        self.assertEqual(self.filesystem.connection_snapshot()["clients"][0]["transport_errors"], 1)
+        self.assertEqual(self.filesystem.connection_snapshot()["clients"][0]["last_result"], "range_ok")
+
+    def test_persistent_transport_failure_is_bounded_and_never_publishes_block(self):
+        class FailingClient(FakeRangeClient):
+            def get(self, url, headers):
+                self.calls.append((url, headers["Range"]))
+                raise httpx.ConnectError("unavailable")
+
+        remote = FailingClient(MIB * 30)
+        self.filesystem._clients = [remote]
+        self.filesystem._client = remote
+        self.filesystem.resolve = lambda url, refresh=False: (SIGNED, remote.size)
+
+        with self.assertRaises(httpx.ConnectError):
+            self.filesystem.cat_file(self.filesystem.register(PINNED), 0, 10)
+        self.assertEqual(len(remote.calls), 2)
+        self.assertFalse(list(Path(self.temporary.name).glob("*.block")))
+
+    def test_connection_snapshot_is_observational_and_offline(self):
+        self.filesystem.resolve = lambda url, refresh=False: (SIGNED, self.remote.size)
+        self.filesystem.cat_file(self.filesystem.register(PINNED), 0, 10)
+        request_count = len(self.remote.calls)
+
+        snapshot = self.filesystem.connection_snapshot()
+        self.assertEqual(len(self.remote.calls), request_count)
+        self.assertEqual(snapshot["tracked_origins"], 1)
+        self.assertEqual(snapshot["active_ranges"], 0)
+        self.assertEqual(snapshot["clients"][0]["last_result"], "range_ok")
+        self.assertNotIn("secret", str(snapshot))
+        self.assertNotIn("live", str(snapshot))
+
+    def test_periodic_pool_log_only_reads_observed_state(self):
+        filesystem = object.__new__(DatasetCacheFileSystem)
+        filesystem._pool_log_stop = Mock()
+        filesystem._pool_log_stop.wait.side_effect = [False, True]
+        filesystem._pool_logger = Mock()
+        filesystem.connection_snapshot = Mock(return_value={
+            "observation_only": True, "clients": []
+        })
+
+        filesystem._log_connection_pool()
+
+        self.assertEqual(filesystem._pool_log_stop.wait.call_count, 2)
+        filesystem.connection_snapshot.assert_called_once_with()
+        filesystem._pool_logger.debug.assert_called_once()
+
+    def test_split_block_is_downloaded_once_for_concurrent_readers(self):
+        clients = [FakeRangeClient(MIB * 30) for _ in range(2)]
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "concurrent-candidate"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (SIGNED, MIB * 30),
+                block_size=MIB, max_disk_bytes=16 * MIB,
+                network_connections=2, network_chunk_size=MIB // 2,
+            )
+        try:
+            path = filesystem.register(PINNED)
+            with ThreadPoolExecutor(max_workers=10) as readers:
+                results = list(readers.map(
+                    lambda _: filesystem.cat_file(path, 0, 10), range(10)
+                ))
+            self.assertEqual(results, [b"\0" * 10] * 10)
+            self.assertEqual(sum(len(client.calls) for client in clients), 2)
+        finally:
+            filesystem.close()
+
+    def test_split_ranges_retry_expired_signed_url_without_partial_cache(self):
+        class ExpiringClient(FakeRangeClient):
+            def get(self, url, headers):
+                response = super().get(url, headers)
+                if url == SIGNED:
+                    response.status_code = 403
+                return response
+
+        clients = [ExpiringClient(MIB * 30) for _ in range(2)]
+        refreshes = []
+
+        def resolve(url, refresh=False):
+            refreshes.append(refresh)
+            return ("https://example.test/fresh" if refresh else SIGNED, MIB * 30)
+
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "refresh-candidate"),
+                version="dataset-v1", resolve=resolve,
+                block_size=MIB, max_disk_bytes=16 * MIB,
+                network_connections=2, network_chunk_size=MIB // 2,
+            )
+        try:
+            self.assertEqual(filesystem.cat_file(filesystem.register(PINNED), 0, 10),
+                             b"\0" * 10)
+            self.assertEqual(refreshes.count(True), 2)
+            self.assertEqual(len(list(filesystem.directory.glob("*.block"))), 1)
+        finally:
+            filesystem.close()
+
+    def test_signed_url_refresh_can_move_to_another_origin_pool(self):
+        class ExpiringClient(FakeRangeClient):
+            def get(self, url, headers):
+                response = super().get(url, headers)
+                response.status_code = 403
+                return response
+
+        clients = [ExpiringClient(MIB * 30), FakeRangeClient(MIB * 30)]
+
+        def resolve(url, refresh=False):
+            host = "new.example" if refresh else "old.example"
+            return f"https://{host}/file?Signature=secret", MIB * 30
+
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "refresh-origin"),
+                version="dataset-v1", resolve=resolve,
+                block_size=MIB, max_disk_bytes=16 * MIB,
+            )
+            try:
+                self.assertEqual(
+                    filesystem.cat_file(filesystem.register(PINNED), 0, 10),
+                    b"\0" * 10,
+                )
+                self.assertEqual(len(clients[0].calls), 1)
+                self.assertEqual(len(clients[1].calls), 1)
+                self.assertEqual(len(list(filesystem.directory.glob("*.block"))), 1)
+            finally:
+                filesystem.close()
+
+    def test_independent_clients_share_the_same_proxy_policy(self):
+        clients = [Mock(), Mock()]
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients) as constructor:
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "proxy-candidate"),
+                version="dataset-v1", resolve=self._resolve,
+                http_proxy="http://proxy.example:8123",
+                network_connections=2,
+            )
+        try:
+            self.assertEqual(constructor.call_count, 2)
+            for call in constructor.call_args_list:
+                self.assertEqual(call.kwargs["proxy"], "http://proxy.example:8123")
+                self.assertFalse(call.kwargs["trust_env"])
+        finally:
+            filesystem.close()
+
+    def test_files_share_connections_by_origin_without_cross_origin_eviction(self):
+        clients = [FakeRangeClient(MIB * 30) for _ in range(2)]
+        signed = {
+            PINNED: "https://cdn.example/prices?Signature=secret",
+            PROFILE: "https://cdn.example/profile?Signature=secret",
+            CATALOG: "https://huggingface.co/catalog",
+        }
+
+        def resolve(url, refresh=False):
+            return signed[url], MIB * 30
+
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients) as constructor:
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "origins"),
+                version="dataset-v1", resolve=resolve, block_size=MIB,
+                max_disk_bytes=16 * MIB, network_connections=1,
+                http_proxy="http://proxy.example:8123",
+            )
+            try:
+                for url in (PINNED, CATALOG, PROFILE):
+                    self.assertEqual(
+                        filesystem.cat_file(filesystem.register(url), 0, 10),
+                        b"\0" * 10,
+                    )
+                self.assertEqual(constructor.call_count, 2)
+                self.assertEqual(len(clients[0].calls), 2)
+                self.assertEqual(len(clients[1].calls), 1)
+                self.assertEqual(
+                    {urlsplit(call[0]).hostname for call in clients[0].calls},
+                    {"cdn.example"},
+                )
+                self.assertEqual(
+                    {urlsplit(call[0]).hostname for call in clients[1].calls},
+                    {"huggingface.co"},
+                )
+                for call in constructor.call_args_list:
+                    self.assertEqual(call.kwargs["proxy"], "http://proxy.example:8123")
+            finally:
+                filesystem.close()
+
+    def test_origin_pool_bounds_idle_groups_without_closing_active_group(self):
+        clients = [Mock() for _ in range(5)]
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients), patch(
+                       "defeatbeta_api.client.dataset_cache_fs._MAX_ORIGIN_GROUPS", 4
+                   ):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "origin-limit"),
+                version="dataset-v1", resolve=self._resolve,
+                block_size=MIB, max_disk_bytes=16 * MIB,
+            )
+            try:
+                _, _, active_origin = filesystem._borrow_client("https://one.example/file")
+                for host in ("two", "three", "four", "five"):
+                    _, _, origin = filesystem._borrow_client(
+                        f"https://{host}.example/file"
+                    )
+                    filesystem._release_client(origin)
+                self.assertEqual(len(filesystem._origin_pools), 4)
+                self.assertIn(active_origin, filesystem._origin_pools)
+                clients[0].close.assert_not_called()
+                clients[1].close.assert_called_once_with()
+                filesystem._release_client(active_origin)
+            finally:
+                filesystem.close()
+
+    def test_concurrent_files_create_one_pool_per_origin(self):
+        clients = [FakeRangeClient(MIB * 30) for _ in range(2)]
+        signed = {
+            PINNED: "https://cdn.example/prices",
+            PROFILE: "https://cdn.example/profile",
+            CATALOG: "https://huggingface.co/catalog",
+        }
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients) as constructor:
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "concurrent-origins"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (signed[url], MIB * 30),
+                block_size=MIB, max_disk_bytes=16 * MIB,
+            )
+            try:
+                urls = (PINNED, PROFILE, CATALOG) * 8
+                with ThreadPoolExecutor(max_workers=12) as executor:
+                    contents = list(executor.map(
+                        lambda url: filesystem._request_range(url, 0, 0)[0], urls
+                    ))
+                self.assertEqual(contents, [b"\0"] * len(urls))
+                self.assertEqual(constructor.call_count, 2)
+                self.assertEqual(len(clients[0].calls), 16)
+                self.assertEqual(len(clients[1].calls), 8)
+            finally:
+                filesystem.close()
+
+    def test_subranges_of_multiple_blocks_can_all_be_in_flight(self):
+        barrier = threading.Barrier(4, timeout=1)
+
+        class ConcurrentClient(FakeRangeClient):
+            def get(self, url, headers):
+                barrier.wait()
+                return super().get(url, headers)
+
+        clients = [ConcurrentClient(MIB * 30) for _ in range(2)]
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+                   side_effect=clients):
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "inflight-candidate"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (SIGNED, MIB * 30),
+                block_size=MIB, max_disk_bytes=16 * MIB, workers=2,
+                network_connections=2, network_chunk_size=MIB // 2,
+            )
+        try:
+            data = filesystem.cat_file(filesystem.register(PINNED), 0, 2 * MIB)
+            self.assertEqual(len(data), 2 * MIB)
+            self.assertEqual(sum(len(client.calls) for client in clients), 4)
+        finally:
+            filesystem.close()
 
     def test_explicit_and_environment_proxy_modes(self):
         for proxy, expected_trust_env in (
@@ -258,6 +957,10 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         client._data_update_time = "dataset-v1"
         client._last_version_check = 0
         client._version_lock = threading.Lock()
+        client._parquet_index_locks_guard = threading.Lock()
+        client._parquet_index_locks = {}
+        client._prepared_footers = set()
+        client._parquet_indexes = {}
         client._hf_client = Mock()
         client._hf_client.get_data_update_time.return_value = "dataset-v2"
         client._dataset_fs = Mock()
@@ -265,6 +968,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             client._refresh_dataset_version_if_due()
             client._refresh_dataset_version_if_due()
         client._dataset_fs.update_version.assert_called_once_with("dataset-v2")
+        client._dataset_fs.prepare_footer.assert_not_called()
         self.assertEqual(client._data_update_time, "dataset-v2")
         self.assertEqual(client._hf_client.get_data_update_time.call_count, 1)
 
@@ -412,6 +1116,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
     def test_json_catalog_can_be_cached_with_direct_pinned_url(self):
         payload = b'[{"symbol":"AAPL"}]'
         self.remote = FakeRangeClient(len(payload), payload=payload)
+        self.filesystem._clients = [self.remote]
         self.filesystem._client = self.remote
         self.filesystem.resolve = lambda url, refresh=False: (url, len(payload))
         path = self.filesystem.register(CATALOG)
@@ -443,6 +1148,67 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         client._to_dataset_sql(f"SELECT COUNT(*) FROM '{PINNED}'")
         client._dataset_fs.prefetch.assert_not_called()
 
+    def test_extent_layout_does_not_prefetch_unrelated_price_offsets(self):
+        client = DuckDBClient.__new__(DuckDBClient)
+        client._parquet_indexes = {}
+        client._dataset_fs = SimpleNamespace(
+            cache_layout="extent",
+            register=Mock(return_value="defeatbeta://abc/stock_prices.parquet"),
+            prepare_footer=Mock(),
+            load_parquet_index=Mock(return_value=[]),
+            prefetch=Mock(),
+            prefetch_ranges=Mock(),
+        )
+        client._to_dataset_sql(f"SELECT * FROM '{PINNED}' WHERE symbol = 'KDP'")
+        client._dataset_fs.prefetch.assert_not_called()
+        client._dataset_fs.prefetch_ranges.assert_not_called()
+
+    def test_extent_layout_prefetches_parquet_chunks_for_matching_symbol(self):
+        metadata = [
+            (0, "symbol", "AAPL", "AAPL", 4, 100),
+            (0, "price", None, None, 104, 200),
+            (1, "symbol", "KDP", "KDP", 304, 60),
+            (1, "price", None, None, 364, 140),
+        ]
+        client = DuckDBClient.__new__(DuckDBClient)
+        client._parquet_indexes = {}
+        client._dataset_fs = SimpleNamespace(
+            cache_layout="extent",
+            register=Mock(return_value="defeatbeta://abc/stock_prices.parquet"),
+            prepare_footer=Mock(),
+            load_parquet_index=Mock(return_value=metadata),
+            prefetch_ranges=Mock(),
+        )
+        sql = f"SELECT * FROM '{PINNED}' WHERE symbol = 'KDP'"
+        self.assertIn("defeatbeta://abc/stock_prices.parquet", client._to_dataset_sql(sql))
+        client._dataset_fs.prefetch_ranges.assert_called_once_with(
+            "defeatbeta://abc/stock_prices.parquet", [(304, 504)]
+        )
+
+    def test_extent_layout_prefetches_only_selected_columns_for_news_list(self):
+        metadata = [
+            (0, "symbol", "AAPL", "AAPL", 4, 100),
+            (0, "report_date", None, None, 104, 100),
+            (0, "news.list.element.paragraph", None, None, 204, 300),
+            (0, "uuid", None, None, 504, 100),
+        ]
+        client = DuckDBClient.__new__(DuckDBClient)
+        client._parquet_indexes = {}
+        client._dataset_fs = SimpleNamespace(
+            cache_layout="extent",
+            register=Mock(return_value="defeatbeta://abc/stock_news.parquet"),
+            prepare_footer=Mock(),
+            load_parquet_index=Mock(return_value=metadata),
+            prefetch_ranges=Mock(),
+        )
+        news_url = PINNED.replace("stock_prices.parquet", "stock_news.parquet")
+        sql = (f"SELECT uuid, symbol, report_date FROM '{news_url}' "
+               "WHERE symbol = 'AAPL' ORDER BY report_date ASC")
+        client._to_dataset_sql(sql)
+        client._dataset_fs.prefetch_ranges.assert_called_once_with(
+            "defeatbeta://abc/stock_news.parquet", [(4, 204), (504, 604)]
+        )
+
     def test_json_reader_uses_project_cache_path(self):
         client = DuckDBClient.__new__(DuckDBClient)
         client._dataset_fs = SimpleNamespace(
@@ -462,6 +1228,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                            [str(source)])
         payload = source.read_bytes()
         self.remote = FakeRangeClient(len(payload), payload=payload)
+        self.filesystem._clients = [self.remote]
         self.filesystem._client = self.remote
         path = self.filesystem.register(PINNED)
         connection.register_filesystem(self.filesystem)
@@ -473,9 +1240,41 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         finally:
             connection.close()
 
+    def test_duckdb_reads_parquet_through_io_aligned_cache(self):
+        source = Path(self.temporary.name) / "io-source.parquet"
+        writer = duckdb.connect(":memory:")
+        writer.execute(
+            "COPY (SELECT range AS value FROM range(10000)) TO ? (FORMAT PARQUET)",
+            [str(source)],
+        )
+        writer.close()
+        payload = source.read_bytes()
+        remote = FakeRangeClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "io-duckdb"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, block_size=MIB,
+            max_disk_bytes=16 * MIB, cache_layout="io",
+        )
+        connection = duckdb.connect(":memory:")
+        connection.register_filesystem(filesystem)
+        try:
+            path = filesystem.register(PINNED)
+            self.assertEqual(
+                connection.execute(f"SELECT SUM(value) FROM read_parquet('{path}')").fetchone()[0],
+                sum(range(10000)),
+            )
+            self.assertTrue(filesystem.read_events())
+            self.assertLessEqual(filesystem.metrics()["downloaded_bytes"], len(payload))
+        finally:
+            connection.close()
+            filesystem.close()
+
     def test_duckdb_reads_json_through_registered_filesystem(self):
         payload = b'[{"symbol":"AAPL"}]'
         self.remote = FakeRangeClient(len(payload), payload=payload)
+        self.filesystem._clients = [self.remote]
         self.filesystem._client = self.remote
         self.filesystem.resolve = lambda url, refresh=False: (url, len(payload))
         path = self.filesystem.register(CATALOG)
@@ -493,15 +1292,34 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         with patch(
             "defeatbeta_api.client.hugging_face_client.HuggingFaceClient.get_data_update_time",
             return_value="dataset-v1",
-        ), patch("defeatbeta_api.client.duckdb_client._print_welcome"):
+        ), patch("defeatbeta_api.client.duckdb_client._print_welcome"), \
+                patch.object(DatasetCacheFileSystem, "prepare_connections") as warmup, \
+                patch.object(DatasetCacheFileSystem, "prepare_footer") as footer:
             client = DuckDBClient(config=Configuration(cache_directory=self.temporary.name))
         try:
             self.assertIsInstance(client._dataset_fs, DatasetCacheFileSystem)
+            warmup.assert_called_once_with(PINNED, 1)
+            footer.assert_not_called()
             self.assertEqual(client.query("SELECT 1").iloc[0, 0], 1)
             loaded = client.connection.execute(
                 "SELECT extension_name FROM duckdb_extensions() WHERE loaded"
             ).fetchall()
             self.assertNotIn(("cache_httpfs",), loaded)
+        finally:
+            client.close()
+
+    def test_startup_warmup_failure_does_not_break_offline_queries_or_leak_url(self):
+        with patch(
+            "defeatbeta_api.client.hugging_face_client.HuggingFaceClient.get_data_update_time",
+            return_value="dataset-v1",
+        ), patch("defeatbeta_api.client.duckdb_client._print_welcome"), \
+                patch.object(DatasetCacheFileSystem, "prepare_connections",
+                             side_effect=RuntimeError("Signature=secret")), \
+                self.assertLogs("DuckDBClient", level="WARNING") as captured:
+            client = DuckDBClient(config=Configuration(cache_directory=self.temporary.name))
+        try:
+            self.assertEqual(client.query("SELECT 1").iloc[0, 0], 1)
+            self.assertNotIn("secret", " ".join(captured.output))
         finally:
             client.close()
 

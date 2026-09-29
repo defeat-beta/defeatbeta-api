@@ -3,6 +3,7 @@ Change Log
 
 0.0.62
 -------
+- perf: use the variable-length ``extent`` cache by default, prepare each Parquet footer only when its file is queried, and reuse versioned footer and row-group metadata across symbols and process restarts; retain ``block`` as a rollback mode and ``io`` as an alias [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
 - fix: store dataset blocks in a flat cache directory and remove stale cache-owned blocks and metadata when the remote dataset version changes; recheck versions in long-running clients [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
 - perf: replace the community ``cache_httpfs`` dependency with DefeatBeta's demand-driven Parquet and JSON block cache, keyed by pinned URL and dataset update time; retain uncached standard HTTP fallback and support direct or proxied connections [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
 - breaking: replace ``cache_httpfs_*`` configuration keys with ``cache_enabled``, ``cache_directory``, ``cache_block_size``, ``cache_max_disk_bytes``, ``cache_max_memory_blocks``, ``cache_workers``, and ``cache_version_check_seconds`` [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]

@@ -26,9 +26,18 @@ class Configuration:
             cache_max_memory_blocks=64,
             cache_workers=3,
             cache_version_check_seconds=300,
+            cache_network_connections=1,
+            cache_network_chunk_size=0,
+            cache_layout="extent",
+            cache_footer_preload=True,
     ):
         if cache_version_check_seconds < 0:
             raise ValueError("Cache version check interval must not be negative")
+        if cache_network_connections < 1 or cache_network_chunk_size < 0:
+            raise ValueError("Cache network connections and chunk size are invalid")
+        if cache_layout not in ("block", "extent", "io"):
+            raise ValueError("Cache layout must be block or extent")
+        cache_layout = "extent" if cache_layout == "io" else cache_layout
         configs = locals()
         configs.pop('self')
 

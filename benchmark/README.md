@@ -78,12 +78,19 @@ Each published benchmark result must document its preparation, cache state,
 and timing boundary so that the result can be reproduced and interpreted
 correctly.
 
-The current production reader is DefeatBeta's demand-driven block cache. A
+The current production reader is DefeatBeta's demand-driven extent cache. A
 fresh worker gets an isolated empty cache directory for each cold sample;
 optional warm repeats reuse that directory and connection. The benchmark
 records downloaded bytes, Range GET events, cache hits and misses, and the
 time spent inside `DuckDBClient._execute_query`. A signed CDN URL is not part
 of the persistent cache key.
+
+In `extent` mode, the first query for a Parquet file prepares its versioned
+footer and row-group index on demand. Queries for other symbols in that file
+reuse the metadata. This preparation is inside the measured query, not client
+initialization. `--no-cache-footer-preload` disables explicit footer preparation
+for a control run; DuckDB still reads the metadata it needs. The `io` layout
+name remains an alias for `extent`, while `block` remains a rollback option.
 
 Explore aggressively. Measure everything. Question every implementation detail.
 

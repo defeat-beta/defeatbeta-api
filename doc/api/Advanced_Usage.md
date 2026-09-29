@@ -73,10 +73,12 @@ ticker = Ticker("BABA", config=Configuration())
 | threads                                               | The number of total threads used by the system.                                                                                                                                                                                                                                                                               |       4        |
 | parquet_metadata_cache                                | Cache Parquet metadata - useful when reading the same files multiple times                                                                                                                                                                                                                                                    |      True      |
 | cache_enabled | Enable the project's on-demand local cache for pinned Parquet and JSON files. Set to false for uncached standard HTTP reads. | True |
-| cache_directory | Cache root. Defaults to `/tmp/defeatbeta/dataset-cache/{version}/` on macOS/Linux and `<tempdir>/defeatbeta/dataset-cache/{version}/` on Windows. Blocks are stored as flat files. Cache-owned files from older dataset versions are removed after an update is detected; legacy `cache_httpfs` files in the separate `cache/` root are untouched. | None |
-| cache_block_size | Downloaded range block size in bytes. | 1048576 |
-| cache_max_disk_bytes | Maximum retained block bytes; older blocks are evicted as needed. | 1073741824 |
-| cache_max_memory_blocks | Maximum recently used blocks kept in memory. Zero disables the memory tier. | 64 |
+| cache_directory | Cache root. Defaults to `/tmp/defeatbeta/dataset-cache/{version}/` on macOS/Linux and `<tempdir>/defeatbeta/dataset-cache/{version}/` on Windows. Cache files are flat. Cache-owned files from older dataset versions are removed after an update is detected; legacy `cache_httpfs` files in the separate `cache/` root are untouched. | None |
+| cache_layout | `extent` caches variable-length requested ranges and is the default. `block` retains aligned blocks for rollback. The former `io` value is accepted as an alias for `extent`. | extent |
+| cache_footer_preload | In `extent` mode, prepare and persist a Parquet file's footer when that file is first queried. A simple symbol query also builds a reusable row-group index. No footers are fetched during client initialization. | True |
+| cache_block_size | Aligned range size for `block` mode and transport warmup sizing in `extent` mode, in bytes. | 1048576 |
+| cache_max_disk_bytes | Maximum retained data-range bytes; older ranges are evicted as needed. Versioned footer and index files are retained separately. | 1073741824 |
+| cache_max_memory_blocks | Maximum recently used data ranges kept in memory. Zero disables the data-range memory tier. | 64 |
 | cache_workers | Maximum concurrent Range GET workers and HTTP connections. | 3 |
 | cache_version_check_seconds | Minimum time between remote dataset-version checks for a running client. Set to zero to check before every cached query. | 300 |
 | resolve_direct | Resolve pinned Parquet URLs to CDN URLs for the uncached fallback reader. | True |

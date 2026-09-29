@@ -120,6 +120,8 @@ def _breakdown(report):
         ),
         "resolve": resolve,
         "rewrite": _phase(sample, "duckdb.rewrite_urls"),
+        "metadata_prepare": _phase(sample, "duckdb.prepare_parquet_metadata"),
+        "range_prefetch": _phase(sample, "duckdb.prefetch_ranges"),
         "cursor_open": _phase(sample, "duckdb.cursor.open"),
         "sql_dataframe": _phase(sample, "duckdb.sql_to_dataframe"),
         "cursor_close": _phase(sample, "duckdb.cursor.close"),
@@ -267,6 +269,8 @@ def _single_markdown(reports, archive_path):
 | Dataset version / cache validation | {breakdown['cache_validation']:.6f} |
 | URL resolve | {breakdown['resolve']:.6f} |
 | URL rewrite | {breakdown['rewrite']:.6f} |
+| Parquet metadata preparation (inside query) | {breakdown['metadata_prepare']:.6f} |
+| Range prefetch scheduling (inside query) | {breakdown['range_prefetch']:.6f} |
 | Cursor open | {breakdown['cursor_open']:.6f} |
 | SQL execution and DataFrame materialization | {breakdown['sql_dataframe']:.6f} |
 | Cursor close | {breakdown['cursor_close']:.6f} |
@@ -338,6 +342,8 @@ def _comparison_markdown(record, archive_path):
         ("cache_validation", "Dataset version / cache validation"),
         ("resolve", "URL resolve"),
         ("rewrite", "URL rewrite"),
+        ("metadata_prepare", "Parquet metadata preparation (inside query)"),
+        ("range_prefetch", "Range prefetch scheduling (inside query)"),
         ("cursor_open", "Cursor open"),
         ("sql_dataframe", "SQL execution and DataFrame materialization"),
         ("cursor_close", "Cursor close"),

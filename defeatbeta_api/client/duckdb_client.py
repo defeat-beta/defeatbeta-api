@@ -38,7 +38,17 @@ _READ_PARQUET_URL_RE = re.compile(
 )
 _SIGNED_URL_RE = re.compile(r"(https?://[^\s'\"?]+)\?[^\s'\"]*")
 _PRICE_PREFETCH_RE = re.compile(
-    rf"^\s*SELECT\s+\*\s+FROM\s+'({_RESOLVE_URL_RE.pattern})'\s+WHERE\s+symbol\s*=",
+    rf"^\s*SELECT\s+\*\s+FROM\s+'({_RESOLVE_URL_RE.pattern})'\s+WHERE\s+symbol\s*=\s*'([A-Za-z0-9._^-]+)'",
+    re.IGNORECASE,
+)
+_SIMPLE_SYMBOL_SCAN_RE = re.compile(
+    rf"^\s*SELECT\s+(?P<columns>.*?)\s+FROM\s+'(?P<url>{_RESOLVE_URL_RE.pattern})'"
+    rf"\s+WHERE\s+symbol\s*=\s*'(?P<symbol>[A-Za-z0-9._^-]+)'(?P<tail>.*)$",
+    re.IGNORECASE | re.DOTALL,
+)
+_SIMPLE_COLUMN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_SIMPLE_ORDER_RE = re.compile(
+    r"(?P<column>[A-Za-z_][A-Za-z0-9_]*)(?:\s+(?:ASC|DESC))?",
     re.IGNORECASE,
 )
 
@@ -85,7 +95,7 @@ def rewrite_resolve_urls(sql: str, resolve, *, suppress_errors: bool = True) -> 
 
 
 def rewrite_dataset_urls(sql: str, register) -> str:
-    """Route the project's Parquet and JSON readers through its block cache."""
+    """Route the project's Parquet and JSON readers through its range cache."""
     rewritten = rewrite_resolve_urls(sql, register, suppress_errors=False)
 
     def _json_reader(match):
@@ -93,6 +103,68 @@ def rewrite_dataset_urls(sql: str, register) -> str:
         return f"{match.group(1)}'{path}'"
 
     return _READ_JSON_URL_RE.sub(_json_reader, rewritten)
+
+
+def _simple_symbol_scan(sql):
+    match = _SIMPLE_SYMBOL_SCAN_RE.fullmatch(sql)
+    if match is None:
+        return None
+    projection = match.group("columns").strip()
+    if projection == "*":
+        columns = None
+    else:
+        projected = [part.strip() for part in projection.split(",")]
+        if not projected or any(_SIMPLE_COLUMN_RE.fullmatch(part) is None
+                                for part in projected):
+            return None
+        columns = {part.lower() for part in projected}
+        columns.add("symbol")
+    tail = match.group("tail").strip().removesuffix(";").strip()
+    if tail:
+        order = re.fullmatch(r"ORDER\s+BY\s+(.+)", tail, re.IGNORECASE | re.DOTALL)
+        if order is None:
+            return None
+        for part in order.group(1).split(","):
+            item = _SIMPLE_ORDER_RE.fullmatch(part.strip())
+            if item is None:
+                return None
+            if columns is not None:
+                columns.add(item.group("column").lower())
+    return match.group("url"), match.group("symbol"), columns
+
+
+def plan_symbol_column_chunks(chunks, symbol, columns=None):
+    """Plan conservative, row-group-local byte ranges from Parquet footer metadata.
+
+    Each row is (row_group_id, column_path, min, max, chunk_start, chunk_size).
+    Missing symbol statistics include the row group rather than risking a false skip.
+    """
+    groups = {}
+    for group_id, column, lower, upper, start, size in chunks:
+        group = groups.setdefault(group_id, {"symbol": None, "ranges": []})
+        if column == "symbol":
+            group["symbol"] = (lower, upper)
+        selected = columns is None or column.split(".", 1)[0].lower() in columns
+        if (selected and isinstance(start, int) and isinstance(size, int)
+                and start >= 0 and size > 0):
+            group["ranges"].append((start, start + size))
+
+    planned = []
+    for group_id in sorted(groups):
+        group = groups[group_id]
+        bounds = group["symbol"]
+        if bounds is None:
+            continue
+        lower, upper = bounds
+        if (isinstance(lower, str) and isinstance(upper, str)
+                and lower <= upper and not lower <= symbol <= upper):
+            continue
+        for start, end in sorted(group["ranges"]):
+            if planned and planned[-1][2] == group_id and start <= planned[-1][1]:
+                planned[-1] = (planned[-1][0], max(end, planned[-1][1]), group_id)
+            else:
+                planned.append((start, end, group_id))
+    return [(start, end) for start, end, _ in planned]
 
 _instances = {}
 _lock = Lock()
@@ -163,6 +235,10 @@ class DuckDBClient:
         self._dataset_cdn_cache = {}
         self._hf_client = HuggingFaceClient(http_proxy=http_proxy)
         self._dataset_fs = None
+        self._parquet_indexes = {}
+        self._parquet_index_locks = {}
+        self._parquet_index_locks_guard = Lock()
+        self._prepared_footers = set()
         self._data_update_time = None
         self._version_lock = Lock()
         self._last_version_check = 0.0
@@ -180,8 +256,20 @@ class DuckDBClient:
                 max_memory_blocks=self.config.cache_max_memory_blocks,
                 workers=self.config.cache_workers,
                 timeout=self.config.http_timeout,
+                network_connections=self.config.cache_network_connections,
+                network_chunk_size=self.config.cache_network_chunk_size,
+                cache_layout=self.config.cache_layout,
             )
             self.connection.register_filesystem(self._dataset_fs)
+            try:
+                self._dataset_fs.prepare_connections(
+                    self._hf_client.get_url_path("stock_prices"), 1
+                )
+            except Exception as exc:
+                self.logger.warning(
+                    "Dataset connection prewarm failed (%s); reads will connect on demand",
+                    type(exc).__name__,
+                )
 
     def _initialize_connection(self) -> None:
         started_ns = time.perf_counter_ns()
@@ -247,6 +335,11 @@ class DuckDBClient:
                 return
             version = self._hf_client.get_data_update_time()
             self._dataset_fs.update_version(version)
+            if version != self._data_update_time:
+                self._parquet_indexes = {}
+                with self._parquet_index_locks_guard:
+                    self._parquet_index_locks = {}
+                self._prepared_footers = set()
             self._data_update_time = version
             self._last_version_check = time.monotonic()
 
@@ -344,6 +437,38 @@ class DuckDBClient:
         )
         return url, size
 
+    def _load_or_build_parquet_index(self, url, path=None):
+        path = path or self._dataset_fs.register(url)
+        key = path
+        guard = getattr(self, "_parquet_index_locks_guard", None)
+        if guard is None:
+            guard = self._parquet_index_locks_guard = Lock()
+            self._parquet_index_locks = {}
+        with guard:
+            lock = self._parquet_index_locks.setdefault(key, Lock())
+        with lock:
+            chunks = self._parquet_indexes.get(key)
+            if chunks is not None:
+                return chunks
+            self._dataset_fs.prepare_footer(path)
+            chunks = self._dataset_fs.load_parquet_index(path)
+            if chunks is None:
+                with self._get_cursor() as cursor:
+                    chunks = cursor.execute(
+                        "SELECT row_group_id, path_in_schema, stats_min_value, "
+                        "stats_max_value, "
+                        "COALESCE(dictionary_page_offset, data_page_offset), "
+                        "total_compressed_size FROM parquet_metadata(?)",
+                        [path],
+                    ).fetchall()
+                self._dataset_fs.store_parquet_index(path, chunks)
+            self._parquet_indexes[key] = chunks
+            prepared = getattr(self, "_prepared_footers", None)
+            if prepared is None:
+                prepared = self._prepared_footers = set()
+            prepared.add(key)
+            return chunks
+
     def _to_dataset_sql(self, sql: str) -> str:
         registered = {}
 
@@ -354,8 +479,76 @@ class DuckDBClient:
 
         rewritten = rewrite_dataset_urls(sql, register)
         price = _PRICE_PREFETCH_RE.match(sql)
-        if price and price.group(1).endswith("/stock_prices.parquet"):
-            self._dataset_fs.prefetch(registered[price.group(1)])
+        if getattr(self._dataset_fs, "cache_layout", "block") == "block":
+            if price and price.group(1).endswith("/stock_prices.parquet"):
+                self._dataset_fs.prefetch(registered[price.group(1)])
+        else:
+            scan = _simple_symbol_scan(sql)
+            for url, path in registered.items():
+                if not url.endswith(".parquet"):
+                    continue
+                started_ns = time.perf_counter_ns()
+                status = "ok"
+                ranges = []
+                try:
+                    if scan is not None and scan[0] == url:
+                        _, symbol, columns = scan
+                        chunks = getattr(self, "_parquet_indexes", {}).get(
+                            path
+                        )
+                        if chunks is None:
+                            if getattr(getattr(self, "config", None), "cache_footer_preload", True):
+                                chunks = self._load_or_build_parquet_index(url, path)
+                            else:
+                                with self._get_cursor() as cursor:
+                                    chunks = cursor.execute(
+                                        "SELECT row_group_id, path_in_schema, stats_min_value, "
+                                        "stats_max_value, "
+                                        "COALESCE(dictionary_page_offset, data_page_offset), "
+                                        "total_compressed_size FROM parquet_metadata(?)",
+                                        [path],
+                                    ).fetchall()
+                        ranges = plan_symbol_column_chunks(chunks, symbol, columns)
+                    elif getattr(getattr(self, "config", None), "cache_footer_preload", True):
+                        prepared = getattr(self, "_prepared_footers", set())
+                        key = path
+                        if key not in prepared:
+                            self._dataset_fs.prepare_footer(path)
+                            prepared.add(key)
+                            self._prepared_footers = prepared
+                except Exception as exc:
+                    status = "error"
+                    logger = getattr(self, "logger", None)
+                    if logger is not None:
+                        logger.warning(
+                            "Parquet metadata preparation failed (%s); using demand reads",
+                            type(exc).__name__,
+                        )
+                finally:
+                    _record_performance(
+                        "duckdb.prepare_parquet_metadata", started_ns,
+                        time.perf_counter_ns(), file=url.rsplit("/", 1)[-1],
+                        status=status,
+                    )
+                if ranges:
+                    prefetch_started_ns = time.perf_counter_ns()
+                    prefetch_status = "ok"
+                    try:
+                        self._dataset_fs.prefetch_ranges(path, ranges)
+                    except Exception as exc:
+                        prefetch_status = "error"
+                        logger = getattr(self, "logger", None)
+                        if logger is not None:
+                            logger.warning(
+                                "Parquet range prefetch failed (%s); using demand reads",
+                                type(exc).__name__,
+                            )
+                    finally:
+                        _record_performance(
+                            "duckdb.prefetch_ranges", prefetch_started_ns,
+                            time.perf_counter_ns(), file=url.rsplit("/", 1)[-1],
+                            status=prefetch_status, ranges=len(ranges),
+                        )
         return rewritten
 
     def _invalidate_resolved_urls(self, sql: str) -> None:
@@ -387,6 +580,9 @@ class DuckDBClient:
         range_event_offset = (
             self._dataset_fs.range_event_sequence() if use_dataset_cache else 0
         )
+        read_event_offset = (
+            self._dataset_fs.read_event_sequence() if use_dataset_cache else 0
+        )
         try:
             if use_dataset_cache:
                 sql = self._to_dataset_sql(sql)
@@ -415,6 +611,7 @@ class DuckDBClient:
                         for key in cache_before
                     },
                     ranges=self._dataset_fs.range_events(since=range_event_offset),
+                    reads=self._dataset_fs.read_events(since=read_event_offset),
                 )
             events = (
                 ("duckdb.cursor.open", prepared_ns, cursor_opened_ns, {}),
