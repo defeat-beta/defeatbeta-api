@@ -35,7 +35,7 @@ class News:
         per related ticker in the parquet.
 
     The metadata list is memoised on the instance; article bodies are not
-    cached here because DuckDB's httpfs cache already handles repeat reads.
+    cached here because DefeatBeta's range cache handles repeat reads.
     """
 
     def __init__(

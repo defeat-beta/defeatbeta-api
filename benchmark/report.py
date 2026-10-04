@@ -114,11 +114,14 @@ def _breakdown(report):
         "connection_init": _event_phase(
             initialization_events, "duckdb.initialize_connection"
         ),
-        "cache_validation": _event_phase(
-            initialization_events, "duckdb.validate_httpfs_cache"
+        "cache_validation": (
+            _event_phase(initialization_events, "duckdb.load_dataset_version")
+            or _event_phase(initialization_events, "duckdb.validate_httpfs_cache")
         ),
         "resolve": resolve,
         "rewrite": _phase(sample, "duckdb.rewrite_urls"),
+        "metadata_prepare": _phase(sample, "duckdb.prepare_parquet_metadata"),
+        "range_prefetch": _phase(sample, "duckdb.prefetch_ranges"),
         "cursor_open": _phase(sample, "duckdb.cursor.open"),
         "sql_dataframe": _phase(sample, "duckdb.sql_to_dataframe"),
         "cursor_close": _phase(sample, "duckdb.cursor.close"),
@@ -160,6 +163,11 @@ def _environment(report):
     }
 
 
+def _workload_title(report):
+    method = report.get("api_call", "").rsplit(".", 1)[-1]
+    return "Stock Price" if method in ("", "price") else f"Ticker {method.replace('_', ' ').title()}"
+
+
 def _command(report):
     settings = report.get("configured_settings", {})
     symbols = report.get("suite_symbols", [])
@@ -168,6 +176,24 @@ def _command(report):
     proxy_flag = f' --http-proxy "{proxy}"' if proxy else ""
     keep_alive = "" if settings.get("http_keep_alive", True) else " --no-keep-alive"
     resolve = "" if report.get("resolve_direct", True) else " --no-resolve-direct"
+    memory_bytes = settings.get("cache_max_memory_bytes")
+    memory_flag = (
+        f" --cache-max-memory-bytes {memory_bytes}"
+        if memory_bytes is not None else ""
+    )
+    cache_flag = " --no-cache" if settings.get("cache_enabled") is False else ""
+    api_method = report.get("api_call", "").rsplit(".", 1)[-1]
+    method_flag = f" --api-method {api_method}" if api_method not in ("", "price") else ""
+    footer_flag = (
+        " --no-cache-footer-preload"
+        if settings.get("cache_footer_preload") is False else ""
+    )
+    prefetch_flag = (
+        " --no-cache-column-prefetch"
+        if settings.get("cache_column_prefetch") is False else ""
+    )
+    warm_repeats = settings.get("warm_repeats", 0)
+    warm_flag = f" --warm-repeats {warm_repeats}" if warm_repeats else ""
     executable = "benchmark/benchmark.py" if report.get("api_call") else "benchmark/bench.py"
     revision = (
         f" --revision {report['revision']}"
@@ -175,17 +201,38 @@ def _command(report):
     )
     return (
         f".venv/bin/python {executable} run --runs {report.get('requested_runs', 3)} "
-        f"--tag {report.get('tag', 'unknown')}{symbol}{proxy_flag}{keep_alive}{resolve}{revision}"
+        f"--tag {report.get('tag', 'unknown')}{symbol}{method_flag}{proxy_flag}{keep_alive}"
+        f"{resolve}{memory_flag}{cache_flag}{footer_flag}{prefetch_flag}{warm_flag}{revision}"
     )
 
 
 def _cache_description(sample):
     after = sample.get("cache_after_query")
     if after:
-        return f"{after.get('files', 0)} / {_format_bytes(after.get('bytes', 0))}"
+        footprint = f"{after.get('files', 0)} / {_format_bytes(after.get('bytes', 0))}"
+        metrics = sample.get("cache_metrics")
+        if isinstance(metrics, dict):
+            return (
+                f"{footprint}; {metrics.get('range_requests', 0)} ranges / "
+                f"{_format_bytes(metrics.get('downloaded_bytes', 0))} downloaded"
+            )
+        return footprint
     return (
         f"{sample.get('cache_files_after_query', 0)} / "
         f"{_format_bytes(sample.get('cache_bytes_after_query', 0))}"
+    )
+
+
+def _prefetch_description(sample):
+    coverage = sample.get("prefetch_coverage")
+    if not isinstance(coverage, dict):
+        return "not recorded"
+    if coverage.get("complete") is False:
+        return "incomplete event capture"
+    return (
+        f"{_format_bytes(coverage.get('planned_downloaded_bytes', 0))} downloaded / "
+        f"{_format_bytes(coverage.get('planned_read_bytes', 0))} requested / "
+        f"{_format_bytes(coverage.get('planned_unread_bytes', 0))} unread"
     )
 
 
@@ -196,6 +243,7 @@ def _single_markdown(reports, archive_path):
     rows = []
     checksums = []
     cache_rows = []
+    prefetch_rows = []
     for report in reports:
         samples = _ok_samples(report)
         summary = _summary(report)
@@ -213,9 +261,12 @@ def _single_markdown(reports, archive_path):
         cache_rows.append(
             f"| {report['symbol']} | {_cache_description(samples[0])} |"
         )
+        prefetch_rows.append(
+            f"| {report['symbol']} | {_prefetch_description(samples[0])} |"
+        )
     breakdown = _breakdown(reports[0])
     method = first.get("methodology", {})
-    return f"""# {archive_path.stem}: Stock Price Cold Query
+    return f"""# {archive_path.stem}: {_workload_title(first)} Cold Query
 
 ## Environment
 
@@ -225,7 +276,7 @@ def _single_markdown(reports, archive_path):
 | OS / machine | {env['platform']} / {env['machine']} |
 | CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
 | Python / DuckDB / pandas | {env['versions']} |
-| cache_httpfs / httpfs | {env['extensions']} |
+| HTTP extensions | {env['extensions']} |
 | API workload | {first.get('api_call', 'legacy direct DuckDB workload')} |
 | Primary metric | `{metric}` |
 | Cold state | {method.get('cold', 'unknown')} |
@@ -250,22 +301,30 @@ def _single_markdown(reports, archive_path):
 | Package import | {breakdown['import']:.6f} |
 | Ticker initialization | {breakdown['ticker_init']:.6f} |
 | DuckDB connection initialization | {breakdown['connection_init']:.6f} |
-| Cache validation | {breakdown['cache_validation']:.6f} |
+| Dataset version / cache validation | {breakdown['cache_validation']:.6f} |
 | URL resolve | {breakdown['resolve']:.6f} |
 | URL rewrite | {breakdown['rewrite']:.6f} |
+| Parquet metadata preparation (inside query) | {breakdown['metadata_prepare']:.6f} |
+| Range prefetch scheduling (inside query) | {breakdown['range_prefetch']:.6f} |
 | Cursor open | {breakdown['cursor_open']:.6f} |
 | SQL execution and DataFrame materialization | {breakdown['sql_dataframe']:.6f} |
 | Cursor close | {breakdown['cursor_close']:.6f} |
 | **DuckDBClient._execute_query** | **{breakdown['execute_query']:.6f}** |
 | DuckDBClient.query | {breakdown['duckdb_query']:.6f} |
-| Ticker.price API call | {breakdown['api_call']:.6f} |
+| Ticker API call | {breakdown['api_call']:.6f} |
 | Worker wall time | {breakdown['worker_wall']:.6f} |
 
 ### Cache Footprint
 
-| Symbol | Files / bytes after query |
+| Symbol | Files / bytes after query; range transfers |
 | --- | ---: |
 {chr(10).join(cache_rows)}
+
+### Prefetch Coverage
+
+| Symbol | Prefetched network bytes / DuckDB-requested bytes |
+| --- | --- |
+{chr(10).join(prefetch_rows)}
 
 ### Result Checksums
 
@@ -286,6 +345,7 @@ def _comparison_markdown(record, archive_path):
     rows = []
     checksums = []
     cache_rows = []
+    prefetch_rows = []
     for symbol in symbols:
         baseline = baseline_by_symbol[symbol]
         candidate = candidate_by_symbol[symbol]
@@ -310,6 +370,10 @@ def _comparison_markdown(record, archive_path):
             f"| {symbol} | {_cache_description(baseline_samples[0])} | "
             f"{_cache_description(candidate_samples[0])} |"
         )
+        prefetch_rows.append(
+            f"| {symbol} | {_prefetch_description(baseline_samples[0])} | "
+            f"{_prefetch_description(candidate_samples[0])} |"
+        )
 
     baseline_breakdown = _breakdown(baseline_reports[0])
     candidate_breakdown = _breakdown(candidate_reports[0])
@@ -321,15 +385,17 @@ def _comparison_markdown(record, archive_path):
         ("import", "Package import"),
         ("ticker_init", "Ticker initialization"),
         ("connection_init", "DuckDB connection initialization"),
-        ("cache_validation", "Cache validation"),
+        ("cache_validation", "Dataset version / cache validation"),
         ("resolve", "URL resolve"),
         ("rewrite", "URL rewrite"),
+        ("metadata_prepare", "Parquet metadata preparation (inside query)"),
+        ("range_prefetch", "Range prefetch scheduling (inside query)"),
         ("cursor_open", "Cursor open"),
         ("sql_dataframe", "SQL execution and DataFrame materialization"),
         ("cursor_close", "Cursor close"),
         ("execute_query", "**DuckDBClient._execute_query**"),
         ("duckdb_query", "DuckDBClient.query"),
-        ("api_call", "Ticker.price API call"),
+        ("api_call", "Ticker API call"),
         ("worker_wall", "Worker wall time"),
     )
     for key, label in phase_labels:
@@ -338,7 +404,7 @@ def _comparison_markdown(record, archive_path):
             f"{candidate_breakdown[key]:.6f} |"
         )
 
-    return f"""# {archive_path.stem}: Stock Price Cold Query Comparison
+    return f"""# {archive_path.stem}: {_workload_title(candidate_reports[0])} Cold Query Comparison
 
 ## Environment
 
@@ -348,7 +414,7 @@ def _comparison_markdown(record, archive_path):
 | OS / machine | {env['platform']} / {env['machine']} |
 | CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
 | Python / DuckDB / pandas | {env['versions']} |
-| cache_httpfs / httpfs | {env['extensions']} |
+| HTTP extensions | {env['extensions']} |
 | API workload | {candidate_reports[0].get('api_call', 'legacy direct DuckDB workload')} |
 | Primary metric | `{metric}` |
 | Cold state | {method.get('cold', 'unknown')} |
@@ -382,9 +448,15 @@ Candidate:
 
 ### Cache Footprint
 
-| Symbol | Baseline files / bytes | Candidate files / bytes |
+| Symbol | Baseline cache footprint / transfers | Candidate cache footprint / transfers |
 | --- | ---: | ---: |
 {chr(10).join(cache_rows)}
+
+### Prefetch Coverage
+
+| Symbol | Baseline | Candidate |
+| --- | --- | --- |
+{chr(10).join(prefetch_rows)}
 
 ### Result Checksums
 

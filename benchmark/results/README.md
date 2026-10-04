@@ -4,11 +4,11 @@
 
 The benchmark uses an explicit two-stage workflow:
 
-1. Run `bench.py run` as many times as needed while developing an optimization.
+1. Run `benchmark.py run` as many times as needed while developing an optimization.
    Each invocation writes one ignored JSON record under `local/`; it does not
    create a Markdown report or a tracked archive.
 2. After selecting satisfactory baseline and candidate runs, invoke
-   `bench.py archive` explicitly. Archiving validates and combines those exact
+   `benchmark.py archive` explicitly. Archiving validates and combines those exact
    records into one tracked comparison JSON and one Markdown report without
    rerunning the benchmark.
 
@@ -46,10 +46,62 @@ If the candidate intentionally changes a configured setting, declare each one
 with `--allow-setting-difference <name>`. Undeclared differences, mismatched
 environments, revisions, symbols, or result hashes reject publication.
 
-The executable benchmark calls `Ticker(symbol).price()` through the real
-`defeatbeta_api` package. Its primary metric is the time emitted by
+The executable benchmark calls `Ticker(symbol).price()` by default; use
+`--api-method info`, `--api-method sec_filing`, or another supported DataFrame
+method to measure a different dataset through the real `defeatbeta_api`
+package. Its primary metric is the time emitted by
 `DuckDBClient._execute_query`; package import, client initialization, the full
-API call, cache state, and cache_httpfs diagnostics are recorded separately.
+API call, cache state, DuckDB-requested byte ranges, network range transfers,
+and DefeatBeta cache metrics are recorded separately.
+`--no-cache-column-prefetch` disables column-chunk prefetch for a cold-cache
+control while retaining footer preparation and on-demand caching. Each sample
+records `prefetch_coverage`: bytes downloaded within planned prefetch ranges,
+bytes within those ranges requested by DuckDB, and the difference. This
+measures requested byte ranges, not which Parquet pages DuckDB decoded.
+Event buffers are bounded. If a query exceeds them, coverage is marked
+incomplete instead of reporting potentially misleading byte totals.
+Pending prefetches are drained after the API timing boundary so the coverage
+calculation includes transfers that finish after the query. The wait time and
+post-drain transfer totals are reported separately; they are not added to
+`execute_query_seconds` or the query-time cache metrics.
+
+The project cache stores variable-length reader ranges and downloads only
+uncovered intervals. The first query for a Parquet file prepares that file's
+footer and, with column prefetch enabled,
+a simple symbol scan also builds its row-group index. Both are versioned and
+reused by later queries for the same file, including other symbols. No file
+footer is fetched during client initialization. The initial preparation is
+included in `_execute_query`. `metadata_prepare_performance` and
+`range_prefetch_performance` report metadata work and prefetch scheduling
+separately.
+There is no cache-layout selection flag. The cache snapshot is
+verified empty before each measured cold API call. A four-byte Parquet header
+extent is classified as metadata rather than query data in the separate
+data-extent snapshot. `--no-cache-footer-preload` disables explicit footer
+preparation for a control run, but does not prevent DuckDB from reading
+required Parquet metadata itself.
+
+Transport experiments can use `network-cold-read` to compare fresh independent
+connections, disjoint connection warmups, and Range chunk sizes. It downloads
+the same ordered query bytes for each mode and verifies their digest, but it is
+network-only evidence, not an API performance result. Use `run` with
+`--cache-network-connections`, `--cache-network-chunk-size`, and
+`--cache-connection-warmup-bytes` for the end-to-end check. Connection warmup
+occurs before `Ticker.price()` and is reported separately as
+`connection_warmup_seconds`; its bytes are not stored in the local range cache.
+The production client also performs a one-byte startup prewarm during client
+initialization, so this optional benchmark warmup is additional. Its time is
+included in client initialization, not in `_execute_query`. The connection
+pool is shared by files with the same resolved origin; a different origin gets
+its own lazily created pool. `cache_network_connections` applies per origin.
+These command-line settings do not change
+production defaults.
+The proxy option is optional: omitting it uses the normal environment proxy
+policy, while an explicit proxy selects that route for the run.
+
+The `archive/000_*` and `archive/001_*` files are historical records from the
+previous `cache_httpfs` reader. They are kept unchanged so past measurements
+are not presented as measurements of the current reader.
 
 Local run JSON uses format version 2 with deduplicated `shared` entries. Paired
 comparison archives use format version 3 and embed the exact version 2 baseline

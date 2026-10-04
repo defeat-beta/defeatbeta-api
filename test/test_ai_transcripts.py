@@ -1,4 +1,5 @@
 import logging
+import os
 import unittest
 from pathlib import Path
 
@@ -6,10 +7,17 @@ from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 from defeatbeta_api.data.ticker import Ticker
 from openai import OpenAI
 
+@unittest.skipUnless(
+    os.environ.get("DEFEATBETA_RUN_AI_TESTS") == "1",
+    "Set DEFEATBETA_RUN_AI_TESTS=1 to run SiliconFlow integration tests",
+)
 class TestAITranscripts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ticker = Ticker("META", http_proxy="http://127.0.0.1:8118", log_level=logging.DEBUG)
+        cls.ticker = Ticker(
+            "META", http_proxy=os.environ.get("DEFEATBETA_TEST_HTTP_PROXY"),
+            log_level=logging.DEBUG,
+        )
 
         key = Path(__file__).parent.joinpath("siliconflow_api.key").read_text(encoding="utf-8")
         cls.llm = OpenAI(

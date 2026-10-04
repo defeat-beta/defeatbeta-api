@@ -1,5 +1,4 @@
 import json
-import logging
 import re
 import sys
 import time
@@ -18,7 +17,7 @@ except ImportError:
     from IPython.display import display
     from IPython.core.display import HTML
 
-from defeatbeta_api.client.duckdb_client import DuckDBClient
+from defeatbeta_api.client.duckdb_client import DuckDBClient, _console_logger
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.client.openai_conf import OpenAIConfiguration
 from defeatbeta_api.data.sql.sql_loader import load_sql
@@ -41,7 +40,7 @@ class Transcripts:
         already UNNESTed to (paragraph_number, speaker, content)
 
     The metadata list is memoised on the instance; transcript bodies are not
-    cached here because DuckDB's httpfs cache already handles repeat reads.
+    cached here because DefeatBeta's range cache handles repeat reads.
     """
 
     def __init__(
@@ -55,13 +54,7 @@ class Transcripts:
         self.duckdb_client = duckdb_client
         self.huggingface_client = huggingface_client
         self._list_cache: Optional[pd.DataFrame] = None
-        logging.basicConfig(
-            level=log_level,
-            format='%(asctime)s %(levelname)s %(name)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S',
-            stream=sys.stdout
-        )
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = _console_logger(self.__class__.__name__, log_level)
 
     def get_transcripts_list(self) -> pd.DataFrame:
         if self._list_cache is None:

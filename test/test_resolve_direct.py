@@ -1,14 +1,17 @@
 """Unit tests for resolve-once CDN routing and fallback behavior."""
 
+import io
 import unittest
 import tempfile
 import importlib
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 from unittest.mock import patch
 
 import pandas as pd
+import defeatbeta_api
 
 from defeatbeta_api.client.duckdb_client import (
     DuckDBClient,
@@ -26,6 +29,30 @@ CDN = ("https://us.aws.cdn.hf.co/xet-bridge-us/abc/stock_prices.parquet"
        "?Expires=1&Signature=secret")
 JSON = ("https://huggingface.co/datasets/defeatbeta/yahoo-finance-data"
         "/resolve/main/data/US/company_tickers.json")
+
+
+class TestWelcome(unittest.TestCase):
+    def test_welcome_supports_cp1252_stdout(self):
+        output = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+        with patch.object(defeatbeta_api, "_welcome_printed", False), \
+             patch("sys.stdout", output):
+            defeatbeta_api._print_welcome("2026-09-29")
+            output.flush()
+            rendered = output.buffer.getvalue().decode("cp1252")
+
+        self.assertIn("2026-09-29", rendered)
+        self.assertIn(defeatbeta_api.__version__, rendered)
+        self.assertIn("*:: Data Update Time ::", rendered)
+
+    def test_welcome_keeps_icon_on_utf8_stdout(self):
+        output = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+        with patch.object(defeatbeta_api, "_welcome_printed", False), \
+             patch("sys.stdout", output):
+            defeatbeta_api._print_welcome("2026-09-29")
+            output.flush()
+            rendered = output.buffer.getvalue().decode("utf-8")
+
+        self.assertIn("📈:: Data Update Time ::", rendered)
 
 
 class TestRewrite(unittest.TestCase):
@@ -75,25 +102,33 @@ class TestRewrite(unittest.TestCase):
 
 
 class TestConfiguration(unittest.TestCase):
-    def test_default_path_enables_resolve_and_keeps_cache(self):
+    def test_default_path_uses_project_cache_without_community_extension(self):
         config = Configuration()
         settings = config.get_duckdb_settings()
-        self.assertTrue(config.resolve_direct)
-        self.assertIn("LOAD cache_httpfs", settings)
+        self.assertTrue(config.cache_enabled)
+        self.assertFalse(any("cache_httpfs" in setting for setting in settings))
+        self.assertLess(settings.index("INSTALL httpfs"), settings.index("LOAD httpfs"))
         self.assertTrue(any("http_keep_alive = True" in s for s in settings))
-        self.assertTrue(any("allow_asterisks_in_http_paths = true" in s for s in settings))
 
-    def test_resolve_direct_keeps_cache_httpfs_settings(self):
-        settings = Configuration(resolve_direct=True).get_duckdb_settings()
-        self.assertIn("LOAD cache_httpfs", settings)
-        self.assertTrue(any("cache_httpfs_cache_directory" in s for s in settings))
+    def test_old_extension_settings_are_not_public_configuration(self):
+        with self.assertRaises(TypeError):
+            Configuration(cache_httpfs_cache_block_size=1024)
 
     def test_custom_cache_directory_is_applied(self):
         with tempfile.TemporaryDirectory() as directory:
-            config = Configuration(cache_httpfs_cache_directory=directory)
-            settings = config.get_duckdb_settings()
+            config = Configuration(cache_directory=directory)
+            self.assertEqual(config.get_cache_directory(), str(Path(directory).resolve()))
 
-        self.assertTrue(any(directory in setting for setting in settings))
+    def test_default_cache_directory_does_not_reuse_extension_files(self):
+        self.assertIn("dataset-cache", Path(Configuration().get_cache_directory()).parts)
+
+    def test_cache_limits_use_project_keys(self):
+        config = Configuration(cache_max_memory_bytes=2048)
+        self.assertEqual(config.cache_max_memory_bytes, 2048)
+
+    def test_negative_cache_version_check_interval_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "version check interval"):
+            Configuration(cache_version_check_seconds=-1)
 
 
 class TestPerformanceCapture(unittest.TestCase):
@@ -172,7 +207,9 @@ class TestMemo(unittest.TestCase):
                 raise RuntimeError("boom")
 
         client._hf_client = FailingHF()
-        self.assertEqual(client._resolve_one(PINNED), PINNED)
+        with self.assertLogs(client.logger, level="WARNING") as logs:
+            self.assertEqual(client._resolve_one(PINNED), PINNED)
+        self.assertIn("CDN resolve failed", logs.output[0])
 
 
 class TestQueryFallback(unittest.TestCase):
@@ -212,11 +249,40 @@ class TestQueryFallback(unittest.TestCase):
         client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
 
         original = f"SELECT * FROM '{PINNED}'"
-        result = client.query(original)
+        with self.assertLogs(client.logger, level="WARNING") as logs:
+            result = client.query(original)
 
         self.assertEqual(result.to_dict("records"), [{"value": 1}])
         self.assertEqual(calls, [f"SELECT * FROM read_parquet(['{CDN}'])", original])
         self.assertNotIn(PINNED, client._cdn_cache)
+        self.assertIn("CDN query failed", logs.output[0])
+
+    def test_dataset_cache_failure_uses_existing_remote_path(self):
+        import logging
+
+        client = DuckDBClient.__new__(DuckDBClient)
+        client.logger = logging.getLogger("dataset-cache-fallback-test")
+        client._dataset_fs = object()
+        client._refresh_dataset_version_if_due = Mock()
+        client.resolve_direct = True
+        client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
+        expected = pd.DataFrame([{"value": 1}])
+        client._execute_query = Mock(side_effect=[RuntimeError("cache unavailable"), expected])
+        sql = f"SELECT * FROM '{PINNED}'"
+
+        with self.assertLogs(client.logger, level="WARNING") as logs:
+            self.assertTrue(client.query(sql).equals(expected))
+        self.assertIn("Dataset cache query failed", logs.output[0])
+        client._refresh_dataset_version_if_due.assert_called_once_with()
+        self.assertEqual(client._execute_query.call_args_list[0].args, (sql,))
+        self.assertEqual(
+            client._execute_query.call_args_list[0].kwargs,
+            {"use_dataset_cache": True},
+        )
+        self.assertEqual(
+            client._execute_query.call_args_list[1].args,
+            (f"SELECT * FROM read_parquet(['{CDN}'])",),
+        )
 
 
 class TestClientRegistry(unittest.TestCase):
@@ -262,25 +328,54 @@ class TestClientRegistry(unittest.TestCase):
 
 
 class TestHuggingFaceResolver(unittest.TestCase):
+    def test_socks_proxy_dependencies_are_installed(self):
+        self.assertIsNotNone(importlib.util.find_spec("socks"))
+        self.assertIsNotNone(importlib.util.find_spec("socksio"))
+
+    def test_duckdb_proxy_is_configured_before_loading_httpfs(self):
+        connection = Mock()
+        with patch(
+            "defeatbeta_api.client.duckdb_client.duckdb.connect",
+            return_value=connection,
+        ), patch.object(DuckDBClient, "_load_dataset_version"):
+            DuckDBClient(
+                http_proxy="http://proxy.example:8123",
+                config=Configuration(cache_enabled=False),
+            )
+
+        statements = [call.args[0] for call in connection.execute.call_args_list]
+        self.assertLess(
+            next(index for index, sql in enumerate(statements) if "SET GLOBAL http_proxy" in sql),
+            statements.index("LOAD httpfs"),
+        )
+
     def test_client_passes_explicit_proxy_to_spec_reader(self):
         proxy = "http://proxy.example:8123"
 
         with patch.object(DuckDBClient, "_initialize_connection"), \
-                patch.object(DuckDBClient, "_validate_httpfs_cache"), \
+                patch.object(DuckDBClient, "_load_dataset_version"), \
                 patch("defeatbeta_api.client.duckdb_client.HuggingFaceClient") as reader:
-            DuckDBClient(http_proxy=proxy)
+            DuckDBClient(http_proxy=proxy, config=Configuration(cache_enabled=False))
 
         reader.assert_called_once_with(http_proxy=proxy)
 
     def test_spec_request_uses_explicit_proxy(self):
         proxy = "http://proxy.example:8123"
         client = HuggingFaceClient(http_proxy=proxy)
+        spec = {
+            "update_time": "2026-09-28T00:00:00Z",
+            "footer_index": {"US/stock_prices.parquet": {
+                "file_size": 100, "footer_size": 20,
+                "footer_sha256": "a" * 64,
+            }},
+        }
         client.session.get = Mock(return_value=SimpleNamespace(
             raise_for_status=lambda: None,
-            json=lambda: {"update_time": "2026-09-28T00:00:00Z"},
+            json=lambda: spec,
         ))
 
         self.assertEqual(client.get_data_update_time(), "2026-09-28T00:00:00Z")
+        self.assertEqual(client.dataset_spec, spec)
         self.assertEqual(client.session.get.call_args.kwargs["proxies"], {
             "http": proxy, "https": proxy,
         })
@@ -307,6 +402,43 @@ class TestHuggingFaceResolver(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "Unsafe redirect"):
             client.resolve_cdn_url(PINNED)
+
+    def test_resolve_cdn_info_uses_linked_size_without_another_request(self):
+        client = HuggingFaceClient.__new__(HuggingFaceClient)
+        client.session = Mock()
+        client.session.head.return_value = SimpleNamespace(
+            status_code=302,
+            headers={"Location": CDN, "X-Linked-Size": "466437904"},
+        )
+
+        self.assertEqual(client.resolve_cdn_info(PINNED), (CDN, 466437904))
+        client.session.head.assert_called_once()
+
+    def test_resolve_cdn_info_accepts_direct_json_response(self):
+        client = HuggingFaceClient.__new__(HuggingFaceClient)
+        client.session = Mock()
+        client.session.head.return_value = SimpleNamespace(
+            status_code=200,
+            headers={"Content-Length": "42"},
+        )
+
+        self.assertEqual(client.resolve_cdn_info(JSON), (JSON, 42))
+
+    def test_resolve_cdn_info_follows_safe_relative_json_redirect(self):
+        client = HuggingFaceClient.__new__(HuggingFaceClient)
+        client.session = Mock()
+        client.session.head.side_effect = [
+            SimpleNamespace(status_code=307, headers={
+                "Location": "/api/resolve-cache/datasets/defeatbeta/file.json",
+            }),
+            SimpleNamespace(status_code=200, headers={"Content-Length": "42"}),
+        ]
+
+        self.assertEqual(
+            client.resolve_cdn_info(JSON),
+            ("https://huggingface.co/api/resolve-cache/datasets/defeatbeta/file.json", 42),
+        )
+        self.assertEqual(client.session.head.call_count, 2)
 
 
 class TestImportSideEffects(unittest.TestCase):

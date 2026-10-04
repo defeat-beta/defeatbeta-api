@@ -86,9 +86,9 @@ def validate_nltk_directory() -> str:
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
-def validate_httpfs_cache_directory() -> str:
-    """Get HTTPFS cache directory: /tmp/defeatbeta/cache/<version>"""
-    cache_dir = os.path.join(_get_defeatbeta_root_dir(), "cache", __version__)
+def validate_cache_directory() -> str:
+    """Get the DefeatBeta range cache directory, separate from legacy files."""
+    cache_dir = os.path.join(_get_defeatbeta_root_dir(), "dataset-cache", __version__)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 

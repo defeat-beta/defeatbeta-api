@@ -1,4 +1,5 @@
 import logging
+import os
 import unittest
 
 from defeatbeta_api.data.ticker import Ticker
@@ -310,6 +311,10 @@ class TestTicker(unittest.TestCase):
         result = self.ticker.wacc()
         print(result.to_string())
 
+    @unittest.skipUnless(
+        os.environ.get("DEFEATBETA_RUN_EXCEL_TESTS") == "1",
+        "Set DEFEATBETA_RUN_EXCEL_TESTS=1 to verify formulas in Excel",
+    )
     def test_dcf(self):
         import math
         import xlwings as xw

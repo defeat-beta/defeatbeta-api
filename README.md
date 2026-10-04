@@ -19,7 +19,7 @@ The list of changes can be found in the [Changelog](CHANGELOG.rst)
 
 ## Introduction
 
-✅ **High-Performance & Reliable Data Engine**: Provides a stable, reproducible market data source fully hosted on Hugging Face’s [yahoo-finance-data](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data) dataset—eliminating scraping issues and rate limits. Powered by [DuckDB’s OLAP engine](https://duckdb.org/) and the [`cache_httpfs`](https://duckdb.org/community_extensions/extensions/cache_httpfs.html) extension, the system delivers sub-second analytical queries with full SQL compatibility, giving you a unified, high-performance workflow for large-scale financial data.
+✅ **High-Performance & Reliable Data Engine**: Provides a stable, reproducible market data source fully hosted on Hugging Face’s [yahoo-finance-data](https://huggingface.co/datasets/defeatbeta/yahoo-finance-data) dataset—eliminating scraping issues and rate limits. DuckDB runs the queries, while DefeatBeta's [local file cache](doc/api/Local_File_Cache.md) fetches only the Parquet and JSON ranges needed by each query.
 
 ✅ **Extended Financial Data**: Includes [TTM EPS](doc/api/Value_Examples.md#1-stock-ttm-eps), [TTM PE](doc/api/Value_Examples.md#2-stock-ttm-pe), [Market Cap](doc/api/Value_Examples.md#3-stock-historical-market-cap), [PS Ratio](doc/api/Value_Examples.md#4-stock-historical-ps-ratio), [PB Ratio](doc/api/Value_Examples.md#5-stock-historical-pb-ratio), [PEG Ratio](doc/api/Value_Examples.md#6-stock-historical-peg-ratio), [ROE](doc/api/Value_Examples.md#7-stock-historical-roe), [ROIC](doc/api/Value_Examples.md#9-stock-historical-roic), [WACC](doc/api/Value_Examples.md#12-stock-historical-wacc), [ROA](doc/api/Value_Examples.md#8-stock-historical-roa), [Equity Multiplier](doc/api/Value_Examples.md#10-stock-historical-equity-multiplier), [Assert Turnover](doc/api/Value_Examples.md#11-stock-historical-assert-turnover), [SEC Filings](doc/api/Info_Examples.md#2-sec-filing), [Earnings call transcripts](doc/api/Info_Examples.md#4-accessing-earnings-call-transcripts), [Stock News](doc/api/Info_Examples.md#5-accessing-financial-news), [Revenue by segment](doc/api/Finance_Examples.md#91-stock-revenue-by-segment) and [Revenue by geography](doc/api/Finance_Examples.md#92-stock-revenue-by-geography) etc. (continuously expanding).
 
@@ -42,7 +42,7 @@ Install `defeatbeta-api` from [PYPI](https://pypi.org/project/defeatbeta-api/) u
 $ pip install defeatbeta-api
 ```
 
-> 💡 Windows is supported natively since `v0.0.60` (the `cache_httpfs` extension added Windows support). Earlier versions require [WSL](https://ubuntu.com/desktop/wsl) or [Docker](https://docs.docker.com/desktop/setup/install/windows-install/).
+> 💡 Windows is supported natively since `v0.0.60`. The current dataset cache uses the same Python filesystem interface on Windows, macOS, and Linux.
 
 ### Usage
 
@@ -390,20 +390,39 @@ tickers = Tickers(['NVDA', 'SHOP', 'TSLA'], max_workers=2)
 
 See [Advanced Usage](doc/api/Advanced_Usage.md) for details.
 
+### Development tests
+
+Run the offline cache and benchmark regressions with:
+
+```sh
+python -m unittest test.test_dataset_cache_fs test.test_resolve_direct test.test_benchmark test.test_duckdb_client.TestDuckDBClient test.test_test_collection -q
+```
+
+The exhaustive ticker sweep no longer runs during test discovery. A small
+live price sample is opt-in with `DEFEATBETA_RUN_NETWORK_TESTS=1`; the full US
+ticker price sweep is opt-in with `DEFEATBETA_RUN_ALL_TICKERS=1`. Set
+`DEFEATBETA_TEST_HTTP_PROXY` only if your network needs a proxy. The Excel
+formula verification in `TestTicker.test_dcf` is opt-in with
+`DEFEATBETA_RUN_EXCEL_TESTS=1` because it launches Excel. Use `pytest -s` to
+show DEBUG output while running tests; pytest otherwise captures passing-test
+output.
+SiliconFlow transcript integration tests are opt-in with
+`DEFEATBETA_RUN_AI_TESTS=1` and require `test/siliconflow_api.key`.
+
 
 ## How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
 
 **Advantages over yfinance:**
 
-**1. No rate limits:** defeat-beta avoids Yahoo Finance’s real-time rate limit by fetching data periodically (typically once a week) and uploading it to `Hugging Face`.
+**1. No rate limits:** defeat-beta avoids Yahoo Finance’s real-time rate limit by fetching data periodically (typically daily) and uploading it to `Hugging Face`.
 
 **2. Efficient data format:** It uses the Parquet format, supporting flexible SQL queries via `DuckDB`.
 
-**3. High-performance caching:** Data is stored remotely on `Hugging Face` but leverages `cache_httpfs` for local disk caching, ensuring excellent performance.
+**3. High-performance caching:** Data stays on Hugging Face. DefeatBeta downloads the needed byte ranges on demand, stores them locally, and reuses them for subsequent queries. Cache keys include the dataset update time, not the short-lived signed CDN URL. Direct access and HTTP proxies are both supported; a cache transport failure falls back to DuckDB's standard HTTP reader without local caching. See the [local file cache guide](doc/api/Local_File_Cache.md).
 
 **4. Multi-source data:** defeat-beta integrates additional data sources, unlike `yfinance` which relies solely on Yahoo Finance data.
 
 **Disadvantages compared to yfinance:**
 
-**Non-real-time data:** defeat-beta updates data on a periodic basis (typically weekly), so it cannot provide real-time data, unlike `yfinance`.
+**Non-real-time data:** defeat-beta updates data on a periodic basis (typically daily), so it cannot provide real-time data, unlike `yfinance`.
