@@ -11,6 +11,8 @@ The benchmark uses an explicit two-stage workflow:
    `benchmark.py archive` explicitly. Archiving validates and combines those exact
    records into one tracked comparison JSON and one Markdown report without
    rerunning the benchmark.
+   For a release with no comparable historical baseline, use `archive-release`
+   to publish one multi-API version snapshot instead of claiming a speedup.
 
 Local execution is unlimited, while storage is intentionally bounded: the
 newest 100 records from the last 30 days are retained. Use
@@ -23,6 +25,7 @@ silently replaced.
 - `local/<run-id>.json`: one file per invocation, ignored by Git. Completed runs retain the newest 100 within 30 days. Cleanup runs after each benchmark; recent unfinished runs are protected, and unfinished records older than 30 days expire.
 - `archive/NNN_<name>.json`: one immutable paired baseline/candidate record for a published optimization.
 - `archive/NNN_<name>.md`: the single generated comparison report for that optimization.
+- A release snapshot uses the same one-JSON/one-Markdown archive layout.
 
 Run from the project root (one file per invocation, unlimited runs):
 
@@ -45,6 +48,30 @@ Publish one satisfying comparison from the project root (archiving does not run 
 If the candidate intentionally changes a configured setting, declare each one
 with `--allow-setting-difference <name>`. Undeclared differences, mismatched
 environments, revisions, symbols, or result hashes reject publication.
+
+To record a released version across multiple files, run each API method with
+the same symbols, run count, configuration, and network route. Then archive
+the selected completed local records in one snapshot:
+
+```bash
+./.venv/bin/python benchmark/benchmark.py run --runs 3 --tag release_price --api-method price
+./.venv/bin/python benchmark/benchmark.py run --runs 3 --tag release_info --api-method info
+./.venv/bin/python benchmark/benchmark.py run --runs 3 --tag release_filing --api-method sec_filing
+./.venv/bin/python benchmark/benchmark.py archive-release \
+  --source benchmark/results/local/<price-run-id>.json \
+  --source benchmark/results/local/<info-run-id>.json \
+  --source benchmark/results/local/<filing-run-id>.json \
+  --name 002_release_0_0_62 --release 0.0.62 \
+  --release-commit <full-release-commit>
+```
+
+Add `--http-proxy URL` to each `run` only where required. Release archiving
+requires one package version, source implementation, environment, configuration,
+and dataset version across all suites. Within each suite, the Parquet file
+identity and each symbol's result must remain unchanged across samples. The
+release commit identifies the production code measured; the raw record also
+contains source hashes for audit. A snapshot is an absolute measurement under
+its recorded network conditions, not a comparison with older archives.
 
 The executable benchmark calls `Ticker(symbol).price()` by default; use
 `--api-method info`, `--api-method sec_filing`, or another supported DataFrame
@@ -108,3 +135,4 @@ comparison archives use format version 3 and embed the exact version 2 baseline
 and candidate records. `000_baseline` and `001_resolve_once_cdn` are legacy
 archives produced by the retired direct-DuckDB benchmark and remain readable
 by `report.py`.
+Release snapshots use format version 4 and embed the selected version 2 runs.

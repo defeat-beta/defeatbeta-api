@@ -1626,6 +1626,81 @@ class BenchmarkArchiveTests(unittest.TestCase):
         self.assertEqual(record["format_version"], 3)
         self.assertEqual(len(list((self.root / "archive").glob("*.json"))), 1)
 
+    def test_release_snapshot_archives_multiple_api_runs_as_one_report(self):
+        sources = []
+        for method in ("price", "info", "sec_filing"):
+            reports = self.reports(method, f"20261006T000000.000000Z_{method}")
+            for item in reports:
+                item["api_call"] = f"defeatbeta_api.data.ticker.Ticker.{method}"
+                item["url"] = f"https://huggingface.co/{method}.parquet"
+                item["package_version"] = "0.0.62"
+                item["implementation"] = {"duckdb_client.py": "release-code"}
+                for sample in item["samples"]:
+                    sample["dataset_version"] = "dataset-v1"
+                    sample["parquet_identity"] = {
+                        "file_size": 1000, "footer_sha256": method,
+                    }
+            source = self.root / f"{method}.json"
+            self.benchmark.write_record(source, reports)
+            sources.append(source)
+
+        archived = self.benchmark.archive_release_snapshot(
+            sources, self.root, "002_release_0_0_62", "0.0.62", "a" * 40
+        )
+        record = json.loads(archived.read_text(encoding="utf-8"))
+        self.assertEqual(record["format_version"], 4)
+        self.assertEqual(len(record["suites"]), 3)
+        destination = archived.with_suffix(".md")
+        load_report_module().render_markdown(archived, destination)
+        rendered = destination.read_text(encoding="utf-8")
+        self.assertIn("0.0.62", rendered)
+        self.assertIn("Ticker.price", rendered)
+        self.assertIn("Ticker.info", rendered)
+        self.assertIn("Ticker.sec_filing", rendered)
+        self.assertIn("dataset-v1", rendered)
+
+    def test_release_snapshot_rejects_dataset_revision_change(self):
+        reports = self.reports("release", "20261006T000000.000000Z_release")
+        for item in reports:
+            item["package_version"] = "0.0.62"
+            for sample in item["samples"]:
+                sample["dataset_version"] = "dataset-v1"
+                sample["parquet_identity"] = {
+                    "file_size": 1000, "footer_sha256": "same"
+                }
+        reports[1]["samples"][0]["dataset_version"] = "dataset-v2"
+        source = self.root / "changed.json"
+        self.benchmark.write_record(source, reports)
+        with self.assertRaisesRegex(ValueError, "dataset version"):
+            self.benchmark.archive_release_snapshot(
+                [source], self.root, "002_release_0_0_62", "0.0.62", "a" * 40
+            )
+        self.assertFalse((self.root / "archive" / "002_release_0_0_62.json").exists())
+
+    def test_release_snapshot_rejects_changed_parquet_and_incomplete_runs(self):
+        reports = self.reports("release", "20261006T000000.000000Z_release")
+        for item in reports:
+            item["package_version"] = "0.0.62"
+            for sample in item["samples"]:
+                sample["dataset_version"] = "dataset-v1"
+                sample["parquet_identity"] = {
+                    "file_size": 1000, "footer_sha256": "first"
+                }
+        reports[1]["samples"][0]["parquet_identity"]["footer_sha256"] = "second"
+        source = self.root / "changed-parquet.json"
+        self.benchmark.write_record(source, reports)
+        with self.assertRaisesRegex(ValueError, "Parquet file versions"):
+            self.benchmark.archive_release_snapshot(
+                [source], self.root, "002_release_0_0_62", "0.0.62", "a" * 40
+            )
+
+        reports[1]["status"] = "invalid"
+        self.benchmark.write_record(source, reports)
+        with self.assertRaisesRegex(ValueError, "Only complete"):
+            self.benchmark.archive_release_snapshot(
+                [source], self.root, "002_release_0_0_62", "0.0.62", "a" * 40
+            )
+
 
 class BenchmarkReportTests(unittest.TestCase):
     def test_reproduction_command_uses_memory_byte_limit(self):

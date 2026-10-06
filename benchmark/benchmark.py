@@ -1972,11 +1972,22 @@ def run_api_workload(payload, api=None, diagnostics=True):
         raise ValueError("Ticker API did not emit a DuckDBClient._execute_query event")
 
     usage = process_usage()
+    client = getattr(ticker, "duckdb_client", None)
+    footer_index = getattr(client, "_footer_index", {})
+    hint = footer_index.get(f"US/{API_FILES[api_method]}.parquet") if isinstance(
+        footer_index, dict
+    ) else None
     outcome = {
         "status": "ok" if len(frame) else "empty_result",
         "pid": os.getpid(),
         "symbol": symbol,
         "api_method": api_method,
+        "dataset_version": getattr(client, "_data_update_time", None),
+        "parquet_identity": {
+            key: hint[key]
+            for key in ("file_size", "footer_size", "footer_sha256")
+            if key in hint
+        } if isinstance(hint, dict) else None,
         "cache_directory": str(cache_directory),
         "cache_empty_at_worker_start": True,
         "cache_before_query": cache_before,
@@ -2408,6 +2419,71 @@ def archive_comparison(baseline_source, candidate_source, output, name,
     return destination
 
 
+def archive_release_snapshot(sources, output, name, release, release_commit):
+    """Archive complete API suites for one released package without a false baseline."""
+    _archive_name(name)
+    if not re.fullmatch(r"\d+\.\d+\.\d+", release):
+        raise ValueError("Release must be a semantic version")
+    if not re.fullmatch(r"[0-9a-f]{40}", release_commit):
+        raise ValueError("Release commit must be a full Git SHA")
+    if not sources:
+        raise ValueError("A release snapshot needs at least one source")
+
+    suites = []
+    methods = set()
+    shared_fields = ("environment", "implementation", "configured_settings",
+                     "requested_runs", "primary_metric")
+    reference = None
+    dataset_versions = set()
+    for source in sources:
+        reports = unpack_reports(json.loads(Path(source).read_text(encoding="utf-8")))
+        validate_archive_reports(reports)
+        _results_by_symbol(reports)
+        first = reports[0]
+        method = first.get("api_call")
+        if not method or method in methods:
+            raise ValueError("Release snapshot needs unique API methods")
+        methods.add(method)
+        if any(report.get("package_version") != release for report in reports):
+            raise ValueError("Run package version does not match release")
+        if reference is not None:
+            for field in shared_fields:
+                if first.get(field) != reference.get(field):
+                    raise ValueError(f"Release snapshot mixes different {field} values")
+        else:
+            reference = first
+        identities = set()
+        for report in reports:
+            if report.get("api_call") != method:
+                raise ValueError("Run mixes different API methods")
+            for sample in report["samples"]:
+                version = sample.get("dataset_version")
+                identity = sample.get("parquet_identity")
+                if not version or not isinstance(identity, dict) or not identity.get("footer_sha256"):
+                    raise ValueError("Release sample lacks dataset version or Parquet identity")
+                dataset_versions.add(version)
+                identities.add(json.dumps(identity, sort_keys=True))
+        if len(identities) != 1:
+            raise ValueError("Run spans multiple Parquet file versions")
+        suites.append(pack_reports(reports))
+    if len(dataset_versions) != 1:
+        raise ValueError("Release snapshot spans multiple dataset versions")
+
+    record = {
+        "format_version": 4,
+        "release": release,
+        "release_commit": release_commit,
+        "dataset_version": dataset_versions.pop(),
+        "suites": suites,
+    }
+    destination = Path(output) / "archive" / f"{name}.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("x", encoding="utf-8") as handle:
+        json.dump(record, handle, indent=2)
+        handle.write("\n")
+    return destination
+
+
 def prune_local(output, days=30, count=100, now=None):
     now = now or datetime.now(timezone.utc)
     candidates = []
@@ -2599,6 +2675,8 @@ def cmd_run(args):
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
+    from defeatbeta_api.__version__ import __version__ as package_version
+
     environment = environment_info()
     implementation = source_hashes()
     configuration = {
@@ -2666,6 +2744,7 @@ def cmd_run(args):
         "suite_symbols": symbols,
         "schedule": "round_robin",
         "tag": args.tag,
+        "package_version": package_version,
         "status": "running",
         "revision": "main",
         "url": STOCK_PRICES_URL.replace(
@@ -3105,6 +3184,22 @@ def cmd_archive(args):
     return 0
 
 
+def cmd_archive_release(args):
+    try:
+        destination = archive_release_snapshot(
+            args.source, args.output.resolve(), args.name,
+            args.release, args.release_commit,
+        )
+        from report import render_markdown
+
+        render_markdown(destination, destination.with_suffix(".md"))
+    except (ValueError, FileExistsError, json.JSONDecodeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    print(f"Archive: {destination}")
+    return 0
+
+
 def worker_main():
     try:
         request = json.loads(sys.stdin.read())
@@ -3276,6 +3371,15 @@ def build_parser():
     )
     archive_parser.add_argument("--output", type=Path, default=ROOT / "results")
 
+    release_parser = subparsers.add_parser(
+        "archive-release", help="Publish one multi-API release benchmark snapshot"
+    )
+    release_parser.add_argument("--source", type=Path, action="append", required=True)
+    release_parser.add_argument("--name", required=True)
+    release_parser.add_argument("--release", required=True)
+    release_parser.add_argument("--release-commit", required=True)
+    release_parser.add_argument("--output", type=Path, default=ROOT / "results")
+
     inspect_parser = subparsers.add_parser(
         "inspect-io", help="Classify a saved query trace using a local Parquet file"
     )
@@ -3314,6 +3418,8 @@ def main():
         return cmd_network_rowgroup(args)
     if args.command == "archive":
         return cmd_archive(args)
+    if args.command == "archive-release":
+        return cmd_archive_release(args)
     if args.command == "inspect-io":
         return cmd_inspect_io(args)
     raise AssertionError(f"unknown command: {args.command}")

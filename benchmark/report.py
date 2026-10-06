@@ -356,6 +356,90 @@ Raw results: [archive JSON](./{archive_path.name})
 """
 
 
+def _release_markdown(record, archive_path):
+    suites = [unpack_reports(item) for item in record["suites"]]
+    first = suites[0][0]
+    env = _environment(first)
+    rows = []
+    revisions = []
+    commands = []
+    for reports in suites:
+        lead = reports[0]
+        method = lead["api_call"].rsplit(".", 1)[-1]
+        method_label = f"Ticker.{method}()"
+        identity = reports[0]["samples"][0]["parquet_identity"]
+        revisions.append(
+            f"| `{method_label}` | {identity.get('file_size', 'unknown')} | "
+            f"`{identity.get('footer_sha256', 'unknown')}` |"
+        )
+        commands.append(f"# {method}\n{_command(lead)}")
+        for report in reports:
+            samples = _ok_samples(report)
+            summary = _summary(report)
+            representative = _median_sample(report)
+            metrics = representative.get("cache_metrics_query_delta") or {}
+            result = representative.get("result") or {}
+            trials = ", ".join(
+                _format_seconds(_sample_value(sample, _metric(report)))
+                for sample in samples
+            )
+            rows.append(
+                f"| `{method_label}` | {report['symbol']} | {result.get('rows', 0):,} | "
+                f"{trials} | **{summary['median_seconds']:.6f}** | "
+                f"{metrics.get('downloaded_bytes', 'unknown')} | "
+                f"{metrics.get('range_requests', 'unknown')} | "
+                f"`{result.get('sha256', 'unavailable')}` |"
+            )
+    return f"""# {archive_path.stem}: DefeatBeta {record['release']} Cold API Benchmark
+
+This is a single-version measurement, not a comparison with the historical
+`cache_httpfs` archives. Each trial starts in a fresh worker with an isolated
+empty local data cache. The primary metric is `DuckDBClient._execute_query`.
+Proxy, DNS, operating-system, and remote CDN state are not controlled.
+
+## Provenance
+
+| Item | Value |
+| --- | --- |
+| Release / commit | `{record['release']}` / `{record['release_commit']}` |
+| Run date | {env['date']} |
+| Dataset version | `{record['dataset_version']}` |
+| OS / machine | {env['platform']} / {env['machine']} |
+| CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
+| Python / DuckDB / pandas | {env['versions']} |
+| HTTP extensions | {env['extensions']} |
+| Proxy setting | `{first.get('configured_settings', {}).get('http_proxy', 'environment policy')}` |
+
+## Parquet identities
+
+| API method | File bytes | Footer SHA256 |
+| --- | ---: | --- |
+{chr(10).join(revisions)}
+
+## Cold-query results
+
+Downloaded bytes and Range GETs are from the median-latency sample for each
+symbol, measured inside the API query. Trials are in seconds. File metadata
+preparation is included in the primary metric; connection initialization is not.
+
+| API method | Symbol | Rows | Trials (s) | Median (s) | Downloaded bytes | Range GETs | Result SHA256 |
+| --- | --- | ---: | --- | ---: | ---: | ---: | --- |
+{chr(10).join(rows)}
+
+## Reproduce
+
+```bash
+{chr(10).join(commands)}
+```
+
+The raw record contains timing phases, cache footprints, prefetch coverage,
+settings, and the exact samples used above. These observations describe this
+network and dataset revision only; they are not a cross-network latency target.
+
+Raw results: [archive JSON](./{archive_path.name})
+"""
+
+
 def _comparison_markdown(record, archive_path):
     baseline_reports, candidate_reports = unpack_comparison(record)
     baseline_by_symbol = {report["symbol"]: report for report in baseline_reports}
@@ -500,6 +584,8 @@ def render_markdown(archive_json_path, output_md_path):
     record = json.loads(archive_json_path.read_text(encoding="utf-8"))
     if record.get("format_version") == 3:
         markdown = _comparison_markdown(record, archive_json_path)
+    elif record.get("format_version") == 4:
+        markdown = _release_markdown(record, archive_json_path)
     else:
         markdown = _single_markdown(unpack_reports(record), archive_json_path)
     output_md_path.write_text(markdown, encoding="utf-8")
