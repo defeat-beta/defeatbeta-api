@@ -276,6 +276,111 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             {"stock_prices.parquet"},
         )
 
+    def test_httpx_info_logs_redact_signed_cache_request_urls(self):
+        payload = bytes(range(256)) * 16
+        with local_range_server(payload) as server:
+            signed_url = (
+                f"http://127.0.0.1:{server.server_port}/object"
+                "?Signature=secret&Expires=123"
+            )
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "signed-log-cache"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (signed_url, len(payload)),
+                http_proxy="", max_memory_bytes=0,
+            )
+            try:
+                path = filesystem.register(PINNED)
+                with self.assertLogs("httpx", level="INFO") as captured:
+                    self.assertEqual(filesystem.cat_file(path, 100, 120), payload[100:120])
+            finally:
+                filesystem.close()
+            with self.assertLogs("httpx", level="INFO") as unrelated:
+                response = httpx.get(
+                    f"http://127.0.0.1:{server.server_port}/other?marker=outside",
+                    headers={"Range": "bytes=0-0"}, trust_env=False,
+                )
+            self.assertEqual(response.status_code, 206)
+
+        logs = "\n".join(captured.output)
+        self.assertIn("HTTP Request:", logs)
+        self.assertNotIn("Signature=secret", logs)
+        self.assertNotIn("Expires=123", logs)
+        self.assertIn("?<redacted>", logs)
+        self.assertIn("marker=outside", "\n".join(unrelated.output))
+
+    def test_httpcore_debug_logs_do_not_expose_signed_cache_request_urls(self):
+        payload = bytes(range(256)) * 16
+        with local_range_server(payload) as server:
+            signed_url = (
+                f"http://127.0.0.1:{server.server_port}/object"
+                "?Signature=secret&Expires=123"
+            )
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "signed-debug-cache"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (signed_url, len(payload)),
+                http_proxy="", max_memory_bytes=0,
+            )
+            try:
+                path = filesystem.register(PINNED)
+                with self.assertLogs("httpcore", level="DEBUG") as captured:
+                    self.assertEqual(filesystem.cat_file(path, 200, 220), payload[200:220])
+            finally:
+                filesystem.close()
+
+        logs = "\n".join(captured.output)
+        self.assertNotIn("Signature=secret", logs)
+        self.assertNotIn("Expires=123", logs)
+
+    def test_concurrent_unrelated_httpx_logs_are_unchanged(self):
+        payload = bytes(range(256)) * 16
+        with local_range_server(payload) as server:
+            signed_url = (
+                f"http://127.0.0.1:{server.server_port}/object"
+                "?Signature=secret"
+            )
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "concurrent-logs"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (signed_url, len(payload)),
+                http_proxy="", max_memory_bytes=0,
+            )
+            entered = threading.Event()
+            release = threading.Event()
+            original_get = filesystem._client.get
+
+            def paused_get(*args, **kwargs):
+                entered.set()
+                if not release.wait(5):
+                    raise TimeoutError("Cache request was not released")
+                return original_get(*args, **kwargs)
+
+            try:
+                path = filesystem.register(PINNED)
+                with patch.object(filesystem._client, "get", side_effect=paused_get):
+                    with self.assertLogs("httpx", level="INFO") as captured:
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            future = executor.submit(filesystem.cat_file, path, 100, 120)
+                            try:
+                                self.assertTrue(entered.wait(5))
+                                response = httpx.get(
+                                    f"http://127.0.0.1:{server.server_port}/other"
+                                    "?marker=outside",
+                                    headers={"Range": "bytes=0-0"}, trust_env=False,
+                                )
+                                self.assertEqual(response.status_code, 206)
+                            finally:
+                                release.set()
+                            self.assertEqual(future.result(timeout=5), payload[100:120])
+            finally:
+                filesystem.close()
+
+        logs = "\n".join(captured.output)
+        self.assertIn("?<redacted>", logs)
+        self.assertIn("marker=outside", logs)
+        self.assertNotIn("Signature=secret", logs)
+
     def test_io_cache_downloads_only_missing_byte_intervals(self):
         payload = bytes(range(256)) * (4 * MIB // 256)
         remote = FakeRangeClient(len(payload), payload=payload)

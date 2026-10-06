@@ -10,6 +10,7 @@ import time
 from collections import OrderedDict, deque
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Event, Lock, RLock, Thread
@@ -21,6 +22,9 @@ import httpx
 
 
 _CONTENT_RANGE = re.compile(r"bytes (\d+)-(\d+)/(\d+)")
+_LOG_URL_WITH_QUERY = re.compile(r"(https?://[^\s'\"?]+)\?[^\s'\"]*")
+_CACHE_HTTPX_REQUEST = ContextVar("defeatbeta_cache_httpx_request", default=False)
+_HTTPX_LOG_FILTER_LOCK = Lock()
 _BLOCK_DIGEST_BYTES = hashlib.sha256().digest_size
 _LEGACY_OBJECT_DIR = re.compile(r"[0-9a-f]{64}")
 _LEGACY_OBJECT_FILE = re.compile(r"(?:size\.json|\d+-\d+\.block)")
@@ -45,6 +49,25 @@ _INITIAL_FOOTER_TAIL_BYTES = 256 * 1024
 _EXTENT_SUFFIX = re.compile(
     r"(?P<start>\d+)-(?P<length>\d+)\.(?P<kind>block|footer)"
 )
+
+
+class _CacheHttpxLogFilter(logging.Filter):
+    def filter(self, record):
+        if _CACHE_HTTPX_REQUEST.get():
+            message = record.getMessage()
+            record.msg = _LOG_URL_WITH_QUERY.sub(r"\1?<redacted>", message)
+            record.args = ()
+        return True
+
+
+_CACHE_HTTPX_LOG_FILTER = _CacheHttpxLogFilter()
+
+
+def _install_cache_httpx_log_filter():
+    logger = logging.getLogger("httpx")
+    with _HTTPX_LOG_FILTER_LOCK:
+        if _CACHE_HTTPX_LOG_FILTER not in logger.filters:
+            logger.addFilter(_CACHE_HTTPX_LOG_FILTER)
 
 
 @contextmanager
@@ -100,6 +123,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             raise ValueError("Network connection and chunk limits must be nonnegative")
         if http_client is not None and network_connections != 1:
             raise ValueError("Injected HTTP client requires one network connection")
+        _install_cache_httpx_log_filter()
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self._version_file = self.directory / ".dataset-version.json"
@@ -540,11 +564,15 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             try:
                 for attempt in range(2):
                     try:
-                        response = client.get(
-                            signed_url,
-                            headers={"Range": f"bytes={start}-{end}",
-                                     "Accept-Encoding": "identity"},
-                        )
+                        token = _CACHE_HTTPX_REQUEST.set(True)
+                        try:
+                            response = client.get(
+                                signed_url,
+                                headers={"Range": f"bytes={start}-{end}",
+                                         "Accept-Encoding": "identity"},
+                            )
+                        finally:
+                            _CACHE_HTTPX_REQUEST.reset(token)
                     except httpx.TransportError:
                         self._observe_client(observation, "transport_error")
                         if attempt == 0:
