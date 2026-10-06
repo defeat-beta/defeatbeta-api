@@ -5,6 +5,7 @@ import threading
 import unittest
 import hashlib
 import logging
+import multiprocessing
 import os
 import time
 import httpx
@@ -117,6 +118,29 @@ def local_range_server(payload, *, delay_seconds=0):
         server.shutdown()
         server.server_close()
         worker.join(timeout=2)
+
+
+def shared_cache_process_reader(directory, signed_url, total, start, messages):
+    """Read one range from a cache directory shared with another process."""
+    filesystem = None
+    try:
+        filesystem = DatasetCacheFileSystem(
+            directory=directory, version="shared-process-v1",
+            resolve=lambda url, refresh=False: (signed_url, total),
+            http_proxy="", max_memory_bytes=0,
+        )
+        path = filesystem.register(PINNED)
+        messages.put(("ready", os.getpid()))
+        if not start.wait(15):
+            raise TimeoutError("Shared cache readers did not start together")
+        content = filesystem.cat_file(path, 100, 2148)
+        messages.put(("result", hashlib.sha256(content).hexdigest()))
+    except Exception as exc:
+        messages.put(("error", repr(exc)))
+        raise
+    finally:
+        if filesystem is not None:
+            filesystem.close()
 
 
 class TestDatasetCacheFileSystem(unittest.TestCase):
@@ -989,6 +1013,127 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             sum(block.stat().st_size for block in Path(self.temporary.name).rglob("*.block")),
             self.filesystem.max_disk_bytes,
         )
+
+    def test_concurrent_disk_read_survives_eviction_of_its_extent(self):
+        payload = bytes(range(256)) * 4
+        remote = FakeRangeClient(len(payload), payload=payload)
+        directory = Path(self.temporary.name) / "read-during-eviction"
+        filesystem = DatasetCacheFileSystem(
+            directory=str(directory), version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, max_memory_bytes=0,
+            max_disk_bytes=2 * (10 + hashlib.sha256().digest_size),
+        )
+        try:
+            path = filesystem.register(PINNED)
+            self.assertEqual(filesystem.cat_file(path, 0, 10), payload[:10])
+            self.assertEqual(filesystem.cat_file(path, 100, 110), payload[100:110])
+            key, _ = filesystem._key_and_url(path)
+            first = filesystem._block_path(key, 0, 10)
+            second = filesystem._block_path(key, 100, 10)
+            os.utime(first, ns=(1_000_000_000, 1_000_000_000))
+            os.utime(second, ns=(2_000_000_000, 2_000_000_000))
+            entered = threading.Event()
+            release = threading.Event()
+            original_read = filesystem._read_block
+
+            def delayed_read(target, length):
+                if target == first:
+                    entered.set()
+                    if not release.wait(5):
+                        raise TimeoutError("Concurrent eviction did not release reader")
+                return original_read(target, length)
+
+            with patch.object(filesystem, "_read_block", side_effect=delayed_read):
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    reader = executor.submit(
+                        lambda: filesystem.cat_file(path, 0, 10)
+                    )
+                    try:
+                        self.assertTrue(entered.wait(5))
+                        self.assertEqual(
+                            filesystem.cat_file(path, 200, 210), payload[200:210]
+                        )
+                        self.assertFalse(first.exists())
+                    finally:
+                        release.set()
+                    self.assertEqual(reader.result(timeout=5), payload[:10])
+
+            blocks = list(directory.glob("*.block"))
+            self.assertLessEqual(sum(block.stat().st_size for block in blocks),
+                                 filesystem.max_disk_bytes)
+            for block in blocks:
+                stored = block.read_bytes()
+                self.assertEqual(stored[:32], hashlib.sha256(stored[32:]).digest())
+            requests = len(remote.calls)
+            self.assertEqual(filesystem.cat_file(path, 0, 10), payload[:10])
+            self.assertEqual(len(remote.calls), requests)
+        finally:
+            filesystem.close()
+
+    def test_spawned_processes_publish_one_valid_shared_cache_extent(self):
+        payload = bytes(range(256)) * 16
+        directory = Path(self.temporary.name) / "shared-process-cache"
+        context = multiprocessing.get_context("spawn")
+        start = context.Event()
+        messages = context.Queue()
+        processes = []
+        with local_range_server(payload, delay_seconds=0.1) as server:
+            signed_url = f"http://127.0.0.1:{server.server_port}/object"
+            try:
+                processes = [
+                    context.Process(
+                        target=shared_cache_process_reader,
+                        args=(str(directory), signed_url, len(payload), start, messages),
+                    )
+                    for _ in range(2)
+                ]
+                for process in processes:
+                    process.start()
+                self.assertEqual(
+                    [messages.get(timeout=20)[0] for _ in processes],
+                    ["ready", "ready"],
+                )
+                start.set()
+                expected = hashlib.sha256(payload[100:2148]).hexdigest()
+                self.assertEqual(
+                    [messages.get(timeout=20) for _ in processes],
+                    [("result", expected)] * 2,
+                )
+                for process in processes:
+                    process.join(timeout=10)
+                    self.assertEqual(process.exitcode, 0)
+
+                blocks = list(directory.glob("*.block"))
+                self.assertEqual(len(blocks), 1)
+                stored = blocks[0].read_bytes()
+                self.assertEqual(stored[:32], hashlib.sha256(stored[32:]).digest())
+                self.assertEqual(stored[32:], payload[100:2148])
+                self.assertGreaterEqual(len(server.paths), 1)
+                self.assertLessEqual(len(server.paths), 2)
+                requests = len(server.paths)
+
+                reopened = DatasetCacheFileSystem(
+                    directory=str(directory), version="shared-process-v1",
+                    resolve=lambda url, refresh=False: (signed_url, len(payload)),
+                    http_proxy="", max_memory_bytes=0,
+                )
+                try:
+                    path = reopened.register(PINNED)
+                    self.assertEqual(reopened.cat_file(path, 100, 2148),
+                                     payload[100:2148])
+                    self.assertEqual(len(server.paths), requests)
+                finally:
+                    reopened.close()
+            finally:
+                start.set()
+                for process in processes:
+                    process.join(timeout=2)
+                    if process.is_alive():
+                        process.terminate()
+                        process.join(timeout=2)
+                messages.close()
+                messages.join_thread()
 
     def test_disk_eviction_orders_accesses_with_equal_clock_ticks(self):
         self.filesystem.resolve = lambda url, refresh=False: (SIGNED, self.remote.size)

@@ -1,8 +1,9 @@
 import logging
 import os
+import tempfile
 import unittest
-import threading
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pandas as pd
 
@@ -34,18 +35,32 @@ def select_symbols(primary, candidates, limit=MAX_PARALLEL_SYMBOLS):
 class TestTickerMultithreaded(unittest.TestCase):
 
     def test_info(self):
-        def run_test():
-            ticker = Ticker(
-                "BABA", http_proxy=os.environ.get("DEFEATBETA_TEST_HTTP_PROXY"),
-                log_level=logging.DEBUG,
-            )
-            result = ticker.info()
-            print(f"Thread {threading.current_thread().name} result:\n{result.to_string()}")
-            result = ticker.download_data_performance()
-            print(result)
+        proxy = os.environ.get("DEFEATBETA_TEST_HTTP_PROXY")
+        with tempfile.TemporaryDirectory() as directory:
+            config = Configuration(cache_directory=directory)
 
-        with ThreadPoolExecutor(max_workers=MAX_PARALLEL_SYMBOLS) as executor:
-            list(executor.map(lambda _: run_test(), range(10)))
+            def run_test():
+                ticker = Ticker(
+                    "BABA", http_proxy=proxy, log_level=logging.WARNING,
+                    config=config,
+                )
+                return ticker.info()
+
+            with ThreadPoolExecutor(max_workers=MAX_PARALLEL_SYMBOLS) as executor:
+                results = list(executor.map(lambda _: run_test(), range(10)))
+
+            self.assertFalse(results[0].empty)
+            for result in results[1:]:
+                pd.testing.assert_frame_equal(result, results[0])
+
+            client = get_duckdb_client(
+                http_proxy=proxy, log_level=logging.WARNING, config=config,
+            )
+            try:
+                self.assertGreater(client._dataset_fs.metrics()["range_requests"], 0)
+                self.assertFalse(list(Path(directory).glob(".partial-*")))
+            finally:
+                client.close()
 
     def test_download_data_performance(self):
         t = "BABA"

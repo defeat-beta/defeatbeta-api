@@ -398,8 +398,9 @@ Run the offline cache and benchmark regressions with:
 python -m unittest test.test_dataset_cache_fs test.test_resolve_direct test.test_benchmark test.test_duckdb_client.TestDuckDBClient test.test_test_collection -q
 ```
 
-These offline regressions include local loopback HTTP/1.1 tests for direct
-connection reopening, proxy connection reopening, and slow-proxy fallback.
+These offline regressions include concurrent thread/process cache tests and
+local loopback HTTP/1.1 tests for direct connection reopening, proxy
+connection reopening, and slow-proxy fallback.
 They bind a random port on `127.0.0.1` but do not require internet access.
 The manually dispatched `dataset-cache` GitHub workflow additionally checks
 direct Hugging Face HTTP/2 Range reads on Linux, macOS, and Windows.
