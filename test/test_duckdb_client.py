@@ -119,18 +119,46 @@ class TestDuckDBClient(unittest.TestCase):
         self.assertEqual(client._parquet_indexes["defeatbeta://stock_prices"], rows)
 
     def test_project_cache_defaults_are_bounded(self):
-        config = Configuration(threads=8)
-        self.assertEqual(config.cache_max_memory_bytes, 64 * 1024 * 1024)
-        self.assertEqual(config.cache_max_disk_bytes, 5 * 1024 * 1024 * 1024)
-        self.assertEqual(config.cache_workers, 3)
+        config = Configuration(duckdb_threads=8)
+        self.assertEqual(config.cache_data_memory_limit_bytes, 64 * 1024 * 1024)
+        self.assertEqual(config.cache_data_disk_limit_bytes, 5 * 1024 * 1024 * 1024)
+        self.assertEqual(config.cache_fetch_workers, 3)
         self.assertFalse(hasattr(config, "cache_block_size"))
         self.assertFalse(hasattr(config, "cache_max_memory_blocks"))
         self.assertEqual(
             inspect.signature(DatasetCacheFileSystem.__init__).parameters["max_disk_bytes"].default,
-            config.cache_max_disk_bytes,
+            config.cache_data_disk_limit_bytes,
         )
         self.assertFalse(hasattr(config, "cache_layout"))
-        self.assertTrue(config.cache_column_prefetch)
+        self.assertTrue(config.cache_symbol_column_chunk_prefetch)
+
+    def test_configuration_exposes_layer_specific_names(self):
+        config = Configuration(
+            duckdb_http_timeout_seconds=45,
+            cache_http_timeout_seconds=90,
+            cache_fetch_workers=3,
+            cache_range_split_bytes=0,
+        )
+        self.assertEqual(config.duckdb_http_timeout_seconds, 45)
+        self.assertEqual(config.cache_http_timeout_seconds, 90)
+        self.assertEqual(config.cache_fetch_workers, 3)
+        self.assertEqual(config.cache_range_split_bytes, 0)
+        self.assertFalse(hasattr(config, "cache_network_connections"))
+        self.assertIn("SET GLOBAL http_timeout = 45", config.get_duckdb_settings())
+        with self.assertRaises(TypeError):
+            Configuration(cache_network_connections=2)
+        with self.assertRaises(TypeError):
+            Configuration(threads=8)
+
+    def test_cache_transport_limits_reject_invalid_values(self):
+        for settings in (
+            {"cache_fetch_workers": 0},
+            {"cache_range_split_bytes": -1},
+            {"cache_http_timeout_seconds": 0},
+            {"duckdb_http_timeout_seconds": 0},
+        ):
+            with self.subTest(settings=settings), self.assertRaises(ValueError):
+                Configuration(**settings)
 
     def test_configuration_documentation_matches_defaults(self):
         document = (Path(__file__).resolve().parents[1] / "doc/api/Advanced_Usage.md")
@@ -160,7 +188,7 @@ class TestDuckDBClient(unittest.TestCase):
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor = Mock(side_effect=AssertionError("unneeded index"))
-        client.config = Configuration(cache_column_prefetch=False)
+        client.config = Configuration(cache_symbol_column_chunk_prefetch=False)
         client.logger = logging.getLogger("test")
 
         rewritten = client._to_dataset_sql(
@@ -364,7 +392,7 @@ class TestDuckDBClientIntegration(unittest.TestCase):
             client = DuckDBClient(
                 http_proxy=os.getenv("DEFEATBETA_TEST_HTTP_PROXY"),
                 log_level=logging.WARNING,
-                config=Configuration(threads=8, cache_directory=cache_directory),
+                config=Configuration(duckdb_threads=8, cache_directory=cache_directory),
             )
             try:
                 result = client.query(

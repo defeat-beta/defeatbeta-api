@@ -87,7 +87,7 @@ CONSISTENT_ARCHIVE_FIELDS = {
     "tag",
     "requested_runs",
     "timeout_seconds",
-    "resolve_direct",
+    "resolve_cdn_for_uncached_reads",
     "suite_id",
     "primary_metric",
 }
@@ -2580,9 +2580,9 @@ def cmd_run(args):
         symbols = [validate_symbol(args.symbol)] if args.symbol else list(DEFAULT_SYMBOLS)
         if args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
             raise ValueError("runs and timeout must be positive and finite")
-        if args.cache_max_memory_bytes < 0:
+        if args.cache_data_memory_limit_bytes < 0:
             raise ValueError("cache memory limit must be nonnegative")
-        if (args.cache_network_connections < 1 or args.cache_network_chunk_size < 0
+        if (args.cache_fetch_workers < 1 or args.cache_range_split_bytes < 0
                 or args.cache_connection_warmup_bytes < 0):
             raise ValueError("cache network limits must be nonnegative")
         if args.cache_connection_warmup_bytes > 1024 * 1024:
@@ -2602,15 +2602,15 @@ def cmd_run(args):
     environment = environment_info()
     implementation = source_hashes()
     configuration = {
-        "http_keep_alive": args.keep_alive,
-        "resolve_direct": args.resolve_direct,
-        "threads": args.threads,
-        "cache_max_memory_bytes": args.cache_max_memory_bytes,
-        "cache_footer_preload": args.cache_footer_preload,
-        "cache_column_prefetch": args.cache_column_prefetch,
+        "duckdb_http_keep_alive": args.duckdb_http_keep_alive,
+        "resolve_cdn_for_uncached_reads": args.resolve_cdn_for_uncached_reads,
+        "duckdb_threads": args.duckdb_threads,
+        "cache_data_memory_limit_bytes": args.cache_data_memory_limit_bytes,
+        "cache_prepare_footer_on_first_use": args.cache_prepare_footer_on_first_use,
+        "cache_symbol_column_chunk_prefetch": args.cache_symbol_column_chunk_prefetch,
         "cache_enabled": args.cache,
-        "cache_network_connections": args.cache_network_connections,
-        "cache_network_chunk_size": args.cache_network_chunk_size,
+        "cache_fetch_workers": args.cache_fetch_workers,
+        "cache_range_split_bytes": args.cache_range_split_bytes,
     }
     configured_settings = {
         **configuration,
@@ -2672,7 +2672,7 @@ def cmd_run(args):
             "stock_prices.parquet", f"{API_FILES[args.api_method]}.parquet"
         ),
         "api_call": f"defeatbeta_api.data.ticker.Ticker.{args.api_method}",
-        "resolve_direct": args.resolve_direct,
+        "resolve_cdn_for_uncached_reads": args.resolve_cdn_for_uncached_reads,
         "primary_metric": PRIMARY_METRIC,
         "requested_runs": args.runs,
         "timeout_seconds": args.timeout,
@@ -2768,8 +2768,8 @@ def cmd_sequence(args):
             raise ValueError("symbols must contain at least two valid entries")
         if args.runs < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
             raise ValueError("runs and timeout must be positive and finite")
-        if (args.cache_max_memory_bytes < 0 or args.cache_network_connections < 1
-                or args.cache_network_chunk_size < 0
+        if (args.cache_data_memory_limit_bytes < 0 or args.cache_fetch_workers < 1
+                or args.cache_range_split_bytes < 0
                 or not 0 <= args.cache_connection_warmup_bytes <= 1024 * 1024):
             raise ValueError("cache network settings are invalid")
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", args.tag):
@@ -2779,13 +2779,13 @@ def cmd_sequence(args):
         return 1
 
     configuration = {
-        "threads": args.threads,
+        "duckdb_threads": args.duckdb_threads,
         "cache_enabled": True,
-        "cache_max_memory_bytes": args.cache_max_memory_bytes,
-        "cache_footer_preload": True,
-        "cache_column_prefetch": True,
-        "cache_network_connections": args.cache_network_connections,
-        "cache_network_chunk_size": args.cache_network_chunk_size,
+        "cache_data_memory_limit_bytes": args.cache_data_memory_limit_bytes,
+        "cache_prepare_footer_on_first_use": True,
+        "cache_symbol_column_chunk_prefetch": True,
+        "cache_fetch_workers": args.cache_fetch_workers,
+        "cache_range_split_bytes": args.cache_range_split_bytes,
     }
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     run_id = f"{timestamp}_{args.tag}_{uuid.uuid4().hex[:8]}"
@@ -3135,18 +3135,18 @@ def build_parser():
     run_parser.add_argument("--tag", default="baseline")
     run_parser.add_argument("--http-proxy")
     run_parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
-    run_parser.add_argument("--threads", type=int, default=4)
+    run_parser.add_argument("--duckdb-threads", type=int, default=4)
     run_parser.add_argument(
-        "--cache-max-memory-bytes", type=int, default=64 * 1024 * 1024
+        "--cache-data-memory-limit-bytes", type=int, default=64 * 1024 * 1024
     )
     run_parser.add_argument(
-        "--cache-footer-preload", action=argparse.BooleanOptionalAction, default=True
+        "--cache-prepare-footer-on-first-use", action=argparse.BooleanOptionalAction, default=True
     )
     run_parser.add_argument(
-        "--cache-column-prefetch", action=argparse.BooleanOptionalAction, default=True
+        "--cache-symbol-column-chunk-prefetch", action=argparse.BooleanOptionalAction, default=True
     )
-    run_parser.add_argument("--cache-network-connections", type=int, default=1)
-    run_parser.add_argument("--cache-network-chunk-size", type=int, default=0)
+    run_parser.add_argument("--cache-fetch-workers", type=int, default=3)
+    run_parser.add_argument("--cache-range-split-bytes", type=int, default=0)
     run_parser.add_argument("--cache-connection-warmup-bytes", type=int, default=0)
     run_parser.add_argument(
         "--cache", action=argparse.BooleanOptionalAction, default=True
@@ -3158,10 +3158,10 @@ def build_parser():
         default=None,
     )
     run_parser.add_argument(
-        "--keep-alive", action=argparse.BooleanOptionalAction, default=True
+        "--duckdb-http-keep-alive", action=argparse.BooleanOptionalAction, default=True
     )
     run_parser.add_argument(
-        "--resolve-direct", action=argparse.BooleanOptionalAction, default=True
+        "--resolve-cdn-for-uncached-reads", action=argparse.BooleanOptionalAction, default=True
     )
     run_parser.add_argument("--warm-repeats", type=int, default=0)
     run_parser.add_argument("--output", type=Path, default=ROOT / "results")
@@ -3174,12 +3174,12 @@ def build_parser():
     sequence_parser.add_argument("--tag", default="symbol_sequence")
     sequence_parser.add_argument("--http-proxy")
     sequence_parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
-    sequence_parser.add_argument("--threads", type=int, default=4)
+    sequence_parser.add_argument("--duckdb-threads", type=int, default=4)
     sequence_parser.add_argument(
-        "--cache-max-memory-bytes", type=int, default=64 * 1024 * 1024
+        "--cache-data-memory-limit-bytes", type=int, default=64 * 1024 * 1024
     )
-    sequence_parser.add_argument("--cache-network-connections", type=int, default=1)
-    sequence_parser.add_argument("--cache-network-chunk-size", type=int, default=0)
+    sequence_parser.add_argument("--cache-fetch-workers", type=int, default=3)
+    sequence_parser.add_argument("--cache-range-split-bytes", type=int, default=0)
     sequence_parser.add_argument("--cache-connection-warmup-bytes", type=int, default=0)
     sequence_parser.add_argument("--output", type=Path, default=ROOT / "results")
 

@@ -35,9 +35,10 @@ file and dataset version, so a new dataset version cannot reuse stale data.
 Concurrent reads can share a pending download instead of issuing another
 Range GET.
 
-**Connection pool:** Cache misses use HTTP connections grouped by remote
-origin, allowing files on the same origin to reuse them. Direct access and
-user-configured proxies are supported. If a proxy or server closes an idle
+**Connection pool:** Cache misses use one pooled HTTP client per remote
+origin, allowing files on the same origin to reuse connections and issue
+concurrent requests. The client count is not a physical connection limit.
+Direct access and user-configured proxies are supported. If a proxy or server closes an idle
 connection, the next request opens another; status logging does not send
 keepalive traffic.
 
@@ -108,13 +109,13 @@ more appropriate when measuring one specific query.
 ## Configuration
 
 Use `Configuration(cache_enabled=False)` to disable the project cache, or
-set `cache_directory`, `cache_max_disk_bytes`, `cache_max_memory_bytes`, and
-`cache_workers` to change its resource limits. The cache stores exact missing
+set `cache_directory`, `cache_data_disk_limit_bytes`, `cache_data_memory_limit_bytes`, and
+`cache_fetch_workers` to change its resource limits. The cache stores exact missing
 byte ranges as variable-length extents, up to 16 MiB each; there is no public
 block-size setting. The memory tier retains at most 64 extents within its byte
-budget. `cache_footer_preload=False`
+budget. `cache_prepare_footer_on_first_use=False`
 disables explicit footer preparation for comparison experiments, but DuckDB
-still reads the metadata required by a query. `cache_column_prefetch=False`
+still reads the metadata required by a query. `cache_symbol_column_chunk_prefetch=False`
 disables column-chunk prefetch for A/B experiments while preserving the
 on-demand cache and footer preparation. See
 [Advanced Usage](Advanced_Usage.md) for the complete configuration table.

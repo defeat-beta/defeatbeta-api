@@ -247,8 +247,8 @@ class DuckDBClient:
         self.config = config if config is not None else Configuration()
         self.log_level = log_level
         self.logger = _console_logger(self.__class__.__name__, log_level)
-        self.resolve_direct = bool(self.config.resolve_direct)
-        self._resolve_ttl = self.config.resolve_ttl_seconds
+        self.resolve_cdn_for_uncached_reads = bool(self.config.resolve_cdn_for_uncached_reads)
+        self._resolve_ttl = self.config.cdn_url_cache_ttl_seconds
         self._cdn_cache = {}
         self._cdn_lock = Lock()
         self._dataset_cdn_cache = {}
@@ -271,12 +271,11 @@ class DuckDBClient:
                 version=self._data_update_time,
                 resolve=self._resolve_for_dataset,
                 http_proxy=http_proxy,
-                max_disk_bytes=self.config.cache_max_disk_bytes,
-                max_memory_bytes=self.config.cache_max_memory_bytes,
-                workers=self.config.cache_workers,
-                timeout=self.config.http_timeout,
-                network_connections=self.config.cache_network_connections,
-                network_chunk_size=self.config.cache_network_chunk_size,
+                max_disk_bytes=self.config.cache_data_disk_limit_bytes,
+                max_memory_bytes=self.config.cache_data_memory_limit_bytes,
+                workers=self.config.cache_fetch_workers,
+                timeout=self.config.cache_http_timeout_seconds,
+                network_chunk_size=self.config.cache_range_split_bytes,
                 footer_index=self._footer_index,
                 logger=self.logger,
             )
@@ -353,7 +352,7 @@ class DuckDBClient:
         return dict(index) if isinstance(index, dict) else {}
 
     def _refresh_dataset_version_if_due(self) -> None:
-        interval = self.config.cache_version_check_seconds
+        interval = self.config.cache_version_check_interval_seconds
         if time.monotonic() - self._last_version_check < interval:
             return
         with self._version_lock:
@@ -515,11 +514,11 @@ class DuckDBClient:
             try:
                 if (scan is not None and scan[0] == url
                         and getattr(getattr(self, "config", None),
-                                    "cache_column_prefetch", True)):
+                                    "cache_symbol_column_chunk_prefetch", True)):
                     _, symbol, columns = scan
                     chunks = getattr(self, "_parquet_indexes", {}).get(path)
                     if chunks is None:
-                        if getattr(getattr(self, "config", None), "cache_footer_preload", True):
+                        if getattr(getattr(self, "config", None), "cache_prepare_footer_on_first_use", True):
                             chunks = self._load_or_build_parquet_index(url, path)
                         else:
                             with self._get_cursor() as cursor:
@@ -531,7 +530,7 @@ class DuckDBClient:
                                     [path],
                                 ).fetchall()
                     ranges = plan_symbol_column_chunks(chunks, symbol, columns)
-                elif getattr(getattr(self, "config", None), "cache_footer_preload", True):
+                elif getattr(getattr(self, "config", None), "cache_prepare_footer_on_first_use", True):
                     prepared = getattr(self, "_prepared_footers", set())
                     key = path
                     if key not in prepared:
@@ -676,7 +675,7 @@ class DuckDBClient:
                     "Dataset cache query failed, retrying original transport: %s",
                     redact_signed_urls(str(dataset_error)),
                 )
-        rewritten_sql = self._to_cdn_sql(sql) if self.resolve_direct else sql
+        rewritten_sql = self._to_cdn_sql(sql) if self.resolve_cdn_for_uncached_reads else sql
         try:
             result = self._execute_query(rewritten_sql)
             status = "ok"

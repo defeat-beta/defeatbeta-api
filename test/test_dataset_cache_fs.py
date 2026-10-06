@@ -4,11 +4,13 @@ import tempfile
 import threading
 import unittest
 import hashlib
+import logging
 import os
 import time
 import httpx
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import urlsplit
@@ -19,6 +21,7 @@ import duckdb
 from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem
 from defeatbeta_api.client.duckdb_client import DuckDBClient, plan_symbol_column_chunks
 from defeatbeta_api.client.duckdb_conf import Configuration
+from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.data.ticker import Ticker
 
 
@@ -64,6 +67,56 @@ class FakeRangeClient:
 
     def close(self):
         pass
+
+
+@contextmanager
+def local_range_server(payload, *, delay_seconds=0):
+    """Serve close-after-response ranges over real loopback HTTP/1.1 sockets."""
+
+    class Server(ThreadingHTTPServer):
+        daemon_threads = True
+
+        def get_request(self):
+            connection, address = super().get_request()
+            self.connection_count += 1
+            return connection, address
+
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_GET(self):
+            self.server.paths.append(self.path)
+            value = self.headers.get("Range", "")
+            if not value.startswith("bytes="):
+                self.send_error(400)
+                return
+            start, end = (int(part) for part in value[6:].split("-"))
+            time.sleep(delay_seconds)
+            content = payload[start:end + 1]
+            try:
+                self.send_response(206)
+                self.send_header("Content-Range", f"bytes {start}-{end}/{len(payload)}")
+                self.send_header("Content-Length", str(len(content)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(content)
+            except OSError:
+                pass
+
+        def log_message(self, format, *args):
+            pass
+
+    server = Server(("127.0.0.1", 0), Handler)
+    server.connection_count = 0
+    server.paths = []
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    try:
+        yield server
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join(timeout=2)
 
 
 class TestDatasetCacheFileSystem(unittest.TestCase):
@@ -1031,6 +1084,101 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
     def test_one_network_client_uses_configured_worker_capacity(self):
         self.assertEqual(self.filesystem._network_executor._max_workers, 3)
 
+    def test_default_http_pool_is_one_client_with_concurrent_capacity(self):
+        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client") as constructor:
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "pool-capacity"),
+                version="dataset-v1", resolve=self._resolve, workers=4,
+            )
+        try:
+            self.assertEqual(constructor.call_count, 1)
+            limits = constructor.call_args.kwargs["limits"]
+            self.assertEqual(limits.max_connections, 4)
+            self.assertEqual(limits.max_keepalive_connections, 4)
+        finally:
+            filesystem.close()
+
+    def test_direct_http11_reopens_server_closed_connection(self):
+        payload = bytes(range(128))
+        with local_range_server(payload) as server:
+            signed_url = f"http://127.0.0.1:{server.server_port}/object"
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "direct-close"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (signed_url, len(payload)),
+                http_proxy="", workers=3,
+            )
+            try:
+                path = filesystem.register(PINNED)
+                self.assertEqual(filesystem.cat_file(path, 0, 10), payload[:10])
+                self.assertEqual(filesystem.cat_file(path, 10, 20), payload[10:20])
+                self.assertEqual(server.connection_count, 2)
+                self.assertEqual(server.paths, ["/object", "/object"])
+                self.assertEqual(
+                    [event["http_version"] for event in filesystem.range_events()],
+                    ["HTTP/1.1", "HTTP/1.1"],
+                )
+                self.assertEqual(filesystem.connection_snapshot()["tracked_origins"], 1)
+            finally:
+                filesystem.close()
+
+    def test_http11_proxy_reopens_server_closed_connection(self):
+        payload = bytes(range(128))
+        with local_range_server(payload) as proxy:
+            signed_url = "http://origin.invalid/object"
+            filesystem = DatasetCacheFileSystem(
+                directory=str(Path(self.temporary.name) / "proxy-close"),
+                version="dataset-v1",
+                resolve=lambda url, refresh=False: (signed_url, len(payload)),
+                http_proxy=f"http://127.0.0.1:{proxy.server_port}", workers=3,
+            )
+            try:
+                path = filesystem.register(PINNED)
+                self.assertEqual(filesystem.cat_file(path, 0, 10), payload[:10])
+                self.assertEqual(filesystem.cat_file(path, 10, 20), payload[10:20])
+                self.assertEqual(proxy.connection_count, 2)
+                self.assertEqual(proxy.paths, [signed_url, signed_url])
+                self.assertEqual(filesystem.connection_snapshot()["tracked_origins"], 1)
+            finally:
+                filesystem.close()
+
+    def test_slow_proxy_timeout_falls_back_without_caching_partial_bytes(self):
+        payload = bytes(range(128))
+        with local_range_server(payload, delay_seconds=0.25) as proxy:
+            signed_url = "http://origin.invalid/object"
+            directory = Path(self.temporary.name) / "proxy-timeout"
+            filesystem = DatasetCacheFileSystem(
+                directory=str(directory), version="dataset-v1",
+                resolve=lambda url, refresh=False: (signed_url, len(payload)),
+                http_proxy=f"http://127.0.0.1:{proxy.server_port}",
+                timeout=httpx.Timeout(0.05, connect=2.0),
+            )
+            try:
+                path = filesystem.register(PINNED)
+                client = object.__new__(DuckDBClient)
+                client._dataset_fs = filesystem
+                client._refresh_dataset_version_if_due = Mock()
+                client.resolve_cdn_for_uncached_reads = False
+                client.logger = logging.getLogger("cache-timeout-fallback-test")
+                attempted = []
+
+                def execute(sql, use_dataset_cache=False):
+                    attempted.append(use_dataset_cache)
+                    if use_dataset_cache:
+                        filesystem.cat_file(path, 0, 10)
+                    return "fallback result"
+
+                client._execute_query = execute
+                self.assertEqual(
+                    client.query(f"SELECT * FROM '{PINNED}'"), "fallback result"
+                )
+                self.assertEqual(attempted, [True, False])
+                self.assertEqual(len(proxy.paths), 2)
+                self.assertEqual(filesystem.metrics()["downloaded_bytes"], 0)
+                self.assertFalse(list(directory.glob("*.block")))
+            finally:
+                filesystem.close()
+
     def test_concurrent_readers_share_one_range_download(self):
         self.filesystem.resolve = lambda url, refresh=False: (SIGNED, self.remote.size)
         path = self.filesystem.register(PINNED)
@@ -1607,7 +1755,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
 
     def test_running_client_rechecks_dataset_version_before_cached_query(self):
         client = DuckDBClient.__new__(DuckDBClient)
-        client.config = Configuration(cache_version_check_seconds=60)
+        client.config = Configuration(cache_version_check_interval_seconds=60)
         client._data_update_time = "dataset-v1"
         client._last_version_check = 0
         client._version_lock = threading.Lock()
@@ -1945,9 +2093,18 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         ), patch("defeatbeta_api.client.duckdb_client._print_welcome"), \
                 patch.object(DatasetCacheFileSystem, "prepare_connections") as warmup, \
                 patch.object(DatasetCacheFileSystem, "prepare_footer") as footer:
-            client = DuckDBClient(config=Configuration(cache_directory=self.temporary.name))
+            client = DuckDBClient(config=Configuration(
+                cache_directory=self.temporary.name,
+                cache_http_timeout_seconds=17,
+                duckdb_http_timeout_seconds=19,
+            ))
         try:
             self.assertIsInstance(client._dataset_fs, DatasetCacheFileSystem)
+            self.assertEqual(client._dataset_fs._timeout, 17)
+            self.assertEqual(
+                client.connection.execute("SELECT current_setting('http_timeout')").fetchone(),
+                (19,),
+            )
             warmup.assert_called_once_with(PINNED, 1)
             footer.assert_not_called()
             self.assertEqual(client.query("SELECT 1").iloc[0, 0], 1)
@@ -1972,6 +2129,35 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             self.assertNotIn("secret", " ".join(captured.output))
         finally:
             client.close()
+
+
+@unittest.skipUnless(
+    os.environ.get("DEFEATBETA_RUN_DIRECT_HTTP2_TESTS") == "1",
+    "Set DEFEATBETA_RUN_DIRECT_HTTP2_TESTS=1 to run the direct HTTP/2 smoke test",
+)
+class TestDirectHttp2NetworkSmoke(unittest.TestCase):
+    def test_hugging_face_range_uses_http2_without_proxy(self):
+        resolver = HuggingFaceClient(http_proxy="")
+        resolver.session.trust_env = False
+        signed_url, size = resolver.resolve_cdn_info(
+            PINNED, proxies={"http": None, "https": None},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            filesystem = DatasetCacheFileSystem(
+                directory=directory,
+                version="direct-http2-smoke",
+                resolve=lambda url, refresh=False: (signed_url, size),
+                http_proxy="",
+            )
+            try:
+                path = filesystem.register(PINNED)
+                self.assertEqual(len(filesystem.cat_file(path, 0, 1)), 1)
+                events = filesystem.range_events()
+                self.assertGreaterEqual(len(events), 1)
+                self.assertTrue(all(event["http_version"] == "HTTP/2" for event in events))
+                self.assertEqual(filesystem.connection_snapshot()["tracked_origins"], 1)
+            finally:
+                filesystem.close()
 
 
 if __name__ == "__main__":

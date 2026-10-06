@@ -79,6 +79,9 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install -e .
+      - run: python -m unittest test.test_dataset_cache_fs.TestDirectHttp2NetworkSmoke -q
+        env:
+          DEFEATBETA_RUN_DIRECT_HTTP2_TESTS: "1"
       - run: python -m unittest test.test_duckdb_client.TestDuckDBClientIntegration -q
       - run: python -m unittest test.test_all_tickers.TestRepresentativeTickers -q
         env:

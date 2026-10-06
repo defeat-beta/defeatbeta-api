@@ -25,7 +25,7 @@ from defeatbeta_api.client.duckdb_client import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.utils.const import stock_profile
 
-duckdb_client = DuckDBClient(log_level=logging.DEBUG, config=Configuration(threads=8))
+duckdb_client = DuckDBClient(log_level=logging.DEBUG, config=Configuration(duckdb_threads=8))
 huggingface_client = HuggingFaceClient()
 url = huggingface_client.get_url_path(stock_profile)
 sql = f"SELECT * FROM '{url}' WHERE symbol = 'TSLA'"
@@ -67,28 +67,40 @@ from defeatbeta_api.data.ticker import Ticker
 ticker = Ticker("BABA", config=Configuration())
 ```
 
-| name                                                  | description                                                                                                                                                                                                                                                                                                                   |    default     |
-|:------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------:|
-| http_keep_alive                                       | Keep-alive for DuckDB's standard HTTP reader; does not control the project cache's HTTP pool.                                                                                                                                                                                                                                 |      True      |
-| http_timeout                                          | HTTP timeout in seconds for DuckDB's standard HTTP reader and the project cache transport.                                                                                                                                                                                                                                    |      120       |
-| http_retries                                          | I/O retry count for DuckDB's standard HTTP reader, not the project cache transport.                                                                                                                                                                                                                                           |       5        |
-| http_retry_backoff                                    | Exponential retry backoff for DuckDB's standard HTTP reader, not the project cache transport.                                                                                                                                                                                                                                  |      2.0       |
-| http_retry_wait_ms                                    | Retry wait time in milliseconds for DuckDB's standard HTTP reader, not the project cache transport.                                                                                                                                                                                                                            |      1000      |
-| memory_limit                                          | The memory_limit parameter supports specifying either a fixed memory value (e.g., 10GB) or a percentage of system memory (e.g., 50%), automatically converting it into a valid unit.                                                                                                                                          |     '80%'      |
-| threads                                               | The number of total threads used by the system.                                                                                                                                                                                                                                                                               |       4        |
-| parquet_metadata_cache                                | Cache Parquet metadata - useful when reading the same files multiple times                                                                                                                                                                                                                                                    |      True      |
-| cache_enabled | Enable the project's on-demand local cache for pinned Parquet and JSON files. Set to false for uncached standard HTTP reads. | True |
-| cache_directory | Cache root. Defaults to `/tmp/defeatbeta/dataset-cache/{version}/` on macOS/Linux and `<tempdir>/defeatbeta/dataset-cache/{version}/` on Windows. Cache files are flat. Cache-owned files from older dataset versions are removed after an update is detected; legacy `cache_httpfs` files in the separate `cache/` root are untouched. | None |
-| cache_footer_preload | Prepare and persist a Parquet file's footer when that file is first queried. With column prefetch enabled, a simple symbol query also builds an in-memory row-group index from that footer. No footers are fetched during client initialization. | True |
-| cache_column_prefetch | Schedule the selected Parquet column chunks ahead of a simple symbol scan. Disabling it leaves DuckDB demand reads and footer preparation intact; primarily useful for A/B diagnostics. | True |
-| cache_max_disk_bytes | Maximum retained data-range bytes; older ranges are evicted as needed. Versioned footer extents are retained separately. The 5 GiB default does not trigger a full download. | 5368709120 |
-| cache_max_memory_bytes | Maximum data-range bytes retained in memory. Zero disables the data-range memory tier. At most 64 ranges are retained regardless of this budget. | 67108864 |
-| cache_workers | Maximum concurrent range-fetch tasks; with one cache network client, also bounds that client's connections. | 3 |
-| cache_network_connections | Number of cache HTTP clients per origin. Connections are reused across files on the same origin; idle or closed connections reopen on demand. | 1 |
-| cache_network_chunk_size | Split a missing range into parallel network requests of at most this many bytes. Zero disables splitting. | 0 |
-| cache_version_check_seconds | Minimum time between remote dataset-version checks for a running client. Set to zero to check before every cached query. | 300 |
-| resolve_direct | Resolve pinned Parquet URLs to CDN URLs for the uncached fallback reader. | True |
-| resolve_ttl_seconds | Lifetime of the in-process CDN resolution cache, in seconds. | 1800 |
+DuckDB's native reader and the project cache use different HTTP transports. The
+`duckdb_` settings below affect only DuckDB; the `cache_` settings affect only
+the project's on-demand file cache. Most users only need `cache_directory` and
+`cache_data_disk_limit_bytes`.
+
+| name | description | default |
+|:--|:--|:--|
+| duckdb_http_keep_alive | Enable keep-alive in DuckDB's standard HTTP reader; does not control the cache HTTP pool. | True |
+| duckdb_http_timeout_seconds | DuckDB HTTP timeout, in seconds. | 120 |
+| duckdb_http_retries | DuckDB HTTP retry count. | 5 |
+| duckdb_http_retry_backoff | DuckDB HTTP exponential retry factor. | 2.0 |
+| duckdb_http_retry_wait_ms | DuckDB HTTP retry wait, in milliseconds. | 1000 |
+| duckdb_memory_limit | DuckDB memory limit, as a size such as `10GB` or a percentage of system memory. | '80%' |
+| duckdb_threads | Number of DuckDB execution threads; does not set cache download concurrency. | 4 |
+| duckdb_parquet_metadata_cache | Enable DuckDB's in-process Parquet metadata cache. | True |
+| cache_enabled | Enable demand-driven local caching for supported pinned dataset files. | True |
+| cache_directory | Cache root; defaults to a versioned directory under the OS temporary directory. | None |
+| cache_data_disk_limit_bytes | Maximum retained data-extent bytes on disk. Footer extents are retained separately. This does not trigger full-file downloads. | 5368709120 |
+| cache_data_memory_limit_bytes | Maximum data-extent bytes in memory; zero disables this tier. At most 64 extents are retained. | 67108864 |
+| cache_fetch_workers | Concurrent cache extent-fetch tasks. One HTTP client per origin can issue concurrent requests and reuse available connections. | 3 |
+| cache_range_split_bytes | Maximum subrange size when splitting a missing extent into parallel requests; zero disables splitting. | 0 |
+| cache_http_timeout_seconds | HTTPX timeout, in seconds, for individual cache transport operations, not a whole-download deadline. | 120 |
+| cache_prepare_footer_on_first_use | Prepare and persist a Parquet footer when its file is first queried, not at client startup. | True |
+| cache_symbol_column_chunk_prefetch | Prefetch matching column chunks for a recognized simple symbol query; useful to disable for diagnostics. | True |
+| cache_version_check_interval_seconds | Minimum interval between remote dataset-version checks; zero checks before each cached query. | 300 |
+| resolve_cdn_for_uncached_reads | Resolve pinned URLs to CDN URLs for the uncached DuckDB reader; cache reads resolve separately. | True |
+| cdn_url_cache_ttl_seconds | In-process TTL for resolved CDN URLs, in seconds. | 1800 |
+
+The cache uses one HTTP client per origin, not one physical connection per
+origin. `cache_fetch_workers` limits extent-fetch tasks; an HTTP/2 connection
+can carry multiple concurrent requests, while the pool can open further
+connections when needed. Neither an idle connection nor a signed URL is
+guaranteed to remain valid forever; closed connections and expired URLs are
+refreshed on demand.
 
 
 ## Load from Hugging Face

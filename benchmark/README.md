@@ -90,10 +90,10 @@ With column prefetch enabled, a simple symbol scan also builds a reusable
 in-memory row-group index from the cached footer. Queries for other symbols
 in that file reuse the parsed metadata.
 This preparation is inside the measured query, not client
-initialization. `--no-cache-footer-preload` disables explicit footer preparation
+initialization. `--no-cache-prepare-footer-on-first-use` disables explicit footer preparation
 for a control run; DuckDB still reads the metadata it needs. The project cache
 has one demand-driven extent layout; there is no layout selection flag.
-`--no-cache-column-prefetch` isolates the effect of column-chunk prefetch
+`--no-cache-symbol-column-chunk-prefetch` isolates the effect of column-chunk prefetch
 without disabling footer preparation or the demand-driven local cache. The
 benchmark can select another supported Ticker DataFrame API with
 `--api-method` to check more than the stock price file.
@@ -111,10 +111,12 @@ The final repeated symbol is a hot-data control. The record captures Range
 events, downloaded bytes, and `_execute_query` time for every step, and marks
 overlapping re-downloads or a second footer download as invalid. Sequence
 records remain local diagnostics and are not automatically published. Use
-`--http-proxy` only when your network requires one. The
-`--cache-network-connections` and `--cache-network-chunk-size` options support
-controlled single-Range versus split-Range comparisons; neither setting
-implies a universally faster default.
+`--http-proxy` only when your network requires one.
+`--cache-fetch-workers` controls concurrent extent-fetch tasks, and
+`--cache-range-split-bytes` supports controlled single-Range versus
+split-Range comparisons. One pooled HTTP client per origin can issue
+concurrent requests; increasing the worker count does not imply a
+universally faster result.
 
 To isolate network transfer phases on the same Parquet revision, use its
 locally cached `.footer` extent:

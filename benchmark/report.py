@@ -174,27 +174,46 @@ def _command(report):
     symbol = f" --symbol {symbols[0]}" if len(symbols) == 1 else ""
     proxy = settings.get("http_proxy")
     proxy_flag = f' --http-proxy "{proxy}"' if proxy else ""
-    keep_alive = "" if settings.get("http_keep_alive", True) else " --no-keep-alive"
-    resolve = "" if report.get("resolve_direct", True) else " --no-resolve-direct"
-    memory_bytes = settings.get("cache_max_memory_bytes")
+    keep_alive = (
+        "" if settings.get("duckdb_http_keep_alive", settings.get("http_keep_alive", True))
+        else " --no-duckdb-http-keep-alive"
+    )
+    resolve = (
+        "" if report.get("resolve_cdn_for_uncached_reads", report.get("resolve_direct", True))
+        else " --no-resolve-cdn-for-uncached-reads"
+    )
+    memory_bytes = settings.get("cache_data_memory_limit_bytes")
     memory_flag = (
-        f" --cache-max-memory-bytes {memory_bytes}"
+        f" --cache-data-memory-limit-bytes {memory_bytes}"
         if memory_bytes is not None else ""
     )
     cache_flag = " --no-cache" if settings.get("cache_enabled") is False else ""
     api_method = report.get("api_call", "").rsplit(".", 1)[-1]
     method_flag = f" --api-method {api_method}" if api_method not in ("", "price") else ""
     footer_flag = (
-        " --no-cache-footer-preload"
-        if settings.get("cache_footer_preload") is False else ""
+        " --no-cache-prepare-footer-on-first-use"
+        if settings.get("cache_prepare_footer_on_first_use",
+                        settings.get("cache_footer_preload")) is False else ""
     )
     prefetch_flag = (
-        " --no-cache-column-prefetch"
-        if settings.get("cache_column_prefetch") is False else ""
+        " --no-cache-symbol-column-chunk-prefetch"
+        if settings.get("cache_symbol_column_chunk_prefetch",
+                        settings.get("cache_column_prefetch")) is False else ""
     )
     warm_repeats = settings.get("warm_repeats", 0)
     warm_flag = f" --warm-repeats {warm_repeats}" if warm_repeats else ""
     executable = "benchmark/benchmark.py" if report.get("api_call") else "benchmark/bench.py"
+    api_flags = ""
+    if report.get("api_call"):
+        workers = settings.get("cache_fetch_workers", 3)
+        split_bytes = settings.get("cache_range_split_bytes", 0)
+        threads = settings.get("duckdb_threads", 4)
+        if workers != 3:
+            api_flags += f" --cache-fetch-workers {workers}"
+        if split_bytes:
+            api_flags += f" --cache-range-split-bytes {split_bytes}"
+        if threads != 4:
+            api_flags += f" --duckdb-threads {threads}"
     revision = (
         f" --revision {report['revision']}"
         if executable.endswith("bench.py") and report.get("revision") else ""
@@ -202,7 +221,8 @@ def _command(report):
     return (
         f".venv/bin/python {executable} run --runs {report.get('requested_runs', 3)} "
         f"--tag {report.get('tag', 'unknown')}{symbol}{method_flag}{proxy_flag}{keep_alive}"
-        f"{resolve}{memory_flag}{cache_flag}{footer_flag}{prefetch_flag}{warm_flag}{revision}"
+        f"{resolve}{memory_flag}{cache_flag}{footer_flag}{prefetch_flag}{warm_flag}"
+        f"{api_flags}{revision}"
     )
 
 

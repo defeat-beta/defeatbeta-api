@@ -5,35 +5,39 @@ from defeatbeta_api.utils.util import validate_cache_directory, validate_memory_
 
 
 class Configuration:
-    """DuckDB settings and DefeatBeta's demand-driven dataset cache limits."""
+    """DuckDB, CDN resolution, and demand-driven dataset cache settings."""
 
     def __init__(
             self,
-            http_keep_alive=True,
-            http_timeout=120,
-            http_retries=5,
-            http_retry_backoff=2.0,
-            http_retry_wait_ms=1000,
-            memory_limit='80%',
-            threads=4,
-            parquet_metadata_cache=True,
-            resolve_direct=True,
-            resolve_ttl_seconds=1800,
+            duckdb_http_keep_alive=True,
+            duckdb_http_timeout_seconds=120,
+            duckdb_http_retries=5,
+            duckdb_http_retry_backoff=2.0,
+            duckdb_http_retry_wait_ms=1000,
+            duckdb_memory_limit='80%',
+            duckdb_threads=4,
+            duckdb_parquet_metadata_cache=True,
+            resolve_cdn_for_uncached_reads=True,
+            cdn_url_cache_ttl_seconds=1800,
             cache_enabled=True,
             cache_directory: Optional[str] = None,
-            cache_max_disk_bytes=5 * 1024 * 1024 * 1024,
-            cache_max_memory_bytes=64 * 1024 * 1024,
-            cache_workers=3,
-            cache_version_check_seconds=300,
-            cache_network_connections=1,
-            cache_network_chunk_size=0,
-            cache_footer_preload=True,
-            cache_column_prefetch=True,
+            cache_data_disk_limit_bytes=5 * 1024 * 1024 * 1024,
+            cache_data_memory_limit_bytes=64 * 1024 * 1024,
+            cache_fetch_workers=3,
+            cache_version_check_interval_seconds=300,
+            cache_range_split_bytes=0,
+            cache_http_timeout_seconds=120,
+            cache_prepare_footer_on_first_use=True,
+            cache_symbol_column_chunk_prefetch=True,
     ):
-        if cache_version_check_seconds < 0:
+        if cache_version_check_interval_seconds < 0:
             raise ValueError("Cache version check interval must not be negative")
-        if cache_network_connections < 1 or cache_network_chunk_size < 0:
-            raise ValueError("Cache network connections and chunk size are invalid")
+        if cache_range_split_bytes < 0:
+            raise ValueError("Cache range split size must not be negative")
+        if cache_fetch_workers < 1:
+            raise ValueError("Cache fetch workers must be positive")
+        if cache_http_timeout_seconds <= 0 or duckdb_http_timeout_seconds <= 0:
+            raise ValueError("HTTP timeouts must be positive")
         configs = locals()
         configs.pop('self')
 
@@ -53,12 +57,12 @@ class Configuration:
             "LOAD httpfs",
             # Signed CDN URLs may contain literal asterisks in query parameters.
             "SET GLOBAL allow_asterisks_in_http_paths = true",
-            f"SET GLOBAL http_keep_alive = {self.http_keep_alive}",
-            f"SET GLOBAL http_timeout = {self.http_timeout}",
-            f"SET GLOBAL http_retries = {self.http_retries}",
-            f"SET GLOBAL http_retry_backoff = {self.http_retry_backoff}",
-            f"SET GLOBAL http_retry_wait_ms = {self.http_retry_wait_ms}",
-            f"SET GLOBAL memory_limit = '{validate_memory_limit(self.memory_limit)}'",
-            f"SET GLOBAL threads = {self.threads}",
-            f"SET GLOBAL parquet_metadata_cache = {self.parquet_metadata_cache}",
+            f"SET GLOBAL http_keep_alive = {self.duckdb_http_keep_alive}",
+            f"SET GLOBAL http_timeout = {self.duckdb_http_timeout_seconds}",
+            f"SET GLOBAL http_retries = {self.duckdb_http_retries}",
+            f"SET GLOBAL http_retry_backoff = {self.duckdb_http_retry_backoff}",
+            f"SET GLOBAL http_retry_wait_ms = {self.duckdb_http_retry_wait_ms}",
+            f"SET GLOBAL memory_limit = '{validate_memory_limit(self.duckdb_memory_limit)}'",
+            f"SET GLOBAL threads = {self.duckdb_threads}",
+            f"SET GLOBAL parquet_metadata_cache = {self.duckdb_parquet_metadata_cache}",
         ]

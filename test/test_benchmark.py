@@ -68,14 +68,18 @@ class BenchmarkApiContractTests(unittest.TestCase):
     def test_run_parser_can_disable_footer_preload_for_empty_cache_control(self):
         benchmark = load_benchmark_module()
         args = benchmark.build_parser().parse_args([
-            "run", "--no-cache-footer-preload",
+            "run", "--no-cache-prepare-footer-on-first-use",
         ])
-        self.assertFalse(args.cache_footer_preload)
+        self.assertFalse(args.cache_prepare_footer_on_first_use)
         self.assertFalse(benchmark.build_parser().parse_args([
-            "run", "--no-cache-column-prefetch",
-        ]).cache_column_prefetch)
+            "run", "--no-cache-symbol-column-chunk-prefetch",
+        ]).cache_symbol_column_chunk_prefetch)
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             benchmark.build_parser().parse_args(["run", "--cache-layout", "block"])
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            benchmark.build_parser().parse_args([
+                "run", "--cache-network-connections", "2",
+            ])
 
     def test_api_workload_rejects_hidden_metadata_before_cold_query(self):
         benchmark = load_benchmark_module()
@@ -1591,13 +1595,13 @@ class BenchmarkArchiveTests(unittest.TestCase):
                 "revision": "main",
                 "url": "https://huggingface.co/file.parquet",
                 "api_call": "defeatbeta_api.data.ticker.Ticker.price",
-                "resolve_direct": True,
+                "resolve_cdn_for_uncached_reads": True,
                 "primary_metric": "execute_query_seconds",
                 "requested_runs": 1,
                 "timeout_seconds": 600.0,
                 "environment": {"duckdb": "1.5.3"},
                 "implementation": {"duckdb_client.py": tag},
-                "configured_settings": {"http_keep_alive": True},
+                "configured_settings": {"duckdb_http_keep_alive": True},
                 "methodology": {"cold": "Isolated local cache"},
                 "samples": samples,
                 "statistics": self.benchmark.summarize(samples),
@@ -1627,23 +1631,37 @@ class BenchmarkReportTests(unittest.TestCase):
     def test_reproduction_command_uses_memory_byte_limit(self):
         report = load_report_module()
         command = report._command({
-            "configured_settings": {"cache_max_memory_bytes": 0},
+            "configured_settings": {"cache_data_memory_limit_bytes": 0},
         })
-        self.assertIn("--cache-max-memory-bytes 0", command)
+        self.assertIn("--cache-data-memory-limit-bytes 0", command)
         self.assertNotIn("--cache-block-size", command)
+
+    def test_reproduction_command_preserves_fetch_tuning(self):
+        report = load_report_module()
+        command = report._command({
+            "api_call": "defeatbeta_api.data.ticker.Ticker.price",
+            "configured_settings": {
+                "cache_fetch_workers": 5,
+                "cache_range_split_bytes": 524288,
+                "duckdb_threads": 8,
+            },
+        })
+        self.assertIn("--cache-fetch-workers 5", command)
+        self.assertIn("--cache-range-split-bytes 524288", command)
+        self.assertIn("--duckdb-threads 8", command)
 
     def test_reproduction_command_preserves_api_method_and_prefetch_control(self):
         report = load_report_module()
         command = report._command({
             "api_call": "defeatbeta_api.data.ticker.Ticker.info",
             "configured_settings": {
-                "cache_column_prefetch": False,
-                "cache_footer_preload": True,
+                "cache_symbol_column_chunk_prefetch": False,
+                "cache_prepare_footer_on_first_use": True,
             },
             "suite_symbols": ["AAPL"],
         })
         self.assertIn("--api-method info", command)
-        self.assertIn("--no-cache-column-prefetch", command)
+        self.assertIn("--no-cache-symbol-column-chunk-prefetch", command)
         self.assertEqual(report._workload_title({"api_call": "Ticker.info"}),
                          "Ticker Info")
         self.assertEqual(report._prefetch_description({

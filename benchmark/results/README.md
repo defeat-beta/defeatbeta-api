@@ -53,7 +53,7 @@ package. Its primary metric is the time emitted by
 `DuckDBClient._execute_query`; package import, client initialization, the full
 API call, cache state, DuckDB-requested byte ranges, network range transfers,
 and DefeatBeta cache metrics are recorded separately.
-`--no-cache-column-prefetch` disables column-chunk prefetch for a cold-cache
+`--no-cache-symbol-column-chunk-prefetch` disables column-chunk prefetch for a cold-cache
 control while retaining footer preparation and on-demand caching. Each sample
 records `prefetch_coverage`: bytes downloaded within planned prefetch ranges,
 bytes within those ranges requested by DuckDB, and the difference. This
@@ -77,7 +77,7 @@ separately.
 There is no cache-layout selection flag. The cache snapshot is
 verified empty before each measured cold API call. A four-byte Parquet header
 extent is classified as metadata rather than query data in the separate
-data-extent snapshot. `--no-cache-footer-preload` disables explicit footer
+data-extent snapshot. `--no-cache-prepare-footer-on-first-use` disables explicit footer
 preparation for a control run, but does not prevent DuckDB from reading
 required Parquet metadata itself.
 
@@ -85,7 +85,7 @@ Transport experiments can use `network-cold-read` to compare fresh independent
 connections, disjoint connection warmups, and Range chunk sizes. It downloads
 the same ordered query bytes for each mode and verifies their digest, but it is
 network-only evidence, not an API performance result. Use `run` with
-`--cache-network-connections`, `--cache-network-chunk-size`, and
+`--cache-fetch-workers`, `--cache-range-split-bytes`, and
 `--cache-connection-warmup-bytes` for the end-to-end check. Connection warmup
 occurs before `Ticker.price()` and is reported separately as
 `connection_warmup_seconds`; its bytes are not stored in the local range cache.
@@ -93,7 +93,7 @@ The production client also performs a one-byte startup prewarm during client
 initialization, so this optional benchmark warmup is additional. Its time is
 included in client initialization, not in `_execute_query`. The connection
 pool is shared by files with the same resolved origin; a different origin gets
-its own lazily created pool. `cache_network_connections` applies per origin.
+its own lazily created HTTP client. One client can issue concurrent requests.
 These command-line settings do not change
 production defaults.
 The proxy option is optional: omitting it uses the normal environment proxy

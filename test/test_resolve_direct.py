@@ -123,12 +123,12 @@ class TestConfiguration(unittest.TestCase):
         self.assertIn("dataset-cache", Path(Configuration().get_cache_directory()).parts)
 
     def test_cache_limits_use_project_keys(self):
-        config = Configuration(cache_max_memory_bytes=2048)
-        self.assertEqual(config.cache_max_memory_bytes, 2048)
+        config = Configuration(cache_data_memory_limit_bytes=2048)
+        self.assertEqual(config.cache_data_memory_limit_bytes, 2048)
 
     def test_negative_cache_version_check_interval_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "version check interval"):
-            Configuration(cache_version_check_seconds=-1)
+            Configuration(cache_version_check_interval_seconds=-1)
 
 
 class TestPerformanceCapture(unittest.TestCase):
@@ -243,7 +243,7 @@ class TestQueryFallback(unittest.TestCase):
         client = DuckDBClient.__new__(DuckDBClient)
         client.connection = self._Connection(calls)
         client.logger = logging.getLogger("test")
-        client.resolve_direct = True
+        client.resolve_cdn_for_uncached_reads = True
         client._cdn_lock = Lock()
         client._cdn_cache = {PINNED: (CDN, 1.0)}
         client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
@@ -264,7 +264,7 @@ class TestQueryFallback(unittest.TestCase):
         client.logger = logging.getLogger("dataset-cache-fallback-test")
         client._dataset_fs = object()
         client._refresh_dataset_version_if_due = Mock()
-        client.resolve_direct = True
+        client.resolve_cdn_for_uncached_reads = True
         client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
         expected = pd.DataFrame([{"value": 1}])
         client._execute_query = Mock(side_effect=[RuntimeError("cache unavailable"), expected])
@@ -318,9 +318,9 @@ class TestClientRegistry(unittest.TestCase):
 
         with patch.object(module, "DuckDBClient", side_effect=make_client), \
                 patch.object(module, "_instances", {}):
-                direct = module.get_duckdb_client(config=Configuration(resolve_direct=True))
-                cached = module.get_duckdb_client(config=Configuration(resolve_direct=False))
-                direct_again = module.get_duckdb_client(config=Configuration(resolve_direct=True))
+                direct = module.get_duckdb_client(config=Configuration(resolve_cdn_for_uncached_reads=True))
+                cached = module.get_duckdb_client(config=Configuration(resolve_cdn_for_uncached_reads=False))
+                direct_again = module.get_duckdb_client(config=Configuration(resolve_cdn_for_uncached_reads=True))
 
         self.assertIsNot(direct, cached)
         self.assertIs(direct, direct_again)
