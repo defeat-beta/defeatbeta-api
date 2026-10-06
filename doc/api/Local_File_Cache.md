@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Local file cache](#local-file-cache)
+  - [Architecture](#architecture)
   - [What is stored](#what-is-stored)
   - [Location and lifetime](#location-and-lifetime)
   - [Network and queries](#network-and-queries)
@@ -16,6 +17,31 @@ DefeatBeta reads its Hugging Face dataset through a demand-driven HTTP Range
 cache. DuckDB still queries the remote Parquet and JSON files; the cache stores
 only bytes needed by actual reads, not complete copies of those files. The
 cache is enabled by default and does not require users to select a layout.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    API["Ticker API"] --> CLIENT["DuckDBClient"]
+    SPEC["Hugging Face spec.json<br/>version, file sizes, footer hints"] -->|"load or refresh"| CLIENT
+    CLIENT -->|"execute rewritten SQL"| DUCKDB["DuckDB Parquet / JSON scan"]
+    CLIENT -->|"lazy footer preparation and optional symbol-range prefetch"| FS["DatasetCacheFileSystem (fsspec)"]
+    DUCKDB -->|"read byte range"| FS
+    FS -->|"check coverage"| COVERED{"Cached or in flight?"}
+    COVERED -->|"yes"| LOCAL["Process memory, validated disk extents,<br/>or a pending range download"]
+    COVERED -->|"no"| POOL["Origin-aware HTTP connection pool"]
+    POOL -->|"direct or configured proxy; Range GET"| DATA["Hugging Face / CDN"]
+    DATA -->|"validate response; atomically publish extent"| LOCAL
+    LOCAL -->|"requested bytes"| FS
+    FS -->|"requested bytes"| DUCKDB
+    CLIENT -. "cache-path failure" .-> FALLBACK["DuckDB standard HTTP reader"]
+    FALLBACK -. "uncached request" .-> DATA
+```
+
+The dataset spec supplies version and footer hints; it is not a data-range
+cache hit. Footer preparation happens when a Parquet file is first queried,
+not when the client starts. On a covered data read, the range is served from
+memory, disk, or an already pending download without a duplicate Range GET.
 
 ## What is stored
 
