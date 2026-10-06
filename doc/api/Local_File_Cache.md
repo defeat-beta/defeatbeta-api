@@ -21,27 +21,25 @@ cache is enabled by default and does not require users to select a layout.
 ## Architecture
 
 ```mermaid
-flowchart TD
-    API["Ticker API"] --> CLIENT["DuckDBClient"]
-    SPEC["Hugging Face spec.json<br/>version, file sizes, footer hints"] -->|"load or refresh"| CLIENT
-    CLIENT -->|"execute rewritten SQL"| DUCKDB["DuckDB Parquet / JSON scan"]
-    CLIENT -->|"lazy footer preparation and optional symbol-range prefetch"| FS["DatasetCacheFileSystem (fsspec)"]
-    DUCKDB -->|"read byte range"| FS
-    FS -->|"check coverage"| COVERED{"Cached or in flight?"}
-    COVERED -->|"yes"| LOCAL["Process memory, validated disk extents,<br/>or a pending range download"]
-    COVERED -->|"no"| POOL["Origin-aware HTTP connection pool"]
-    POOL -->|"direct or configured proxy; Range GET"| DATA["Hugging Face / CDN"]
-    DATA -->|"validate response; atomically publish extent"| LOCAL
-    LOCAL -->|"requested bytes"| FS
-    FS -->|"requested bytes"| DUCKDB
-    CLIENT -. "cache-path failure" .-> FALLBACK["DuckDB standard HTTP reader"]
-    FALLBACK -. "uncached request" .-> DATA
+flowchart LR
+    QUERY["Query"] --> DUCKDB["DuckDB requests byte ranges"]
+    DUCKDB --> CACHE{"Range in local cache?"}
+    CACHE -->|"yes"| LOCAL["Serve local bytes<br/>from memory or disk"]
+    CACHE -->|"no"| REMOTE["Range GET only missing bytes<br/>from Hugging Face"]
+    REMOTE -->|"validate and save"| LOCAL
 ```
 
-The dataset spec supplies version and footer hints; it is not a data-range
-cache hit. Footer preparation happens when a Parquet file is first queried,
-not when the client starts. On a covered data read, the range is served from
-memory, disk, or an already pending download without a duplicate Range GET.
+The local cache stores variable-length extents instead of requiring complete
+file downloads or fixed-size blocks. Cached bytes are keyed by the pinned
+file and dataset version, so a new dataset version cannot reuse stale data.
+Concurrent reads can share a pending download instead of issuing another
+Range GET.
+
+**Connection pool:** Cache misses use HTTP connections grouped by remote
+origin, allowing files on the same origin to reuse them. Direct access and
+user-configured proxies are supported. If a proxy or server closes an idle
+connection, the next request opens another; status logging does not send
+keepalive traffic.
 
 ## What is stored
 
