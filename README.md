@@ -2,7 +2,7 @@
 
 # Defeat Beta API
 
-[![MCP Toplist](https://mcptoplist.com/badge/glama%2Fdefeat-beta%2Fdefeatbeta-api.svg)](https://mcptoplist.com/server/glama%2Fdefeat-beta%2Fdefeatbeta-api) <a href="https://huggingface.co/spaces/tardellirs/model-pulse?dataset=defeatbeta/yahoo-finance-data"><img src="https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fmodelpulse.ifsp.dev%2Fbadge%2Fdataset%2Fdefeatbeta%2Fyahoo-finance-data.svg&amp;query=(%2F%2F*%5Blocal-name()%3D%22text%22%5D)%5B2%5D&amp;label=Hugging%20Face%20Dataset&amp;suffix=%2Fmonth&amp;color=F8D44E&amp;labelColor=111318&amp;style=flat" alt="Hugging Face Dataset monthly downloads (Model Pulse)" height="20"></a>
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2Fdefeat-beta%2Fdefeatbeta-api.svg)](https://mcptoplist.com/server/glama%2Fdefeat-beta%2Fdefeatbeta-api) <a href="https://huggingface.co/spaces/tardellirs/model-pulse?dataset=defeatbeta/yahoo-finance-data"><img src="https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fmodelpulse.ifsp.dev%2Fbadge%2Fdataset%2Fdefeatbeta%2Fyahoo-finance-data.svg&amp;query=(%2F%2F*%5Blocal-name()%3D%22text%22%5D)%5B2%5D&amp;label=Hugging%20Face%20Dataset&amp;suffix=%2Fmonth&amp;color=F8D44E&amp;labelColor=111318&amp;style=flat-square" alt="Hugging Face Dataset monthly downloads (Model Pulse)" height="20"></a>
 
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/badge/python-3.11+-blue.svg?style=flat" alt="Python version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/v/defeatbeta-api.svg?maxAge=60%" alt="PyPi version"></a>
