@@ -1,0 +1,42 @@
+name: Refresh dataset downloads badge
+
+on:
+  schedule:
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/update_dataset_downloads_badge.py"
+      - "test/test_dataset_downloads_badge.py"
+      - ".github/workflows/dataset-downloads-badge.yml"
+
+concurrency:
+  group: dataset-downloads-badge
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test badge rendering and refresh behavior
+        run: python -m unittest test.test_dataset_downloads_badge -q
+      - name: Refresh badge
+        run: python scripts/update_dataset_downloads_badge.py
+      - name: Commit changed badge
+        run: |
+          if git diff --quiet -- doc/badges/hugging-face-downloads.svg; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add doc/badges/hugging-face-downloads.svg
+          git commit -m "Refresh dataset downloads badge [skip ci]"
+          git push
