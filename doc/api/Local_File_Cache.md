@@ -21,12 +21,57 @@ cache is enabled by default and does not require users to select a layout.
 ## Architecture
 
 ```mermaid
-flowchart LR
-    QUERY["Query"] --> DUCKDB["DuckDB requests byte ranges"]
-    DUCKDB --> CACHE{"Range in local cache?"}
-    CACHE -->|"yes"| LOCAL["Serve local bytes<br/>from memory or disk"]
-    CACHE -->|"no"| REMOTE["Range GET only missing bytes<br/>from Hugging Face"]
-    REMOTE -->|"validate and save"| LOCAL
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#FAF9F7',
+  'primaryBorderColor': '#D4CFC9',
+  'primaryTextColor': '#2A2520',
+  'lineColor': '#9C8E82',
+  'secondaryColor': '#F0EDE8',
+  'tertiaryColor': '#E8E4DE'
+}, 'flowchart': {'curve': 'basis', 'nodeSpacing': 35, 'rankSpacing': 50}}}%%
+flowchart TB
+    subgraph LOCAL["Local Machine"]
+        subgraph PROCESS["Python Process"]
+            CLIENT("DuckDBClient")
+            ENGINE("DuckDB")
+            PREFETCH("Parquet Prefetch Planner<br/>Optional, in DuckDBClient")
+            CACHE("DatasetCacheFileSystem<br/>fsspec adapter")
+            MEMORY("Memory Cache<br/>Data extents and footer bytes")
+            HTTP("HTTP Connection Pool<br/>Per remote origin")
+
+            CLIENT -->|"SQL"| ENGINE
+            CLIENT -.-> PREFETCH
+            ENGINE <-->|"fsspec byte reads"| CACHE
+            PREFETCH -.->|"Column-chunk ranges"| CACHE
+            CACHE <--> MEMORY
+            CACHE <--> HTTP
+        end
+
+        subgraph DISK["Disk Cache"]
+            DATA[("Data Extents<br/>SHA-256 / LRU")]
+            FOOTER[("Parquet Footers<br/>Retained separately")]
+        end
+    end
+
+    subgraph REMOTE["Remote Services"]
+        HF[("Hugging Face / CDN<br/>Parquet and JSON files")]
+    end
+
+    CACHE <-->|"Read / write"| DATA
+    CACHE <-->|"Read / write"| FOOTER
+    HTTP <-->|"HTTP Range<br/>Direct or configured proxy"| REMOTE
+
+    style LOCAL fill:#FAF9F7,stroke:#D4CFC9,stroke-width:2px,color:#2A2520,rx:12,ry:12
+    style PROCESS fill:#F7F3EE,stroke:#C9BFB3,stroke-width:2px,color:#2A2520,rx:12,ry:12
+    style DISK fill:#F0EEE9,stroke:#C4C0B5,stroke-width:2px,color:#2A2520,rx:12,ry:12
+    style REMOTE fill:#FDF5EC,stroke:#DFC9AD,stroke-width:2px,color:#2A2520,rx:12,ry:12
+
+    classDef component fill:#fff,stroke:#C9BFB3,stroke-width:1.5px,color:#2A2520
+    classDef storage fill:#fff,stroke:#C4C0B5,stroke-width:1.5px,color:#2A2520
+    classDef remote fill:#fff,stroke:#DFC9AD,stroke-width:1.5px,color:#2A2520
+    class CLIENT,ENGINE,PREFETCH,CACHE,MEMORY,HTTP component
+    class DATA,FOOTER storage
+    class HF remote
 ```
 
 The local cache stores variable-length extents instead of requiring complete
