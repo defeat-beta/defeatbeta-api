@@ -28,7 +28,7 @@ cache is enabled by default and does not require users to select a layout.
   'lineColor': '#9C8E82',
   'secondaryColor': '#F0EDE8',
   'tertiaryColor': '#E8E4DE'
-}, 'flowchart': {'curve': 'basis', 'nodeSpacing': 35, 'rankSpacing': 50}}}%%
+}, 'flowchart': {'curve': 'linear', 'nodeSpacing': 35, 'rankSpacing': 50}}}%%
 flowchart LR
     subgraph LOCAL["Local Machine"]
         direction LR
@@ -63,13 +63,13 @@ flowchart LR
 
     CACHE <-->|"Read / write"| DATA
     CACHE <-->|"Read / write"| FOOTER
-    HTTP <-->|"HTTP Range<br/>Direct or configured proxy"| REMOTE
+    HTTP <-->|"HTTP Range<br/>Direct or configured proxy"| HF
 
     %% Layout-only links keep storage and remote services to the right.
-    MEMORY ~~~ HTTP
     HTTP ~~~ DATA
     HTTP ~~~ FOOTER
-    LOCAL ~~~ REMOTE
+    DATA ~~~ HF
+    FOOTER ~~~ HF
 
     style LOCAL fill:#FAF9F7,stroke:#D4CFC9,stroke-width:2px,color:#2A2520,rx:12,ry:12
     style PROCESS fill:#F7F3EE,stroke:#C9BFB3,stroke-width:2px,color:#2A2520,rx:12,ry:12
