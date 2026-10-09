@@ -38,15 +38,15 @@ flowchart LR
             ENGINE("DuckDB")
             PREFETCH("Parquet Prefetch Planner<br/>Optional, in DuckDBClient")
             CACHE("DatasetCacheFileSystem<br/>fsspec adapter")
-            MEMORY("Memory Cache<br/>Data extents and footer bytes")
             HTTP("HTTP Connection Pool<br/>Per remote origin")
+            MEMORY("Memory Cache<br/>Data extents and footer bytes")
 
             CLIENT -->|"SQL"| ENGINE
             CLIENT -.-> PREFETCH
             ENGINE <-->|"fsspec byte reads"| CACHE
             PREFETCH -.->|"Column-chunk ranges"| CACHE
-            CACHE <--> MEMORY
             CACHE <--> HTTP
+            CACHE <--> MEMORY
         end
 
         subgraph DISK["Disk Cache"]
@@ -65,7 +65,8 @@ flowchart LR
     CACHE <-->|"Read / write"| FOOTER
     HTTP <-->|"HTTP Range<br/>Direct or configured proxy"| HF
 
-    %% Layout-only links keep storage and remote services to the right.
+    %% Layout-only links keep the pool above memory and route HTTP above disk.
+    ENGINE ~~~ HTTP
     HTTP ~~~ DATA
     HTTP ~~~ FOOTER
     DATA ~~~ HF
