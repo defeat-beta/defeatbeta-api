@@ -29,9 +29,17 @@ cache is enabled by default and does not require users to select a layout.
   'secondaryColor': '#F0EDE8',
   'tertiaryColor': '#E8E4DE'
 }, 'flowchart': {'curve': 'basis', 'nodeSpacing': 35, 'rankSpacing': 50}}}%%
-flowchart TB
+flowchart LR
     subgraph LOCAL["Local Machine"]
+        direction LR
+        subgraph DISK["Disk Cache"]
+            direction TB
+            DATA[("Data Extents<br/>SHA-256 / LRU")]
+            FOOTER[("Parquet Footers<br/>Retained separately")]
+        end
+
         subgraph PROCESS["Python Process"]
+            direction TB
             CLIENT("DuckDBClient")
             ENGINE("DuckDB")
             PREFETCH("Parquet Prefetch Planner<br/>Optional, in DuckDBClient")
@@ -47,19 +55,15 @@ flowchart TB
             CACHE <--> HTTP
         end
 
-        subgraph DISK["Disk Cache"]
-            DATA[("Data Extents<br/>SHA-256 / LRU")]
-            FOOTER[("Parquet Footers<br/>Retained separately")]
-        end
     end
 
     subgraph REMOTE["Remote Services"]
+        direction TB
         HF[("Hugging Face / CDN<br/>Parquet and JSON files")]
     end
 
-    CACHE <-->|"Read / write"| DATA
-    CACHE <-->|"Read / write"| FOOTER
-    HTTP <-->|"HTTP Range<br/>Direct or configured proxy"| REMOTE
+    DISK <-->|"Filesystem<br/>Read / write"| PROCESS
+    PROCESS <-->|"HTTP Range<br/>Direct or configured proxy"| REMOTE
 
     style LOCAL fill:#FAF9F7,stroke:#D4CFC9,stroke-width:2px,color:#2A2520,rx:12,ry:12
     style PROCESS fill:#F7F3EE,stroke:#C9BFB3,stroke-width:2px,color:#2A2520,rx:12,ry:12
