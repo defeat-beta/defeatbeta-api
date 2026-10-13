@@ -122,18 +122,19 @@ class TestBenchmarkContract(unittest.TestCase):
         self.assertFalse(report.summarize(value)["valid"])
 
     def test_parent_and_prepared_harness_must_match(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            current, prepared = root / "current", root / "prepared"
-            current.mkdir()
-            prepared.mkdir()
-            for folder in (current, prepared):
-                (folder / "worker.py").write_text("original\n")
-            expected = {"worker.py": hashlib.sha256(b"original\n").hexdigest()}
-            benchmark.verify_harness(current, prepared, expected)
-            (current / "worker.py").write_text("changed\n")
-            with self.assertRaisesRegex(ValueError, "harness changed"):
+        for content in (b"original\n", b"original\r\n"):
+            with self.subTest(content=content), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                current, prepared = root / "current", root / "prepared"
+                current.mkdir()
+                prepared.mkdir()
+                for folder in (current, prepared):
+                    (folder / "worker.py").write_bytes(content)
+                expected = {"worker.py": hashlib.sha256(content).hexdigest()}
                 benchmark.verify_harness(current, prepared, expected)
+                (current / "worker.py").write_bytes(content + b"changed\n")
+                with self.assertRaisesRegex(ValueError, "harness changed"):
+                    benchmark.verify_harness(current, prepared, expected)
 
     def test_failure_and_duplicate_are_not_dropped(self):
         value = fake_record()
