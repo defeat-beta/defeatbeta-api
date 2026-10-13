@@ -13,14 +13,15 @@ authors = [
     {name = "zxh2010", email = "5077921+zxh2010@users.noreply.github.com"}
 ]
 dependencies = [
-    "duckdb == 1.5.3",
+    "duckdb == 2.0.0.dev2610011535",
     "pandas >= 3.0.1",
     "requests[socks] >= 2.33.0",
     "psutil >= 7.0.0",
     "pyfiglet >= 1.0.2",
     "urllib3 >= 2.6.3",
     "fsspec >= 2025.1.0",
-    "httpx[http2,socks] >= 0.28.1, < 1",
+    "httpx[http2,socks] == 0.28.1",
+    "httpcore[asyncio] == 1.0.9",
     "tabulate >= 0.9.0",
     "numpy >= 2.2.5",
     "rich >= 14.0.0",

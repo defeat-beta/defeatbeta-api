@@ -20,6 +20,10 @@ from urllib.parse import urlsplit
 import fsspec
 import httpx
 
+from defeatbeta_api.client.shared_resources import (
+    FILE_SIZES, FOOTERS, PARQUET_INDEXES, ParquetIndex, SharedHttpClient, file_lock, value_size,
+)
+
 
 _CONTENT_RANGE = re.compile(r"bytes (\d+)-(\d+)/(\d+)")
 _LOG_URL_WITH_QUERY = re.compile(r"(https?://[^\s'\"?]+)\?[^\s'\"]*")
@@ -49,6 +53,10 @@ _INITIAL_FOOTER_TAIL_BYTES = 256 * 1024
 _EXTENT_SUFFIX = re.compile(
     r"(?P<start>\d+)-(?P<length>\d+)\.(?P<kind>block|footer)"
 )
+
+
+class DatasetVersionChanged(RuntimeError):
+    """A read or query outlived the dataset generation it started with."""
 
 
 class _CacheHttpxLogFilter(logging.Filter):
@@ -109,6 +117,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         network_chunk_size: int = 0,
         footer_index: Optional[dict] = None,
         logger: Optional[logging.Logger] = None,
+        cache_enabled: bool = True,
         **kwargs,
     ):
         if "cache_layout" in kwargs:
@@ -125,7 +134,9 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             raise ValueError("Injected HTTP client requires one network connection")
         _install_cache_httpx_log_filter()
         self.directory = Path(directory)
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self.cache_enabled = cache_enabled
+        if cache_enabled:
+            self.directory.mkdir(parents=True, exist_ok=True)
         self._version_file = self.directory / ".dataset-version.json"
         self._lock_file = self.directory / ".dataset-cache.lock"
         self.version = version
@@ -182,7 +193,8 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         self._range_sequence = 0
         self._read_events = deque(maxlen=4096)
         self._read_sequence = 0
-        self._sync_version(version)
+        if cache_enabled:
+            self._sync_version(version)
         self._pool_log_thread = Thread(
             target=self._log_connection_pool, name="DefeatBetaCachePool", daemon=True
         )
@@ -190,16 +202,10 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
 
     def _new_clients(self):
         return [
-            httpx.Client(
-                http2=True,
-                proxy=self._http_proxy or None,
+            SharedHttpClient(
+                proxy=self._http_proxy,
                 trust_env=self._http_proxy is None,
                 timeout=self._timeout,
-                limits=httpx.Limits(
-                    max_connections=1 if self._network_connections > 1 else self._workers,
-                    max_keepalive_connections=1 if self._network_connections > 1 else self._workers,
-                    keepalive_expiry=120,
-                ),
             )
             for _ in range(self._network_connections)
         ]
@@ -400,39 +406,24 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         if not version:
             raise ValueError("Dataset cache version must not be empty")
         with self._generation_lock:
-            self._sync_version(version)
+            if self.cache_enabled:
+                self._sync_version(version)
+            else:
+                self.version = version
+                self._version_tag = hashlib.sha256(version.encode()).hexdigest()[:16]
             with self._guard:
                 updated_index = footer_index if isinstance(footer_index, dict) else {}
                 if updated_index != self._footer_index:
                     self._sizes.clear()
+                    self._footer_memory.clear()
                 self._footer_index = updated_index
 
     @contextmanager
     def _cache_lock(self):
         """Serialize cache publication and eviction across local processes."""
         self.directory.mkdir(parents=True, exist_ok=True)
-        with self._lock_file.open("a+b") as stream:
-            if os.name == "nt":
-                import msvcrt
-
-                if os.fstat(stream.fileno()).st_size == 0:
-                    stream.write(b"\0")
-                    stream.flush()
-                stream.seek(0)
-                msvcrt.locking(stream.fileno(), msvcrt.LK_LOCK, 1)
-                try:
-                    yield
-                finally:
-                    stream.seek(0)
-                    msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
-            else:
-                import fcntl
-
-                fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
-                try:
-                    yield
-                finally:
-                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+        with file_lock(self._lock_file):
+            yield
 
     def _stored_version(self):
         try:
@@ -522,6 +513,10 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         with self._guard:
             return self._file_version_tags[key] == self._version_tag
 
+    def _require_current_key(self, key):
+        if not self._current_key(key):
+            raise DatasetVersionChanged("Dataset version changed during the read")
+
     def _key_and_url(self, path):
         stripped = self._strip_protocol(str(path)).lstrip("/")
         key = stripped.split("/", 1)[0]
@@ -529,6 +524,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             url = self._files.get(key)
         if url is None:
             raise FileNotFoundError("Unknown DefeatBeta dataset cache path")
+        self._require_current_key(key)
         return key, url
 
     def _object_name(self, key):
@@ -661,10 +657,14 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                 cached_size = self._sizes.get(key)
             if cached_size is not None:
                 return cached_size
-            resolved = self.resolve(url, False)
-            size = resolved[1] if isinstance(resolved, tuple) else None
-            if not isinstance(size, int) or size <= 0:
-                _, size = self._request_range(url, 0, 0)
+            def build():
+                resolved = self.resolve(url, False)
+                size = resolved[1] if isinstance(resolved, tuple) else None
+                if not isinstance(size, int) or size <= 0:
+                    _, size = self._request_range(url, 0, 0)
+                return size
+
+            size = FILE_SIZES.get_or_build((str(self.directory.resolve()), key), build)
             with self._guard:
                 if self._file_version_tags[key] == self._version_tag:
                     self._sizes[key] = size
@@ -731,19 +731,48 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
 
     def _remember_footer(self, key, start, content, footer_size):
         with self._guard:
-            self._footer_memory.pop(key, None)
-            self._footer_memory[key] = (start, content, footer_size)
-            while (sum(len(item[1]) for item in self._footer_memory.values())
-                   > _MAX_FOOTER_MEMORY_BYTES):
-                self._footer_memory.popitem(last=False)
+            self._remember_footer_locked(key, start, content, footer_size)
+
+    def _remember_footer_locked(self, key, start, content, footer_size):
+        self._footer_memory.pop(key, None)
+        self._footer_memory[key] = (start, content, footer_size)
+        while (sum(len(item[1]) for item in self._footer_memory.values())
+               > _MAX_FOOTER_MEMORY_BYTES):
+            self._footer_memory.popitem(last=False)
 
     def _load_footer(self, key, total):
         with self._guard:
+            if self._file_version_tags[key] != self._version_tag:
+                return None
+            version_tag = self._version_tag
+            footer_index = self._footer_index
+            url = self._files[key]
+            hint = footer_index.get(urlsplit(url).path.partition("/data/")[2])
             remembered = self._footer_memory.get(key)
-            if remembered is not None:
-                start, content, footer_size = remembered
-                if start + len(content) == total:
-                    self._footer_memory.move_to_end(key)
+
+        def still_current():
+            return (self._version_tag == version_tag
+                    and self._footer_index == footer_index)
+
+        def matches_hint(content, footer_size):
+            if not isinstance(hint, dict) or hint.get("file_size") != total:
+                return True
+            expected = hint.get("footer_sha256")
+            if not isinstance(expected, str) or re.fullmatch(r"[0-9a-f]{64}", expected) is None:
+                return True
+            return (hint.get("footer_size") == footer_size
+                    and hashlib.sha256(content[-footer_size - 8:-8]).hexdigest() == expected)
+
+        if remembered is not None:
+            start, content, footer_size = remembered
+            if start + len(content) == total and matches_hint(content, footer_size):
+                with self._guard:
+                    if not still_current():
+                        return None
+                    # Eviction does not invalidate immutable bytes already
+                    # borrowed by this reader. Do not resurrect the entry.
+                    if self._footer_memory.get(key) is remembered:
+                        self._footer_memory.move_to_end(key)
                     return remembered
         prefix = f"{self._object_name(key)}-"
         for path in self.directory.iterdir():
@@ -763,8 +792,13 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                 footer_size = self._footer_size(content, start, total)
             except ValueError:
                 continue
-            self._remember_footer(key, start, content, footer_size)
-            return start, content, footer_size
+            if not matches_hint(content, footer_size):
+                continue
+            with self._guard:
+                if not still_current():
+                    return None
+                self._remember_footer_locked(key, start, content, footer_size)
+                return start, content, footer_size
         return None
 
     def prepare_footer(self, path):
@@ -776,7 +810,45 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         with self._guard:
             lock = self._metadata_locks.setdefault(key, Lock())
         with lock:
-            return self._prepare_footer_locked(key, url, total)
+            def build():
+                # The local process lock coalesces downloads; disk publication
+                # remains atomic and guarded against a version change.
+                # Keep one lock inode per URL across data versions. Never unlink
+                # lock files that other processes may already have opened.
+                lock_id = dataset_event_object_id(url)
+                with file_lock(self.directory / f".footer-{lock_id}.lock"):
+                    self._prepare_footer_locked(key, url, total)
+                footer = self._load_footer(key, total)
+                if footer is None or not self._current_key(key):
+                    raise ValueError("Dataset version changed during footer preparation")
+                target = self._footer_path(key, footer[0], len(footer[1]))
+                stat = target.stat()
+                return footer, target, (stat.st_ino, stat.st_mtime_ns, stat.st_size)
+
+            def valid(item):
+                try:
+                    stat = item[1].stat()
+                    return (stat.st_ino, stat.st_mtime_ns, stat.st_size) == item[2]
+                except OSError:
+                    return False
+
+            with self._guard:
+                hint = self._footer_index.get(urlsplit(url).path.partition("/data/")[2])
+            hint_identity = tuple(hint.get(name) for name in (
+                "file_size", "footer_size", "footer_sha256")) if isinstance(hint, dict) else None
+            shared_key = (key, total, hint_identity)
+            footer, _, _ = FOOTERS.get_or_build(
+                shared_key, build, valid=valid, weight=lambda item: len(item[0][1]))
+            if not self._current_key(key):
+                raise ValueError("Dataset version changed during footer preparation")
+            target = self._footer_path(key, footer[0], len(footer[1]))
+            if not target.exists():
+                with self._generation_lock, self._cache_lock():
+                    if self._current_key(key) and self._stored_version() == self.version:
+                        if not target.exists():
+                            self._atomic_write(target, hashlib.sha256(footer[1]).digest() + footer[1])
+            self._remember_footer(key, *footer)
+            return footer[2]
 
     def cached_footer_bytes(self, path):
         """Return the exact footer and trailer after footer preparation."""
@@ -786,6 +858,17 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         if footer is None:
             raise ValueError("Parquet footer has not been prepared")
         return footer[1][-(footer[2] + 8):]
+
+    def shared_parquet_index(self, path, footer_bytes, build):
+        """Share immutable parsed metadata, including format and footer identity."""
+        import duckdb
+
+        key, _ = self._key_and_url(path)
+        identity = (key, hashlib.sha256(footer_bytes).digest(),
+                    duckdb.__version__, 1)
+        return PARQUET_INDEXES.get_or_build(
+            identity, lambda: ParquetIndex(tuple(tuple(row) for row in build())),
+            weight=lambda index: value_size(index.rows))
 
     def _prepare_footer_locked(self, key, url, total):
         existing = self._load_footer(key, total)
@@ -840,10 +923,12 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             digest, content = stored[:_BLOCK_DIGEST_BYTES], stored[_BLOCK_DIGEST_BYTES:]
             if (len(content) == length and len(digest) == _BLOCK_DIGEST_BYTES
                     and hashlib.sha256(content).digest() == digest):
-                try:
-                    os.utime(path, None)
-                except OSError:
-                    pass
+                # Only data blocks use modification times for disk eviction.
+                if path.suffix == ".block":
+                    try:
+                        os.utime(path, None)
+                    except OSError:
+                        pass
                 with self._guard:
                     self._metrics["cache_hits"] += 1
                 return content
@@ -880,6 +965,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                 self._memory_access_ns.pop(evicted_key, None)
 
     def _fetch_block(self, key, url, start, length, total):
+        self._require_current_key(key)
         cache_key = (key, start, length)
         in_memory = self._memory_get(cache_key)
         if in_memory is not None:
@@ -902,8 +988,9 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         else:
             content, _ = self._request_range(url, start, start + length - 1, total)
         with self._generation_lock:
+            self._require_current_key(key)
             with self._cache_lock():
-                if not self._current_key(key) or self._stored_version() != self.version:
+                if self._stored_version() != self.version:
                     return content
                 try:
                     self._atomic_write(target, hashlib.sha256(content).digest() + content)
@@ -994,7 +1081,12 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                 "end": end,
                 "bytes": end - start,
             })
-        return self._cat_io(key, url, start, end, total)
+        if not self.cache_enabled:
+            content = self._request_range(url, start, end - 1, total)[0]
+        else:
+            content = self._cat_io(key, url, start, end, total)
+        self._require_current_key(key)
+        return content
 
     def _cached_extents(self, key, start, end):
         """Read validated on-disk intervals that overlap a requested range."""
@@ -1081,3 +1173,9 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                     content[overlap_start - offset:overlap_end - offset]
                 )
         return bytes(result)
+
+
+class DatasetNetworkFileSystem(DatasetCacheFileSystem):
+    """Use the same shared range transport with a distinct uncached protocol."""
+
+    protocol = "defeatbeta-network"

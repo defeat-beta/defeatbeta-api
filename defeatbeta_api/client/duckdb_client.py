@@ -1,3 +1,4 @@
+import atexit
 import logging
 import re
 import sys
@@ -6,6 +7,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from threading import Lock
 from typing import Callable, Dict, Optional
+from weakref import WeakValueDictionary
 
 import duckdb
 import pandas as pd
@@ -13,9 +15,11 @@ import pandas as pd
 from defeatbeta_api import _print_welcome
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.dataset_cache_fs import (
-    DatasetCacheFileSystem, dataset_event_object_id, parquet_metadata_file,
+    DatasetCacheFileSystem, DatasetNetworkFileSystem, DatasetVersionChanged,
+    dataset_event_object_id, parquet_metadata_file,
 )
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
+from defeatbeta_api.client.shared_resources import RESOLVED_URLS, network_identity
 
 # Pinned Parquet URLs. DuckDB re-resolves the 302 on every range request, so
 # cold queries pay the redirect cost repeatedly. Resolve only Parquet inputs:
@@ -169,6 +173,21 @@ _lock = Lock()
 _performance_recorder = ContextVar("defeatbeta_performance_recorder", default=None)
 
 
+def _close_shared_duckdb_clients():
+    """Release registered filesystems before native bindings are finalized."""
+    with _lock:
+        clients = list(_instances.values())
+        _instances.clear()
+    first_error = None
+    for client in clients:
+        try:
+            client.close()
+        except BaseException as exc:
+            first_error = first_error or exc
+    if first_error is not None:
+        raise first_error
+
+
 @contextmanager
 def capture_performance(recorder: Callable[[Dict], None]):
     """Capture opt-in client timing events in the current execution context."""
@@ -254,13 +273,14 @@ class DuckDBClient:
         self._dataset_cdn_cache = {}
         self._hf_client = HuggingFaceClient(http_proxy=http_proxy)
         self._dataset_fs = None
-        self._parquet_indexes = {}
+        self._parquet_indexes = WeakValueDictionary()
         self._parquet_index_locks = {}
         self._parquet_index_locks_guard = Lock()
         self._prepared_footers = set()
         self._data_update_time = None
         self._footer_index = {}
         self._version_lock = Lock()
+        self._dataset_generation = 0
         self._last_version_check = 0.0
         self._initialize_connection()
         self._load_dataset_version()
@@ -280,15 +300,26 @@ class DuckDBClient:
                 logger=self.logger,
             )
             self.connection.register_filesystem(self._dataset_fs)
-            try:
-                self._dataset_fs.prepare_connections(
-                    self._hf_client.get_url_path("stock_prices"), 1
+        self._uncached_fs = None
+        self._network_fs_lock = Lock()
+        self._has_shared_network = True
+
+    def _get_uncached_filesystem(self):
+        with self._version_lock, self._network_fs_lock:
+            if self._uncached_fs is None:
+                filesystem = DatasetNetworkFileSystem(
+                    directory=str(self.config.cache_directory or "."),
+                    version=self._data_update_time, resolve=self._resolve_for_dataset,
+                    http_proxy=self.http_proxy, timeout=self.config.cache_http_timeout_seconds,
+                    footer_index=self._footer_index, logger=self.logger, cache_enabled=False,
                 )
-            except Exception as exc:
-                self.logger.warning(
-                    "Dataset connection prewarm failed (%s); reads will connect on demand",
-                    type(exc).__name__,
-                )
+                try:
+                    self.connection.register_filesystem(filesystem)
+                except BaseException:
+                    filesystem.close()
+                    raise
+                self._uncached_fs = filesystem
+            return self._uncached_fs
 
     def _initialize_connection(self) -> None:
         started_ns = time.perf_counter_ns()
@@ -331,7 +362,8 @@ class DuckDBClient:
         started_ns = time.perf_counter_ns()
         status = "ok"
         try:
-            self._data_update_time = self._hf_client.get_data_update_time()
+            self._data_update_time = self._hf_client.get_shared_data_update_time(
+                self.config.cache_version_check_interval_seconds)
             self._footer_index = self._spec_footer_index()
             _print_welcome(self._data_update_time)
         except Exception as e:
@@ -351,24 +383,37 @@ class DuckDBClient:
         index = spec.get("footer_index") if isinstance(spec, dict) else None
         return dict(index) if isinstance(index, dict) else {}
 
-    def _refresh_dataset_version_if_due(self) -> None:
+    def _refresh_dataset_version_if_due(self, *, use_dataset_cache=True) -> int:
         interval = self.config.cache_version_check_interval_seconds
-        if time.monotonic() - self._last_version_check < interval:
-            return
         with self._version_lock:
-            if time.monotonic() - self._last_version_check < interval:
-                return
-            version = self._hf_client.get_data_update_time()
-            footer_index = self._spec_footer_index()
-            self._dataset_fs.update_version(version, footer_index=footer_index)
+            due = time.monotonic() - self._last_version_check >= interval
+            version = (self._hf_client.get_shared_data_update_time(interval)
+                       if due else self._data_update_time)
+            footer_index = self._spec_footer_index() if due else self._footer_index
+            metadata_changed = footer_index != getattr(self, "_footer_index", {})
+            if version != self._data_update_time or metadata_changed:
+                # Invalidate active queries before touching either reader. Even
+                # a partially failed disk-cache transition must discard results.
+                self._dataset_generation = getattr(self, "_dataset_generation", 0) + 1
+            # Synchronize only the reader this query will use. A failed disk
+            # cache must not prevent network fallback, and a recovered reader
+            # must catch up even before the next remote metadata check is due.
+            filesystem = (self._dataset_fs if use_dataset_cache
+                          else getattr(self, "_uncached_fs", None))
+            if filesystem is not None and (
+                    due or filesystem.version != version
+                    or filesystem._footer_index != footer_index):
+                filesystem.update_version(version, footer_index=footer_index)
             self._footer_index = footer_index
-            if version != self._data_update_time:
-                self._parquet_indexes = {}
+            if version != self._data_update_time or metadata_changed:
+                self._parquet_indexes = type(self._parquet_indexes)()
                 with self._parquet_index_locks_guard:
                     self._parquet_index_locks = {}
                 self._prepared_footers = set()
             self._data_update_time = version
-            self._last_version_check = time.monotonic()
+            if due:
+                self._last_version_check = time.monotonic()
+            return getattr(self, "_dataset_generation", 0)
 
     def _resolve_one(self, resolve_url: str) -> str:
         """Resolve once per TTL; fall back to the pinned URL on any failure."""
@@ -430,26 +475,30 @@ class DuckDBClient:
 
     def _resolve_for_dataset(self, resolve_url: str, refresh: bool = False):
         started_ns = time.perf_counter_ns()
-        now = time.monotonic()
-        with self._cdn_lock:
-            if refresh:
-                self._dataset_cdn_cache.pop(resolve_url, None)
-            else:
-                hit = self._dataset_cdn_cache.get(resolve_url)
-                if hit is not None and now - hit[2] < self._resolve_ttl:
-                    _record_performance(
-                        "duckdb.resolve_url", started_ns, time.perf_counter_ns(),
-                        cache_hit=True, status="ok",
-                    )
-                    return hit[0], hit[1]
+        with self._version_lock, self._cdn_lock:
+            version = getattr(self, "_data_update_time", None)
+            previous = self._dataset_cdn_cache.get(resolve_url)
+            # Local state only identifies the value a forced refresh replaces.
+            # All reads use the shared cache's version and routing identity.
         if self.http_proxy is None:
             proxies = None
         elif self.http_proxy:
             proxies = {"http": self.http_proxy, "https": self.http_proxy}
         else:
             proxies = {"http": None, "https": None}
+        built = False
         try:
-            url, size = self._hf_client.resolve_cdn_info(resolve_url, proxies=proxies)
+            def build():
+                nonlocal built
+                built = True
+                url, size = self._hf_client.resolve_cdn_info(resolve_url, proxies=proxies)
+                return url, size, time.monotonic()
+
+            identity = (network_identity(resolve_url, self.http_proxy), resolve_url, version)
+            observed = previous[1] if previous is not None and previous[0] == identity else None
+            url, size, resolved_at = RESOLVED_URLS.get_or_build(
+                identity, build, force_if=observed if refresh else None,
+                valid=lambda item: time.monotonic() - item[2] < self._resolve_ttl)
         except Exception:
             _record_performance(
                 "duckdb.resolve_url", started_ns, time.perf_counter_ns(),
@@ -457,10 +506,13 @@ class DuckDBClient:
             )
             raise
         with self._cdn_lock:
-            self._dataset_cdn_cache[resolve_url] = (url, size, time.monotonic())
+            current = self._dataset_cdn_cache.get(resolve_url)
+            if (version == getattr(self, "_data_update_time", None)
+                    and (current is None or current[1][2] <= resolved_at)):
+                self._dataset_cdn_cache[resolve_url] = (identity, (url, size, resolved_at))
         _record_performance(
             "duckdb.resolve_url", started_ns, time.perf_counter_ns(),
-            cache_hit=False, status="ok",
+            cache_hit=not built, status="ok",
         )
         return url, size
 
@@ -479,15 +531,19 @@ class DuckDBClient:
                 return chunks
             self._dataset_fs.prepare_footer(path)
             footer_bytes = self._dataset_fs.cached_footer_bytes(path)
-            with parquet_metadata_file(footer_bytes) as metadata_path:
-                with self._get_cursor() as cursor:
-                    chunks = cursor.execute(
-                        "SELECT row_group_id, path_in_schema, stats_min_value, "
-                        "stats_max_value, "
-                        "COALESCE(dictionary_page_offset, data_page_offset), "
-                        "total_compressed_size FROM parquet_metadata(?)",
-                        [metadata_path],
-                    ).fetchall()
+            def build():
+                with parquet_metadata_file(footer_bytes) as metadata_path:
+                    with self._get_cursor() as cursor:
+                        return cursor.execute(
+                            "SELECT row_group_id, path_in_schema, stats_min_value, "
+                            "stats_max_value, "
+                            "COALESCE(dictionary_page_offset, data_page_offset), "
+                            "total_compressed_size FROM parquet_metadata(?)",
+                            [metadata_path],
+                        ).fetchall()
+
+            shared = getattr(self._dataset_fs, "shared_parquet_index", None)
+            chunks = shared(path, footer_bytes, build) if shared else build()
             self._parquet_indexes[key] = chunks
             prepared = getattr(self, "_prepared_footers", None)
             if prepared is None:
@@ -495,15 +551,18 @@ class DuckDBClient:
             prepared.add(key)
             return chunks
 
-    def _to_dataset_sql(self, sql: str) -> str:
+    def _to_dataset_sql(self, sql: str, filesystem=None) -> str:
+        filesystem = filesystem if filesystem is not None else self._dataset_fs
         registered = {}
 
         def register(url):
-            path = self._dataset_fs.register(url)
+            path = filesystem.register(url)
             registered[url] = path
             return path
 
         rewritten = rewrite_dataset_urls(sql, register)
+        if not getattr(filesystem, "cache_enabled", True):
+            return rewritten
         scan = _simple_symbol_scan(sql)
         for url, path in registered.items():
             if not url.endswith(".parquet"):
@@ -534,7 +593,7 @@ class DuckDBClient:
                     prepared = getattr(self, "_prepared_footers", set())
                     key = path
                     if key not in prepared:
-                        self._dataset_fs.prepare_footer(path)
+                        filesystem.prepare_footer(path)
                         prepared.add(key)
                         self._prepared_footers = prepared
             except Exception as exc:
@@ -555,7 +614,7 @@ class DuckDBClient:
                 prefetch_started_ns = time.perf_counter_ns()
                 prefetch_status = "ok"
                 try:
-                    self._dataset_fs.prefetch_ranges(path, ranges)
+                    filesystem.prefetch_ranges(path, ranges)
                 except Exception as exc:
                     prefetch_status = "error"
                     logger = getattr(self, "logger", None)
@@ -590,7 +649,8 @@ class DuckDBClient:
         finally:
             cursor.close()
 
-    def _execute_query(self, sql: str, use_dataset_cache: bool = False) -> pd.DataFrame:
+    def _execute_query(self, sql: str, use_dataset_cache: bool = False, filesystem=None) -> pd.DataFrame:
+        filesystem = filesystem if filesystem is not None else getattr(self, "_dataset_fs", None)
         self.logger.debug(f"Executing query: {redact_signed_urls(sql)}")
         started_ns = time.perf_counter_ns()
         cursor_opened_ns = started_ns
@@ -599,16 +659,16 @@ class DuckDBClient:
         ended_ns = started_ns
         status = "error"
         result = None
-        cache_before = self._dataset_fs.metrics() if use_dataset_cache else None
+        cache_before = filesystem.metrics() if use_dataset_cache else None
         range_event_offset = (
-            self._dataset_fs.range_event_sequence() if use_dataset_cache else 0
+            filesystem.range_event_sequence() if use_dataset_cache else 0
         )
         read_event_offset = (
-            self._dataset_fs.read_event_sequence() if use_dataset_cache else 0
+            filesystem.read_event_sequence() if use_dataset_cache else 0
         )
         try:
             if use_dataset_cache:
-                sql = self._to_dataset_sql(sql)
+                sql = self._to_dataset_sql(sql, filesystem)
                 prepared_ns = time.perf_counter_ns()
             with self._get_cursor() as cursor:
                 cursor_opened_ns = time.perf_counter_ns()
@@ -623,11 +683,11 @@ class DuckDBClient:
                     materialized_ns = ended_ns
             rows = len(result) if result is not None else 0
             if use_dataset_cache:
-                cache_after = self._dataset_fs.metrics()
-                range_events, ranges_complete = self._dataset_fs.range_event_snapshot(
+                cache_after = filesystem.metrics()
+                range_events, ranges_complete = filesystem.range_event_snapshot(
                     range_event_offset
                 )
-                read_events, reads_complete = self._dataset_fs.read_event_snapshot(
+                read_events, reads_complete = filesystem.read_event_snapshot(
                     read_event_offset
                 )
                 _record_performance(
@@ -656,6 +716,33 @@ class DuckDBClient:
             f"Query executed successfully. Rows returned: {len(result)}. Cost: {duration:.2f} seconds.")
         return result
 
+    def _query_dataset(self, sql, *, use_dataset_cache=True):
+        """Validate the whole result; retry once if another query updates data.
+
+        No lock is held across SQL execution. The generation check
+        also covers cache-only reads and exceptions wrapped by DuckDB.
+        """
+        for attempt in range(2):
+            generation = self._refresh_dataset_version_if_due(
+                use_dataset_cache=use_dataset_cache)
+            try:
+                if use_dataset_cache:
+                    result = self._execute_query(sql, use_dataset_cache=True)
+                else:
+                    result = self._execute_query(
+                        sql, use_dataset_cache=True, filesystem=self._get_uncached_filesystem())
+            except Exception:
+                with self._version_lock:
+                    if generation == getattr(self, "_dataset_generation", 0):
+                        raise
+            else:
+                with self._version_lock:
+                    if generation == getattr(self, "_dataset_generation", 0):
+                        return result
+            if attempt == 0:
+                self.logger.debug("Dataset changed during query; retrying the complete query")
+        raise DatasetVersionChanged("Dataset changed during both query attempts; retry the query")
+
     def query(self, sql: str) -> pd.DataFrame:
         started_ns = time.perf_counter_ns()
         status = "error"
@@ -663,18 +750,27 @@ class DuckDBClient:
         if (getattr(self, "_dataset_fs", None) is not None
                 and _DATASET_URL_RE.search(sql)):
             try:
-                self._refresh_dataset_version_if_due()
-                result = self._execute_query(original_sql, use_dataset_cache=True)
+                result = self._query_dataset(original_sql)
                 _record_performance(
                     "duckdb.query", started_ns, time.perf_counter_ns(),
                     status="dataset_cache",
                 )
                 return result
+            except DatasetVersionChanged:
+                raise
             except Exception as dataset_error:
                 self.logger.warning(
                     "Dataset cache query failed, retrying original transport: %s",
                     redact_signed_urls(str(dataset_error)),
                 )
+        if getattr(self, "_has_shared_network", False) and _DATASET_URL_RE.search(sql):
+            try:
+                return self._query_dataset(original_sql, use_dataset_cache=False)
+            except DatasetVersionChanged:
+                raise
+            except Exception as error:
+                message = redact_signed_urls(str(error))
+                raise Exception(f"Query failed: {message}") from error
         rewritten_sql = self._to_cdn_sql(sql) if self.resolve_cdn_for_uncached_reads else sql
         try:
             result = self._execute_query(rewritten_sql)
@@ -714,9 +810,18 @@ class DuckDBClient:
         if getattr(self, "_dataset_fs", None) is not None:
             self._dataset_fs.close()
             self._dataset_fs = None
+        if getattr(self, "_uncached_fs", None) is not None:
+            self._uncached_fs.close()
+            self._uncached_fs = None
+        if getattr(self, "_hf_client", None) is not None:
+            self._hf_client.session.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+
+# Imported network resources register earlier; atexit runs callbacks in reverse.
+atexit.register(_close_shared_duckdb_clients)

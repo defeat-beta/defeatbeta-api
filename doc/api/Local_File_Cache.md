@@ -38,7 +38,7 @@ flowchart LR
             ENGINE("DuckDB")
             PREFETCH("Parquet Prefetch Planner<br/>Optional, in DuckDBClient")
             CACHE("DatasetCacheFileSystem<br/>fsspec adapter")
-            HTTP("HTTP Connection Pool<br/>Per remote origin")
+            HTTP("Shared HTTP Transport<br/>Origin-specific connections")
             MEMORY("Memory Cache<br/>Data extents and footer bytes")
 
             CLIENT -->|"SQL"| ENGINE
@@ -91,12 +91,18 @@ file and dataset version, so a new dataset version cannot reuse stale data.
 Concurrent reads can share a pending download instead of issuing another
 Range GET.
 
-**Connection pool:** Cache misses use one pooled HTTP client per remote
-origin, allowing files on the same origin to reuse connections and issue
-concurrent requests. The client count is not a physical connection limit.
-Direct access and user-configured proxies are supported. If a proxy or server closes an idle
-connection, the next request opens another; status logging does not send
-keepalive traffic.
+**Connection pool:** Metadata and dataset requests share process-wide HTTP
+transports across Tickers and files. Effective proxy and TLS trust settings
+select the transport; the shared allocator maintains origin-specific connections.
+The default process-wide budget is 16 physical connections across all transports,
+with four retained core connections per origin/route and four scheduling slots
+per HTTP/2 connection, further bounded by negotiated protocol limits.
+Connections grow on demand and idle surplus connections shrink after 60 seconds.
+See [HTTP connection pool](HTTP_Connection_Pool.md) for sharing, stream capacity,
+connection creation, idle recovery, configuration, and diagnostics. Closing one owner does not close
+other owners' pools. Direct access and user-configured proxies are supported.
+If a peer retires an idle HTTP session, the next business request recovers it;
+there is no periodic HTTP heartbeat or HTTP/2 PING.
 
 ## What is stored
 
@@ -109,8 +115,11 @@ in-flight extents are reused instead of downloaded again.
 
 The first query for a Parquet file prepares its footer and, with column
 prefetch enabled, a simple symbol scan parses row-group metadata from that
-footer. The footer is stored locally; the parsed metadata is reused in memory
-by later queries for any symbol in the same file. After process restart, the
+footer. Validated footer bytes and immutable parsed metadata are shared across
+Ticker and DuckDB client instances in the process. Concurrent preparation of
+the same file/version coalesces into one download and one parse. The footer is
+stored locally, with a per-file interprocess lock for shared directories. Reads
+do not change its modification time. After process restart, the
 metadata is parsed again from the local footer without downloading it again.
 DuckDB uses a temporary metadata-only Parquet file for this parse; it is
 removed immediately and is not part of the persistent cache.
@@ -137,6 +146,27 @@ bytes from the old version and removes stale cache-owned files. An occupied
 file that Windows cannot remove is retried during later cleanup. Files not
 recognized as cache-owned are left alone.
 
+Each dataset query records the client's data generation before execution and
+validates it after result materialization. If a concurrent query detects a
+version or footer-metadata change, the affected query discards its result and
+retries the whole query once. A second change raises `DatasetVersionChanged`
+instead of returning mixed-generation results or retrying indefinitely.
+Expired virtual file paths also reject further reads. The checks apply with
+disk caching enabled or disabled and do not serialize SQL execution.
+
+CDN address reuse also follows the dataset version and effective network route,
+including when disk caching is disabled. An older in-flight resolution cannot
+replace the current version's retained address. Clients consult the shared
+resolution cache so they can reuse an address refreshed by another client.
+Result publication and retirement of the corresponding in-flight build are
+atomic, so a forced refresh cannot rejoin an already completed stale build.
+
+Footer preparation keeps one persistent lock file per dataset URL in a cache
+directory, independent of daily data versions. Contending processes wait for
+the owner on all supported platforms; process termination releases the OS lock.
+Lock files are retained, including any left by earlier implementations, because
+another running process may still be using them.
+
 The default 5 GiB disk limit applies to data extents. The least recently
 used data extents are evicted when new data would exceed the limit. Memory
 hits also count as recent use for this decision without writing a new file.
@@ -149,16 +179,19 @@ still on demand and a larger future data set may exceed the limit.
 
 ## Network and queries
 
-The cache works with either direct access or a configured HTTP proxy. A
-connection pool can be reused across files that resolve to the same origin;
-different origins receive separate pools. The client attempts a one-byte
-startup connection warmup request, but does not save that byte as query data.
-Remote peers and proxies may close idle connections, which are reopened on
-the next request. If the cache transport fails during a query, DefeatBeta
-falls back to DuckDB's standard HTTP reader for that query.
+The cache works with either direct access or a configured HTTP proxy. Shared
+connections can serve different files and Tickers on the same origin, with
+sequential reuse and concurrent HTTP/2 streams. There is no startup connection
+warmup request. TCP keepalive uses OS socket options and timer defaults;
+HTTPX/httpcore handles GOAWAY and replacement connections on demand, with
+bounded request retries. If a local cache path fails during a query, DefeatBeta
+retries supported dataset reads through the same shared HTTPX transport without
+local caching. Disabling caching also preserves shared transport management.
 
 `Ticker.download_data_performance()` reports cumulative data-cache and
-connection-warmup counters separately. A warm query may increase cache hits
+connection-warmup counters separately. Automatic startup warmup is disabled,
+so those counters remain zero unless an explicit diagnostic warms connections.
+A warm query may increase cache hits
 without increasing downloaded bytes. The benchmark's per-query deltas are
 more appropriate when measuring one specific query.
 

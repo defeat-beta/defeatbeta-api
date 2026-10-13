@@ -2,8 +2,11 @@ from typing import Dict, Any
 from urllib.parse import urljoin, urlsplit
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+import time
+from copy import deepcopy
+
+from defeatbeta_api.client.hf_session import MetadataSession
+from defeatbeta_api.client.shared_resources import DATASET_SPECS, network_identity
 
 from defeatbeta_api.utils.const import tables
 
@@ -13,22 +16,14 @@ class HuggingFaceClient:
         self.base_url = "https://huggingface.co/datasets/defeatbeta/yahoo-finance-data"
         self.timeout = timeout
         self.http_proxy = http_proxy
-        self.session = requests.Session()
+        self.session = MetadataSession(max_retries)
         self.dataset_spec: Dict[str, Any] = {}
-
-        retry_strategy = Retry(
-            total=max_retries,
-            backoff_factor=1,
-            status_forcelist=[500, 502, 503, 504],
-            allowed_methods=["GET", "HEAD"]
-        )
-        self.session.mount("https://", HTTPAdapter(max_retries=retry_strategy))
 
     def _make_request(self, url: str) -> Dict[str, Any]:
         try:
             proxy_options = (
                 {"proxies": {"http": self.http_proxy, "https": self.http_proxy}}
-                if self.http_proxy else {}
+                if self.http_proxy is not None else {}
             )
             response = self.session.get(
                 url,
@@ -50,6 +45,23 @@ class HuggingFaceClient:
         if "update_time" not in data:
             raise ValueError("Missing 'update_time' field in spec.json")
         self.dataset_spec = data
+        return data["update_time"]
+
+    def get_shared_data_update_time(self, max_age=300):
+        """Coalesce version checks without changing the public fresh-read method."""
+        url = f"{self.base_url}/resolve/main/spec.json"
+        key = (url, network_identity(url, self.http_proxy))
+
+        def build():
+            version = self.get_data_update_time()
+            data = dict(self.dataset_spec)
+            data["update_time"] = version
+            return data, time.monotonic()
+
+        data, _ = DATASET_SPECS.get_or_build(
+            key, build, valid=lambda item: time.monotonic() - item[1] < max_age,
+            weight=lambda item: len(repr(item[0]).encode()))
+        self.dataset_spec = deepcopy(data)
         return data["update_time"]
 
     def resolve_cdn_url(self, resolve_url: str, proxies=None, timeout: int = 20) -> str:

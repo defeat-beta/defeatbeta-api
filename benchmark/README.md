@@ -1,226 +1,116 @@
-# DefeatBeta Performance Challenge
+# Benchmarks and performance diagnostics
 
-> **How fast can a serverless data lake become?**
+This directory contains developer tools for measuring query latency, explaining
+network waits, and reproducing concurrency problems. For application behavior
+and configuration, start with [Local file cache](../doc/api/Local_File_Cache.md)
+and [HTTP connection pool](../doc/api/HTTP_Connection_Pool.md).
 
-## Background
+The original [performance challenge](CHALLENGE.md) explains the project's goals
+and constraints. The [test guide](../test/README.md) lists correctness regressions.
 
-Data lakes are powerful — but they are also intimidating.
+## Directory guide
 
-If you have ever tried to build one, you probably know the drill:
+| Location | Purpose |
+| --- | --- |
+| `benchmark.py`, `report.py` | Main query benchmark and explicit result publication. |
+| [workloads/](workloads/) | Query concurrency, sharing, default-policy, and connection-capacity comparisons. |
+| [diagnostics/](diagnostics/) | Timing instrumentation, connection lifetime probes, and controlled reproductions. |
+| [reports/](reports/README.md) | Historical investigations, conclusions, and follow-up links. |
+| [results/archive/](results/README.md) | Explicitly archived comparisons or release records, paired with JSON evidence. |
+| `results/local/` | Ignored local runs, logs, traces, and temporary measurements. |
 
-**S3 → Hive Metastore → Spark → Presto/Trino → Data Catalog → IAM → ...**
+Reusable tools and curated engineering reports belong in the source repository.
+Several diagnostic modules are imported by regression tests, so they must be
+available in a source checkout. Run the categorized modules with `python -m`
+from the repository root, as shown below. They are developer tooling, not a
+supported application API; package discovery includes only `defeatbeta_api*`.
+The main `benchmark.py` and `report.py` entry points and result directories
+retain their original paths. The categorized tools have no old-path aliases.
 
-Before the first dataset is even queryable, you are already deep inside infrastructure.
+Raw local runs are not published automatically. Engineering reports refer to
+some local artifacts that are not part of a checkout; those reports preserve
+methods and historical observations, not complete release archives. Only
+explicitly selected evidence belongs in `results/archive/`.
 
-But what if you do not need all of that?
+## Start here
 
-What if you are a researcher, an independent developer, or simply a data enthusiast who wants a **simple, free, and maintenance-free way to store and query large datasets**?
+Run commands from the repository root in the project's installed environment.
+Choose a new output filename for each diagnostic run.
 
-This is the idea behind what I call a:
-
-> **Poor Man's Data Lake**
-
-DefeatBeta API is built around this idea.
-
-Its architecture is intentionally simple:
-
-```text
-Hugging Face
-    │
-    │  Parquet over HTTP
-    ▼
-  DuckDB
-    │
-    ▼
-Application
-```
-
-The data is hosted on Hugging Face, the query engine runs locally, and Parquet files are queried directly over HTTP.
-
-There is:
-
-* no database server
-* no Spark cluster
-* no data warehouse
-* no always-on infrastructure to maintain
-* almost no hosting cost
-
-Just:
-
-> **Files + HTTP + a query engine**
-
-Simple. Cheap. Serverless.
-
-But simplicity comes with a price:
-
-> **The network is now part of the query engine.**
-
-Remote reads, HTTP latency, metadata access, Parquet layout, data transfer, caching, query planning, and execution can all become bottlenecks.
-
-That leads to the question behind this project:
-
-> **How far can we push this architecture before we hit its fundamental performance limit?**
-
----
-
-## The Challenge
-
-Use **Systems Engineering + First Principles Thinking** to push DefeatBeta's query performance as far as possible.
-
-For now, the primary benchmark is:
-
-> **Cold Query Latency**
-
-The goal is to minimize the time from starting a real query until its result
-is fully materialized, when the required data is not already cached locally.
-
-Each published benchmark result must document its preparation, cache state,
-and timing boundary so that the result can be reproduced and interpreted
-correctly.
-
-The current production reader is DefeatBeta's demand-driven extent cache. A
-fresh worker gets an isolated empty cache directory for each cold sample;
-optional warm repeats reuse that directory and connection. The benchmark
-records downloaded bytes, Range GET events, cache hits and misses, and the
-time spent inside `DuckDBClient._execute_query`. A signed CDN URL is not part
-of the persistent cache key.
-
-The first query for a Parquet file prepares its versioned footer on demand.
-With column prefetch enabled, a simple symbol scan also builds a reusable
-in-memory row-group index from the cached footer. Queries for other symbols
-in that file reuse the parsed metadata.
-This preparation is inside the measured query, not client
-initialization. `--no-cache-prepare-footer-on-first-use` disables explicit footer preparation
-for a control run; DuckDB still reads the metadata it needs. The project cache
-has one demand-driven extent layout; there is no layout selection flag.
-`--no-cache-symbol-column-chunk-prefetch` isolates the effect of column-chunk prefetch
-without disabling footer preparation or the demand-driven local cache. The
-benchmark can select another supported Ticker DataFrame API with
-`--api-method` to check more than the stock price file.
-
-To measure repeated local data-cache misses after the file footer is already
-cached, use a symbol sequence in one worker and cache directory:
+**End-to-end cold query latency:**
 
 ```sh
-python benchmark/benchmark.py sequence --symbols AAPL,KDP,ZTS,KDP --runs 3
+python benchmark/benchmark.py run --runs 3 --tag cold_price --api-method price
 ```
 
-Each trial starts with an empty cache. The first symbol downloads the footer;
-later symbols must either download new data ranges or reuse existing data.
-The final repeated symbol is a hot-data control. The record captures Range
-events, downloaded bytes, and `_execute_query` time for every step, and marks
-overlapping re-downloads or a second footer download as invalid. Sequence
-records remain local diagnostics and are not automatically published. Use
-`--http-proxy` only when your network requires one.
-`--cache-fetch-workers` controls concurrent extent-fetch tasks, and
-`--cache-range-split-bytes` supports controlled single-Range versus
-split-Range comparisons. One pooled HTTP client per origin can issue
-concurrent requests; increasing the worker count does not imply a
-universally faster result.
+This uses isolated cold samples and writes local records. See the
+[record and publication workflow](results/README.md) for paired comparisons,
+release snapshots, and archiving selected results.
 
-To isolate network transfer phases on the same Parquet revision, use its
-locally cached `.footer` extent:
+**Concurrent mixed Ticker APIs with the current connection budget:**
 
 ```sh
-python benchmark/benchmark.py network-rowgroup \
-  --footer /path/to/stock_prices.parquet-START-LENGTH.footer \
-  --runs 3 --output /tmp/rowgroup-probe.json
+python -m benchmark.workloads.http_pool_mixed \
+  --output benchmark/results/local/mixed_queries.json \
+  --network-label "Office network" \
+  --budgets 16 --concurrency 1 32 128 \
+  --cache-modes cached uncached --rounds 2
 ```
 
-Add `--http-proxy URL` only where a proxy is required. DuckDB derives the
-row-group metadata from the cached footer; the probe verifies the remote
-footer digest against those local bytes before measuring. Each sample
-uses a different complete row-group byte span of comparable size; trial order
-rotates single, two-part, and three-part Range GETs. Each transfer records
-time to headers, time from headers to first body bytes, and body transfer
-time. These are network-only diagnostics, not end-to-end API results. A proxy
-or CDN may cache at an unknown granularity, so compare multiple trials and
-the separate `sequence` results before changing production defaults.
-For a second crossover, change `--mode-offset` to `1` or `2` and use a
-`--group-offset` that fits within each selected row-group interval (for
-example, `1`). This changes both the first measured mode and the chosen
-row groups, reducing startup-order and repeated-range bias.
+Use a label describing the actual network. This benchmark prepares metadata,
+clears data extents between measured batches, and checks result fingerprints.
+Its timing boundary differs from a completely cold client. Diagnostic flags
+are experimental controls and do not prescribe application configuration.
 
-For byte-level diagnosis, run one sample with `--trace-io`, then classify its
-saved read and Range events against the exact same Parquet revision downloaded
-locally:
+**Offline waiting and compute controls:**
 
 ```sh
-python benchmark/benchmark.py inspect-io \
-  --record /path/to/local-run.json \
-  --parquet /path/to/stock_prices.parquet \
-  --expected-sha256 EXPECTED_LFS_SHA256 \
-  --pages
+python -m benchmark.diagnostics.duckdb_wait_repro \
+  --output benchmark/results/local/duckdb_wait.json
+python -m benchmark.diagnostics.duckdb_cpu_comparison \
+  --output benchmark/results/local/duckdb_compute.json
 ```
 
-`inspect-io` is offline and read-only. It attributes bytes to the footer,
-header, row-group column chunks, or unmapped gaps. A matching checksum is
-essential because the remote dataset is updated regularly.
-`--pages` additionally parses physical page headers in chunks touched by the
-trace. It reports page byte offsets and row-value counts without assuming that
-DuckDB reads or HTTP Range requests align with page boundaries.
+These isolate delayed reads and CPU work. They complement real-query results;
+they do not establish internet throughput.
 
-Explore aggressively. Measure everything. Question every implementation detail.
+## Tool inventory
 
-But there is one fundamental constraint.
+| Tool | Use |
+| --- | --- |
+| [benchmark.py](benchmark.py), [report.py](report.py) | Cold queries, symbol sequences, Range experiments, and validated result archives. |
+| [http_pool_mixed.py](workloads/http_pool_mixed.py) | Concurrent mixed APIs, cached/uncached paths, pool limits, and optional detailed traces. |
+| [http_pool_defaults.py](workloads/http_pool_defaults.py) | Controlled comparisons of core connections, fetch workers, and stream ceilings. |
+| [pool_capacity_benchmark.py](workloads/pool_capacity_benchmark.py) | Loopback HTTP/1.1 admission and queueing control. |
+| [connection_timeline.py](diagnostics/connection_timeline.py) | Connection, handshake, socket, and request timing; also shared instrumentation. |
+| [cache_pipeline.py](diagnostics/cache_pipeline.py), [cache_timeline.py](diagnostics/cache_timeline.py) | Cache-worker, protocol-bridge, publication, and query timing. |
+| [http2_stream_probe.py](diagnostics/http2_stream_probe.py), [http2_stream_timeline.py](diagnostics/http2_stream_timeline.py) | Reproduce and trace decoded HTTP/2 data waiting for consumer delivery. |
+| [duckdb_wait_repro.py](diagnostics/duckdb_wait_repro.py) | Held-read waiting, cancellation, and cursor recovery in disposable processes. |
+| [duckdb_cpu_comparison.py](diagnostics/duckdb_cpu_comparison.py) | Compute-only comparison with an independent result reference. |
+| [cdn_idle.py](diagnostics/cdn_idle.py), [cdn_active.py](diagnostics/cdn_active.py) | CDN idle retirement and lifetime under real request traffic. |
+| [tcp_keepalive_capture.py](diagnostics/tcp_keepalive_capture.py) | Explicit OS socket and packet diagnostics; capture may require OS privileges. |
+| [shared_query_benchmark.py](workloads/shared_query_benchmark.py) | Earlier sharing comparison and common helpers. Its baseline loader reads selected modules from the checkout's `HEAD`, not a permanently fixed release. |
 
----
+CLI tools expose their arguments with `--help`; timeline helper modules are
+also imported by tools and tests. Network diagnostics generate real downloads,
+and detailed instrumentation adds overhead. Keep traced diagnosis separate
+from minimally instrumented performance comparisons.
 
-## Principles
+## Interpreting and publishing results
 
-### Do not change the architecture
+Record the source revision, dependency versions, dataset version, network route,
+cache/connection preparation, workload, and timing boundary. Compare matched
+result fingerprints before interpreting timing differences. Daily dataset
+updates and network changes can invalidate an otherwise similar comparison.
 
-This is the most important rule.
+Report latency distributions, CPU use, downloaded bytes, failures, and pool
+waiting together. Application bytes divided by elapsed time is not wire
+bandwidth or proof of link saturation. Historical home, office, and in-car
+runs must not be pooled into a single speedup claim.
 
-The architecture must remain:
-
-```text
-Remote Parquet on Hugging Face
-            +
-         HTTP
-            +
-      Local DuckDB
-```
-
-The goal is **not** to make the benchmark fast by turning DefeatBeta into another architecture.
-
-Do not solve the problem by introducing:
-
-* a traditional database server
-* a data warehouse
-* a Spark/Trino cluster
-* a persistent query service
-* a separately operated backend
-* a full local copy of the dataset
-
-The challenge is to discover how fast the **existing serverless architecture itself** can become.
-
-Everything inside that boundary is open to optimization.
-
-Parquet layout, HTTP behavior, range requests, metadata access, concurrency, caching strategies, prefetching, DuckDB configuration, query planning, indexes, execution strategies, and implementation details can all be challenged.
-
-### Measure, don't guess
-
-Every optimization should be validated by reproducible benchmark results.
-
-The question is not whether an idea sounds faster.
-
-The question is:
-
-> **Did it make the cold query faster?**
-
-### Optimize end to end
-
-Microbenchmarks are useful for understanding bottlenecks, but the final metric is end-to-end query latency.
-
-An optimization only matters if it improves the actual query.
-
----
-
-The architecture stays.
-
-Everything else is fair game.
-
-**Let's find its limit.**
-
----
+For contributions, include the reusable tool, relevant regression coverage,
+and a concise interpretation with its limitations. Keep exploratory logs and
+machine-specific captures in `results/local/`; select durable public evidence
+explicitly using the [archive workflow](results/README.md). The
+[report index](reports/README.md) identifies historical investigations and the
+latest recorded validation without requiring application users to read them all.

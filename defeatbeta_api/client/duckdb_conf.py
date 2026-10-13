@@ -23,7 +23,7 @@ class Configuration:
             cache_directory: Optional[str] = None,
             cache_data_disk_limit_bytes=5 * 1024 * 1024 * 1024,
             cache_data_memory_limit_bytes=64 * 1024 * 1024,
-            cache_fetch_workers=3,
+            cache_fetch_workers=16,
             cache_version_check_interval_seconds=300,
             cache_range_split_bytes=0,
             cache_http_timeout_seconds=120,

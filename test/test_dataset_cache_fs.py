@@ -19,7 +19,7 @@ from unittest.mock import Mock, patch
 
 import duckdb
 
-from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem
+from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem, DatasetVersionChanged
 from defeatbeta_api.client.duckdb_client import DuckDBClient, plan_symbol_column_chunks
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
@@ -164,6 +164,47 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
     def _resolve(self, url, refresh=False):
         self.resolutions.append((url, refresh))
         return SIGNED
+
+    def test_footer_validation_tolerates_eviction_and_version_changes(self):
+        fs = self.filesystem
+        total = 100
+        digest = hashlib.sha256(b"meta").hexdigest()
+        hint = {"US/stock_prices.parquet": {
+            "file_size": total, "footer_size": 4, "footer_sha256": digest}}
+        original_hash = hashlib.sha256
+        for change in ("eviction", "version", "hint"):
+            with self.subTest(change=change):
+                fs.update_version("dataset-v1", footer_index=hint)
+                key, _ = fs._key_and_url(fs.register(PINNED))
+                remembered = (total - len(FAKE_FOOTER_BYTES), FAKE_FOOTER_BYTES, 4)
+                fs._remember_footer(key, *remembered)
+                entered, resume = threading.Event(), threading.Event()
+
+                def pause_hash(content=b"", *args, **kwargs):
+                    if content == b"meta":
+                        entered.set()
+                        if not resume.wait(3):
+                            raise TimeoutError("Footer validation was not resumed")
+                    return original_hash(content, *args, **kwargs)
+
+                with patch("defeatbeta_api.client.dataset_cache_fs.hashlib.sha256", pause_hash), \
+                        ThreadPoolExecutor(max_workers=1) as executor:
+                    result = executor.submit(fs._load_footer, key, total)
+                    try:
+                        self.assertTrue(entered.wait(3))
+                        if change == "eviction":
+                            with patch("defeatbeta_api.client.dataset_cache_fs._MAX_FOOTER_MEMORY_BYTES",
+                                       len(FAKE_FOOTER_BYTES)):
+                                fs._remember_footer("other", *remembered)
+                        elif change == "version":
+                            fs.update_version("dataset-v2", footer_index=hint)
+                        else:
+                            fs.update_version("dataset-v1", footer_index={})
+                    finally:
+                        resume.set()
+                    footer = result.result(timeout=3)
+                self.assertEqual(footer, remembered if change == "eviction" else None)
+                self.assertNotIn(key, fs._footer_memory)
 
     def test_spec_file_size_needs_no_resolve_or_size_file(self):
         resolve = Mock(side_effect=AssertionError("size must come from spec"))
@@ -842,6 +883,39 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             connection.close()
             second.close()
 
+    def test_footer_disk_hits_preserve_modification_time_without_downloading(self):
+        payload = b"PAR1" + b"d" * 100 + FAKE_FOOTER_BYTES
+        remote = FakeRangeClient(len(payload), payload=payload)
+        settings = dict(
+            directory=str(Path(self.temporary.name) / "footer-mtime"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote,
+        )
+        first = DatasetCacheFileSystem(**settings)
+        try:
+            first.prepare_footer(first.register(PINNED))
+            cached = next(first.directory.glob("*.footer"))
+            stored = cached.read_bytes()
+            os.utime(cached, ns=(1_000_000_000, 1_000_000_000))
+            modified_ns = cached.stat().st_mtime_ns
+            requests = len(remote.calls)
+        finally:
+            first.close()
+
+        second = DatasetCacheFileSystem(**settings)
+        try:
+            path = second.register(PINNED)
+            second.prepare_footer(path)
+            self.assertEqual(second.cached_footer_bytes(path), FAKE_FOOTER_BYTES)
+            self.assertEqual(second.cat_file(path, len(payload) - 12, len(payload)),
+                             FAKE_FOOTER_BYTES)
+            self.assertEqual(len(remote.calls), requests)
+            self.assertEqual(cached.read_bytes(), stored)
+            self.assertEqual(cached.stat().st_mtime_ns, modified_ns)
+        finally:
+            second.close()
+
     def test_corrupt_cached_footer_is_downloaded_again_after_restart(self):
         footer = b"metadata"
         payload = b"PAR1" + b"d" * MIB + footer + len(footer).to_bytes(4, "little") + b"PAR1"
@@ -861,6 +935,8 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             first.prepare_footer(first.register(PINNED))
             cached = next(first.directory.glob("*.footer"))
             cached.write_bytes(b"broken")
+            os.utime(cached, ns=(1_000_000_000, 1_000_000_000))
+            modified_ns = cached.stat().st_mtime_ns
         finally:
             first.close()
         second = DatasetCacheFileSystem(**settings)
@@ -870,6 +946,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             self.assertEqual(second.prepare_footer(path), len(footer))
             self.assertEqual(len(remote.calls), 2)
             self.assertEqual(second.cached_footer_bytes(path), payload[-len(footer) - 8:])
+            self.assertGreater(cached.stat().st_mtime_ns, modified_ns)
         finally:
             second.close()
 
@@ -1335,16 +1412,15 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         self.assertEqual(self.filesystem._network_executor._max_workers, 3)
 
     def test_default_http_pool_is_one_client_with_concurrent_capacity(self):
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client") as constructor:
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient") as constructor:
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "pool-capacity"),
                 version="dataset-v1", resolve=self._resolve, workers=4,
             )
         try:
             self.assertEqual(constructor.call_count, 1)
-            limits = constructor.call_args.kwargs["limits"]
-            self.assertEqual(limits.max_connections, 4)
-            self.assertEqual(limits.max_keepalive_connections, 4)
+            self.assertEqual(constructor.call_args.kwargs["timeout"], 60)
+            self.assertNotIn("limits", constructor.call_args.kwargs)
         finally:
             filesystem.close()
 
@@ -1407,7 +1483,8 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                 path = filesystem.register(PINNED)
                 client = object.__new__(DuckDBClient)
                 client._dataset_fs = filesystem
-                client._refresh_dataset_version_if_due = Mock()
+                client._version_lock = threading.Lock()
+                client._refresh_dataset_version_if_due = Mock(return_value=0)
                 client.resolve_cdn_for_uncached_reads = False
                 client.logger = logging.getLogger("cache-timeout-fallback-test")
                 attempted = []
@@ -1443,7 +1520,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         payload = bytes(range(256)) * (MIB // 256)
         clients = [FakeRangeClient(MIB * 30, payload=payload * 30) for _ in range(2)]
         candidate_directory = Path(self.temporary.name) / "split-candidate"
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients):
             filesystem = DatasetCacheFileSystem(
                 directory=str(candidate_directory), version="dataset-v1",
@@ -1465,7 +1542,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
     def test_bad_subrange_never_publishes_partial_extent(self):
         clients = [FakeRangeClient(MIB * 30, corrupt=True) for _ in range(2)]
         candidate_directory = Path(self.temporary.name) / "bad-subrange-candidate"
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients):
             filesystem = DatasetCacheFileSystem(
                 directory=str(candidate_directory), version="dataset-v1",
@@ -1483,7 +1560,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
     def test_connection_warmup_does_not_fill_the_local_block_cache(self):
         clients = [FakeRangeClient(MIB * 30) for _ in range(2)]
         candidate_directory = Path(self.temporary.name) / "warmup-candidate"
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients):
             filesystem = DatasetCacheFileSystem(
                 directory=str(candidate_directory), version="dataset-v1",
@@ -1599,7 +1676,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
     def test_failed_warmup_waits_for_other_connection_attempts(self):
         second_started = threading.Event()
         release_second = threading.Event()
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=[FakeRangeClient(MIB * 30) for _ in range(2)]):
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "failed-warmup"),
@@ -1699,7 +1776,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
 
     def test_split_extent_is_downloaded_once_for_concurrent_readers(self):
         clients = [FakeRangeClient(MIB * 30) for _ in range(2)]
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients):
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "concurrent-candidate"),
@@ -1734,7 +1811,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             refreshes.append(refresh)
             return ("https://example.test/fresh" if refresh else SIGNED, MIB * 30)
 
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients):
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "refresh-candidate"),
@@ -1763,7 +1840,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             host = "new.example" if refresh else "old.example"
             return f"https://{host}/file?Signature=secret", MIB * 30
 
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients):
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "refresh-origin"),
@@ -1783,7 +1860,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
 
     def test_independent_clients_share_the_same_proxy_policy(self):
         clients = [Mock(), Mock()]
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients) as constructor:
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "proxy-candidate"),
@@ -1810,7 +1887,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         def resolve(url, refresh=False):
             return signed[url], MIB * 30
 
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients) as constructor:
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "origins"),
@@ -1842,7 +1919,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
 
     def test_origin_pool_bounds_idle_groups_without_closing_active_group(self):
         clients = [Mock() for _ in range(5)]
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients), patch(
                        "defeatbeta_api.client.dataset_cache_fs._MAX_ORIGIN_GROUPS", 4
                    ):
@@ -1873,7 +1950,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             PROFILE: "https://cdn.example/profile",
             CATALOG: "https://huggingface.co/catalog",
         }
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients) as constructor:
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "concurrent-origins"),
@@ -1903,7 +1980,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                 return super().get(url, headers)
 
         clients = [ConcurrentClient(MIB * 30) for _ in range(2)]
-        with patch("defeatbeta_api.client.dataset_cache_fs.httpx.Client",
+        with patch("defeatbeta_api.client.dataset_cache_fs.SharedHttpClient",
                    side_effect=clients):
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "inflight-candidate"),
@@ -1927,7 +2004,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             ("", False),
         ):
             with self.subTest(proxy=proxy), patch(
-                "defeatbeta_api.client.dataset_cache_fs.httpx.Client"
+                "defeatbeta_api.client.dataset_cache_fs.SharedHttpClient"
             ) as http_client:
                 filesystem = DatasetCacheFileSystem(
                     directory=self.temporary.name,
@@ -1936,7 +2013,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                     http_proxy=proxy,
                 )
                 try:
-                    self.assertEqual(http_client.call_args.kwargs["proxy"], proxy or None)
+                    self.assertEqual(http_client.call_args.kwargs["proxy"], proxy)
                     self.assertEqual(
                         http_client.call_args.kwargs["trust_env"], expected_trust_env
                     )
@@ -2014,14 +2091,20 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         client._prepared_footers = set()
         client._parquet_indexes = {}
         client._hf_client = Mock()
-        client._hf_client.get_data_update_time.return_value = "dataset-v2"
+        client._hf_client.get_shared_data_update_time.return_value = "dataset-v2"
         client._hf_client.dataset_spec = {"footer_index": {
             "US/stock_prices.parquet": {
                 "file_size": 100, "footer_size": 20,
                 "footer_sha256": "a" * 64,
             },
         }}
-        client._dataset_fs = Mock()
+        client._dataset_fs = Mock(version="dataset-v1", _footer_index={})
+
+        def update_version(version, footer_index):
+            client._dataset_fs.version = version
+            client._dataset_fs._footer_index = footer_index
+
+        client._dataset_fs.update_version.side_effect = update_version
         with patch("defeatbeta_api.client.duckdb_client.time.monotonic", return_value=100):
             client._refresh_dataset_version_if_due()
             client._refresh_dataset_version_if_due()
@@ -2030,7 +2113,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         )
         client._dataset_fs.prepare_footer.assert_not_called()
         self.assertEqual(client._data_update_time, "dataset-v2")
-        self.assertEqual(client._hf_client.get_data_update_time.call_count, 1)
+        self.assertEqual(client._hf_client.get_shared_data_update_time.call_count, 1)
 
     def test_occupied_stale_block_is_removed_on_next_cleanup(self):
         path = self.filesystem.register(PINNED)
@@ -2084,9 +2167,55 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                 self.assertTrue(entered.wait(5))
                 updater = tasks.submit(self.filesystem.update_version, "dataset-v2")
                 release.set()
-                self.assertEqual(reader.result(timeout=5), b"\0" * 10)
+                try:
+                    self.assertEqual(reader.result(timeout=5), b"\0" * 10)
+                except DatasetVersionChanged:
+                    # Either completion can win; a stale result must be rejected.
+                    pass
                 updater.result(timeout=5)
         self.assertFalse(list(Path(self.temporary.name).glob("*.block")))
+
+    def test_expired_path_is_rejected_without_remote_reads(self):
+        path = self.filesystem.register(PINNED)
+        self.filesystem.cat_file(path, 10, 20)
+        self.filesystem.update_version("dataset-v2")
+        calls = len(self.remote.calls)
+        with self.assertRaises(DatasetVersionChanged):
+            self.filesystem.cat_file(path, 10, 20)
+        self.assertEqual(len(self.remote.calls), calls)
+
+    def test_version_switch_rejects_inflight_bytes_and_prevents_publication(self):
+        for cached, chunk_size in ((True, 0), (True, 4), (False, 0)):
+            with self.subTest(cached=cached, chunk_size=chunk_size), \
+                    tempfile.TemporaryDirectory() as directory:
+                fs = DatasetCacheFileSystem(
+                    directory=directory, version="old", cache_enabled=cached,
+                    resolve=lambda url, refresh=False: (SIGNED, self.remote.size),
+                    http_client=self.remote, network_chunk_size=chunk_size)
+                entered, release = threading.Event(), threading.Event()
+                request_range = fs._request_range
+
+                def delayed_range(*args, **kwargs):
+                    result = request_range(*args, **kwargs)
+                    entered.set()
+                    if not release.wait(5):
+                        raise TimeoutError("Read was not released")
+                    return result
+
+                fs._request_range = delayed_range
+                try:
+                    with ThreadPoolExecutor(max_workers=1) as executor:
+                        result = executor.submit(fs.cat_file, fs.register(PINNED), 10, 20)
+                        try:
+                            self.assertTrue(entered.wait(3))
+                            fs.update_version("new")
+                        finally:
+                            release.set()
+                        with self.assertRaises(DatasetVersionChanged):
+                            result.result(timeout=3)
+                    self.assertFalse(list(Path(directory).glob("*.block")))
+                finally:
+                    fs.close()
 
     def test_older_filesystem_cannot_repopulate_after_new_version_wins(self):
         old_path = self.filesystem.register(PINNED)
@@ -2355,7 +2484,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                 client.connection.execute("SELECT current_setting('http_timeout')").fetchone(),
                 (19,),
             )
-            warmup.assert_called_once_with(PINNED, 1)
+            warmup.assert_not_called()
             footer.assert_not_called()
             self.assertEqual(client.query("SELECT 1").iloc[0, 0], 1)
             loaded = client.connection.execute(
@@ -2372,11 +2501,12 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         ), patch("defeatbeta_api.client.duckdb_client._print_welcome"), \
                 patch.object(DatasetCacheFileSystem, "prepare_connections",
                              side_effect=RuntimeError("Signature=secret")), \
-                self.assertLogs("DuckDBClient", level="WARNING") as captured:
+                patch.object(DatasetCacheFileSystem, "_request_range",
+                             side_effect=AssertionError("Unexpected startup data request")) as request:
             client = DuckDBClient(config=Configuration(cache_directory=self.temporary.name))
         try:
             self.assertEqual(client.query("SELECT 1").iloc[0, 0], 1)
-            self.assertNotIn("secret", " ".join(captured.output))
+            request.assert_not_called()
         finally:
             client.close()
 

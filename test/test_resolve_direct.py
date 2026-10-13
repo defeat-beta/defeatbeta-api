@@ -259,11 +259,13 @@ class TestQueryFallback(unittest.TestCase):
 
     def test_dataset_cache_failure_uses_existing_remote_path(self):
         import logging
+        from threading import Lock
 
         client = DuckDBClient.__new__(DuckDBClient)
         client.logger = logging.getLogger("dataset-cache-fallback-test")
         client._dataset_fs = object()
-        client._refresh_dataset_version_if_due = Mock()
+        client._version_lock = Lock()
+        client._refresh_dataset_version_if_due = Mock(return_value=0)
         client.resolve_cdn_for_uncached_reads = True
         client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
         expected = pd.DataFrame([{"value": 1}])
@@ -273,7 +275,7 @@ class TestQueryFallback(unittest.TestCase):
         with self.assertLogs(client.logger, level="WARNING") as logs:
             self.assertTrue(client.query(sql).equals(expected))
         self.assertIn("Dataset cache query failed", logs.output[0])
-        client._refresh_dataset_version_if_due.assert_called_once_with()
+        client._refresh_dataset_version_if_due.assert_called_once_with(use_dataset_cache=True)
         self.assertEqual(client._execute_query.call_args_list[0].args, (sql,))
         self.assertEqual(
             client._execute_query.call_args_list[0].kwargs,
