@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [HTTP connection pool](#http-connection-pool)
+  - [What is shared](#what-is-shared)
+  - [Connections, streams, and queries](#connections-streams-and-queries)
+  - [Default policy](#default-policy)
+  - [When a new connection is created](#when-a-new-connection-is-created)
+  - [Idle connections and recovery](#idle-connections-and-recovery)
+  - [Configuration and observation](#configuration-and-observation)
+  - [Maintenance and validation](#maintenance-and-validation)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # HTTP connection pool
 
 DefeatBeta shares HTTP connections across Tickers and dataset files within one
