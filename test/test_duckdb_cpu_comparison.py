@@ -2,11 +2,22 @@
 
 import multiprocessing
 import unittest
+from unittest.mock import patch
 
-from benchmark.diagnostics.duckdb_cpu_comparison import expected_result, run_case
+from benchmark.diagnostics.duckdb_cpu_comparison import _measure, expected_result, run_case
 
 
 class TestDuckDBCPUComparison(unittest.TestCase):
+    def test_zero_elapsed_time_keeps_results_and_marks_rate_unavailable(self):
+        with patch("benchmark.diagnostics.duckdb_cpu_comparison.time.monotonic", return_value=1), \
+                patch("benchmark.diagnostics.duckdb_cpu_comparison.time.perf_counter", return_value=1):
+            case = _measure(threads=4, queries=1, rows=63)
+        self.assertEqual(case["wall_seconds"], 0)
+        self.assertIsNone(case["queries_per_second"])
+        self.assertEqual(case["results"][0]["seconds"], 0)
+        self.assertEqual(case["rows_per_query"], 63)
+        self.assertTrue(case["result_sha256"])
+
     def test_reference_covers_partial_periods_and_empty_groups(self):
         for rows in (1, 63, 4096, 4097):
             with self.subTest(rows=rows):

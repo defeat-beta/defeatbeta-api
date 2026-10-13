@@ -61,28 +61,28 @@ def _measure(threads, queries, rows):
 
         def query(index):
             barrier.wait(timeout=30)
-            started = time.monotonic()
+            started = time.perf_counter()
             cpu_started = time.thread_time()
             result = cursors[index].sql(QUERY).fetchall()
-            return {"seconds": time.monotonic() - started,
+            return {"seconds": time.perf_counter() - started,
                     "caller_cpu_seconds": time.thread_time() - cpu_started,
                     "result": result}
 
         with ThreadPoolExecutor(max_workers=queries) as executor:
             futures = [executor.submit(query, index) for index in range(queries)]
-            started = time.monotonic()
+            started = time.perf_counter()
             cpu_started = time.process_time()
             barrier.wait(timeout=30)
             results = [future.result(timeout=60) for future in futures]
             cpu = time.process_time() - cpu_started
-            elapsed = time.monotonic() - started
+            elapsed = time.perf_counter() - started
         for result in results:
             if result.pop("result") != expected:
                 raise AssertionError("Measured aggregate differs from the independent reference")
         durations = sorted(item["seconds"] for item in results)
         return {"threads": effective, "queries": queries, "rows_per_query": rows,
                 "cpu_seconds": cpu, "wall_seconds": elapsed,
-                "queries_per_second": queries / elapsed,
+                "queries_per_second": queries / elapsed if elapsed > 0 else None,
                 "p50_seconds": statistics.median(durations),
                 "p95_seconds": durations[math.ceil(len(durations) * 0.95) - 1],
                 "result_sha256": hashlib.sha256(json.dumps(expected).encode()).hexdigest(),

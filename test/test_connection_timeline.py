@@ -16,7 +16,7 @@ from test.http2_peer import http2_peer
 
 
 @contextmanager
-def server(*, close=False):
+def server(*, close=False, coalesce=False):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
@@ -27,6 +27,10 @@ def server(*, close=False):
             if close:
                 self.send_header("Connection", "close")
             self.end_headers()
+            if coalesce:
+                self.wfile.write(b"abcdef")
+                self.wfile.flush()
+                return
             self.wfile.write(b"abc")
             self.wfile.flush()
             time.sleep(0.03)
@@ -114,7 +118,7 @@ class TestConnectionTimeline(unittest.TestCase):
 
     def test_cross_file_reuse_preserves_body_and_splits_header_wait(self):
         timeline = Timeline()
-        with server() as url, httpx.Client(trust_env=False) as client:
+        with server(coalesce=True) as url, httpx.Client(trust_env=False) as client:
             baseline = client.get(url + "/baseline").content
             with timeline.installed():
                 first = client.get(url + "/price?Signature=do-not-save")
@@ -129,13 +133,37 @@ class TestConnectionTimeline(unittest.TestCase):
         self.assertEqual(one["body_bytes"], 6)
         self.assertEqual(two["body_bytes"], 6)
         self.assertGreater(one["first_body_delivered_ns"], one["headers_received_ns"])
-        self.assertGreaterEqual(one["last_body_delivered_ns"] - one["first_body_delivered_ns"],
-                                20_000_000)
+        # TCP write boundaries do not define application receive boundaries.
+        self.assertGreaterEqual(one["last_body_delivered_ns"], one["first_body_delivered_ns"])
+        self.assertGreaterEqual(one["body_chunks"], 1)
         waits = [event for event in timeline.events
                  if event["phase"] == "http11.receive_response_headers"]
         self.assertEqual(len(waits), 2)
         self.assertTrue(all(event["duration_ns"] >= 20_000_000 for event in waits))
         self.assertNotIn("do-not-save", json.dumps(timeline.requests + timeline.events))
+
+    def test_body_delivery_timestamps_follow_observed_chunks(self):
+        for chunks in ((b"abcdef",), (b"abc", b"def")):
+            with self.subTest(chunks=chunks):
+                timeline = Timeline()
+                now = [0]
+                timeline.now = lambda: now[0]
+
+                class BodyStream(httpx.SyncByteStream):
+                    def __iter__(self):
+                        for chunk in chunks:
+                            now[0] += 30_000_000
+                            yield chunk
+
+                transport = httpx.MockTransport(
+                    lambda request: httpx.Response(200, stream=BodyStream()))
+                with timeline.installed(), httpx.Client(transport=transport, trust_env=False) as client:
+                    self.assertEqual(client.get("https://example.test/data").content, b"abcdef")
+                item, = timeline.requests
+                self.assertEqual(item["body_bytes"], 6)
+                self.assertEqual(item["body_chunks"], len(chunks))
+                self.assertEqual(item["first_body_delivered_ns"], 30_000_000)
+                self.assertEqual(item["last_body_delivered_ns"], 30_000_000 * len(chunks))
 
     def test_server_close_is_observed_as_a_new_connection(self):
         timeline = Timeline()
