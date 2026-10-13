@@ -81,7 +81,7 @@ eight added resolution and lock regressions. Four live integration tests then
 passed in 26.382 seconds on the office network, with dataset metadata reporting
 `2026-10-12T05:39:55Z` and no native binding or atexit warnings. These are
 correctness checks, not a throughput comparison with the home-network benchmark.
-Linux and Windows runtime validation remains pending. Local logs are retained
+Linux and Windows runtime validation was still pending at that stage. Local logs are retained
 under the ignored `benchmark/results/local/` directory as
 `20261013_review_fixes_offline.log` and
 `20261013_office_review_fixes_integration.log`.
@@ -116,6 +116,44 @@ use disabled; curl using the configured route returned HTTP 302 in 0.718 seconds
 This records a direct-route connectivity failure, not a passing direct-CDN test.
 The raw log is retained locally as
 `benchmark/results/local/20261013_final_acceptance_live.log`.
-The latest available GitHub run covered an older commit, so native Linux and
-Windows acceptance for this uncommitted revision remains pending. These live
+At that stage, the latest available GitHub run covered an older commit, so native
+Linux and Windows acceptance for the local revision was still pending. These live
 checks are correctness checks and are not a bandwidth or latency benchmark.
+
+## Main acceptance, 2026-10-13
+
+The refactor was committed directly to `main` as `81e69be`. Native CI exposed
+diagnostic timing assumptions that the initial macOS run did not detect:
+
+- TCP can deliver two server writes as one application chunk. The connection
+  timeline test now verifies ordering and payload preservation on a coalesced
+  response; controlled single-chunk and multiple-chunk inputs verify exact
+  delivery timestamps independently of OS buffering.
+- Short measurements can be quantized by the Windows monotonic clock. Both
+  CPU comparison and waiting-reproducer measurements now use `perf_counter`.
+  A zero measured interval preserves results and records a null rate or ratio;
+  the waiting CLI displays an unavailable ratio as `n/a`.
+
+The diagnostic fixes were committed as `c228257` and `7f8ace5`. Regression cases
+reproduced the failures before each fix, including a coarse deadline clock,
+zero elapsed measurements, and CLI output for an unavailable ratio. Fourteen
+connection-timeline/CPU-comparison tests and seven waiting-reproducer tests
+passed locally. Product query and connection-pool code did not change during
+these CI fixes.
+
+Code revision `7f8ace5` passed both the
+[automatic native regression run](https://github.com/defeat-beta/defeatbeta-api/actions/runs/38339655344)
+and the [complete manual acceptance run](https://github.com/defeat-beta/defeatbeta-api/actions/runs/38339704947):
+
+| Runner | Offline regressions | Live network smoke |
+| --- | --- | --- |
+| Linux (`ubuntu-latest`) | Passed | Passed |
+| macOS (`macos-latest`) | Passed | Passed |
+| Windows (`windows-latest`) | Passed | Passed |
+
+Live smoke includes direct verified HTTP/2 Range reads, isolated-cache price and
+transcript queries, representative ticker prices, concurrent market-capitalization
+queries, and same-ticker profile concurrency. Optional offline skips remain
+intentional. This validates correctness and native runtime compatibility;
+it does not establish a universal throughput optimum. No package release was
+created by the acceptance workflow.
