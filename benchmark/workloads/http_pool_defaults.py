@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 import psutil
 
-from benchmark.workloads.shared_query_benchmark import SYMBOLS, percentile
+from benchmark.common import SYMBOLS, percentile
 
 
 def save(path, report):
@@ -105,7 +105,7 @@ def run(args):
     from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
     from defeatbeta_api.client.shared_resources import SharedHttpClient, close_network_resources
     from defeatbeta_api.data.ticker import Ticker
-    from benchmark.benchmark import result_fingerprint
+    from benchmark.common import result_fingerprint
 
     if args.output.exists():
         raise FileExistsError("Benchmark output already exists")

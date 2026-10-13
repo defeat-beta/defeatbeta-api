@@ -1,0 +1,155 @@
+name: Paired performance benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Baseline Git ref (resolved to a full commit before installation)
+        required: true
+        type: string
+      candidate:
+        description: Candidate Git ref
+        required: true
+        default: main
+        type: string
+      suite:
+        description: Workload coverage
+        type: choice
+        options: [release, smoke]
+        default: release
+      rounds:
+        description: Paired rounds (six for a publication comparison)
+        default: "6"
+        type: string
+  pull_request:
+    paths:
+      - "benchmark/**"
+      - "defeatbeta_api/client/**"
+      - "test/test_benchmark.py"
+      - "test/test_benchmark_publication.py"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - ".github/workflows/benchmark.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    outputs:
+      baseline: ${{ steps.refs.outputs.baseline }}
+      candidate: ${{ steps.refs.outputs.candidate }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: refs
+        name: Freeze product refs once for all experiments
+        env:
+          BASELINE_REF: ${{ inputs.baseline || github.event.pull_request.base.sha }}
+          CANDIDATE_REF: ${{ inputs.candidate || github.event.pull_request.head.sha }}
+        run: |
+          baseline=$(git rev-parse --verify --end-of-options "${BASELINE_REF}^{commit}")
+          candidate=$(git rev-parse --verify --end-of-options "${CANDIDATE_REF}^{commit}")
+          echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
+          echo "candidate=$candidate" >> "$GITHUB_OUTPUT"
+
+  controlled:
+    needs: resolve
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        protocol: [h2, http1]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - run: python -m pip install -r benchmark/requirements.txt
+      - name: Compare on the same runner
+        env:
+          BASELINE_REF: ${{ needs.resolve.outputs.baseline }}
+          CANDIDATE_REF: ${{ needs.resolve.outputs.candidate }}
+          SUITE: ${{ inputs.suite || 'smoke' }}
+          ROUNDS: ${{ inputs.rounds || '2' }}
+          PROTOCOL: ${{ matrix.protocol }}
+        run: >-
+          python -m benchmark compare
+          --baseline "$BASELINE_REF" --candidate "$CANDIDATE_REF"
+          --output benchmark/results/local/experiment
+          --mode controlled --protocol "$PROTOCOL" --suite "$SUITE" --rounds "$ROUNDS"
+          --network-label "GitHub ubuntu-24.04; unshaped loopback TLS"
+      - name: Publish job summary
+        if: always()
+        run: find benchmark/results/local/experiment -name results.md -exec cat {} \; >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: controlled-${{ matrix.protocol }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            benchmark/results/local/experiment/*/results.json
+            benchmark/results/local/experiment/*/results.md
+            benchmark/results/local/experiment/*/results_summary.json
+            benchmark/results/local/experiment/experiment.json
+            benchmark/results/local/experiment/harness-dependencies.lock
+            benchmark/results/local/experiment/harness/benchmark/**/*.py
+            benchmark/results/local/experiment/harness/benchmark/requirements.txt
+            benchmark/results/local/experiment/*/dependencies.lock
+            benchmark/results/local/experiment/*/install.log
+          retention-days: 30
+
+  hugging-face:
+    needs: resolve
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - run: python -m pip install -r benchmark/requirements.txt
+      - name: Compare using current remote data
+        env:
+          BASELINE_REF: ${{ needs.resolve.outputs.baseline }}
+          CANDIDATE_REF: ${{ needs.resolve.outputs.candidate }}
+          SUITE: ${{ inputs.suite }}
+          ROUNDS: ${{ inputs.rounds }}
+        run: >-
+          python -m benchmark compare
+          --baseline "$BASELINE_REF" --candidate "$CANDIDATE_REF"
+          --output benchmark/results/local/experiment
+          --mode live --suite "$SUITE" --rounds "$ROUNDS"
+          --network-label "GitHub ubuntu-24.04; Hugging Face public route"
+      - name: Publish job summary
+        if: always()
+        run: find benchmark/results/local/experiment -name results.md -exec cat {} \; >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hugging-face-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            benchmark/results/local/experiment/*/results.json
+            benchmark/results/local/experiment/*/results.md
+            benchmark/results/local/experiment/*/results_summary.json
+            benchmark/results/local/experiment/experiment.json
+            benchmark/results/local/experiment/harness-dependencies.lock
+            benchmark/results/local/experiment/harness/benchmark/**/*.py
+            benchmark/results/local/experiment/harness/benchmark/requirements.txt
+            benchmark/results/local/experiment/*/dependencies.lock
+            benchmark/results/local/experiment/*/install.log
+          retention-days: 30

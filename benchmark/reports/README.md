@@ -6,9 +6,11 @@ They describe the code and network conditions at the time of each experiment.
 An earlier report's "current", "final", or "unresolved" statement is local to
 that report, not a claim about the present implementation.
 
-Reproduction commands and source references use the categorized `workloads`
-and `diagnostics` module paths. Historical measurements and recorded hashes
-remain unchanged; a run of the relocated code will have new source hashes.
+Historical commands describe the tooling available during each investigation.
+The retired main benchmark CLI and HEAD-based baseline loader have been replaced
+by the paired framework; their old commands are not supported. Categorized
+diagnostics still available in the tree can be run with `python -m`. Historical
+measurements and recorded hashes remain unchanged.
 
 For current behavior, use [HTTP connection pool](../../doc/api/HTTP_Connection_Pool.md)
 and [Local file cache](../../doc/api/Local_File_Cache.md). For tools and publication

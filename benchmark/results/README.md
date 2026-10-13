@@ -1,138 +1,43 @@
-# Benchmark records and reports
+# Benchmark report lifecycle
 
-## Local iteration and publication
+Official measurements run in GitHub Actions. Publication is a separate explicit
+operation, independent of Git ignore rules.
 
-The benchmark uses an explicit two-stage workflow:
+| Stage | Trigger | Storage |
+| --- | --- | --- |
+| Development | PR smoke check or manual paired benchmark | Job Summary and 30-day Actions Artifact; no report commit or Release attachment. |
+| Final release | Manual finalization with a selected run and existing Release tag | Detailed Markdown and evidence bundle attached to that GitHub Release. |
 
-1. Run `benchmark.py run` as many times as needed while developing an optimization.
-   Each invocation writes one ignored JSON record under `local/`; it does not
-   create a Markdown report or a tracked archive.
-2. After selecting satisfactory baseline and candidate runs, invoke
-   `benchmark.py archive` explicitly. Archiving validates and combines those exact
-   records into one tracked comparison JSON and one Markdown report without
-   rerunning the benchmark.
-   For a release with no comparable historical baseline, use `archive-release`
-   to publish one multi-API version snapshot instead of claiming a speedup.
+Running the full `release` suite does not promote its result. Development runs
+can be repeated throughout implementation. On public repositories, readers can
+still see Actions output; development status is not private access.
 
-Local execution is unlimited, while storage is intentionally bounded: the
-newest 100 records from the last 30 days are retained. Use
-`--baseline-source` and `--candidate-source` to select the exact runs that
-should become durable evidence. Archives are created exclusively and are never
-silently replaced.
+Finalization requires all 90 cases in controlled HTTP/2, controlled HTTP/1.1,
+and live Hugging Face experiments, with at least six even paired rounds. All
+three share source commits, exact dependency locks, harness identity, and one
+workflow attempt. The Release tag identifies the measured candidate commit.
+For retries, rerun all jobs rather than mixing attempts.
 
-## Storage layout
+Finalization never repeats measurements or drops slower cases. It produces:
 
-- `local/<run-id>.json`: one file per invocation, ignored by Git. Completed runs retain the newest 100 within 30 days. Cleanup runs after each benchmark; recent unfinished runs are protected, and unfinished records older than 30 days expire.
-- `archive/NNN_<name>.json`: one immutable paired baseline/candidate record for a published optimization.
-- `archive/NNN_<name>.md`: the single generated comparison report for that optimization.
-- A release snapshot uses the same one-JSON/one-Markdown archive layout.
+- `performance-report.md`: standalone detailed comparisons for all experiments.
+- `performance-evidence.tar.gz`: original JSON, per-experiment reports, harness
+  sources, dependency locks, and a SHA256 publication manifest.
 
-Run from the project root (one file per invocation, unlimited runs):
+The upload targets an existing Release, including a draft if desired. It does
+not create tags, publish packages, or change visibility. Existing assets are not
+replaced. If an upload is interrupted, inspect the assets before deliberate
+maintainer recovery. Promote accepted evidence before its Artifacts expire.
 
-```bash
-./.venv/bin/python benchmark/benchmark.py run \
-  --runs 3 \
-  --tag <attempt-tag> \
-  --http-proxy http://127.0.0.1:8118
-```
+The [guide](../README.md) documents workflow inputs and the local CLI. The
+[design](../DESIGN.md) defines cache states, timing, data changes, and limitations.
 
-Publish one satisfying comparison from the project root (archiving does not run queries):
+## Historical evidence
 
-```bash
-./.venv/bin/python benchmark/benchmark.py archive \
-  --baseline-source benchmark/results/local/<baseline-run-id>.json \
-  --candidate-source benchmark/results/local/<candidate-run-id>.json \
-  --name 001_connection_reuse
-```
+`archive/000_*`, `001_*`, and `002_release_0_0_62.*` remain unchanged historical
+records from older tools. Current report commands accept the new paired schema.
+Historical absolute times are not the new executable baseline; compare both
+versions again under the same framework to assess improvement.
 
-If the candidate intentionally changes a configured setting, declare each one
-with `--allow-setting-difference <name>`. Undeclared differences, mismatched
-environments, revisions, symbols, or result hashes reject publication.
-
-To record a released version across multiple files, run each API method with
-the same symbols, run count, configuration, and network route. Then archive
-the selected completed local records in one snapshot:
-
-```bash
-./.venv/bin/python benchmark/benchmark.py run --runs 3 --tag release_price --api-method price
-./.venv/bin/python benchmark/benchmark.py run --runs 3 --tag release_info --api-method info
-./.venv/bin/python benchmark/benchmark.py run --runs 3 --tag release_filing --api-method sec_filing
-./.venv/bin/python benchmark/benchmark.py archive-release \
-  --source benchmark/results/local/<price-run-id>.json \
-  --source benchmark/results/local/<info-run-id>.json \
-  --source benchmark/results/local/<filing-run-id>.json \
-  --name 002_release_0_0_62 --release 0.0.62 \
-  --release-commit <full-release-commit>
-```
-
-Add `--http-proxy URL` to each `run` only where required. Release archiving
-requires one package version, source implementation, environment, configuration,
-and dataset version across all suites. Within each suite, the Parquet file
-identity and each symbol's result must remain unchanged across samples. The
-release commit identifies the production code measured; the raw record also
-contains source hashes for audit. A snapshot is an absolute measurement under
-its recorded network conditions, not a comparison with older archives.
-
-The executable benchmark calls `Ticker(symbol).price()` by default; use
-`--api-method info`, `--api-method sec_filing`, or another supported DataFrame
-method to measure a different dataset through the real `defeatbeta_api`
-package. Its primary metric is the time emitted by
-`DuckDBClient._execute_query`; package import, client initialization, the full
-API call, cache state, DuckDB-requested byte ranges, network range transfers,
-and DefeatBeta cache metrics are recorded separately.
-`--no-cache-symbol-column-chunk-prefetch` disables column-chunk prefetch for a cold-cache
-control while retaining footer preparation and on-demand caching. Each sample
-records `prefetch_coverage`: bytes downloaded within planned prefetch ranges,
-bytes within those ranges requested by DuckDB, and the difference. This
-measures requested byte ranges, not which Parquet pages DuckDB decoded.
-Event buffers are bounded. If a query exceeds them, coverage is marked
-incomplete instead of reporting potentially misleading byte totals.
-Pending prefetches are drained after the API timing boundary so the coverage
-calculation includes transfers that finish after the query. The wait time and
-post-drain transfer totals are reported separately; they are not added to
-`execute_query_seconds` or the query-time cache metrics.
-
-The project cache stores variable-length reader ranges and downloads only
-uncovered intervals. The first query for a Parquet file prepares that file's
-footer and, with column prefetch enabled,
-a simple symbol scan also builds its row-group index. Both are versioned and
-reused by later queries for the same file, including other symbols. No file
-footer is fetched during client initialization. The initial preparation is
-included in `_execute_query`. `metadata_prepare_performance` and
-`range_prefetch_performance` report metadata work and prefetch scheduling
-separately.
-There is no cache-layout selection flag. The cache snapshot is
-verified empty before each measured cold API call. A four-byte Parquet header
-extent is classified as metadata rather than query data in the separate
-data-extent snapshot. `--no-cache-prepare-footer-on-first-use` disables explicit footer
-preparation for a control run, but does not prevent DuckDB from reading
-required Parquet metadata itself.
-
-Transport experiments can use `network-cold-read` to compare fresh independent
-connections, disjoint connection warmups, and Range chunk sizes. It downloads
-the same ordered query bytes for each mode and verifies their digest, but it is
-network-only evidence, not an API performance result. Use `run` with
-`--cache-fetch-workers`, `--cache-range-split-bytes`, and
-`--cache-connection-warmup-bytes` for the end-to-end check. Connection warmup
-occurs before `Ticker.price()` and is reported separately as
-`connection_warmup_seconds`; its bytes are not stored in the local range cache.
-The production client also performs a one-byte startup prewarm during client
-initialization, so this optional benchmark warmup is additional. Its time is
-included in client initialization, not in `_execute_query`. The connection
-pool is shared by files with the same resolved origin; a different origin gets
-its own lazily created HTTP client. One client can issue concurrent requests.
-These command-line settings do not change
-production defaults.
-The proxy option is optional: omitting it uses the normal environment proxy
-policy, while an explicit proxy selects that route for the run.
-
-The `archive/000_*` and `archive/001_*` files are historical records from the
-previous `cache_httpfs` reader. They are kept unchanged so past measurements
-are not presented as measurements of the current reader.
-
-Local run JSON uses format version 2 with deduplicated `shared` entries. Paired
-comparison archives use format version 3 and embed the exact version 2 baseline
-and candidate records. `000_baseline` and `001_resolve_once_cdn` are legacy
-archives produced by the retired direct-DuckDB benchmark and remain readable
-by `report.py`.
-Release snapshots use format version 4 and embed the selected version 2 runs.
+`local/` holds workstation development runs and diagnostic logs. Local ignore
+rules prevent accidental commits but do not govern Actions or Release assets.

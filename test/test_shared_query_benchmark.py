@@ -1,10 +1,10 @@
-"""Ensure baseline module selection happens before any product import."""
+"""Ensure shared measurement helpers do not preload product modules."""
 
 import subprocess
 import sys
 import unittest
 
-from benchmark.workloads.shared_query_benchmark import percentile
+from benchmark.common import percentile
 
 
 class TestSharedQueryBenchmark(unittest.TestCase):
@@ -14,7 +14,7 @@ class TestSharedQueryBenchmark(unittest.TestCase):
     def test_import_does_not_preload_product_modules(self):
         result = subprocess.run([
             sys.executable, "-c",
-            "import sys; import benchmark.workloads.shared_query_benchmark; "
+            "import sys; import benchmark.common; "
             "assert not any(name.startswith('defeatbeta_api') for name in sys.modules)",
         ], capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stderr)

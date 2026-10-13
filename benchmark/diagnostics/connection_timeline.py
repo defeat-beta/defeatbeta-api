@@ -37,7 +37,7 @@ from weakref import WeakKeyDictionary
 import httpx
 import requests
 
-from benchmark.benchmark import result_fingerprint, source_hashes
+from benchmark.common import result_fingerprint, source_hashes
 
 
 class Timeline:

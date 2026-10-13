@@ -1,0 +1,87 @@
+name: Finalize release performance report
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful full benchmark run ID (latest attempt, all three experiments)
+        required: true
+        type: string
+      release_tag:
+        description: Existing GitHub Release tag matching the measured candidate commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: benchmark-release-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_RUN: ${{ inputs.source_run_id }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - name: Verify selected workflow and existing release
+        id: provenance
+        run: |
+          [[ "$SOURCE_RUN" =~ ^[0-9]+$ ]]
+          [[ "$RELEASE_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$SOURCE_RUN" > workflow-run.json
+          python - <<'PY'
+          import json, os
+          from benchmark.publication import validate_run
+          run = json.load(open('workflow-run.json'))
+          validate_run(run, os.environ['GH_REPO'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"attempt={run['run_attempt']}\n")
+          PY
+          gh release view "$RELEASE_TAG" --json assets > release.json
+          python - <<'PY'
+          import json
+          names = {asset['name'] for asset in json.load(open('release.json'))['assets']}
+          if names & {'performance-report.md', 'performance-evidence.tar.gz'}:
+              raise SystemExit('Final performance assets already exist; refusing to replace them')
+          PY
+          commit=$(git rev-parse --verify --end-of-options "refs/tags/${RELEASE_TAG}^{commit}")
+          echo "candidate=$commit" >> "$GITHUB_OUTPUT"
+      - name: Download the selected attempt only
+        env:
+          ATTEMPT: ${{ steps.provenance.outputs.attempt }}
+        run: >-
+          gh run download "$SOURCE_RUN"
+          --name "controlled-h2-$SOURCE_RUN-$ATTEMPT"
+          --name "controlled-http1-$SOURCE_RUN-$ATTEMPT"
+          --name "hugging-face-$SOURCE_RUN-$ATTEMPT"
+          --dir evidence
+      - name: Validate and finalize saved evidence
+        env:
+          CANDIDATE: ${{ steps.provenance.outputs.candidate }}
+        run: >-
+          python -m benchmark finalize --source evidence --output performance-evidence
+          --release "$RELEASE_TAG" --candidate-commit "$CANDIDATE"
+          --workflow-run workflow-run.json
+      - name: Upload immutable report assets to the existing release
+        run: |
+          cp performance-evidence/performance-report.md performance-report.md
+          gh release upload "$RELEASE_TAG" performance-report.md performance-evidence.tar.gz
+          cat performance-report.md >> "$GITHUB_STEP_SUMMARY"

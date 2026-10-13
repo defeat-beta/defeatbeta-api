@@ -19,12 +19,12 @@ from threading import Lock
 import time
 from unittest.mock import patch
 
-from benchmark.benchmark import API_FILES, result_fingerprint
+from benchmark.common import API_FILES, result_fingerprint
 from benchmark.diagnostics.connection_timeline import Timeline
 from benchmark.diagnostics.cache_timeline import CacheTimeline
 from benchmark.diagnostics.http2_stream_timeline import StreamTimeline
 from benchmark.workloads.http_pool_defaults import measure
-from benchmark.workloads.shared_query_benchmark import SYMBOLS, percentile
+from benchmark.common import SYMBOLS, percentile
 
 
 METHODS = ("price", "info", "calendar", "dividends")

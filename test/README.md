@@ -1,5 +1,23 @@
 # Development tests
 
+The paired benchmark has offline reporting/publication checks and an opt-in
+real TLS integration suite:
+
+```sh
+python -m unittest test.test_benchmark test.test_benchmark_publication -q
+python -m pip install -r benchmark/requirements.txt
+DEFEATBETA_RUN_BENCHMARK_TLS_TESTS=1 python -m unittest test.test_benchmark.TestBenchmarkTLS -v
+```
+
+TLS integration generates deterministic data and checks HTTP/2, HTTP/1.1,
+Range responses, and four cache states with isolated workers. It uses loopback
+sockets and OpenSSL without the public service; Linux CI runs it explicitly.
+Report checks reject incomplete/duplicate samples, nonfinite timings, result
+mismatches, mixed source/workflow identities, short publication samples, missing
+evidence, and replacement of an existing archive. See the
+[benchmark guide](../benchmark/README.md) for performance measurements; these
+correctness tests do not assert hardware-dependent speed thresholds.
+
 Run the offline cache, shared-resource and benchmark regressions from the
 repository root:
 

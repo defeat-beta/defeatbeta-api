@@ -1,607 +1,188 @@
-"""Render benchmark JSON records without executing performance workloads."""
+"""Render paired performance evidence without rerunning or selecting samples."""
 
-import argparse
-from datetime import datetime
+import hashlib
 import json
+import math
 from pathlib import Path
+import random
 import statistics
 
-
-def unpack_reports(record):
-    if record.get("format_version") != 2:
-        raise ValueError("Unsupported run record format")
-
-    def decode(value):
-        if isinstance(value, list):
-            return [decode(item) for item in value]
-        if isinstance(value, dict):
-            if set(value) == {"$ref"}:
-                return record["shared"][value["$ref"]]
-            return {key: decode(item) for key, item in value.items()}
-        return value
-
-    return decode(record["runs"])
+from benchmark.common import percentile, save_json
 
 
-def unpack_comparison(record):
-    if record.get("format_version") != 3:
-        raise ValueError("Unsupported comparison record format")
-    return unpack_reports(record["baseline"]), unpack_reports(record["candidate"])
+def ratio_interval(ratios):
+    if len(ratios) < 6:
+        return None
+    randomizer = random.Random(1729)
+    samples = [statistics.median(randomizer.choices(ratios, k=len(ratios))) for _ in range(2000)]
+    return [percentile(samples, .025), percentile(samples, .975)]
 
 
-def _run_date(report):
-    identifier = report.get("suite_id") or report.get("run_id", "")
-    try:
-        return datetime.strptime(
-            identifier.split("_", 1)[0], "%Y%m%dT%H%M%S.%fZ"
-        ).strftime("%Y-%m-%d")
-    except ValueError:
-        return "unknown"
+def primary(case, measurement):
+    if case["kind"] == "single":
+        return measurement["first_result_seconds"] if case["state"] in ("first_use", "disk_warm") else measurement["wall_seconds"]
+    return measurement["wall_seconds"]
 
 
-def _metric(report):
-    return (
-        report.get("primary_metric")
-        or (report.get("statistics") or {}).get("metric")
-        or "e2e_seconds"
-    )
+def fingerprints(measurement):
+    return [(item["task"], item.get("result")) for item in measurement.get("results", [])]
 
 
-def _ok_samples(report):
-    return [sample for sample in report.get("samples", []) if sample.get("status") == "ok"]
-
-
-def _sample_value(sample, metric):
-    if metric in sample:
-        return float(sample[metric])
-    if metric == "execute_query_seconds" and "query_seconds" in sample:
-        return float(sample["query_seconds"])
-    return float(sample["e2e_seconds"])
-
-
-def _summary(report):
-    metric = _metric(report)
-    samples = _ok_samples(report)
-    values = [_sample_value(sample, metric) for sample in samples]
-    archived = report.get("statistics") or {}
-    if archived.get("metric", metric) == metric and archived.get("median_seconds") is not None:
-        return archived
-    return {
-        "metric": metric,
-        "count": len(values),
-        "median_seconds": statistics.median(values),
-        "min_seconds": min(values),
-        "max_seconds": max(values),
-        "p95_seconds": None,
-        "std_seconds": statistics.stdev(values) if len(values) > 1 else None,
-    }
-
-
-def _median_sample(report):
-    metric = _metric(report)
-    median = _summary(report)["median_seconds"]
-    return min(_ok_samples(report), key=lambda sample: abs(_sample_value(sample, metric) - median))
-
-
-def _phase(sample, event_name, legacy_name=None):
-    performance = sample.get("performance", {})
-    if event_name in performance:
-        return float(performance[event_name].get("seconds", 0))
-    if legacy_name:
-        return float(sample.get(legacy_name, 0) or 0)
-    return 0.0
-
-
-def _event_phase(events, event_name):
-    return sum(
-        float(event.get("duration_ns", 0)) / 1e9
-        for event in events
-        if event.get("name") == event_name
-    )
-
-
-def _breakdown(report):
-    sample = _median_sample(report)
-    initialization_events = sample.get("initialization_performance", [])
-    resolve = _phase(sample, "duckdb.resolve_url", "resolve_seconds")
-    execute = float(sample.get("execute_query_seconds", sample.get("query_seconds", 0)) or 0)
-    return {
-        "process_start": float(sample.get("process_start_seconds", 0) or 0),
-        "import": float(sample.get("import_seconds", 0) or 0),
-        "ticker_init": float(
-            sample.get("ticker_initialization_seconds", sample.get("initialization_seconds", 0)) or 0
-        ),
-        "connection_init": _event_phase(
-            initialization_events, "duckdb.initialize_connection"
-        ),
-        "cache_validation": (
-            _event_phase(initialization_events, "duckdb.load_dataset_version")
-            or _event_phase(initialization_events, "duckdb.validate_httpfs_cache")
-        ),
-        "resolve": resolve,
-        "rewrite": _phase(sample, "duckdb.rewrite_urls"),
-        "metadata_prepare": _phase(sample, "duckdb.prepare_parquet_metadata"),
-        "range_prefetch": _phase(sample, "duckdb.prefetch_ranges"),
-        "cursor_open": _phase(sample, "duckdb.cursor.open"),
-        "sql_dataframe": _phase(sample, "duckdb.sql_to_dataframe"),
-        "cursor_close": _phase(sample, "duckdb.cursor.close"),
-        "execute_query": execute,
-        "duckdb_query": _phase(sample, "duckdb.query", "query_seconds"),
-        "api_call": float(sample.get("api_call_seconds", sample.get("e2e_seconds", 0)) or 0),
-        "worker_wall": float(sample.get("worker_wall_seconds", sample.get("e2e_seconds", 0)) or 0),
-    }
-
-
-def _format_seconds(value):
-    return f"{value:.6f}"
-
-
-def _format_bytes(value):
-    if value >= 1024 * 1024:
-        return f"{value / (1024 * 1024):.2f} MiB"
-    if value >= 1024:
-        return f"{value / 1024:.2f} KiB"
-    return f"{value} B"
-
-
-def _environment(report):
-    environment = report.get("environment", {})
-    extensions = " / ".join(
-        f"{item.get('name', '?')} {item.get('version', '?')}"
-        for item in environment.get("extensions", [])
-    ) or "unknown"
-    python = environment.get("python", "unknown").split("(")[0].strip()
-    memory = environment.get("memory_bytes", 0) / (1024 ** 3)
-    return {
-        "date": _run_date(report),
-        "platform": environment.get("platform", "unknown"),
-        "machine": environment.get("machine", "unknown"),
-        "cpu": environment.get("logical_cpus", "unknown"),
-        "memory": f"{memory:.0f} GiB" if memory else "unknown",
-        "versions": f"{python} / {environment.get('duckdb', 'unknown')} / {environment.get('pandas', 'unknown')}",
-        "extensions": extensions,
-    }
-
-
-def _workload_title(report):
-    method = report.get("api_call", "").rsplit(".", 1)[-1]
-    return "Stock Price" if method in ("", "price") else f"Ticker {method.replace('_', ' ').title()}"
-
-
-def _command(report):
-    settings = report.get("configured_settings", {})
-    symbols = report.get("suite_symbols", [])
-    symbol = f" --symbol {symbols[0]}" if len(symbols) == 1 else ""
-    proxy = settings.get("http_proxy")
-    proxy_flag = f' --http-proxy "{proxy}"' if proxy else ""
-    keep_alive = (
-        "" if settings.get("duckdb_http_keep_alive", settings.get("http_keep_alive", True))
-        else " --no-duckdb-http-keep-alive"
-    )
-    resolve = (
-        "" if report.get("resolve_cdn_for_uncached_reads", report.get("resolve_direct", True))
-        else " --no-resolve-cdn-for-uncached-reads"
-    )
-    memory_bytes = settings.get("cache_data_memory_limit_bytes")
-    memory_flag = (
-        f" --cache-data-memory-limit-bytes {memory_bytes}"
-        if memory_bytes is not None else ""
-    )
-    cache_flag = " --no-cache" if settings.get("cache_enabled") is False else ""
-    api_method = report.get("api_call", "").rsplit(".", 1)[-1]
-    method_flag = f" --api-method {api_method}" if api_method not in ("", "price") else ""
-    footer_flag = (
-        " --no-cache-prepare-footer-on-first-use"
-        if settings.get("cache_prepare_footer_on_first_use",
-                        settings.get("cache_footer_preload")) is False else ""
-    )
-    prefetch_flag = (
-        " --no-cache-symbol-column-chunk-prefetch"
-        if settings.get("cache_symbol_column_chunk_prefetch",
-                        settings.get("cache_column_prefetch")) is False else ""
-    )
-    warm_repeats = settings.get("warm_repeats", 0)
-    warm_flag = f" --warm-repeats {warm_repeats}" if warm_repeats else ""
-    executable = "benchmark/benchmark.py" if report.get("api_call") else "benchmark/bench.py"
-    api_flags = ""
-    if report.get("api_call"):
-        workers = settings.get("cache_fetch_workers", 3)
-        split_bytes = settings.get("cache_range_split_bytes", 0)
-        threads = settings.get("duckdb_threads", 4)
-        if workers != 3:
-            api_flags += f" --cache-fetch-workers {workers}"
-        if split_bytes:
-            api_flags += f" --cache-range-split-bytes {split_bytes}"
-        if threads != 4:
-            api_flags += f" --duckdb-threads {threads}"
-    revision = (
-        f" --revision {report['revision']}"
-        if executable.endswith("bench.py") and report.get("revision") else ""
-    )
-    return (
-        f".venv/bin/python {executable} run --runs {report.get('requested_runs', 3)} "
-        f"--tag {report.get('tag', 'unknown')}{symbol}{method_flag}{proxy_flag}{keep_alive}"
-        f"{resolve}{memory_flag}{cache_flag}{footer_flag}{prefetch_flag}{warm_flag}"
-        f"{api_flags}{revision}"
-    )
-
-
-def _cache_description(sample):
-    after = sample.get("cache_after_query")
-    if after:
-        footprint = f"{after.get('files', 0)} / {_format_bytes(after.get('bytes', 0))}"
-        metrics = sample.get("cache_metrics")
-        if isinstance(metrics, dict):
-            return (
-                f"{footprint}; {metrics.get('range_requests', 0)} ranges / "
-                f"{_format_bytes(metrics.get('downloaded_bytes', 0))} downloaded"
-            )
-        return footprint
-    return (
-        f"{sample.get('cache_files_after_query', 0)} / "
-        f"{_format_bytes(sample.get('cache_bytes_after_query', 0))}"
-    )
-
-
-def _prefetch_description(sample):
-    coverage = sample.get("prefetch_coverage")
-    if not isinstance(coverage, dict):
-        return "not recorded"
-    if coverage.get("complete") is False:
-        return "incomplete event capture"
-    return (
-        f"{_format_bytes(coverage.get('planned_downloaded_bytes', 0))} downloaded / "
-        f"{_format_bytes(coverage.get('planned_read_bytes', 0))} requested / "
-        f"{_format_bytes(coverage.get('planned_unread_bytes', 0))} unread"
-    )
-
-
-def _single_markdown(reports, archive_path):
-    first = reports[0]
-    env = _environment(first)
-    metric = _metric(first)
+def summarize(record):
+    groups = {}
+    errors = []
+    if record.get("schema_version") != 1:
+        return {"valid": False, "errors": ["Unsupported evidence schema"], "cases": []}
+    cases = record["suite"]["cases"]
+    rounds = record["rounds"]
+    if not cases or type(rounds) is not int or rounds < 1:
+        return {"valid": False, "errors": ["A nonempty suite and positive integer rounds are required"], "cases": []}
+    identifiers = [case["id"] for case in cases]
+    if len(identifiers) != len(set(identifiers)):
+        errors.append("Duplicate case identifiers")
+    expected = {(case["id"], number, variant) for case in cases
+                for number in range(1, rounds + 1) for variant in ("baseline", "candidate")}
+    for sample in record["records"]:
+        key = (sample["case"], sample["round"], sample["variant"])
+        if key not in expected:
+            errors.append(f"Undeclared measurement: {key}")
+        if key in groups:
+            errors.append(f"Duplicate measurement: {key}")
+        groups[key] = sample["measurement"]
     rows = []
-    checksums = []
-    cache_rows = []
-    prefetch_rows = []
-    for report in reports:
-        samples = _ok_samples(report)
-        summary = _summary(report)
-        trials = ", ".join(
-            _format_seconds(_sample_value(sample, metric)) for sample in samples
-        )
-        result = samples[0].get("result", {})
-        rows.append(
-            f"| {report['symbol']} | {result.get('rows', 0):,} | {trials} | "
-            f"**{summary['median_seconds']:.6f}** |"
-        )
-        checksums.append(
-            f"| {report['symbol']} | `{result.get('sha256', 'unavailable')}` |"
-        )
-        cache_rows.append(
-            f"| {report['symbol']} | {_cache_description(samples[0])} |"
-        )
-        prefetch_rows.append(
-            f"| {report['symbol']} | {_prefetch_description(samples[0])} |"
-        )
-    breakdown = _breakdown(reports[0])
-    method = first.get("methodology", {})
-    return f"""# {archive_path.stem}: {_workload_title(first)} Cold Query
-
-## Environment
-
-| Item | Value |
-| --- | --- |
-| Run date | {env['date']} |
-| OS / machine | {env['platform']} / {env['machine']} |
-| CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
-| Python / DuckDB / pandas | {env['versions']} |
-| HTTP extensions | {env['extensions']} |
-| API workload | {first.get('api_call', 'legacy direct DuckDB workload')} |
-| Primary metric | `{metric}` |
-| Cold state | {method.get('cold', 'unknown')} |
-
-## Reproduce
-
-```bash
-{_command(first)}
-```
-
-## Result
-
-| Symbol | Rows | Trials (s) | Median (s) |
-| --- | ---: | --- | ---: |
-{chr(10).join(rows)}
-
-### Median Sample Timing Breakdown ({reports[0]['symbol']})
-
-| Phase | Seconds |
-| --- | ---: |
-| Process start | {breakdown['process_start']:.6f} |
-| Package import | {breakdown['import']:.6f} |
-| Ticker initialization | {breakdown['ticker_init']:.6f} |
-| DuckDB connection initialization | {breakdown['connection_init']:.6f} |
-| Dataset version / cache validation | {breakdown['cache_validation']:.6f} |
-| URL resolve | {breakdown['resolve']:.6f} |
-| URL rewrite | {breakdown['rewrite']:.6f} |
-| Parquet metadata preparation (inside query) | {breakdown['metadata_prepare']:.6f} |
-| Range prefetch scheduling (inside query) | {breakdown['range_prefetch']:.6f} |
-| Cursor open | {breakdown['cursor_open']:.6f} |
-| SQL execution and DataFrame materialization | {breakdown['sql_dataframe']:.6f} |
-| Cursor close | {breakdown['cursor_close']:.6f} |
-| **DuckDBClient._execute_query** | **{breakdown['execute_query']:.6f}** |
-| DuckDBClient.query | {breakdown['duckdb_query']:.6f} |
-| Ticker API call | {breakdown['api_call']:.6f} |
-| Worker wall time | {breakdown['worker_wall']:.6f} |
-
-### Cache Footprint
-
-| Symbol | Files / bytes after query; range transfers |
-| --- | ---: |
-{chr(10).join(cache_rows)}
-
-### Prefetch Coverage
-
-| Symbol | Prefetched network bytes / DuckDB-requested bytes |
-| --- | --- |
-{chr(10).join(prefetch_rows)}
-
-### Result Checksums
-
-| Symbol | SHA256 |
-| --- | --- |
-{chr(10).join(checksums)}
-
-Raw results: [archive JSON](./{archive_path.name})
-"""
+    for case in record["suite"]["cases"]:
+        base, candidate, ratios, notes = [], [], [], []
+        failed = 0
+        for round_number in range(1, record["rounds"] + 1):
+            a = groups.get((case["id"], round_number, "baseline"))
+            b = groups.get((case["id"], round_number, "candidate"))
+            if a is None or b is None:
+                failed += 1
+                errors.append(f"Missing pair: {case['id']} round {round_number}")
+                continue
+            if a.get("status") != "ok" or b.get("status") != "ok":
+                failed += 1
+                errors.append(f"Failed pair: {case['id']} round {round_number}")
+                continue
+            if any(not item.get("results") or any(not result.get("result") for result in item["results"])
+                   for item in (a, b)):
+                failed += 1
+                errors.append(f"Missing result fingerprint: {case['id']} round {round_number}")
+                continue
+            if "tasks" in case and any([item["task"] for item in value["results"]] != case["tasks"] for value in (a, b)):
+                failed += 1
+                errors.append(f"Measured tasks differ from the manifest: {case['id']} round {round_number}")
+                continue
+            same_data = a.get("dataset_version") == b.get("dataset_version") and a.get("file_metadata") == b.get("file_metadata")
+            if record["mode"] == "controlled" or same_data:
+                if fingerprints(a) != fingerprints(b):
+                    errors.append(f"Result mismatch: {case['id']} round {round_number}")
+                    failed += 1
+                    continue
+            elif "Remote data changed; timing retained, result equality not required" not in notes:
+                notes.append("Remote data changed; timing retained, result equality not required")
+            av, bv = primary(case, a), primary(case, b)
+            if any(type(value) not in (int, float) or not math.isfinite(value) or value <= 0 for value in (av, bv)):
+                errors.append(f"Nonpositive or nonfinite timing: {case['id']}")
+                failed += 1
+                continue
+            base.append(av)
+            candidate.append(bv)
+            ratios.append(bv / av)
+        interval = ratio_interval(ratios) if failed == 0 else None
+        classification = "invalid" if failed else "inconclusive"
+        if interval is not None and not notes:
+            classification = "faster in this run" if interval[1] < 1 else "slower in this run" if interval[0] > 1 else "inconclusive"
+        rows.append({"case": case["id"], "pairs": len(ratios), "failed_pairs": failed,
+                     "baseline_median_seconds": statistics.median(base) if base else None,
+                     "candidate_median_seconds": statistics.median(candidate) if candidate else None,
+                     "paired_latency_reduction_percent": 100 * (1 - statistics.median(ratios)) if ratios else None,
+                     "candidate_over_baseline_ratio_interval": interval,
+                     "classification": classification, "notes": notes,
+                     "baseline_trials": base, "candidate_trials": candidate})
+    return {"valid": record["status"] == "complete" and not errors, "errors": errors, "cases": rows}
 
 
-def _release_markdown(record, archive_path):
-    suites = [unpack_reports(item) for item in record["suites"]]
-    first = suites[0][0]
-    env = _environment(first)
-    rows = []
-    revisions = []
-    commands = []
-    for reports in suites:
-        lead = reports[0]
-        method = lead["api_call"].rsplit(".", 1)[-1]
-        method_label = f"Ticker.{method}()"
-        identity = reports[0]["samples"][0]["parquet_identity"]
-        revisions.append(
-            f"| `{method_label}` | {identity.get('file_size', 'unknown')} | "
-            f"`{identity.get('footer_sha256', 'unknown')}` |"
-        )
-        commands.append(f"# {method}\n{_command(lead)}")
-        for report in reports:
-            samples = _ok_samples(report)
-            summary = _summary(report)
-            representative = _median_sample(report)
-            metrics = representative.get("cache_metrics_query_delta") or {}
-            result = representative.get("result") or {}
-            trials = ", ".join(
-                _format_seconds(_sample_value(sample, _metric(report)))
-                for sample in samples
-            )
-            rows.append(
-                f"| `{method_label}` | {report['symbol']} | {result.get('rows', 0):,} | "
-                f"{trials} | **{summary['median_seconds']:.6f}** | "
-                f"{metrics.get('downloaded_bytes', 'unknown')} | "
-                f"{metrics.get('range_requests', 'unknown')} | "
-                f"`{result.get('sha256', 'unavailable')}` |"
-            )
-    return f"""# {archive_path.stem}: DefeatBeta {record['release']} Cold API Benchmark
-
-This is a single-version measurement, not a comparison with the historical
-`cache_httpfs` archives. Each trial starts in a fresh worker with an isolated
-empty local data cache. The primary metric is `DuckDBClient._execute_query`.
-Proxy, DNS, operating-system, and remote CDN state are not controlled.
-
-## Provenance
-
-| Item | Value |
-| --- | --- |
-| Release / commit | `{record['release']}` / `{record['release_commit']}` |
-| Run date | {env['date']} |
-| Dataset version | `{record['dataset_version']}` |
-| OS / machine | {env['platform']} / {env['machine']} |
-| CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
-| Python / DuckDB / pandas | {env['versions']} |
-| HTTP extensions | {env['extensions']} |
-| Proxy setting | `{first.get('configured_settings', {}).get('http_proxy', 'environment policy')}` |
-
-## Parquet identities
-
-| API method | File bytes | Footer SHA256 |
-| --- | ---: | --- |
-{chr(10).join(revisions)}
-
-## Cold-query results
-
-Downloaded bytes and Range GETs are from the median-latency sample for each
-symbol, measured inside the API query. Trials are in seconds. File metadata
-preparation is included in the primary metric; connection initialization is not.
-
-| API method | Symbol | Rows | Trials (s) | Median (s) | Downloaded bytes | Range GETs | Result SHA256 |
-| --- | --- | ---: | --- | ---: | ---: | ---: | --- |
-{chr(10).join(rows)}
-
-## Reproduce
-
-```bash
-{chr(10).join(commands)}
-```
-
-The raw record contains timing phases, cache footprints, prefetch coverage,
-settings, and the exact samples used above. These observations describe this
-network and dataset revision only; they are not a cross-network latency target.
-
-Raw results: [archive JSON](./{archive_path.name})
-"""
+def format_value(value, digits=4):
+    return "n/a" if value is None else f"{value:.{digits}f}"
 
 
-def _comparison_markdown(record, archive_path):
-    baseline_reports, candidate_reports = unpack_comparison(record)
-    baseline_by_symbol = {report["symbol"]: report for report in baseline_reports}
-    candidate_by_symbol = {report["symbol"]: report for report in candidate_reports}
-    symbols = baseline_reports[0].get("suite_symbols") or list(baseline_by_symbol)
-    metric = _metric(candidate_reports[0])
-    rows = []
-    checksums = []
-    cache_rows = []
-    prefetch_rows = []
-    for symbol in symbols:
-        baseline = baseline_by_symbol[symbol]
-        candidate = candidate_by_symbol[symbol]
-        baseline_summary = _summary(baseline)
-        candidate_summary = _summary(candidate)
-        change = (
-            candidate_summary["median_seconds"] / baseline_summary["median_seconds"] - 1
-        ) * 100
-        baseline_samples = _ok_samples(baseline)
-        candidate_samples = _ok_samples(candidate)
-        result = baseline_samples[0]["result"]
-        rows.append(
-            f"| {symbol} | {result.get('rows', 0):,} | "
-            f"{baseline_summary['median_seconds']:.6f} | "
-            f"**{candidate_summary['median_seconds']:.6f}** | {change:+.1f}% |"
-        )
-        checksums.append(
-            f"| {symbol} | {result.get('rows', 0):,} | "
-            f"`{result.get('sha256', 'unavailable')}` |"
-        )
-        cache_rows.append(
-            f"| {symbol} | {_cache_description(baseline_samples[0])} | "
-            f"{_cache_description(candidate_samples[0])} |"
-        )
-        prefetch_rows.append(
-            f"| {symbol} | {_prefetch_description(baseline_samples[0])} | "
-            f"{_prefetch_description(candidate_samples[0])} |"
-        )
-
-    baseline_breakdown = _breakdown(baseline_reports[0])
-    candidate_breakdown = _breakdown(candidate_reports[0])
-    env = _environment(candidate_reports[0])
-    method = candidate_reports[0].get("methodology", {})
-    breakdown_rows = []
-    phase_labels = (
-        ("process_start", "Process start"),
-        ("import", "Package import"),
-        ("ticker_init", "Ticker initialization"),
-        ("connection_init", "DuckDB connection initialization"),
-        ("cache_validation", "Dataset version / cache validation"),
-        ("resolve", "URL resolve"),
-        ("rewrite", "URL rewrite"),
-        ("metadata_prepare", "Parquet metadata preparation (inside query)"),
-        ("range_prefetch", "Range prefetch scheduling (inside query)"),
-        ("cursor_open", "Cursor open"),
-        ("sql_dataframe", "SQL execution and DataFrame materialization"),
-        ("cursor_close", "Cursor close"),
-        ("execute_query", "**DuckDBClient._execute_query**"),
-        ("duckdb_query", "DuckDBClient.query"),
-        ("api_call", "Ticker API call"),
-        ("worker_wall", "Worker wall time"),
-    )
-    for key, label in phase_labels:
-        breakdown_rows.append(
-            f"| {label} | {baseline_breakdown[key]:.6f} | "
-            f"{candidate_breakdown[key]:.6f} |"
-        )
-
-    return f"""# {archive_path.stem}: {_workload_title(candidate_reports[0])} Cold Query Comparison
-
-## Environment
-
-| Item | Value |
-| --- | --- |
-| Run dates | baseline {_run_date(baseline_reports[0])} / candidate {_run_date(candidate_reports[0])} |
-| OS / machine | {env['platform']} / {env['machine']} |
-| CPU / RAM | {env['cpu']} logical CPUs / {env['memory']} |
-| Python / DuckDB / pandas | {env['versions']} |
-| HTTP extensions | {env['extensions']} |
-| API workload | {candidate_reports[0].get('api_call', 'legacy direct DuckDB workload')} |
-| Primary metric | `{metric}` |
-| Cold state | {method.get('cold', 'unknown')} |
-| Declared setting differences | {', '.join(record.get('allowed_setting_differences', [])) or 'none'} |
-
-## Reproduce
-
-Baseline:
-
-```bash
-{_command(baseline_reports[0])}
-```
-
-Candidate:
-
-```bash
-{_command(candidate_reports[0])}
-```
-
-## Result
-
-| Symbol | Rows | Baseline median (s) | Candidate median (s) | Change |
-| --- | ---: | ---: | ---: | ---: |
-{chr(10).join(rows)}
-
-### Median Sample Timing Breakdown ({symbols[0]})
-
-| Phase | Baseline (s) | Candidate (s) |
-| --- | ---: | ---: |
-{chr(10).join(breakdown_rows)}
-
-### Cache Footprint
-
-| Symbol | Baseline cache footprint / transfers | Candidate cache footprint / transfers |
-| --- | ---: | ---: |
-{chr(10).join(cache_rows)}
-
-### Prefetch Coverage
-
-| Symbol | Baseline | Candidate |
-| --- | --- | --- |
-{chr(10).join(prefetch_rows)}
-
-### Result Checksums
-
-| Symbol | Rows | SHA256 |
-| --- | ---: | --- |
-{chr(10).join(checksums)}
-
-## Interpretation
-
-{method.get('main_metric', 'See the primary metric above.')} External DNS,
-proxy, operating-system, and remote CDN state remain uncontrolled unless the
-archived methodology explicitly says otherwise.
-
-Raw paired results: [archive JSON](./{archive_path.name})
-"""
-
-
-def render_markdown(archive_json_path, output_md_path):
-    archive_json_path = Path(archive_json_path)
-    output_md_path = Path(output_md_path)
-    record = json.loads(archive_json_path.read_text(encoding="utf-8"))
-    if record.get("format_version") == 3:
-        markdown = _comparison_markdown(record, archive_json_path)
-    elif record.get("format_version") == 4:
-        markdown = _release_markdown(record, archive_json_path)
-    else:
-        markdown = _single_markdown(unpack_reports(record), archive_json_path)
-    output_md_path.write_text(markdown, encoding="utf-8")
-    return output_md_path
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", type=Path)
-    parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
-    output = args.output or args.source.with_suffix(".md")
-    render_markdown(args.source, output)
-    print(f"Report: {output}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+def render(path, release=None):
+    path = Path(path)
+    record = json.loads(path.read_text())
+    summary = summarize(record)
+    environments = record["experiment"]["environments"]
+    stage = (f"Stage: **final release report** for `{release}`. The original raw evidence is unchanged."
+             if release else "Stage: **development evidence**. This run does not publish a final release report.")
+    lines = ["# Paired API performance report", "", stage, "",
+             f"Status: **{'valid comparison' if summary['valid'] else 'incomplete or invalid comparison'}**.", "",
+             f"Mode: `{record['mode']}`. Network: {record['network']}. Rounds: {record['rounds']}.", "",
+             "The baseline and candidate ran sequentially on one host. Results describe this experiment.",
+             "Daily remote updates are accepted and recorded; cross-date absolute times are not a fixed baseline.", "",
+             "## Provenance", "", "| Variant | Source commit | DuckDB | Python |", "| --- | --- | --- | --- |"]
+    for name, env in environments.items():
+        info = env["environment"]
+        lines.append(f"| {name} | `{env['commit']}` | {info['dependencies']['duckdb']} | {info['python']} |")
+    info = environments["candidate"]["environment"]
+    lines += ["", f"Platform: {info['platform']}; logical CPUs: {info['cpu_count']}; RAM: {info['ram_bytes']} bytes.",
+              f"Suite: `{record['suite']['name']}` v{record['suite']['version']}; resolved identity: `{record.get('resolved_suite_sha256', 'unresolved')}`.",
+              "Dependency locks, source hashes, route, default policies, data versions, and raw attempts are embedded in the JSON.", "",
+              "## Timing comparison", "",
+              "For first use and disk-warm restart, the primary metric includes the constructor and API call.",
+              "Other single cases measure the complete API call; concurrent cases measure complete batch wall time.",
+              "Positive reduction means faster: `100 * (1 - median(candidate / baseline per pair))`.",
+              "Intervals resample paired rounds; individual requests within a batch are not independent replicates.",
+              "With fewer than six pairs, results remain exploratory. No universal regression threshold is applied.", "",
+              "| Case | Pairs | Baseline median (s) | Candidate median (s) | Reduction (%) | Ratio interval (95%) | Assessment |",
+              "| --- | ---: | ---: | ---: | ---: | --- | --- |"]
+    for row in summary["cases"]:
+        interval = row["candidate_over_baseline_ratio_interval"]
+        bounds = "exploratory" if interval is None else " - ".join(format_value(value, 3) for value in interval)
+        lines.append(f"| {row['case']} | {row['pairs']} | {format_value(row['baseline_median_seconds'])} | "
+                     f"{format_value(row['candidate_median_seconds'])} | {format_value(row['paired_latency_reduction_percent'], 1)} | {bounds} | {row['classification']} |")
+    lines += ["", "## Resource and concurrency measurements", "",
+              "Values below are medians of successful attempts. Failures remain in the raw record and invalidate the case.",
+              "Application bytes include prefetch drain and are not wire bandwidth. Stream batches begin with cold query data",
+              "and can develop cache hits while executing the fixed plan. P95 is an empirical within-batch observation.", "",
+              "| Case | Variant | Calls/s | API P95 (s) | CPU (s) | RSS at end (MiB) | Downloaded bytes | Range GETs | Pool wait (s) |",
+              "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for case in record["suite"]["cases"]:
+        for variant in ("baseline", "candidate"):
+            items = [sample["measurement"] for sample in record["records"]
+                     if sample["case"] == case["id"] and sample["variant"] == variant
+                     and sample["measurement"].get("status") == "ok"]
+            if not items:
+                continue
+            def median(extract):
+                values = [extract(item) for item in items]
+                return statistics.median(values) if all(value is not None for value in values) else None
+            values = [median(lambda item: item["completed_calls_per_second"]),
+                      median(lambda item: item["latency"]["p95_seconds"]),
+                      median(lambda item: item["cpu_seconds"]),
+                      median(lambda item: item["rss_bytes_at_query_end"] / 1024**2),
+                      median(lambda item: item["cache_total_delta"]["downloaded_bytes"]),
+                      median(lambda item: item["cache_total_delta"]["range_requests"]),
+                      median(lambda item: item["pool_after"]["pool_wait_seconds"] - item["pool_before"]["pool_wait_seconds"]
+                             if item.get("pool_after") is not None else None)]
+            lines.append(f"| {case['id']} | {variant} | " + " | ".join(format_value(value) for value in values) + " |")
+    lines += ["", "## Validation and limitations", ""]
+    lines += [f"- {error}" for error in summary["errors"]] or ["- All declared pairs completed and applicable result checks passed."]
+    for row in summary["cases"]:
+        for note in row["notes"]:
+            lines.append(f"- {row['case']}: {note}.")
+    lines += ["- A successful comparison is evidence, not automatic permission to publish a package.",
+              "- The controlled server uses unshaped loopback TLS; server CPU, RSS, protocol and byte counters are recorded separately.",
+              "- The controlled fixture is synthetic; real data and public-network behavior are evaluated separately.",
+              "- The benchmark does not flush DNS, OS pages, proxy caches, or remote CDN caches.",
+              "- Individual API coverage and exclusions are recorded in the resolved experiment.", "",
+              "## Evidence and reproduction", "",
+              f"Raw evidence: [{path.name}]({path.name}). SHA256: `{hashlib.sha256(path.read_bytes()).hexdigest()}`.", "",
+              "```sh", f"python -m benchmark report {path.name}", "```", "",
+              "To repeat measurements, use the recorded commits, dependency locks, suite, and order. Public-network runs use current data.",
+              "Actions artifacts have finite retention; promote selected JSON and Markdown files together to a durable archive.", ""]
+    content = "\n".join(lines)
+    if any("\u4e00" <= char <= "\u9fff" for char in content):
+        raise ValueError("Report text must be English")
+    path.with_suffix(".md").write_text(content, encoding="utf-8")
+    save_json(path.with_name(path.stem + "_summary.json"), summary)
+    return summary

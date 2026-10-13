@@ -1,116 +1,118 @@
-# Benchmarks and performance diagnostics
+# Performance benchmarks
 
-This directory contains developer tools for measuring query latency, explaining
-network waits, and reproducing concurrency problems. For application behavior
-and configuration, start with [Local file cache](../doc/api/Local_File_Cache.md)
-and [HTTP connection pool](../doc/api/HTTP_Connection_Pool.md).
+GitHub Actions is the primary entry point. Each experiment runs explicit baseline
+and candidate commits sequentially on the same runner, with isolated product
+environments and one workload. The baseline is reproducible source, dependencies,
+and procedure, rather than a historical duration from a developer's network.
 
-The original [performance challenge](CHALLENGE.md) explains the project's goals
-and constraints. The [test guide](../test/README.md) lists correctness regressions.
+See [design](DESIGN.md), [report lifecycle](results/README.md), and
+[correctness tests](../test/README.md). Application users can start with
+[local caching](../doc/api/Local_File_Cache.md) and the
+[HTTP connection pool](../doc/api/HTTP_Connection_Pool.md).
 
-## Directory guide
+## Development comparisons
+
+Open **Actions > Paired performance benchmark > Run workflow**:
+
+| Input | Meaning |
+| --- | --- |
+| `baseline` | Explicit Git ref, for example `release-0.0.62`. |
+| `candidate` | Revision under evaluation, usually `main`. |
+| `suite` | `smoke` for framework checks; `release` for all 90 cases. |
+| `rounds` | Paired repetitions; at least six even rounds for release evidence. |
+
+Refs are resolved once before the jobs start. Each controlled protocol and the
+live service get separate runners; A/B always share one job and host. Do not
+compare absolute durations across jobs. Pull requests run the short controlled
+suite. Manual runs also query the real Hugging Face service.
+
+Every run is **development evidence**, including runs of the `release` suite.
+Read the Summary and download Artifacts, retained for 30 days. The workflow
+neither commits reports nor uploads Release attachments. Public-repository
+Actions output is still visible to readers; development status is not privacy.
+
+The candidate and fixture generator currently use DuckDB `2.0.0.dev2610011535`.
+Each measured product uses its own declared dependencies: the 0.0.62 baseline
+therefore uses DuckDB 1.5.3 in its isolated environment. This comparison includes
+the dependency upgrade and intentional changes to product defaults.
+
+## Finalize a release report
+
+Review the full run, then open **Actions > Finalize release performance report
+> Run workflow** on the default branch. Supply `source_run_id` and `release_tag`.
+The selected run must be a successful manual benchmark with all three experiments
+in its latest attempt. The existing GitHub Release tag must point to the exact
+measured candidate commit. A draft Release can be used before publication.
+
+Finalization uploads `performance-report.md` and `performance-evidence.tar.gz`.
+It validates saved evidence without rerunning queries, discarding slower cases,
+replacing assets, changing tags, or publishing software. The bundle retains raw
+JSON, readable reports, dependency locks, the harness, and checksums. Promote
+accepted evidence before its Actions artifacts expire.
+
+Missing cases, short samples, different candidates, mixed attempts/dependencies,
+and incomplete protocol coverage are rejected. If jobs need retrying, rerun all
+jobs to preserve one attempt identity. Earlier attempts remain in Actions history.
+Successful validation does not assert that every workload improved.
+
+## Local reproduction
+
+Use a dedicated Python 3.11.10 environment and run from the repository root:
+
+```sh
+python -m pip install -r benchmark/requirements.txt
+python -m benchmark compare \
+  --baseline release-0.0.62 --candidate HEAD \
+  --output /tmp/defeatbeta-comparison-001 \
+  --mode controlled --protocol h2 --suite smoke --rounds 2 \
+  --network-label "Local loopback TLS"
+```
+
+The output directory must be new. Preparation exports commits and creates two
+virtual environments; uncommitted product edits are not measured. Controlled
+mode uses a separate TLS server, verified test CA, HTTP/2 or HTTP/1.1, and no
+proxy. It requires `openssl`. Live mode uses current Hugging Face files and the
+normal environment proxy policy. Reuse a prepared environment with:
+
+```sh
+python -m benchmark run --experiment /tmp/defeatbeta-comparison-001 \
+  --mode controlled --protocol http1 --suite release --rounds 6
+python -m benchmark report /path/to/results.json
+```
+
+Each run gets a new timestamped directory. Changes to the harness or installed
+dependencies require a new experiment. The report command reads saved evidence
+without requests. For archived reproduction, use the recorded source commits
+and frozen `harness/benchmark` directory in a disposable checkout. Install
+`harness-dependencies.lock` into the harness environment, then pass
+`--baseline-lock /path/to/baseline-dependencies.lock` and
+`--candidate-lock /path/to/candidate-dependencies.lock` to `compare` or `prepare`.
+These optional inputs constrain reproduction to the original dependencies.
+Public data reproduction uses current data because old Hugging Face revisions
+may have been removed.
+
+The full suite covers 20 methods in four states, plus ten mixed concurrency
+cases, using a fixed 32-symbol corpus and seeded order. It covers direct reads,
+statements, composite calculations, transcript bodies, and news bodies. The
+saved manifest identifies methods without independent performance measurements.
+
+Read latency, completion rate, CPU, memory, bytes, failures, and pool waits
+together. Application bytes/s is not wire bandwidth. Keep home, office, mobile,
+and GitHub environments separate when interpreting results.
+
+## Layout
 
 | Location | Purpose |
 | --- | --- |
-| `benchmark.py`, `report.py` | Main query benchmark and explicit result publication. |
-| [workloads/](workloads/) | Query concurrency, sharing, default-policy, and connection-capacity comparisons. |
-| [diagnostics/](diagnostics/) | Timing instrumentation, connection lifetime probes, and controlled reproductions. |
-| [reports/](reports/README.md) | Historical investigations, conclusions, and follow-up links. |
-| [results/archive/](results/README.md) | Explicitly archived comparisons or release records, paired with JSON evidence. |
-| `results/local/` | Ignored local runs, logs, traces, and temporary measurements. |
+| `benchmark.py`, `worker.py`, `suite.py` | Orchestration, isolated measurement, workload contract. |
+| `fixture.py`, `server.py`, `adapter.py` | Controlled data and real TLS/Range service. |
+| `report.py`, `publication.py` | Evidence rendering and explicit release finalization. |
+| [workloads/](workloads/), [diagnostics/](diagnostics/) | Specialized concurrency, protocol, lifetime, and DuckDB diagnostics. |
+| [reports/](reports/README.md) | Historical engineering investigations. |
+| [results/archive/](results/archive/) | Historical release evidence, retained unchanged. |
 
-Reusable tools and curated engineering reports belong in the source repository.
-Several diagnostic modules are imported by regression tests, so they must be
-available in a source checkout. Run the categorized modules with `python -m`
-from the repository root, as shown below. They are developer tooling, not a
-supported application API; package discovery includes only `defeatbeta_api*`.
-The main `benchmark.py` and `report.py` entry points and result directories
-retain their original paths. The categorized tools have no old-path aliases.
-
-Raw local runs are not published automatically. Engineering reports refer to
-some local artifacts that are not part of a checkout; those reports preserve
-methods and historical observations, not complete release archives. Only
-explicitly selected evidence belongs in `results/archive/`.
-
-## Start here
-
-Run commands from the repository root in the project's installed environment.
-Choose a new output filename for each diagnostic run.
-
-**End-to-end cold query latency:**
-
-```sh
-python benchmark/benchmark.py run --runs 3 --tag cold_price --api-method price
-```
-
-This uses isolated cold samples and writes local records. See the
-[record and publication workflow](results/README.md) for paired comparisons,
-release snapshots, and archiving selected results.
-
-**Concurrent mixed Ticker APIs with the current connection budget:**
-
-```sh
-python -m benchmark.workloads.http_pool_mixed \
-  --output benchmark/results/local/mixed_queries.json \
-  --network-label "Office network" \
-  --budgets 16 --concurrency 1 32 128 \
-  --cache-modes cached uncached --rounds 2
-```
-
-Use a label describing the actual network. This benchmark prepares metadata,
-clears data extents between measured batches, and checks result fingerprints.
-Its timing boundary differs from a completely cold client. Diagnostic flags
-are experimental controls and do not prescribe application configuration.
-
-**Offline waiting and compute controls:**
-
-```sh
-python -m benchmark.diagnostics.duckdb_wait_repro \
-  --output benchmark/results/local/duckdb_wait.json
-python -m benchmark.diagnostics.duckdb_cpu_comparison \
-  --output benchmark/results/local/duckdb_compute.json
-```
-
-These isolate delayed reads and CPU work. They complement real-query results;
-they do not establish internet throughput.
-
-## Tool inventory
-
-| Tool | Use |
-| --- | --- |
-| [benchmark.py](benchmark.py), [report.py](report.py) | Cold queries, symbol sequences, Range experiments, and validated result archives. |
-| [http_pool_mixed.py](workloads/http_pool_mixed.py) | Concurrent mixed APIs, cached/uncached paths, pool limits, and optional detailed traces. |
-| [http_pool_defaults.py](workloads/http_pool_defaults.py) | Controlled comparisons of core connections, fetch workers, and stream ceilings. |
-| [pool_capacity_benchmark.py](workloads/pool_capacity_benchmark.py) | Loopback HTTP/1.1 admission and queueing control. |
-| [connection_timeline.py](diagnostics/connection_timeline.py) | Connection, handshake, socket, and request timing; also shared instrumentation. |
-| [cache_pipeline.py](diagnostics/cache_pipeline.py), [cache_timeline.py](diagnostics/cache_timeline.py) | Cache-worker, protocol-bridge, publication, and query timing. |
-| [http2_stream_probe.py](diagnostics/http2_stream_probe.py), [http2_stream_timeline.py](diagnostics/http2_stream_timeline.py) | Reproduce and trace decoded HTTP/2 data waiting for consumer delivery. |
-| [duckdb_wait_repro.py](diagnostics/duckdb_wait_repro.py) | Held-read waiting, cancellation, and cursor recovery in disposable processes. |
-| [duckdb_cpu_comparison.py](diagnostics/duckdb_cpu_comparison.py) | Compute-only comparison with an independent result reference. |
-| [cdn_idle.py](diagnostics/cdn_idle.py), [cdn_active.py](diagnostics/cdn_active.py) | CDN idle retirement and lifetime under real request traffic. |
-| [tcp_keepalive_capture.py](diagnostics/tcp_keepalive_capture.py) | Explicit OS socket and packet diagnostics; capture may require OS privileges. |
-| [shared_query_benchmark.py](workloads/shared_query_benchmark.py) | Earlier sharing comparison and common helpers. Its baseline loader reads selected modules from the checkout's `HEAD`, not a permanently fixed release. |
-
-CLI tools expose their arguments with `--help`; timeline helper modules are
-also imported by tools and tests. Network diagnostics generate real downloads,
-and detailed instrumentation adds overhead. Keep traced diagnosis separate
-from minimally instrumented performance comparisons.
-
-## Interpreting and publishing results
-
-Record the source revision, dependency versions, dataset version, network route,
-cache/connection preparation, workload, and timing boundary. Compare matched
-result fingerprints before interpreting timing differences. Daily dataset
-updates and network changes can invalidate an otherwise similar comparison.
-
-Report latency distributions, CPU use, downloaded bytes, failures, and pool
-waiting together. Application bytes divided by elapsed time is not wire
-bandwidth or proof of link saturation. Historical home, office, and in-car
-runs must not be pooled into a single speedup claim.
-
-For contributions, include the reusable tool, relevant regression coverage,
-and a concise interpretation with its limitations. Keep exploratory logs and
-machine-specific captures in `results/local/`; select durable public evidence
-explicitly using the [archive workflow](results/README.md). The
-[report index](reports/README.md) identifies historical investigations and the
-latest recorded validation without requiring application users to read them all.
+Specialized modules run with `python -m benchmark.workloads.NAME` or
+`python -m benchmark.diagnostics.NAME`. Some are imported by regression tests.
+They are separate from the official paired suite. The retired single-file CLI
+and HEAD-based baseline loader have been removed. These developer tools are not
+installed as part of the public `defeatbeta_api` package.
