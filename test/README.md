@@ -83,6 +83,12 @@ mixed-API benchmark accepts `--duckdb-threads 1` or `--duckdb-threads 4` as
 diagnostic controls; these do not change product defaults. Compare reports
 only when dataset versions, result fingerprints and all other policies match.
 
+File-identity regressions cover replacement with an unchanged dataset timestamp,
+memory and disk reads, restart/shared-directory isolation, preserved reuse of
+unchanged files, in-flight download publication, and shared CDN resolution. A
+real DuckDB query bound against an old footer must retry as a whole after either
+a version change or a footer-identity change, with disk caching enabled or disabled.
+
 Version-resolution regressions cover equal-size and changed-size remote objects,
 actual byte reads with disk caching enabled and disabled, delayed old-generation
 resolutions, shared signed-URL refresh, and route changes. Footer-lock regressions

@@ -21,7 +21,8 @@ import fsspec
 import httpx
 
 from defeatbeta_api.client.shared_resources import (
-    FILE_SIZES, FOOTERS, PARQUET_INDEXES, ParquetIndex, SharedHttpClient, file_lock, value_size,
+    FILE_SIZES, FOOTERS, PARQUET_INDEXES, ParquetIndex, SharedHttpClient,
+    dataset_file_identity, file_lock, value_size,
 )
 
 
@@ -160,6 +161,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         self._network_executor = ThreadPoolExecutor(max_workers=network_workers)
         self._client_lock = Lock()
         self._files = {}
+        self._file_identities = {}
         self._file_version_tags = {}
         self._metadata_locks = {}
         self._pending = {}
@@ -394,10 +396,10 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                 or parts.query or parts.fragment):
             raise ValueError("Only pinned DefeatBeta data URLs can be cached")
         with self._guard:
-            key = hashlib.sha256(
-                f"{self.version}\n{resolve_url}".encode()
-            ).hexdigest()
+            identity = dataset_file_identity(self.version, resolve_url, self._footer_index)
+            key = hashlib.sha256(json.dumps(identity, separators=(",", ":")).encode()).hexdigest()
             self._files[key] = resolve_url
+            self._file_identities[key] = identity
             self._file_version_tags[key] = self._version_tag
         return f"{self.protocol}://{key}/{Path(parts.path).name}"
 
@@ -511,7 +513,11 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
 
     def _current_key(self, key):
         with self._guard:
-            return self._file_version_tags[key] == self._version_tag
+            return self._current_key_locked(key)
+
+    def _current_key_locked(self, key):
+        return self._file_identities[key] == dataset_file_identity(
+            self.version, self._files[key], self._footer_index)
 
     def _require_current_key(self, key):
         if not self._current_key(key):
@@ -666,7 +672,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
 
             size = FILE_SIZES.get_or_build((str(self.directory.resolve()), key), build)
             with self._guard:
-                if self._file_version_tags[key] == self._version_tag:
+                if self._current_key_locked(key):
                     self._sizes[key] = size
             return size
 
@@ -742,17 +748,15 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
 
     def _load_footer(self, key, total):
         with self._guard:
-            if self._file_version_tags[key] != self._version_tag:
+            if not self._current_key_locked(key):
                 return None
-            version_tag = self._version_tag
             footer_index = self._footer_index
             url = self._files[key]
             hint = footer_index.get(urlsplit(url).path.partition("/data/")[2])
             remembered = self._footer_memory.get(key)
 
         def still_current():
-            return (self._version_tag == version_tag
-                    and self._footer_index == footer_index)
+            return self._current_key_locked(key)
 
         def matches_hint(content, footer_size):
             if not isinstance(hint, dict) or hint.get("file_size") != total:
@@ -832,11 +836,7 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
                 except OSError:
                     return False
 
-            with self._guard:
-                hint = self._footer_index.get(urlsplit(url).path.partition("/data/")[2])
-            hint_identity = tuple(hint.get(name) for name in (
-                "file_size", "footer_size", "footer_sha256")) if isinstance(hint, dict) else None
-            shared_key = (key, total, hint_identity)
+            shared_key = (key, total)
             footer, _, _ = FOOTERS.get_or_build(
                 shared_key, build, valid=valid, weight=lambda item: len(item[0][1]))
             if not self._current_key(key):

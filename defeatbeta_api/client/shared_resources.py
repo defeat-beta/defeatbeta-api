@@ -40,6 +40,20 @@ class _PrivateRequestFilter(logging.Filter):
 logging.getLogger("httpx").addFilter(_PrivateRequestFilter())
 
 
+def dataset_file_identity(version, url, footer_index):
+    """Use the same immutable file identity for bytes, metadata, and resolution."""
+    relative = urlsplit(url).path.partition("/data/")[2]
+    hint = footer_index.get(relative) if isinstance(footer_index, dict) else None
+    hint = hint if isinstance(hint, dict) else {}
+    size = hint.get("file_size")
+    footer_size = hint.get("footer_size")
+    digest = hint.get("footer_sha256")
+    return (version, url,
+            size if type(size) is int and size > 0 else None,
+            footer_size if type(footer_size) is int and footer_size > 0 else None,
+            digest if isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest) else None)
+
+
 def network_identity(url, proxy=None, trust_env=True):
     """Resolve routing before choosing a pool, including environment changes."""
     parts = urlsplit(url)

@@ -19,7 +19,7 @@ from defeatbeta_api.client.dataset_cache_fs import (
     dataset_event_object_id, parquet_metadata_file,
 )
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
-from defeatbeta_api.client.shared_resources import RESOLVED_URLS, network_identity
+from defeatbeta_api.client.shared_resources import RESOLVED_URLS, dataset_file_identity, network_identity
 
 # Pinned Parquet URLs. DuckDB re-resolves the 302 on every range request, so
 # cold queries pay the redirect cost repeatedly. Resolve only Parquet inputs:
@@ -477,6 +477,7 @@ class DuckDBClient:
         started_ns = time.perf_counter_ns()
         with self._version_lock, self._cdn_lock:
             version = getattr(self, "_data_update_time", None)
+            file_identity = dataset_file_identity(version, resolve_url, getattr(self, "_footer_index", {}))
             previous = self._dataset_cdn_cache.get(resolve_url)
             # Local state only identifies the value a forced refresh replaces.
             # All reads use the shared cache's version and routing identity.
@@ -494,7 +495,7 @@ class DuckDBClient:
                 url, size = self._hf_client.resolve_cdn_info(resolve_url, proxies=proxies)
                 return url, size, time.monotonic()
 
-            identity = (network_identity(resolve_url, self.http_proxy), resolve_url, version)
+            identity = (network_identity(resolve_url, self.http_proxy), file_identity)
             observed = previous[1] if previous is not None and previous[0] == identity else None
             url, size, resolved_at = RESOLVED_URLS.get_or_build(
                 identity, build, force_if=observed if refresh else None,
@@ -505,9 +506,11 @@ class DuckDBClient:
                 cache_hit=False, status="error",
             )
             raise
-        with self._cdn_lock:
+        with self._version_lock, self._cdn_lock:
             current = self._dataset_cdn_cache.get(resolve_url)
-            if (version == getattr(self, "_data_update_time", None)
+            current_identity = dataset_file_identity(
+                getattr(self, "_data_update_time", None), resolve_url, getattr(self, "_footer_index", {}))
+            if (file_identity == current_identity
                     and (current is None or current[1][2] <= resolved_at)):
                 self._dataset_cdn_cache[resolve_url] = (identity, (url, size, resolved_at))
         _record_performance(

@@ -20,7 +20,7 @@ from unittest.mock import Mock, patch
 import httpx
 import duckdb
 
-from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem
+from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem, DatasetVersionChanged
 from defeatbeta_api.client.hf_session import MetadataSession
 from defeatbeta_api.client.http_pool import get_connection_pool_status
 from defeatbeta_api.client.duckdb_client import DuckDBClient
@@ -594,8 +594,10 @@ class TestSharedResources(unittest.TestCase):
                 fs.prepare_footer(path)
                 fs.update_version("hint-v1", footer_index={
                     "US/stock_prices.parquet": {**hint, "footer_sha256": "a" * 64}})
-                with self.assertRaisesRegex(ValueError, "spec.json"):
+                with self.assertRaises(DatasetVersionChanged):
                     fs.prepare_footer(path)
+                with self.assertRaisesRegex(ValueError, "spec.json"):
+                    fs.prepare_footer(fs.register(PINNED))
             finally:
                 fs.close()
 

@@ -86,8 +86,10 @@ flowchart LR
 ```
 
 The local cache stores variable-length extents instead of requiring complete
-file downloads or fixed-size blocks. Cached bytes are keyed by the pinned
-file and dataset version, so a new dataset version cannot reuse stale data.
+file downloads or fixed-size blocks. Cached bytes use one file identity:
+the pinned URL, dataset version, and available file size, footer size, and footer
+SHA-256 from the dataset spec. A changed file cannot reuse the previous identity's
+data merely because the dataset update timestamp stayed the same.
 Concurrent reads can share a pending download instead of issuing another
 Range GET.
 
@@ -117,7 +119,7 @@ The first query for a Parquet file prepares its footer and, with column
 prefetch enabled, a simple symbol scan parses row-group metadata from that
 footer. Validated footer bytes and immutable parsed metadata are shared across
 Ticker and DuckDB client instances in the process. Concurrent preparation of
-the same file/version coalesces into one download and one parse. The footer is
+the same file identity coalesces into one download and one parse. The footer is
 stored locally, with a per-file interprocess lock for shared directories. Reads
 do not change its modification time. After process restart, the
 metadata is parsed again from the local footer without downloading it again.
@@ -129,8 +131,10 @@ client starts.
 
 Each cached range contains a SHA-256 digest and is published only after its
 entire HTTP response has passed Range validation. A corrupt local range is
-fetched again. Cache names are based on the pinned dataset file and the
-dataset update version, not on the short-lived signed CDN URL.
+fetched again. Data extents, footer bytes, parsed indexes, and resolved CDN
+addresses all follow the same file identity. Short-lived CDN signatures are
+excluded from persistent cache names. Identical identities can reuse disk
+data after restart; metadata changes for another file preserve that reuse.
 
 ## Location and lifetime
 
@@ -154,9 +158,9 @@ instead of returning mixed-generation results or retrying indefinitely.
 Expired virtual file paths also reject further reads. The checks apply with
 disk caching enabled or disabled and do not serialize SQL execution.
 
-CDN address reuse also follows the dataset version and effective network route,
+CDN address reuse also follows the file identity and effective network route,
 including when disk caching is disabled. An older in-flight resolution cannot
-replace the current version's retained address. Clients consult the shared
+replace the current identity's retained address. Clients consult the shared
 resolution cache so they can reuse an address refreshed by another client.
 Result publication and retirement of the corresponding in-flight build are
 atomic, so a forced refresh cannot rejoin an already completed stale build.

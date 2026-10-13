@@ -144,6 +144,117 @@ def shared_cache_process_reader(directory, signed_url, total, start, messages):
 
 
 class TestDatasetCacheFileSystem(unittest.TestCase):
+    @staticmethod
+    def file_identity_hint(payload):
+        footer_size = int.from_bytes(payload[-8:-4], "little")
+        return {"US/stock_prices.parquet": {"file_size": len(payload), "footer_size": footer_size,
+                "footer_sha256": hashlib.sha256(payload[-footer_size - 8:-8]).hexdigest()}}
+
+    def test_changed_footer_identity_invalidates_data_and_footer_with_same_version(self):
+        old = b"PAR1" + b"A" * 80 + b"meta" + (4).to_bytes(4, "little") + b"PAR1"
+        new = b"PAR1" + b"B" * 80 + b"next" + (4).to_bytes(4, "little") + b"PAR1"
+        for memory_bytes in (0, 1024):
+            with self.subTest(memory_bytes=memory_bytes), tempfile.TemporaryDirectory() as directory:
+                remote = FakeRangeClient(len(old), payload=old)
+                fs = DatasetCacheFileSystem(directory=directory, version="same-version",
+                    resolve=lambda url, refresh=False: (SIGNED, len(old)), http_client=remote,
+                    footer_index=self.file_identity_hint(old), max_memory_bytes=memory_bytes)
+                try:
+                    old_path = fs.register(PINNED)
+                    fs.prepare_footer(old_path)
+                    self.assertEqual(fs.cat_file(old_path, 4, 14), b"A" * 10)
+                    remote.payload = new
+                    fs.update_version("same-version", footer_index=self.file_identity_hint(new))
+                    new_path = fs.register(PINNED)
+                    self.assertEqual(fs.cat_file(new_path, 4, 14), b"B" * 10)
+                    with self.assertRaises(DatasetVersionChanged):
+                        fs.cat_file(old_path, 4, 14)
+                    fs.prepare_footer(new_path)
+                    self.assertEqual(fs.cached_footer_bytes(new_path), new[-12:])
+                finally:
+                    fs.close()
+
+    def test_changed_file_identity_isolated_across_restart_and_shared_directory(self):
+        old = b"PAR1" + b"A" * 80 + FAKE_FOOTER_BYTES
+        new = b"PAR1" + b"B" * 80 + b"next" + FAKE_FOOTER_BYTES[-8:]
+        with tempfile.TemporaryDirectory() as directory:
+            remote = FakeRangeClient(len(old), payload=old)
+            def create(payload):
+                return DatasetCacheFileSystem(directory=directory, version="same-version",
+                    resolve=lambda url, refresh=False: (SIGNED, len(old)), http_client=remote,
+                    footer_index=self.file_identity_hint(payload))
+            first = create(old)
+            try:
+                self.assertEqual(first.cat_file(first.register(PINNED), 4, 14), b"A" * 10)
+                remote.payload = new
+                second = create(new)
+                try:
+                    self.assertEqual(second.cat_file(second.register(PINNED), 4, 14), b"B" * 10)
+                    # A stale process can retain old bytes only under its separate identity.
+                    self.assertEqual(first.cat_file(first.register(PINNED), 4, 14), b"A" * 10)
+                finally:
+                    second.close()
+                calls = len(remote.calls)
+                restarted = create(new)
+                try:
+                    self.assertEqual(restarted.cat_file(restarted.register(PINNED), 4, 14), b"B" * 10)
+                    self.assertEqual(len(remote.calls), calls)
+                finally:
+                    restarted.close()
+            finally:
+                first.close()
+
+    def test_same_version_identity_change_rejects_inflight_publication(self):
+        old = b"PAR1" + b"A" * 80 + FAKE_FOOTER_BYTES
+        new = b"PAR1" + b"B" * 80 + b"next" + FAKE_FOOTER_BYTES[-8:]
+        for cached, chunk_size in ((True, 0), (True, 4), (False, 0)):
+            with self.subTest(cached=cached, chunk_size=chunk_size), tempfile.TemporaryDirectory() as directory:
+                remote = FakeRangeClient(len(old), payload=old)
+                fs = DatasetCacheFileSystem(directory=directory, version="same-version",
+                    resolve=lambda url, refresh=False: (SIGNED, len(old)), http_client=remote,
+                    footer_index=self.file_identity_hint(old), cache_enabled=cached,
+                    network_chunk_size=chunk_size)
+                entered, release = threading.Event(), threading.Event()
+                request_range = fs._request_range
+                def delayed_range(*args, **kwargs):
+                    result = request_range(*args, **kwargs)
+                    entered.set()
+                    if not release.wait(5):
+                        raise TimeoutError("Read was not released")
+                    return result
+                fs._request_range = delayed_range
+                try:
+                    with ThreadPoolExecutor(max_workers=1) as executor:
+                        result = executor.submit(fs.cat_file, fs.register(PINNED), 4, 14)
+                        try:
+                            self.assertTrue(entered.wait(3))
+                            fs.update_version("same-version", footer_index=self.file_identity_hint(new))
+                        finally:
+                            release.set()
+                        with self.assertRaises(DatasetVersionChanged):
+                            result.result(timeout=3)
+                    self.assertFalse(list(Path(directory).glob("*.block")))
+                finally:
+                    fs.close()
+
+    def test_unrelated_metadata_does_not_invalidate_unchanged_file(self):
+        old = b"PAR1" + b"A" * 80 + FAKE_FOOTER_BYTES
+        with tempfile.TemporaryDirectory() as directory:
+            remote = FakeRangeClient(len(old), payload=old)
+            hint = self.file_identity_hint(old)
+            fs = DatasetCacheFileSystem(directory=directory, version="same-version",
+                resolve=lambda url, refresh=False: (SIGNED, len(old)), http_client=remote, footer_index=hint)
+            try:
+                path = fs.register(PINNED)
+                fs.cat_file(path, 4, 14)
+                calls = len(remote.calls)
+                fs.update_version("same-version", footer_index={**hint, "US/stock_profile.parquet": {"file_size": 50}})
+                self.assertEqual(fs.register(PINNED), path)
+                self.assertEqual(fs.cat_file(path, 4, 14), b"A" * 10)
+                self.assertEqual(len(remote.calls), calls)
+            finally:
+                fs.close()
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.remote = FakeRangeClient(466_437_904)
@@ -237,7 +348,9 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         self.filesystem.update_version(
             "dataset-v1", footer_index={"US/stock_prices.parquet": {"file_size": 200}},
         )
-        self.assertEqual(self.filesystem.info(path)["size"], 200)
+        with self.assertRaises(DatasetVersionChanged):
+            self.filesystem.info(path)
+        self.assertEqual(self.filesystem.info(self.filesystem.register(PINNED))["size"], 200)
 
     def test_rejects_disk_limit_smaller_than_one_data_byte(self):
         with self.assertRaisesRegex(ValueError, "one data byte"):
