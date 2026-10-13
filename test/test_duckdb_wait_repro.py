@@ -3,8 +3,14 @@
 import tempfile
 import multiprocessing
 import unittest
+import io
+import json
+from contextlib import redirect_stdout
+from pathlib import Path
+from unittest.mock import patch
 
-from benchmark.diagnostics.duckdb_wait_repro import create_fixture, run_case
+from benchmark.diagnostics.duckdb_wait_repro import _measure_case, create_fixture, run_case
+from benchmark.diagnostics import duckdb_wait_repro
 
 
 class TestDuckDBWaitRepro(unittest.TestCase):
@@ -26,6 +32,36 @@ class TestDuckDBWaitRepro(unittest.TestCase):
                 for reader in case["readers_at_end_of_block"][0]:
                     self.assertIsInstance(reader["caller_owned"], bool)
                     self.assertGreater(reader["native_id"], 0)
+
+    def test_coarse_deadline_clock_does_not_quantize_elapsed_measurements(self):
+        with patch("benchmark.diagnostics.duckdb_wait_repro.time.monotonic", return_value=1):
+            case = _measure_case(self.payload, threads=4, queries=1, blocked_seconds=0.1, cancel=False)
+        self.assertGreaterEqual(case["blocked_wall_seconds"], 0.1)
+        self.assertEqual(case["results"][0]["status"], "ok")
+
+    def test_zero_elapsed_time_keeps_results_and_marks_cpu_ratio_unavailable(self):
+        with patch("benchmark.diagnostics.duckdb_wait_repro.time.monotonic", return_value=1), \
+                patch("benchmark.diagnostics.duckdb_wait_repro.time.perf_counter", return_value=1):
+            case = _measure_case(self.payload, threads=4, queries=1, blocked_seconds=0.001, cancel=False)
+        self.assertEqual(case["blocked_wall_seconds"], 0)
+        self.assertIsNone(case["blocked_cpu_per_wall"])
+        self.assertEqual(case["results"][0]["status"], "ok")
+
+    def test_cli_reports_an_unavailable_ratio_without_failing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "report.json"
+            output = io.StringIO()
+            arguments = ["duckdb_wait_repro", "--output", str(path), "--threads", "1",
+                         "--queries", "1", "--delays", "0.001", "--repeats", "1"]
+            case = {"blocked_cpu_per_wall": None, "readers_at_end_of_block": [[]]}
+            with patch("sys.argv", arguments), redirect_stdout(output), \
+                    patch.object(duckdb_wait_repro, "create_fixture", return_value=self.payload), \
+                    patch.object(duckdb_wait_repro, "run_case", return_value=case):
+                duckdb_wait_repro.main()
+            report = json.loads(path.read_text())
+            self.assertEqual(report["status"], "complete")
+            self.assertIsNone(report["cases"][0]["blocked_cpu_per_wall"])
+            self.assertIn("cpu/wall=n/a", output.getvalue())
 
     def test_concurrent_queries_have_separate_gates_and_correct_results(self):
         for threads in (1, 4):

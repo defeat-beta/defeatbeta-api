@@ -114,7 +114,7 @@ def _measure_case(payload, threads, queries, blocked_seconds, cancel):
     def query(index):
         gate = gates[f"query-{index}.parquet"]
         gate.caller_ident = get_ident()
-        started = time.monotonic()
+        started = time.perf_counter()
         cpu_started = time.thread_time()
         try:
             effective_threads = cursors[index].execute(
@@ -126,12 +126,12 @@ def _measure_case(payload, threads, queries, blocked_seconds, cancel):
                 "WHERE id % 2 = 0").fetchall()
             return {"status": "ok", "result": list(rows[0]),
                     "effective_threads": effective_threads,
-                    "wall_seconds": time.monotonic() - started,
+                    "wall_seconds": time.perf_counter() - started,
                     "caller_cpu_seconds": time.thread_time() - cpu_started}
         except Exception as exc:
             return {"status": "error", "error_type": type(exc).__name__,
                     "error": str(exc),
-                    "wall_seconds": time.monotonic() - started,
+                    "wall_seconds": time.perf_counter() - started,
                     "caller_cpu_seconds": time.thread_time() - cpu_started}
         finally:
             completed[index].set()
@@ -147,11 +147,11 @@ def _measure_case(payload, threads, queries, blocked_seconds, cancel):
                     raise TimeoutError("Query did not reach a synthetic data read")
         if any(event.is_set() for event in completed):
             raise AssertionError("Query completed before its data was released")
-        started = time.monotonic()
+        started = time.perf_counter()
         cpu_started = time.process_time()
         Event().wait(blocked_seconds)
         cpu = time.process_time() - cpu_started
-        elapsed = time.monotonic() - started
+        elapsed = time.perf_counter() - started
         blocked_readers = []
         for gate in gates.values():
             with gate.lock:
@@ -159,13 +159,13 @@ def _measure_case(payload, threads, queries, blocked_seconds, cancel):
         interrupt_seconds = None
         finished_before_release = None
         if cancel:
-            started_interrupt = time.monotonic()
+            started_interrupt = time.perf_counter()
             cursors[0].interrupt()
-            interrupt_seconds = time.monotonic() - started_interrupt
+            interrupt_seconds = time.perf_counter() - started_interrupt
             finished_before_release = completed[0].wait(0.1)
         for gate in gates.values():
             gate.release.set()
-        released = time.monotonic()
+        released = time.perf_counter()
         results = [future.result(timeout=5) for future in futures]
         recovery = cursors[0].execute("SELECT 42").fetchone()[0] if cancel else None
         for index, result in enumerate(results):
@@ -179,11 +179,11 @@ def _measure_case(payload, threads, queries, blocked_seconds, cancel):
         return {"threads": threads, "queries": queries, "cancel": cancel,
                 "requested_block_seconds": blocked_seconds,
                 "blocked_wall_seconds": elapsed, "blocked_cpu_seconds": cpu,
-                "blocked_cpu_per_wall": cpu / elapsed,
+                "blocked_cpu_per_wall": cpu / elapsed if elapsed > 0 else None,
                 "readers_at_end_of_block": blocked_readers, "results": results,
                 "interrupt_call_seconds": interrupt_seconds,
                 "cancelled_finished_before_release": finished_before_release,
-                "completion_after_release_seconds": time.monotonic() - released,
+                "completion_after_release_seconds": time.perf_counter() - released,
                 "cancelled_cursor_recovery": recovery}
     finally:
         for gate in gates.values():
@@ -277,8 +277,10 @@ def main():
                         save()
                         owners = sum(any(r["caller_owned"] for r in readers)
                                      for readers in case["readers_at_end_of_block"])
+                        ratio = case["blocked_cpu_per_wall"]
+                        ratio_text = f"{ratio:.3f}" if ratio is not None else "n/a"
                         print(f"threads={threads} queries={queries} delay={delay} "
-                              f"caller_owned={owners} cpu/wall={case['blocked_cpu_per_wall']:.3f}", flush=True)
+                              f"caller_owned={owners} cpu/wall={ratio_text}", flush=True)
         report["status"] = "complete"
     except BaseException as exc:
         report.update(status="failed", error_type=type(exc).__name__)
