@@ -38,6 +38,13 @@ def run(payload):
     if env["dependencies"] != payload["dependencies"]:
         raise RuntimeError("Measured dependency versions differ from the prepared environment")
     case = payload["case"]
+    diagnostic_options = case.get("diagnostics")
+    memory = []
+    if diagnostic_options:
+        from benchmark.diagnostics.query_observation import (
+            collect_memory, memory_sample, profile_calls, validate_options,
+        )
+        diagnostic_options = validate_options(case)
     tasks = case["tasks"]
     directory = payload["cache_directory"]
     config = Configuration(cache_directory=directory)
@@ -47,6 +54,8 @@ def run(payload):
         from defeatbeta_api.client.http_pool import get_connection_pool_status
         pool_status = get_connection_pool_status
     process = psutil.Process()
+    if diagnostic_options:
+        memory.append(memory_sample(process, "before_constructor"))
     first = None
     with dataset_endpoint(payload.get("endpoint")):
         try:
@@ -94,6 +103,8 @@ def run(payload):
                 if case["state"] == "metadata_ready":
                     clear_data(fs, directory)
             state_before = snapshot(directory)
+            if diagnostic_options:
+                memory.append(memory_sample(process, "before_query", fs))
             if case["state"] == "first_use" and any(v["files"] for v in state_before.values()):
                 raise RuntimeError("First-use data cache is not empty")
             if case["state"] == "metadata_ready" and state_before["block"]["files"]:
@@ -118,9 +129,17 @@ def run(payload):
 
                 try:
                     with capture_performance(record):
-                        frame = invoke(tickers[task["symbol"]], task)
-                    return {"task": task, "seconds": time.perf_counter() - started,
-                            "generator_queue_seconds": admitted - submitted, "frame": frame, "timings": timings}
+                        repetitions = (diagnostic_options or {}).get("profile_repeats", 0)
+                        if repetitions:
+                            frame, profile = profile_calls(
+                                lambda: invoke(tickers[task["symbol"]], task), repetitions)
+                        else:
+                            frame, profile = invoke(tickers[task["symbol"]], task), None
+                    outcome = {"task": task, "seconds": time.perf_counter() - started,
+                               "generator_queue_seconds": admitted - submitted, "frame": frame, "timings": timings}
+                    if profile is not None:
+                        outcome["profile"] = profile
+                    return outcome
                 except Exception as exc:
                     return {"task": task, "seconds": time.perf_counter() - started,
                             "generator_queue_seconds": admitted - submitted,
@@ -141,9 +160,13 @@ def run(payload):
             drain = fs.await_pending()
             drain_seconds = time.perf_counter() - drain_started
             pool_after = pool_status() if pool_status else None
+            if diagnostic_options:
+                memory.append(memory_sample(process, "after_query_and_drain", fs, client))
             for result in results:
                 if "frame" in result:
                     result["result"] = result_fingerprint(result.pop("frame"))
+            if diagnostic_options:
+                memory.append(collect_memory(process, "after_results_released"))
             failed = sum("error_type" in result for result in results)
             result = {"status": "ok" if not failed and not drain["errors"] else "error",
                       "environment": env, "defaults": vars(config),
@@ -161,10 +184,16 @@ def run(payload):
                       "cache_total_delta": difference(fs.metrics(), before),
                       "prefetch_drain_seconds": drain_seconds, "prefetch_errors": drain["errors"],
                       "pool_before": pool_before, "pool_after": pool_after, "results": results}
+            if diagnostic_options:
+                result["diagnostics"] = {"memory": memory,
+                    "instrumented": bool(diagnostic_options.get("profile_repeats")),
+                    "memory_scope": "RSS milestones, not peak memory or proof of a leak"}
             return result
         finally:
             if first is not None:
                 first.duckdb_client.close()
+                if diagnostic_options:
+                    memory.append(collect_memory(process, "after_client_closed"))
 
 
 if __name__ == "__main__":

@@ -253,3 +253,13 @@ class TestBenchmarkTLS(unittest.TestCase):
                     self.assertEqual(value["results"][0]["result"]["rows"], 32768)
                     if state in ("memory_warm", "disk_warm"):
                         self.assertEqual(value["cache_query_delta"]["downloaded_bytes"], 0)
+                    if state == "memory_warm":
+                        observed = {**case, "diagnostics": {"memory": True, "profile_repeats": 3}}
+                        measured = benchmark.execute(experiment, environment, observed, case_cache, 90, server)
+                        self.assertEqual(measured["status"], "ok", measured)
+                        self.assertEqual(measured["results"][0]["result"], value["results"][0]["result"])
+                        self.assertEqual(measured["cache_total_delta"]["range_requests"], 0)
+                        self.assertEqual(measured["results"][0]["profile"]["repetitions"], 3)
+                        self.assertEqual([item["stage"] for item in measured["diagnostics"]["memory"]], [
+                            "before_constructor", "before_query", "after_query_and_drain",
+                            "after_results_released", "after_client_closed"])

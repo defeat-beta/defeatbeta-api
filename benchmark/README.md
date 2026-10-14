@@ -100,6 +100,29 @@ Read latency, completion rate, CPU, memory, bytes, failures, and pool waits
 together. Application bytes/s is not wire bandwidth. Keep home, office, mobile,
 and GitHub environments separate when interpreting results.
 
+## Regression attribution
+
+The manual **Performance regression attribution** workflow separates an engine
+upgrade from project changes. It runs three arms sequentially on each runner:
+baseline source with declared dependencies, baseline source with the candidate
+interpreter/dependencies, and candidate source with declared dependencies.
+Non-DuckDB dependency locks must match. The middle arm is diagnostic only; it
+does not change either package's requirements or the official release baseline.
+
+The diagnostic retains ten cases from the standard workload, including four
+short warmed APIs and fixed mixed streams at concurrency 1/16/64/128. Six rounds
+use every arm ordering. Memory milestones run outside query timing. Additional
+warmed cProfile workers run separately, and their instrumented durations never
+enter the paired comparisons. Profiles cover the caller thread, so native call
+time can include waiting on other threads. RSS after closing the client still
+includes shared process resources and retained allocator memory; it is not a
+leak measurement.
+
+Controlled HTTP/2 and current Hugging Face get separate jobs. Results include
+raw `attribution.json`, three paired comparisons (`engine`, `project`, `total`),
+full profiles, memory observations, sources, and dependency locks. They remain
+development artifacts and cannot be finalized as a complete release report.
+
 ## Layout
 
 | Location | Purpose |
