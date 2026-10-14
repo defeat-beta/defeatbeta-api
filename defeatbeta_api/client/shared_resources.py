@@ -122,6 +122,9 @@ class SharedHttpClient:
         identity = network_identity(url, self.proxy, self.trust_env)
         with network_client(identity) as client:
             kwargs.setdefault("timeout", self.timeout)
+            # Client.request() always reads the complete response before return.
+            kwargs["extensions"] = {**(kwargs.get("extensions") or {}),
+                                    "defeatbeta_buffer_response": True}
             token = _PRIVATE_REQUEST.set(True)
             try:
                 return client.request(method, url, **kwargs)

@@ -69,6 +69,25 @@ def hold_file_lock_process(path, channel):
 
 
 class TestSharedResources(unittest.TestCase):
+    def test_complete_requests_select_buffering_without_mutating_caller_extensions(self):
+        response = object()
+        client = Mock()
+        client.request.return_value = response
+
+        @contextmanager
+        def borrow(identity):
+            yield client
+
+        extensions = {"trace": Mock()}
+        with patch.object(shared_resources, "network_client", borrow):
+            handle = SharedHttpClient(proxy="", timeout=7)
+            self.assertIs(handle.get("https://cdn.test/file", extensions=extensions), response)
+        options = client.request.call_args.kwargs
+        self.assertEqual(options["timeout"], 7)
+        self.assertIs(options["extensions"]["trace"], extensions["trace"])
+        self.assertTrue(options["extensions"]["defeatbeta_buffer_response"])
+        self.assertEqual(list(extensions), ["trace"])
+
     def test_forced_refresh_during_result_publication_builds_a_new_value(self):
         published, finish = Event(), Event()
 

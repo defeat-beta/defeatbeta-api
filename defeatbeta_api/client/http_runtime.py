@@ -117,6 +117,7 @@ class Connection:
         original_trace = request.extensions.get("trace")
         extensions = dict(request.extensions)
         socket_options = extensions.pop("defeatbeta_socket_options", ())
+        buffered = extensions.pop("defeatbeta_buffer_response", False)
 
         async def trace(event, info):
             if event.endswith(".connect_tcp.complete") and socket_options:
@@ -143,7 +144,16 @@ class Connection:
         routed = httpcore.Request(method=request.method, url=request.url, headers=request.headers,
                                   content=content(), extensions=extensions)
         response = await self._connection.handle_async_request(routed)
-        response.stream = ResponseStream(response.stream, self._runtime)
+        if buffered:
+            # Eager callers already retain the whole body. Consume and close it
+            # on this loop instead of scheduling one Future per response chunk.
+            try:
+                body = await response.aread()
+            finally:
+                await response.aclose()
+            response.stream = httpx.ByteStream(body)
+        else:
+            response.stream = ResponseStream(response.stream, self._runtime)
         return response
 
     def handle_request(self, request):

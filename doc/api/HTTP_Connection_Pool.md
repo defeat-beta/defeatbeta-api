@@ -57,6 +57,12 @@ HTTP framing, TLS, flow control, and GOAWAY handling. DefeatBeta manages
 allocation and coordinates receive notifications so a stream with decoded data
 can resume without waiting for another stream's next socket read.
 
+Requests through the shared client return a complete response. Their bodies are
+read and closed on the I/O loop in one operation, avoiding a cross-thread Future
+for every response chunk. This does not add a new cache or change download
+concurrency. Explicit streaming through the transport remains lazy and holds its
+pool reservation until the response is closed.
+
 The pool and network connections are process-local. Separate Python processes
 have separate budgets and sockets. Closing one Ticker's client does not close
 connections still shared by other clients. Footer bytes and parsed indexes have

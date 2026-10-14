@@ -1,11 +1,16 @@
 """Verify the synchronous facade around the existing async HTTP stack."""
 
 import asyncio
+from concurrent.futures import CancelledError
 from concurrent.futures import ThreadPoolExecutor
 from threading import get_ident
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
-from defeatbeta_api.client.http_runtime import HTTPRuntime, ResponseStream
+import httpcore
+
+from defeatbeta_api.client.http_runtime import Connection, HTTPRuntime, ResponseStream
 
 
 class TestHTTPRuntime(unittest.TestCase):
@@ -52,6 +57,86 @@ class TestHTTPRuntime(unittest.TestCase):
         response.close()
         self.assertEqual(len(set(threads)), 1)
         self.assertNotEqual(threads[0], get_ident())
+
+    def test_buffered_response_scheduling_does_not_grow_with_fragment_count(self):
+        for fragments in (0, 1, 128):
+            with self.subTest(fragments=fragments):
+                threads, closed = [], []
+
+                class Stream:
+                    async def __aiter__(self):
+                        for _ in range(fragments):
+                            threads.append(get_ident())
+                            yield b"payload"
+
+                    async def aclose(self):
+                        closed.append(get_ident())
+
+                async def request(request):
+                    threads.append(get_ident())
+                    return httpcore.Response(200, content=Stream())
+
+                with patch("defeatbeta_api.client.http_runtime.runtime", return_value=self.runtime):
+                    connection = Connection(SimpleNamespace(handle_async_request=request))
+                with patch.object(self.runtime, "call", wraps=self.runtime.call) as calls:
+                    response = connection.handle_request(httpcore.Request(
+                        "GET", "https://cdn.test/file", extensions={"defeatbeta_buffer_response": True}))
+                    self.assertEqual(response.read(), b"payload" * fragments)
+                    response.close()
+                self.assertEqual(closed, [self.runtime._thread.ident])
+                self.assertEqual(set(threads), {self.runtime._thread.ident})
+                self.assertEqual(calls.call_count, 1)
+
+    def test_buffered_read_failure_closes_response_on_protocol_thread(self):
+        for error, expected in ((httpcore.ReadTimeout("Read timed out"), httpcore.ReadTimeout),
+                                (httpcore.ReadError("Peer disconnected"), httpcore.ReadError),
+                                (asyncio.CancelledError(), CancelledError)):
+            with self.subTest(error=type(error).__name__):
+                closed = []
+
+                class Stream:
+                    async def __aiter__(self):
+                        yield b"partial"
+                        raise error
+
+                    async def aclose(self):
+                        closed.append(get_ident())
+
+                async def request(request):
+                    return httpcore.Response(200, content=Stream())
+
+                with patch("defeatbeta_api.client.http_runtime.runtime", return_value=self.runtime):
+                    connection = Connection(SimpleNamespace(handle_async_request=request))
+                with self.assertRaises(expected):
+                    connection.handle_request(httpcore.Request(
+                        "GET", "https://cdn.test/file", extensions={"defeatbeta_buffer_response": True}))
+                self.assertEqual(closed, [self.runtime._thread.ident])
+                self.assertEqual(self.runtime.call(asyncio.sleep(0, result=42)), 42)
+
+    def test_unbuffered_response_is_lazy_and_can_close_before_reading_all_bytes(self):
+        consumed, closed = [], []
+
+        class Stream:
+            async def __aiter__(self):
+                for index in range(128):
+                    consumed.append(index)
+                    yield b"payload"
+
+            async def aclose(self):
+                closed.append(get_ident())
+
+        async def request(request):
+            return httpcore.Response(200, content=Stream())
+
+        with patch("defeatbeta_api.client.http_runtime.runtime", return_value=self.runtime):
+            connection = Connection(SimpleNamespace(handle_async_request=request))
+        response = connection.handle_request(httpcore.Request("GET", "https://cdn.test/file"))
+        self.assertEqual(consumed, [])
+        iterator = response.iter_stream()
+        self.assertEqual(next(iterator), b"payload")
+        response.close()
+        self.assertEqual(consumed, [0])
+        self.assertEqual(closed, [self.runtime._thread.ident])
 
     def test_closed_runtime_rejects_work_without_leaking_coroutines(self):
         self.runtime.close()

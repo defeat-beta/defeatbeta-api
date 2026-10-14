@@ -3,6 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import gzip
 import os
 import select
 import socket
@@ -25,6 +26,7 @@ from defeatbeta_api.client.http_pool import (
 )
 
 from defeatbeta_api.client.shared_resources import SharedHttpClient, close_network_resources
+from defeatbeta_api.client.http_runtime import runtime as http_runtime
 from test.http2_peer import http2_peer
 
 
@@ -654,6 +656,117 @@ class TestHTTPPoolRegression(unittest.TestCase):
     def tearDown(self):
         close_network_resources()
         configure_connection_pool()
+
+    def test_buffered_large_responses_use_one_runtime_call_per_request(self):
+        configure_connection_pool(core_connections_per_origin=1, max_connections_for_all_origins=2)
+        payload = bytes(range(256)) * 4096
+        with http2_peer(payload=payload, max_concurrent_streams=4) as (url, certificate, server), \
+                patch.dict(os.environ, {"SSL_CERT_FILE": str(certificate)}):
+            client = SharedHttpClient(proxy="", timeout=15)
+            try:
+                self.assertEqual(client.get(url).content, payload)
+                server.release_responses.clear()
+                runtime = http_runtime()
+                original = runtime.call
+                calls, guard = [], Lock()
+
+                def observe(coroutine):
+                    with guard:
+                        calls.append(getattr(coroutine, "__qualname__", type(coroutine).__name__))
+                    return original(coroutine)
+
+                with patch.object(runtime, "call", observe), ThreadPoolExecutor(max_workers=16) as executor:
+                    futures = [executor.submit(client.get, url) for _ in range(16)]
+                    try:
+                        wait_until(lambda: get_connection_pool_status()["pending_requests"] == 8)
+                        self.assertEqual(sum(c["reserved_streams"] for c in
+                                             get_connection_pool_status()["connections"]), 8)
+                    finally:
+                        server.release_responses.set()
+                    try:
+                        responses = [future.result(timeout=15).content for future in futures]
+                    except Exception as exc:
+                        self.fail(f"Request failed: {type(exc).__name__}; peer errors: {server.errors}")
+                    self.assertEqual(responses, [payload] * 16)
+                self.assertEqual(calls, ["Connection._request"] * 16)
+                state = get_connection_pool_status()
+                self.assertEqual(state["pending_requests"], 0)
+                self.assertTrue(all(c["reserved_streams"] == 0 for c in state["connections"]))
+                self.assertEqual(server.connections, 2)
+                self.assertEqual(client.get(url).content, payload)
+            finally:
+                client.close()
+
+    def test_buffered_body_timeout_releases_slot_and_next_request_recovers(self):
+        configure_connection_pool(core_connections_per_origin=1, max_connections_for_all_origins=1)
+        with http2_peer(payload=b"delayed", body_delay=0.2) as (url, certificate, server), \
+                patch.dict(os.environ, {"SSL_CERT_FILE": str(certificate)}):
+            client = SharedHttpClient(proxy="", timeout=httpx.Timeout(3, read=0.05))
+            try:
+                with self.assertRaises(httpx.ReadTimeout):
+                    client.get(url)
+                state = get_connection_pool_status()
+                self.assertEqual(state["pending_requests"], 0)
+                self.assertEqual(state["connections"], [])
+                self.assertEqual(client.get(url, timeout=3).content, b"delayed")
+                self.assertEqual(get_connection_pool_status()["connections"][0]["reserved_streams"], 0)
+            finally:
+                client.close()
+
+    def test_buffered_http1_keeps_decoding_redirects_and_incomplete_body_errors(self):
+        payload = bytes(range(256)) * 4096
+        compressed = gzip.compress(payload)
+
+        class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def do_GET(self):
+                redirected = self.path == "/redirect"
+                truncated = self.path == "/truncated"
+                body = b"partial" if truncated else compressed if self.path == "/gzip" else b""
+                self.send_response(302 if redirected else 200)
+                self.send_header("Content-Length", str(len(body) + int(truncated)))
+                if redirected:
+                    self.send_header("Location", "/gzip")
+                if self.path == "/gzip":
+                    self.send_header("Content-Encoding", "gzip")
+                if truncated:
+                    self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_HEAD(self):
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        server.daemon_threads = True
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        client = SharedHttpClient(proxy="", timeout=3)
+        url = f"http://127.0.0.1:{server.server_port}"
+        try:
+            response = client.get(url + "/redirect", follow_redirects=True)
+            self.assertEqual(response.http_version, "HTTP/1.1")
+            self.assertEqual(response.content, payload)
+            self.assertEqual([item.status_code for item in response.history], [302])
+            self.assertEqual(client.get(url + "/empty").content, b"")
+            self.assertEqual(client.head(url).content, b"")
+            with self.assertRaises(httpx.RemoteProtocolError):
+                client.get(url + "/truncated")
+            self.assertEqual(get_connection_pool_status()["pending_requests"], 0)
+            self.assertEqual(client.get(url + "/gzip").content, payload)
+            self.assertTrue(all(c["reserved_streams"] == 0 for c in get_connection_pool_status()["connections"]))
+        finally:
+            client.close()
+            close_network_resources()
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
 
     def test_full_http2_connection_allocates_another_physical_connection(self):
         close_network_resources()

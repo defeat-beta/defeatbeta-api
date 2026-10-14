@@ -54,11 +54,21 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
                         sock.settimeout(0.01)
                         connection = h2.connection.H2Connection(
                             config=h2.config.H2Configuration(client_side=False))
+
+                        def send_pending():
+                            # The short read poll must not become the deadline
+                            # for writing several concurrent large responses.
+                            sock.settimeout(3)
+                            try:
+                                sock.sendall(connection.data_to_send())
+                            finally:
+                                sock.settimeout(0.01)
+
                         connection.initiate_connection()
                         if max_concurrent_streams is not None:
                             connection.update_settings({
                                 h2.settings.SettingCodes.MAX_CONCURRENT_STREAMS: max_concurrent_streams})
-                        sock.sendall(connection.data_to_send())
+                        send_pending()
                         last_stream = None
                         last_activity = time.monotonic()
                         retired = False
@@ -74,7 +84,7 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
                                 if (idle_retirement and last_stream is not None and not retired
                                         and time.monotonic() - last_activity >= idle_retirement):
                                     connection.close_connection(error_code=0, last_stream_id=last_stream)
-                                    sock.sendall(connection.data_to_send())
+                                    send_pending()
                                     retired = True
                                 data = None
                             if data == b"":
@@ -138,7 +148,7 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
                                                                     last_stream_id=stream_id)
                                         retired = True
                                         break
-                            sock.sendall(connection.data_to_send())
+                            send_pending()
                 except (OSError, h2.exceptions.ProtocolError) as exc:
                     with self.server.lock:
                         self.server.errors.append((type(exc).__name__, str(exc)))
