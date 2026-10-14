@@ -169,11 +169,13 @@ def measure(args):
                            "sha": os.environ.get("GITHUB_SHA")},
               "mode": args.mode, "protocol_control": args.protocol if args.mode == "controlled" else None,
               "network": args.network_label, "experiment": manifest, "rounds": args.rounds,
-              "suite": make_suite(args.suite), "records": [], "preparation": [],
+              "suite": make_suite(args.suite, cache_policy=args.cache_policy), "records": [], "preparation": [],
               "policy": {"data": "Latest remote data; daily changes accepted and recorded" if args.mode == "live"
                          else "One checksummed synthetic fixture for both products",
                          "cache": "Fresh per variant/case/round; disk-warm uses a separate seeding process",
-                         "product": "Declared defaults except isolated cache directory and disabled DuckDB external file cache",
+                         "product": ("Declared defaults except an isolated cache directory"
+                                     if args.cache_policy == "default" else
+                                     "Project-only diagnostic: DuckDB external file cache disabled"),
                          "metrics": "Fully materialized API; constructor reported separately and in first result",
                          "order": "Balanced alternating AB/BA; sequential versions on one host",
                          "stream": "Fixed total query plan; natural cache reuse inside a batch",
@@ -198,7 +200,7 @@ def measure(args):
             if unresolved:
                 directory = temporary / "discovery"
                 directory.mkdir()
-                case = {"id": "discovery", "tasks": list(unresolved.values())}
+                case = {"id": "discovery", "tasks": list(unresolved.values()), "cache_policy": args.cache_policy}
                 discovered = execute(experiment, manifest["environments"]["baseline"], case, directory,
                                      args.timeout, server, "discover")
                 record["preparation"].append(discovered)
@@ -263,6 +265,8 @@ def main():
     for command in (run_parser, compare_parser):
         command.add_argument("--mode", choices=("controlled", "live"), default="controlled")
         command.add_argument("--suite", choices=("smoke", "release"), default="release")
+        command.add_argument("--cache-policy", choices=("default", "project-only"), default="default",
+                             help="Preserve product defaults, or isolate the project cache for diagnostics")
         command.add_argument("--rounds", type=int, default=6)
         command.add_argument("--protocol", choices=("h2", "http1"), default="h2")
         command.add_argument("--network-label", default="Unspecified local network")

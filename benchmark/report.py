@@ -28,6 +28,15 @@ def fingerprints(measurement):
     return [(item["task"], item.get("result")) for item in measurement.get("results", [])]
 
 
+def valid_engine_cache(measurement, policy):
+    observed = measurement.get("engine_cache", {})
+    initial = observed.get("initial_external_file_cache")
+    effective = observed.get("effective_external_file_cache")
+    return (policy in ("default", "project-only") and observed.get("policy") == policy
+            and type(initial) is bool and type(effective) is bool
+            and (effective == initial if policy == "default" else effective is False))
+
+
 def summarize(record):
     groups = {}
     errors = []
@@ -64,6 +73,13 @@ def summarize(record):
                 failed += 1
                 errors.append(f"Failed pair: {case['id']} round {round_number}")
                 continue
+            if record["suite"]["version"] >= 2:
+                policy = record["suite"].get("cache_policy")
+                if (case.get("cache_policy") != policy
+                        or any(not valid_engine_cache(item, policy) for item in (a, b))):
+                    failed += 1
+                    errors.append(f"Cache policy differs from observed settings: {case['id']} round {round_number}")
+                    continue
             if any(not item.get("results") or any(not result.get("result") for result in item["results"])
                    for item in (a, b)):
                 failed += 1
@@ -123,6 +139,17 @@ def render(path, release=None):
     for name, env in environments.items():
         info = env["environment"]
         lines.append(f"| {name} | `{env['commit']}` | {info['dependencies']['duckdb']} | {info['python']} |")
+    lines += ["", f"Cache policy: `{record['suite'].get('cache_policy', 'legacy: not recorded per sample')}`.",
+              "Default policy preserves each product's native file-cache setting. Project-only policy disables it for diagnostics.",
+              "Project-only results cannot replace default-behavior release acceptance.", "",
+              "| Variant | Native file cache before preparation | Native file cache during queries |",
+              "| --- | --- | --- |"]
+    for name in environments:
+        observations = [sample["measurement"].get("engine_cache", {}) for sample in record["records"]
+                        if sample["variant"] == name]
+        settings = [", ".join(sorted({str(item.get(key, "not recorded")).lower() for item in observations}))
+                    for key in ("initial_external_file_cache", "effective_external_file_cache")]
+        lines.append(f"| {name} | {settings[0] or 'not recorded'} | {settings[1] or 'not recorded'} |")
     info = environments["candidate"]["environment"]
     lines += ["", f"Platform: {info['platform']}; logical CPUs: {info['cpu_count']}; RAM: {info['ram_bytes']} bytes.",
               f"Suite: `{record['suite']['name']}` v{record['suite']['version']}; resolved identity: `{record.get('resolved_suite_sha256', 'unresolved')}`.",

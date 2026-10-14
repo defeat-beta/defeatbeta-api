@@ -29,6 +29,8 @@ def fake_record(mode="controlled", rounds=6):
     for number in range(1, rounds + 1):
         for variant, seconds in (("baseline", 2.0), ("candidate", 1.0)):
             measurement = {"status": "ok", "dataset_version": "v1", "file_metadata": {},
+                "engine_cache": {"policy": "default", "initial_external_file_cache": True,
+                                 "effective_external_file_cache": True},
                 "first_result_seconds": seconds, "wall_seconds": seconds - .1,
                 "completed_calls_per_second": 1 / seconds, "latency": {"p95_seconds": seconds},
                 "cpu_seconds": .1, "rss_bytes_at_query_end": 1024, "pool_after": None,
@@ -44,6 +46,21 @@ def fake_record(mode="controlled", rounds=6):
 
 
 class TestBenchmarkContract(unittest.TestCase):
+    def test_default_suite_keeps_native_cache_and_isolation_is_explicit(self):
+        default = suite.make_suite()
+        self.assertEqual(default["cache_policy"], "default")
+        self.assertEqual(len(default["cases"]), 70)
+        self.assertNotIn("metadata_ready", {case["state"] for case in default["cases"]})
+        self.assertTrue(all(case["cache_policy"] == "default" for case in default["cases"]))
+        isolated = suite.make_suite(cache_policy="project-only")
+        self.assertEqual(len(isolated["cases"]), 90)
+        self.assertIn("metadata_ready", {case["state"] for case in isolated["cases"]})
+        self.assertTrue(all(case["cache_policy"] == "project-only" for case in isolated["cases"]))
+        self.assertNotEqual(default["sha256"], isolated["sha256"])
+        for policy in ("", "unknown"):
+            with self.assertRaises(ValueError):
+                suite.make_suite(cache_policy=policy)
+
     def test_suite_is_deterministic_and_broad(self):
         self.assertEqual(suite.make_suite(), suite.make_suite())
         self.assertNotEqual(suite.make_suite(seed=1)["sha256"], suite.make_suite(seed=2)["sha256"])
@@ -159,6 +176,27 @@ class TestBenchmarkContract(unittest.TestCase):
             value["records"][1]["measurement"]["results"][0]["result"]["sha256"] = "wrong"
             self.assertFalse(report.summarize(value)["valid"])
 
+    def test_declared_cache_policy_must_match_observed_engine_settings(self):
+        value = fake_record()
+        value["suite"].update(version=2, cache_policy="default")
+        value["suite"]["cases"][0]["cache_policy"] = "default"
+        for sample in value["records"]:
+            sample["measurement"]["engine_cache"] = {
+                "policy": "default", "initial_external_file_cache": True,
+                "effective_external_file_cache": True}
+        self.assertTrue(report.summarize(value)["valid"])
+        for field, replacement in (("policy", "project-only"), ("effective_external_file_cache", False)):
+            changed = deepcopy(value)
+            changed["records"][0]["measurement"]["engine_cache"][field] = replacement
+            self.assertFalse(report.summarize(changed)["valid"])
+        disabled_default = deepcopy(value)
+        for sample in disabled_default["records"]:
+            sample["measurement"]["engine_cache"].update(
+                initial_external_file_cache=False, effective_external_file_cache=False)
+        self.assertTrue(report.summarize(disabled_default)["valid"])
+        del value["records"][0]["measurement"]["engine_cache"]
+        self.assertFalse(report.summarize(value)["valid"])
+
     def test_paired_change_and_small_sample_limit(self):
         summary = report.summarize(fake_record())
         self.assertTrue(summary["valid"])
@@ -185,6 +223,12 @@ class TestBenchmarkContract(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "sources changed"):
             run({"source": str(common.ROOT), "source_hashes": {}})
 
+    def test_metadata_only_preparation_requires_explicit_cache_isolation(self):
+        with self.assertRaisesRegex(ValueError, "project-only"):
+            run({"source": str(common.ROOT), "source_hashes": common.source_hashes(),
+                 "dependencies": common.environment_info()["dependencies"],
+                 "case": {"cache_policy": "default", "state": "metadata_ready"}})
+
     def test_timeout_is_retained(self):
         with patch("benchmark.benchmark.subprocess.run", side_effect=subprocess.TimeoutExpired("worker", 3)):
             value = benchmark.execute(Path("/experiment"), {"source": "/source", "source_hashes": {},
@@ -206,6 +250,37 @@ class TestBenchmarkTLS(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.temporary.cleanup()
+
+    def test_default_worker_preserves_native_engine_cache(self):
+        import duckdb
+        from defeatbeta_api.client.duckdb_client import DuckDBClient
+        from defeatbeta_api.client.shared_resources import close_network_resources
+
+        with duckdb.connect() as connection:
+            expected = connection.execute("SELECT current_setting('enable_external_file_cache')").fetchone()[0]
+        observed = []
+        original_close = DuckDBClient.close
+
+        def observe_close(client):
+            observed.append(client.connection.execute(
+                "SELECT current_setting('enable_external_file_cache')").fetchone()[0])
+            return original_close(client)
+
+        with serve_fixture(self.fixture, self.directory, "h2") as server, \
+                tempfile.TemporaryDirectory() as cache, \
+                patch.dict(os.environ, {"SSL_CERT_FILE": server["certificate"],
+                                        "NO_PROXY": "localhost,127.0.0.1", "no_proxy": "localhost,127.0.0.1"}), \
+                patch.object(DuckDBClient, "close", observe_close), redirect_stdout(io.StringIO()):
+            try:
+                value = run({"source": str(common.ROOT), "source_hashes": common.source_hashes(),
+                    "dependencies": common.environment_info()["dependencies"], "endpoint": server["url"],
+                    "cache_directory": cache, "case": {"id": "price.first_use", "kind": "single",
+                        "state": "first_use", "cache_policy": "default", "concurrency": 1,
+                        "tasks": [{"symbol": "PDD", "method": "price"}]}})
+            finally:
+                close_network_resources()
+        self.assertEqual(value["status"], "ok", value)
+        self.assertEqual(observed, [expected])
 
     def test_generator_checksums_and_independent_price_reference(self):
         import duckdb
@@ -247,10 +322,14 @@ class TestBenchmarkTLS(unittest.TestCase):
                         case_cache = cache if state == "first_use" else experiment / state
                         case_cache.mkdir(exist_ok=True)
                     case = {"id": state, "kind": "single", "state": state, "concurrency": 1,
+                            "cache_policy": "project-only" if state == "metadata_ready" else "default",
                             "tasks": [{"symbol": "PDD", "method": "price"}]}
                     value = benchmark.execute(experiment, environment, case, case_cache, 90, server)
                     self.assertEqual(value["status"], "ok", value)
                     self.assertEqual(value["results"][0]["result"]["rows"], 32768)
+                    self.assertTrue(report.valid_engine_cache(value, case["cache_policy"]))
+                    if state == "metadata_ready":
+                        self.assertGreater(value["cache_total_delta"]["downloaded_bytes"], 0)
                     if state in ("memory_warm", "disk_warm"):
                         self.assertEqual(value["cache_query_delta"]["downloaded_bytes"], 0)
                     if state == "memory_warm":
@@ -263,3 +342,17 @@ class TestBenchmarkTLS(unittest.TestCase):
                         self.assertEqual([item["stage"] for item in measured["diagnostics"]["memory"]], [
                             "before_constructor", "before_query", "after_query_and_drain",
                             "after_results_released", "after_client_closed"])
+                mixed = []
+                for case in suite.make_suite("smoke")["cases"]:
+                    if case["id"] not in ("mixed.stream.1", "mixed.stream.4"):
+                        continue
+                    directory = experiment / case["id"]
+                    directory.mkdir()
+                    value = benchmark.execute(experiment, environment, case, directory, 90, server)
+                    self.assertEqual(value["status"], "ok", value)
+                    self.assertTrue(report.valid_engine_cache(value, "default"))
+                    self.assertEqual(value["pool_after"]["pending_requests"], 0)
+                    self.assertTrue(all(c["reserved_streams"] == 0 for c in value["pool_after"]["connections"]))
+                    self.assertGreater(value["cache_total_delta"]["downloaded_bytes"], 0)
+                    mixed.append(report.fingerprints(value))
+                self.assertEqual(mixed[0], mixed[1])

@@ -13,6 +13,14 @@ from test.test_benchmark import fake_record
 
 
 class TestRegressionAttribution(unittest.TestCase):
+    def test_attribution_keeps_project_cache_isolation_explicit(self):
+        plan = make_plan()
+        self.assertEqual(plan["cache_policy"], "project-only")
+        self.assertEqual(len(plan["cases"]), 10)
+        self.assertTrue(all(case["cache_policy"] == "project-only" for case in plan["cases"]))
+        self.assertEqual({case["state"] for case in plan["cases"] if case["kind"] == "stream"},
+                         {"metadata_ready"})
+
     def test_engine_arm_changes_interpreter_without_changing_source(self):
         base = {"commit": "old", "source": "/old", "source_hashes": {"file": "old"},
                 "python": "/python-old", "environment": {"duckdb": "old"},

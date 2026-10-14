@@ -44,7 +44,7 @@ baseline.
 
 ## Workloads and states
 
-Suite v1 declares 32 cross-sector symbols and seed 1729. This is a predeclared
+Suite v2 declares 32 cross-sector symbols and seed 1729. This is a predeclared
 corpus, not automatic stratification against the current remote files. Each
 method uses one selected symbol; mixed traffic spans the corpus. Selection is
 frozen before either product runs and never depends on favorable timings.
@@ -58,22 +58,33 @@ identifies unmeasured related methods and presentation/export/AI exclusions.
 | State | Preparation and primary duration |
 | --- | --- |
 | First use | Empty application cache in a fresh process; Ticker constructor plus API. |
-| Metadata ready | Warm each distinct method, drain prefetch, clear data extents and memory blocks, retain metadata; time API. |
 | Memory warm | Materialize selected call and drain prefetch in the same process; time repeat API. |
 | Disk warm | Seed cache in another process; new interpreter measures constructor plus API. |
+| Metadata ready (project-only diagnostic) | Warm each distinct method, drain prefetch, clear data extents and memory blocks, retain metadata; time API. |
 
 The first-result metric sums constructor and API intervals; it excludes Python
 startup/imports and harness setup between these intervals. Metadata-ready
 connections can be reused while still live; preparation does not guarantee they
 remain open. Application cache preparation does not flush DNS, OS pages, proxy,
-or remote CDN caches. Both engines use `enable_external_file_cache=false` to
-isolate the project filesystem cache. Other product defaults remain intact and
-are recorded; the suite does not require pool tuning.
+or remote CDN caches. The default policy leaves each product's native
+`enable_external_file_cache` setting unchanged. The project-only diagnostic sets
+it to false to isolate `DatasetCacheFileSystem`. Neither policy uses the
+`cache_httpfs` extension. Initial and effective engine settings are recorded per
+measurement; missing or inconsistent observations invalidate suite v2 evidence.
+Other product defaults remain intact; the suite does not require pool tuning.
 
-Twenty methods times four states plus ten concurrent cases make 90 cases. A
-burst synchronizes N calls; a bounded stream executes the same 128-task plan at
+The default release contract has 20 methods times three states plus ten
+concurrent cases, totaling 70. Metadata-only preparation is excluded from this
+contract because clearing project extents would leave the native cache warm.
+The separate project-only diagnostic retains all four states and 90 cases. Its
+policy is included in the suite and each case, and changes the suite checksum.
+It cannot be promoted as default-behavior release evidence.
+
+A burst synchronizes N calls; a bounded stream executes the same 128-task plan at
 concurrency 1, 4, 16, 64, and 128. The plan mixes price/info/shares/filings. Data
-starts cold but natural sharing and cache hits develop during each batch.
+starts cold but natural sharing and cache hits develop during each batch. Under
+the default policy, each batch starts without query warmup; under project-only,
+each batch uses metadata-only preparation with the native file cache disabled.
 Calls/s measures mixed-query completion, not sustained uncached download speed.
 Smoke mode reduces methods, states, and concurrency levels.
 

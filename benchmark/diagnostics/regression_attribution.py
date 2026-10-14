@@ -49,7 +49,7 @@ def make_arms(manifest):
 
 
 def make_plan():
-    plan = make_suite("release")
+    plan = make_suite("release", cache_policy="project-only")
     plan["name"] = "regression-attribution"
     plan["cases"] = [{**case, "diagnostics": {"memory": True}}
                      for case in plan["cases"] if case["id"] in CASE_IDS]

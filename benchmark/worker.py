@@ -38,6 +38,11 @@ def run(payload):
     if env["dependencies"] != payload["dependencies"]:
         raise RuntimeError("Measured dependency versions differ from the prepared environment")
     case = payload["case"]
+    cache_policy = case.get("cache_policy", "default")
+    if cache_policy not in ("default", "project-only"):
+        raise ValueError("Unknown cache policy")
+    if case.get("state") == "metadata_ready" and cache_policy != "project-only":
+        raise ValueError("Metadata-only preparation requires the project-only cache diagnostic")
     diagnostic_options = case.get("diagnostics")
     memory = []
     if diagnostic_options:
@@ -67,7 +72,13 @@ def run(payload):
             client, fs = first.duckdb_client, first.duckdb_client._dataset_fs
             if fs is None:
                 raise RuntimeError("The default product cache is unavailable")
-            client.connection.execute("SET enable_external_file_cache = false")
+            initial_cache = client.connection.execute(
+                "SELECT current_setting('enable_external_file_cache')").fetchone()[0]
+            if cache_policy == "project-only":
+                client.connection.execute("SET enable_external_file_cache = false")
+            engine_cache = {"policy": cache_policy, "initial_external_file_cache": initial_cache,
+                            "effective_external_file_cache": client.connection.execute(
+                                "SELECT current_setting('enable_external_file_cache')").fetchone()[0]}
             tickers = {tasks[0]["symbol"]: first}
             for task in tasks:
                 if task["symbol"] not in tickers:
@@ -89,7 +100,8 @@ def run(payload):
                             raise ValueError("Selected symbol has no news body")
                         task["uuid"] = str(frame.sort_values(["report_date", "uuid"]).iloc[-1]["uuid"])
                     resolved.append(task)
-                return {"status": "ok", "tasks": resolved, "dataset_version": client._data_update_time,
+                return {"status": "ok", "tasks": resolved, "engine_cache": engine_cache,
+                        "dataset_version": client._data_update_time,
                         "coverage": coverage(Ticker), "environment": env}
             if case["state"] in ("memory_warm", "metadata_ready"):
                 # Materialize every distinct file/API path, with duplicate paths collapsed.
@@ -169,6 +181,7 @@ def run(payload):
                 memory.append(collect_memory(process, "after_results_released"))
             failed = sum("error_type" in result for result in results)
             result = {"status": "ok" if not failed and not drain["errors"] else "error",
+                      "engine_cache": engine_cache,
                       "environment": env, "defaults": vars(config),
                       "dataset_version": client._data_update_time,
                       "file_metadata": client._footer_index,

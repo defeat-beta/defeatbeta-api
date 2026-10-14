@@ -18,7 +18,7 @@ Open **Actions > Paired performance benchmark > Run workflow**:
 | --- | --- |
 | `baseline` | Explicit Git ref, for example `release-0.0.62`. |
 | `candidate` | Revision under evaluation, usually `main`. |
-| `suite` | `smoke` for framework checks; `release` for all 90 cases. |
+| `suite` | `smoke` for framework checks; `release` for all 70 default-policy cases. |
 | `rounds` | Paired repetitions; at least six even rounds for release evidence. |
 
 Refs are resolved once before the jobs start. Each controlled protocol and the
@@ -35,6 +35,11 @@ The candidate and fixture generator currently use DuckDB `2.0.0.dev2610011535`.
 Each measured product uses its own declared dependencies: the 0.0.62 baseline
 therefore uses DuckDB 1.5.3 in its isolated environment. This comparison includes
 the dependency upgrade and intentional changes to product defaults.
+
+The standard workflow preserves each product's native DuckDB file-cache setting.
+It records that setting before preparation and during queries. Both products also
+use the project's `DatasetCacheFileSystem`; this is separate from DuckDB's native
+cache and does not use the `cache_httpfs` extension.
 
 ## Finalize a release report
 
@@ -91,10 +96,18 @@ These optional inputs constrain reproduction to the original dependencies.
 Public data reproduction uses current data because old Hugging Face revisions
 may have been removed.
 
-The full suite covers 20 methods in four states, plus ten mixed concurrency
+The full default-policy suite covers 20 methods in three states, plus ten mixed concurrency
 cases, using a fixed 32-symbol corpus and seeded order. It covers direct reads,
 statements, composite calculations, transcript bodies, and news bodies. The
 saved manifest identifies methods without independent performance measurements.
+
+Default states are first use, memory-warm reuse, and disk-warm restart. Mixed
+queries begin in a fresh process without query-data warmup and preserve natural
+cache sharing during the batch. To isolate the project cache locally, add
+`--cache-policy project-only` to `compare` or `run`. That diagnostic disables
+DuckDB's native file cache and also includes metadata-ready calls, retaining the
+90-case diagnostic suite. Its policy is part of the workload identity and every
+measurement. It cannot be finalized as default-behavior release evidence.
 
 Read latency, completion rate, CPU, memory, bytes, failures, and pool waits
 together. Application bytes/s is not wire bandwidth. Keep home, office, mobile,
@@ -109,7 +122,8 @@ interpreter/dependencies, and candidate source with declared dependencies.
 Non-DuckDB dependency locks must match. The middle arm is diagnostic only; it
 does not change either package's requirements or the official release baseline.
 
-The diagnostic retains ten cases from the standard workload, including four
+The diagnostic explicitly selects the project-only cache policy and retains ten
+cases from its workload, including four
 short warmed APIs and fixed mixed streams at concurrency 1/16/64/128. Six rounds
 use every arm ordering. Memory milestones run outside query timing. Additional
 warmed cProfile workers run separately, and their instrumented durations never

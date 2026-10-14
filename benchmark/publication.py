@@ -32,13 +32,13 @@ def validate_record(record, candidate, run):
     plan = make_suite("release")
     # Discovery may add body identifiers, but it cannot drop or substitute workload tasks.
     actual = record["suite"]
-    for key in ("name", "version", "seed", "sha256", "symbols", "methods"):
+    for key in ("name", "version", "seed", "sha256", "symbols", "methods", "cache_policy"):
         if actual.get(key) != plan[key]:
             raise ValueError("A complete standard release suite is required")
     if len(actual["cases"]) != len(plan["cases"]):
         raise ValueError("A complete standard release suite is required")
     for measured, expected in zip(actual["cases"], plan["cases"]):
-        for key in ("id", "kind", "state", "concurrency"):
+        for key in ("id", "kind", "state", "concurrency", "cache_policy"):
             if measured.get(key) != expected[key]:
                 raise ValueError("Release workload differs from the declared suite")
         tasks = [{"symbol": task["symbol"], "method": task["method"]} for task in measured["tasks"]]

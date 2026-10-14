@@ -27,7 +27,7 @@ class TestBenchmarkPublication(unittest.TestCase):
                          "status": "completed", "conclusion": "success",
                          "html_url": "https://github.com/owner/repo/actions/runs/42"}
         # The publication tests exercise completeness against a small declared contract.
-        # The suite tests independently verify the full 90-case contract.
+        # The suite tests independently verify the complete default-policy contract.
         self.plan = suite.make_suite("release")
         self.plan["cases"] = self.plan["cases"][:2]
         self.enterContext(patch.object(publication, "make_suite", return_value=self.plan))
@@ -103,6 +103,11 @@ class TestBenchmarkPublication(unittest.TestCase):
     def test_missing_pair_is_rejected(self):
         self.change(lambda value: value["records"].pop())
         with self.assertRaisesRegex(ValueError, "invalid comparison"):
+            self.finalize()
+
+    def test_isolated_cache_evidence_cannot_be_published_as_default_behavior(self):
+        self.change(lambda value: value["suite"].update(cache_policy="project-only"))
+        with self.assertRaises(ValueError):
             self.finalize()
 
     def test_partial_suite_is_rejected_even_with_success_status(self):
