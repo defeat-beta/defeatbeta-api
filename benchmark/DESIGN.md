@@ -3,8 +3,10 @@
 ## Fixed work
 
 Discovery declares W = sampled tickers x all public query operations with frozen
-parameters. The sample is chosen before timing, with no automatic replacement
-of slow, missing, or failing tickers. The method list is discovered from Ticker;
+parameters. The maintainer-approved sample is chosen before timing, with no
+automatic replacement of slow, missing, or failing tickers. A manual sample
+change creates a new workload identity and requires fresh measurements of both
+versions for a comparison. The method list is discovered from Ticker;
 new required arguments must be declared explicitly. Excel export and diagnostic
 output are excluded. Wrapper objects expand into real list/body calls.
 

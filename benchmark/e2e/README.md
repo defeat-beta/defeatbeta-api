@@ -10,18 +10,25 @@ cache states, correctness checks, and report lifecycle.
 | `backend.py` | Prepare isolated real product caches, discover body identifiers, record data identity, and observe cache misses. |
 | `execution.py` | Materialize public API calls, time them, warm exact tasks, distribute identical work, and retain every outcome. |
 
-The fixed sample is AAPL, JPM, XOM, O, PDD, NVO, ARM, and CRWV. It retains
-financial/nonfinancial, non-US, recent-listing, and currency paths; it is not a
-statistically representative sample of the full ticker universe. Missing sample
-tickers fail discovery instead of being silently replaced. No operation is
-removed because it is slow or fails.
+The fixed sample is AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, and WMT. These
+well-known issuers were explicitly selected by the maintainer after a query
+availability check, not a performance ranking. On the 2026-10-15 dataset, all
+624 ticker/operation calls completed without exceptions; five returned empty
+tables. Empty results remain valid outcomes. This preflight is not performance
+evidence or a guarantee about future data availability.
+
+The sample is not statistically representative of the full ticker universe.
+Missing sample tickers fail discovery instead of being silently replaced, and
+later runs retain unexpected failures. No query operation is removed. Changing
+the sample changes the workload identity; earlier cohorts' absolute timings
+cannot be used as a comparison for this cohort.
 
 The initial sixteen-symbol
 [GitHub calibration](https://github.com/defeat-beta/defeatbeta-api/actions/runs/38715579086)
 exhausted its 30-minute budget after cold latency and a partial cached phase.
-The sample size was reduced while retaining coverage differences and observed
-failing tickers. The temporary calibration command and workflow are retired.
-Further measurements use the main CLI and per-phase GitHub jobs.
+The sample size was first reduced to eight and subsequently replaced by the
+current maintainer-approved list. The temporary calibration command and workflow
+are retired. Further measurements use the main CLI and per-phase GitHub jobs.
 
 Correctness tests cover new API discovery, frozen arguments, complete ledgers,
 all-hit preparation, timing boundaries, partial outcomes, and real Parquet cache

@@ -13,8 +13,8 @@ Use **Actions > End-to-end performance benchmark > Run workflow**:
 | `rounds` | Repetitions per phase. One is development evidence; finalization requires at least six even rounds. |
 
 The initial 16-ticker calibration needed 29 minutes for cold latency alone.
-The default sample is now eight tickers, retaining financial/nonfinancial,
-non-US, recent-listing, and currency paths. Full-matrix duration and release
+The default sample is now eight well-known issuers approved by the maintainer,
+with query availability checked before timing. Full-matrix duration and release
 repetitions still require validation. The initial calibration is retained in
 [Actions](https://github.com/defeat-beta/defeatbeta-api/actions/runs/38715579086).
 Its temporary workflow and runner have been removed; use the main framework for
@@ -23,8 +23,10 @@ See the [workload contract](e2e/README.md).
 
 ## Workload and timing
 
-The fixed sample is AAPL, JPM, XOM, O, PDD, NVO, ARM, and CRWV. Discovery freezes all public query operations and
-parameters before measurement. Excel export and diagnostic output are excluded;
+The fixed sample is AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, and WMT. It is
+not a statistically representative sample of the full ticker universe. Discovery
+freezes all public query operations and parameters before measurement.
+Excel export and diagnostic output are excluded;
 `dcf_data()` is included. News and transcript wrappers expand into actual list
 and body retrieval. Missing source bodies remain explicit not-applicable tasks.
 
