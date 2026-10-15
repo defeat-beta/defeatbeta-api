@@ -136,6 +136,6 @@ def discover(backend):
     workload = plan.build_plan(selected, plan.query_methods(Ticker), bodies=bodies, dataset=dataset)
     workload["sample_observations"] = observations
     workload["catalog_ticker_count"] = len(companies)
-    workload["sample_policy"] = "Fixed 16 symbols chosen before timing; no timing-based selection"
+    workload["sample_policy"] = "Fixed eight-symbol coverage sample; no selection by favorable query outcomes"
     workload["sha256"] = plan.checksum({key: value for key, value in workload.items() if key != "sha256"})
     return workload

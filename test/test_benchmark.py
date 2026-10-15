@@ -1,15 +1,12 @@
-"""Contract and real TLS integration tests for the paired benchmark framework."""
+"""Protect paired orchestration, evidence validation, and fixed-data correctness."""
 
-from contextlib import redirect_stdout
 from copy import deepcopy
 import hashlib
-import io
 import json
 import os
 from pathlib import Path
 import ssl
 import subprocess
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -17,341 +14,211 @@ from unittest.mock import patch
 import httpx
 import pandas as pd
 
-from benchmark import benchmark, common, fixture, report, suite
-from benchmark.adapter import dataset_endpoint
-from benchmark.server import RangeApplication, serve_fixture
-from benchmark.worker import run
+from benchmark import benchmark, common, report
+from benchmark.support import fixture
+from benchmark.e2e import plan
+from benchmark.support.server import serve_fixture
 
 
-def fake_record(mode="controlled", rounds=6):
-    cases = [{"id": "price.first_use", "kind": "single", "state": "first_use"}]
-    records = []
-    for number in range(1, rounds + 1):
-        for variant, seconds in (("baseline", 2.0), ("candidate", 1.0)):
-            measurement = {"status": "ok", "dataset_version": "v1", "file_metadata": {},
-                "engine_cache": {"policy": "default", "initial_external_file_cache": True,
-                                 "effective_external_file_cache": True},
-                "first_result_seconds": seconds, "wall_seconds": seconds - .1,
-                "completed_calls_per_second": 1 / seconds, "latency": {"p95_seconds": seconds},
-                "cpu_seconds": .1, "rss_bytes_at_query_end": 1024, "pool_after": None,
-                "cache_total_delta": {"downloaded_bytes": 100, "range_requests": 1},
-                "results": [{"task": {"symbol": "AAPL", "method": "price"},
-                             "result": {"rows": 1, "sha256": "same"}}]}
-            records.append({"case": cases[0]["id"], "round": number, "variant": variant, "measurement": measurement})
-    return {"schema_version": 1, "status": "complete", "mode": mode, "rounds": rounds, "records": records,
-            "suite": {"cases": cases, "name": "test", "version": 1}, "network": "Loopback",
-            "experiment": {"environments": {name: {"commit": name, "environment": {
-                "dependencies": {"duckdb": "2"}, "python": "3.11", "platform": "test",
-                "cpu_count": 4, "ram_bytes": 1000}} for name in ("baseline", "candidate")}}}
+def fake_record(rounds=6, baseline=True):
+    workload = plan.build_plan([{"ticker": "AAPL"}, {"ticker": "PDD"}],
+                               {"price": {"call": "price", "kwargs": {}}})
+    environments = {name: {"commit": ("a" if name == "baseline" else "b") * 40,
+        "source_hashes": {"product.py": "digest"}, "dependency_lock": "product==1\n",
+        "environment": {"dependencies": {"duckdb": "2"}, "python": "3.11", "cpu_count": 4}}
+        for name in (("baseline", "candidate") if baseline else ("candidate",))}
+    record = {"schema_version": 2, "status": "complete", "stage": "development", "rounds": rounds,
+              "phases": plan.phases(), "plan": workload, "records": [],
+              "workflow": {"repository": "owner/repo", "run_id": "42", "run_attempt": "1", "sha": "c" * 40},
+              "experiment": {"environments": environments, "harness": {}, "harness_dependency_lock": "tool==1\n"}}
+    for phase in record["phases"]:
+        for number in range(1, rounds + 1):
+            for variant in environments:
+                seconds = 2.0 if variant == "baseline" else 1.0
+                rows = [{**{key: task[key] for key in ("id", "symbol", "method", "kwargs")},
+                         "status": "ok", "seconds": seconds, "initialization_seconds": .2,
+                         "fingerprint": {"sha256": "same", "rows": 1}}
+                        for task in plan.tasks(workload)]
+                value = {"status": "complete", "results": rows, "completed_tasks": 2,
+                         "successful_tasks": 2, "failed_tasks": 0, "not_applicable_tasks": 0,
+                         "wall_seconds": seconds, "successful_calls_per_second": 2 / seconds,
+                         "cache_misses": 0, "observed_dataset": {"update_time": "same"},
+                         "api_coverage": workload["methods"],
+                         "cache_settings": {"disk_limit_bytes": 2**60, "memory_limit_bytes": 512,
+                                            "native_file_cache": True}}
+                record["records"].append({"phase": phase["id"], "round": number,
+                                          "variant": variant, "measurement": value})
+    return record
 
 
 class TestBenchmarkContract(unittest.TestCase):
-    def test_default_suite_keeps_native_cache_and_isolation_is_explicit(self):
-        default = suite.make_suite()
-        self.assertEqual(default["cache_policy"], "default")
-        self.assertEqual(len(default["cases"]), 70)
-        self.assertNotIn("metadata_ready", {case["state"] for case in default["cases"]})
-        self.assertTrue(all(case["cache_policy"] == "default" for case in default["cases"]))
-        isolated = suite.make_suite(cache_policy="project-only")
-        self.assertEqual(len(isolated["cases"]), 90)
-        self.assertIn("metadata_ready", {case["state"] for case in isolated["cases"]})
-        self.assertTrue(all(case["cache_policy"] == "project-only" for case in isolated["cases"]))
-        self.assertNotEqual(default["sha256"], isolated["sha256"])
-        for policy in ("", "unknown"):
-            with self.assertRaises(ValueError):
-                suite.make_suite(cache_policy=policy)
+    def test_timeout_preserves_finished_latency_outcomes(self):
+        environment = {"python": "python", "source": "/source", "source_hashes": {},
+                       "environment": {"dependencies": {}}}
 
-    def test_suite_is_deterministic_and_broad(self):
-        self.assertEqual(suite.make_suite(), suite.make_suite())
-        self.assertNotEqual(suite.make_suite(seed=1)["sha256"], suite.make_suite(seed=2)["sha256"])
-        plan = suite.make_suite()
-        self.assertEqual(len(plan["symbols"]), 32)
-        self.assertEqual({case["state"] for case in plan["cases"]}, set(suite.STATES))
-        self.assertTrue({"price", "info", "transcript_body", "market_capitalization", "quarterly_income_statement"}.issubset(plan["methods"]))
-        self.assertEqual(len({case["id"] for case in plan["cases"]}), len(plan["cases"]))
+        def expired(command, **kwargs):
+            request = json.loads(kwargs["input"])
+            Path(request["progress_path"]).write_text('{"id":"finished"}\n{"id":', encoding="utf-8")
+            raise subprocess.TimeoutExpired(command, 1)
 
-    def test_stream_work_is_identical_at_every_concurrency(self):
-        cases = [case for case in suite.make_suite()["cases"] if case["kind"] == "stream"]
-        self.assertEqual({case["concurrency"] for case in cases}, {1, 4, 16, 64, 128})
-        self.assertTrue(all(case["tasks"] == cases[0]["tasks"] for case in cases))
-        for case in suite.make_suite()["cases"]:
-            if case["kind"] == "burst":
-                self.assertEqual(len(case["tasks"]), case["concurrency"])
+        with tempfile.TemporaryDirectory() as directory, patch.object(benchmark.subprocess, "run", side_effect=expired):
+            result = benchmark.execute(Path(directory), environment, {}, Path(directory) / "worker", 1)
+        self.assertEqual(result["status"], "timeout")
+        self.assertEqual(result["completed_tasks"], 1)
+        self.assertEqual(result["results"], [{"id": "finished"}])
 
-    def test_order_balances_every_case(self):
-        for case in range(12):
-            orders = [benchmark.paired_order(number, case) for number in range(6)]
-            self.assertEqual(orders.count(("baseline", "candidate")), 3)
-            self.assertEqual(orders.count(("candidate", "baseline")), 3)
+    def test_query_failures_keep_their_status_and_original_ledger(self):
+        response = {"status": "query_errors", "results": [{"id": "failed", "status": "error"}]}
+        environment = {"python": "python", "source": "/source", "source_hashes": {},
+                       "environment": {"dependencies": {}}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(benchmark.subprocess, "run", return_value=
+                subprocess.CompletedProcess([], 1, benchmark.MARKER + json.dumps(response), "")):
+            value = benchmark.execute(Path(directory), environment, {}, Path(directory) / "cache", 1)
+        self.assertEqual(value["status"], "query_errors")
+        self.assertEqual(value["results"], response["results"])
 
-    def test_row_multiset_preserves_duplicates_and_ignores_row_order(self):
-        a = pd.DataFrame({"symbol": ["A", "B", "B"], "value": [1, 2, 2]})
+    def test_failed_queries_remain_visible_in_readable_reports(self):
+        value = fake_record()
+        measurement = value["records"][0]["measurement"]
+        measurement["status"] = "query_errors"
+        measurement["results"][0].update(status="error", error_type="ValueError", error="Expected failure")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "results.json"
+            common.save_json(path, value)
+            self.assertFalse(report.render(path)["valid"])
+            text = path.with_suffix(".md").read_text()
+        self.assertIn("ValueError", text)
+        self.assertIn("AAPL", text)
+
+    def test_standalone_and_paired_reports_are_valid(self):
+        for baseline in (False, True):
+            summary = report.summarize(fake_record(baseline=baseline))
+            self.assertTrue(summary["valid"], summary["errors"])
+            self.assertEqual(len(summary["cases"]), 14)
+            self.assertEqual({row["classification"] for row in summary["cases"]},
+                             {"faster"} if baseline else {"standalone"})
+
+    def test_all_hit_and_complete_task_ledgers_are_required(self):
+        changes = [lambda m: m["results"].pop(),
+                   lambda m: m["results"].append(deepcopy(m["results"][0])),
+                   lambda m: m.update(successful_tasks=100),
+                   lambda m: m["results"][0].update(status="error"),
+                   lambda m: m["results"][0].update(kwargs={"extra": 1}),
+                   lambda m: m["cache_settings"].update(disk_limit_bytes=1)]
+        for change in changes:
+            value = fake_record()
+            change(value["records"][0]["measurement"])
+            self.assertFalse(report.summarize(value)["valid"])
+        value = fake_record()
+        next(s for s in value["records"] if s["phase"] == "latency.cached")["measurement"]["cache_misses"] = 1
+        self.assertFalse(report.summarize(value)["valid"])
+
+    def test_missing_duplicate_and_nonfinite_measurements_are_rejected(self):
+        value = fake_record()
+        value["records"].pop()
+        self.assertFalse(report.summarize(value)["valid"])
+        value = fake_record()
+        value["records"].append(deepcopy(value["records"][0]))
+        self.assertFalse(report.summarize(value)["valid"])
+        for seconds in (float("nan"), float("inf"), -1, 0):
+            value = fake_record()
+            value["records"][0]["measurement"]["results"][0]["seconds"] = seconds
+            self.assertFalse(report.summarize(value)["valid"])
+
+    def test_data_change_is_inconclusive_and_same_data_mismatch_is_invalid(self):
+        value = fake_record()
+        value["records"][0]["measurement"]["observed_dataset"] = {"update_time": "changed"}
+        summary = report.summarize(value)
+        self.assertTrue(summary["valid"])
+        self.assertEqual(summary["cases"][0]["classification"], "inconclusive")
+        value = fake_record()
+        value["records"][0]["measurement"]["results"][0]["fingerprint"] = {"sha256": "wrong"}
+        self.assertFalse(report.summarize(value)["valid"])
+
+    def test_short_pairs_do_not_claim_a_speedup(self):
+        summary = report.summarize(fake_record(rounds=2))
+        self.assertTrue(summary["valid"])
+        self.assertEqual({row["classification"] for row in summary["cases"]}, {"inconclusive"})
+
+    def test_standalone_cannot_hide_missing_data_identity_or_api_coverage(self):
+        for key in ("observed_dataset", "api_coverage"):
+            value = fake_record(baseline=False)
+            value["records"][0]["measurement"].pop(key, None)
+            self.assertFalse(report.summarize(value)["valid"], key)
+
+    def test_order_balances_each_phase(self):
+        for index in range(12):
+            self.assertEqual([benchmark.paired_order(n, index) for n in range(6)].count(
+                ("baseline", "candidate")), 3)
+
+    def test_hash_preserves_duplicate_rows_column_names_and_nested_values(self):
+        a = pd.DataFrame({"symbol": ["A", "B", "B"], "body": [[{"a": 1}], [{"b": 2}], [{"b": 2}]]})
         self.assertEqual(common.result_fingerprint(a), common.result_fingerprint(a.iloc[::-1]))
-        self.assertNotEqual(common.result_fingerprint(a), common.result_fingerprint(a.drop_duplicates()))
-        self.assertNotEqual(common.result_fingerprint(a), common.result_fingerprint(a.rename(columns={"value": "price"})))
+        self.assertNotEqual(common.result_fingerprint(a), common.result_fingerprint(a.drop(index=2)))
+        self.assertNotEqual(common.result_fingerprint(a), common.result_fingerprint(a.rename(columns={"body": "x"})))
 
-    def test_nested_values_are_canonical(self):
-        a = pd.DataFrame({"body": [[{"a": 1, "b": [2, 3]}]]})
-        b = pd.DataFrame({"body": [[{"b": [2, 3], "a": 1}]]})
-        self.assertEqual(common.result_fingerprint(a), common.result_fingerprint(b))
+    def test_harness_changes_are_detected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "worker.py").write_text("# Frozen harness\n")
+            expected = benchmark.harness_hashes(root)
+            benchmark.verify_harness(root, root, expected)
+            (root / "worker.py").write_text("# Modified harness\n")
+            with self.assertRaises(ValueError):
+                benchmark.verify_harness(root, root, expected)
+
+    def test_collect_requires_all_phases_and_identical_experiments(self):
+        value = fake_record(rounds=1)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for phase in value["phases"]:
+                fragment = deepcopy(value)
+                fragment["phases"] = [phase]
+                fragment["records"] = [s for s in value["records"] if s["phase"] == phase["id"]]
+                folder = root / "source" / phase["id"]
+                folder.mkdir(parents=True)
+                common.save_json(folder / "results.json", fragment)
+            target = report.collect(root / "source", root / "complete")
+            self.assertTrue(report.render(target)["valid"])
+            broken = root / "source" / "latency.cold" / "results.json"
+            fragment = json.loads(broken.read_text())
+            fragment["workflow"]["run_attempt"] = "2"
+            common.save_json(broken, fragment)
+            with self.assertRaisesRegex(ValueError, "mixes"):
+                report.collect(root / "source", root / "mixed")
+            broken.unlink()
+            with self.assertRaisesRegex(ValueError, "twelve"):
+                report.collect(root / "source", root / "partial")
 
     def test_secret_redaction(self):
         value = common.redact_secrets({"proxy": "socks5://name:secret@localhost:100", "url": "https://cdn.test/file?secret=abc"})
         self.assertNotIn("name:secret", json.dumps(value))
         self.assertNotIn("secret=abc", json.dumps(value))
 
-    def test_controlled_route_removes_proxy_without_touching_parent(self):
-        with patch.dict(os.environ, {"HTTP_PROXY": "http://proxy:80", "HTTPS_PROXY": "http://proxy:80"}):
-            env = benchmark.worker_environment(Path("/experiment"), Path("/source"), {"certificate": "/cert"})
-            self.assertNotIn("HTTP_PROXY", env)
-            self.assertEqual(env["SSL_CERT_FILE"], "/cert")
-            self.assertEqual(os.environ["HTTP_PROXY"], "http://proxy:80")
-
-    def test_missing_result_never_counts_as_success(self):
-        value = fake_record()
-        value["records"].pop()
-        self.assertFalse(report.summarize(value)["valid"])
-
-    def test_nonfinite_times_never_count_as_success(self):
-        for seconds in (float("nan"), float("inf"), -1, 0):
-            with self.subTest(seconds=seconds):
-                value = fake_record()
-                value["records"][0]["measurement"]["first_result_seconds"] = seconds
-                self.assertFalse(report.summarize(value)["valid"])
-
-    def test_undeclared_sample_never_counts_as_success(self):
-        for field, replacement in (("case", "undeclared"), ("round", 7), ("variant", "other")):
-            with self.subTest(field=field):
-                value = fake_record()
-                sample = deepcopy(value["records"][0])
-                sample[field] = replacement
-                value["records"].append(sample)
-                self.assertFalse(report.summarize(value)["valid"])
-
-    def test_empty_suite_or_missing_fingerprints_is_invalid(self):
-        value = fake_record()
-        value["suite"]["cases"] = []
-        value["records"] = []
-        self.assertFalse(report.summarize(value)["valid"])
-        value = fake_record()
-        for sample in value["records"]:
-            sample["measurement"]["results"] = []
-        self.assertFalse(report.summarize(value)["valid"])
-
-    def test_parent_and_prepared_harness_must_match(self):
-        for content in (b"original\n", b"original\r\n"):
-            with self.subTest(content=content), tempfile.TemporaryDirectory() as directory:
-                root = Path(directory)
-                current, prepared = root / "current", root / "prepared"
-                current.mkdir()
-                prepared.mkdir()
-                for folder in (current, prepared):
-                    (folder / "worker.py").write_bytes(content)
-                expected = {"worker.py": hashlib.sha256(content).hexdigest()}
-                benchmark.verify_harness(current, prepared, expected)
-                (current / "worker.py").write_bytes(content + b"changed\n")
-                with self.assertRaisesRegex(ValueError, "harness changed"):
-                    benchmark.verify_harness(current, prepared, expected)
-
-    def test_failure_and_duplicate_are_not_dropped(self):
-        value = fake_record()
-        value["records"][1]["measurement"]["status"] = "timeout"
-        value["records"].append(deepcopy(value["records"][0]))
-        summary = report.summarize(value)
-        self.assertFalse(summary["valid"])
-        self.assertEqual(summary["cases"][0]["classification"], "invalid")
-
-    def test_live_daily_updates_are_accepted_and_labeled(self):
-        value = fake_record("live")
-        value["records"][1]["measurement"]["dataset_version"] = "v2"
-        value["records"][1]["measurement"]["results"][0]["result"]["sha256"] = "updated-data"
-        summary = report.summarize(value)
-        self.assertTrue(summary["valid"])
-        self.assertTrue(summary["cases"][0]["notes"])
-        self.assertEqual(summary["cases"][0]["classification"], "inconclusive")
-
-    def test_same_data_result_mismatch_is_invalid(self):
-        for mode in ("controlled", "live"):
-            value = fake_record(mode)
-            value["records"][1]["measurement"]["results"][0]["result"]["sha256"] = "wrong"
-            self.assertFalse(report.summarize(value)["valid"])
-
-    def test_declared_cache_policy_must_match_observed_engine_settings(self):
-        value = fake_record()
-        value["suite"].update(version=2, cache_policy="default")
-        value["suite"]["cases"][0]["cache_policy"] = "default"
-        for sample in value["records"]:
-            sample["measurement"]["engine_cache"] = {
-                "policy": "default", "initial_external_file_cache": True,
-                "effective_external_file_cache": True}
-        self.assertTrue(report.summarize(value)["valid"])
-        for field, replacement in (("policy", "project-only"), ("effective_external_file_cache", False)):
-            changed = deepcopy(value)
-            changed["records"][0]["measurement"]["engine_cache"][field] = replacement
-            self.assertFalse(report.summarize(changed)["valid"])
-        disabled_default = deepcopy(value)
-        for sample in disabled_default["records"]:
-            sample["measurement"]["engine_cache"].update(
-                initial_external_file_cache=False, effective_external_file_cache=False)
-        self.assertTrue(report.summarize(disabled_default)["valid"])
-        del value["records"][0]["measurement"]["engine_cache"]
-        self.assertFalse(report.summarize(value)["valid"])
-
-    def test_paired_change_and_small_sample_limit(self):
-        summary = report.summarize(fake_record())
-        self.assertTrue(summary["valid"])
-        self.assertEqual(summary["cases"][0]["paired_latency_reduction_percent"], 50)
-        self.assertEqual(summary["cases"][0]["classification"], "faster in this run")
-        self.assertEqual(report.summarize(fake_record(rounds=1))["cases"][0]["classification"], "inconclusive")
-
-    def test_render_does_not_execute_queries(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "results.json"
-            common.save_json(path, fake_record())
-            with patch.object(benchmark, "execute", side_effect=AssertionError("No requests allowed")):
-                report.render(path)
-            content = path.with_suffix(".md").read_text()
-            self.assertIn("50.0", content)
-            self.assertIn("n/a", content)
-            self.assertIn("results.json", content)
-
-    def test_worker_rejects_wrong_source_before_network(self):
-        with self.assertRaisesRegex(RuntimeError, "escaped"):
-            run({"source": "/wrong-source"})
-
-    def test_worker_rejects_mutated_source_before_network(self):
-        with self.assertRaisesRegex(RuntimeError, "sources changed"):
-            run({"source": str(common.ROOT), "source_hashes": {}})
-
-    def test_metadata_only_preparation_requires_explicit_cache_isolation(self):
-        with self.assertRaisesRegex(ValueError, "project-only"):
-            run({"source": str(common.ROOT), "source_hashes": common.source_hashes(),
-                 "dependencies": common.environment_info()["dependencies"],
-                 "case": {"cache_policy": "default", "state": "metadata_ready"}})
-
-    def test_timeout_is_retained(self):
-        with patch("benchmark.benchmark.subprocess.run", side_effect=subprocess.TimeoutExpired("worker", 3)):
-            value = benchmark.execute(Path("/experiment"), {"source": "/source", "source_hashes": {},
-                "python": "python", "environment": {"dependencies": {}}}, {}, Path("/cache"), 3)
-        self.assertEqual(value["status"], "timeout")
-        self.assertEqual(value["timeout_seconds"], 3)
-
 
 @unittest.skipUnless(os.environ.get("DEFEATBETA_RUN_BENCHMARK_TLS_TESTS") == "1",
-                     "Set DEFEATBETA_RUN_BENCHMARK_TLS_TESTS=1 for real fixture integration")
+                     "Set DEFEATBETA_RUN_BENCHMARK_TLS_TESTS=1 for fixture integration")
 class TestBenchmarkTLS(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.temporary = tempfile.TemporaryDirectory()
-        cls.directory = Path(cls.temporary.name)
-        cls.fixture = cls.directory / "fixture"
-        cls.identity = fixture.generate(cls.fixture)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.temporary.cleanup()
-
-    def test_default_worker_preserves_native_engine_cache(self):
+    def test_fixture_integrity_h2_and_independent_price_reference(self):
         import duckdb
-        from defeatbeta_api.client.duckdb_client import DuckDBClient
-        from defeatbeta_api.client.shared_resources import close_network_resources
 
-        with duckdb.connect() as connection:
-            expected = connection.execute("SELECT current_setting('enable_external_file_cache')").fetchone()[0]
-        observed = []
-        original_close = DuckDBClient.close
-
-        def observe_close(client):
-            observed.append(client.connection.execute(
-                "SELECT current_setting('enable_external_file_cache')").fetchone()[0])
-            return original_close(client)
-
-        with serve_fixture(self.fixture, self.directory) as server, \
-                tempfile.TemporaryDirectory() as cache, \
-                patch.dict(os.environ, {"SSL_CERT_FILE": server["certificate"],
-                                        "NO_PROXY": "localhost,127.0.0.1", "no_proxy": "localhost,127.0.0.1"}), \
-                patch.object(DuckDBClient, "close", observe_close), redirect_stdout(io.StringIO()):
-            try:
-                value = run({"source": str(common.ROOT), "source_hashes": common.source_hashes(),
-                    "dependencies": common.environment_info()["dependencies"], "endpoint": server["url"],
-                    "cache_directory": cache, "case": {"id": "price.first_use", "kind": "single",
-                        "state": "first_use", "cache_policy": "default", "concurrency": 1,
-                        "tasks": [{"symbol": "PDD", "method": "price"}]}})
-            finally:
-                close_network_resources()
-        self.assertEqual(value["status"], "ok", value)
-        self.assertEqual(observed, [expected])
-
-    def test_generator_checksums_and_independent_price_reference(self):
-        import duckdb
-        verified = fixture.verify(self.fixture)
-        self.assertEqual(verified, self.identity)
-        with duckdb.connect() as con:
-            row = con.execute("SELECT count(*), min(close), max(close) FROM read_parquet(?) WHERE symbol='PDD'",
-                              [str(self.fixture / "stock_prices.parquet")]).fetchone()
-        self.assertEqual(row, (32768, 50.0, 59.99))
-        target = self.fixture / "stock_profile.parquet"
-        original = target.read_bytes()
-        try:
-            target.write_bytes(b"corrupt")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            identity = fixture.generate(root / "fixture")
+            self.assertEqual(fixture.verify(root / "fixture"), identity)
+            with duckdb.connect() as con:
+                result = con.execute("SELECT count(*), min(close), max(close) FROM read_parquet(?) WHERE symbol='PDD'",
+                    [str(root / "fixture" / "stock_prices.parquet")]).fetchone()
+            self.assertEqual(result, (32768, 50.0, 59.99))
+            with serve_fixture(root / "fixture", root) as server:
+                context = ssl.create_default_context(cafile=server["certificate"])
+                with httpx.Client(verify=context, trust_env=False, http2=True) as http:
+                    response = http.get(server["url"] + "/data/stock_prices.parquet", headers={"Range": "bytes=0-3"})
+                    self.assertEqual((response.status_code, response.content, response.http_version),
+                                     (206, b"PAR1", "HTTP/2"))
+                    self.assertEqual(http.get(server["url"] + "/data/stock_prices.parquet",
+                                              headers={"Range": "bytes=8-4"}).status_code, 416)
+            path = root / "fixture" / "stock_prices.parquet"
+            path.write_bytes(b"corrupt")
             with self.assertRaisesRegex(ValueError, "checksum mismatch"):
-                fixture.verify(self.fixture)
-        finally:
-            target.write_bytes(original)
-
-    def test_real_tls_protocol_range_and_product_states(self):
-        with serve_fixture(self.fixture, self.directory) as server:
-            context = ssl.create_default_context(cafile=server["certificate"])
-            with httpx.Client(verify=context, trust_env=False, http2=True) as http:
-                response = http.get(server["url"] + "/data/stock_prices.parquet", headers={"Range": "bytes=0-3"})
-                self.assertEqual(response.status_code, 206)
-                self.assertEqual(response.content, b"PAR1")
-                self.assertEqual(response.http_version, server["protocol"])
-                self.assertEqual(http.get(server["url"] + "/data/stock_prices.parquet", headers={"Range": "bytes=8-4"}).status_code, 416)
-            # Exercise fresh interpreters to verify disk reuse and avoid shared test state.
-            experiment = self.directory / "experiment-h2"
-            (experiment / "harness").mkdir(parents=True)
-            (experiment / "harness" / "benchmark").symlink_to(common.ROOT / "benchmark", target_is_directory=True)
-            environment = {"python": sys.executable, "source": str(common.ROOT),
-                           "source_hashes": common.source_hashes(), "environment": common.environment_info()}
-            cache = experiment / "cache"
-            cache.mkdir()
-            for state in ("first_use", "disk_warm", "metadata_ready", "memory_warm"):
-                if state != "disk_warm":
-                    case_cache = cache if state == "first_use" else experiment / state
-                    case_cache.mkdir(exist_ok=True)
-                case = {"id": state, "kind": "single", "state": state, "concurrency": 1,
-                        "cache_policy": "project-only" if state == "metadata_ready" else "default",
-                        "tasks": [{"symbol": "PDD", "method": "price"}]}
-                value = benchmark.execute(experiment, environment, case, case_cache, 90, server)
-                self.assertEqual(value["status"], "ok", value)
-                self.assertEqual(value["results"][0]["result"]["rows"], 32768)
-                self.assertTrue(report.valid_engine_cache(value, case["cache_policy"]))
-                if state == "metadata_ready":
-                    self.assertGreater(value["cache_total_delta"]["downloaded_bytes"], 0)
-                if state in ("memory_warm", "disk_warm"):
-                    self.assertEqual(value["cache_query_delta"]["downloaded_bytes"], 0)
-                if state == "memory_warm":
-                    observed = {**case, "diagnostics": {"memory": True, "profile_repeats": 3}}
-                    measured = benchmark.execute(experiment, environment, observed, case_cache, 90, server)
-                    self.assertEqual(measured["status"], "ok", measured)
-                    self.assertEqual(measured["results"][0]["result"], value["results"][0]["result"])
-                    self.assertEqual(measured["cache_total_delta"]["range_requests"], 0)
-                    self.assertEqual(measured["results"][0]["profile"]["repetitions"], 3)
-                    self.assertEqual([item["stage"] for item in measured["diagnostics"]["memory"]], [
-                        "before_constructor", "before_query", "after_query_and_drain",
-                        "after_results_released", "after_client_closed"])
-            mixed = []
-            for case in suite.make_suite("smoke")["cases"]:
-                if case["id"] not in ("mixed.stream.1", "mixed.stream.4"):
-                    continue
-                directory = experiment / case["id"]
-                directory.mkdir()
-                value = benchmark.execute(experiment, environment, case, directory, 90, server)
-                self.assertEqual(value["status"], "ok", value)
-                self.assertTrue(report.valid_engine_cache(value, "default"))
-                self.assertEqual(value["pool_after"]["pending_requests"], 0)
-                self.assertTrue(all(c["reserved_streams"] == 0 for c in value["pool_after"]["connections"]))
-                self.assertGreater(value["cache_total_delta"]["downloaded_bytes"], 0)
-                mixed.append(report.fingerprints(value))
-            self.assertEqual(mixed[0], mixed[1])
+                fixture.verify(root / "fixture")

@@ -1,43 +1,26 @@
 # Benchmark report lifecycle
 
-Official measurements run in GitHub Actions. Publication is a separate explicit
-operation, independent of Git ignore rules.
-
 | Stage | Trigger | Storage |
 | --- | --- | --- |
-| Development | PR smoke check or manual paired benchmark | Job Summary and 30-day Actions Artifact; no report commit or Release attachment. |
-| Final release | Manual finalization with a selected run and existing Release tag | Detailed Markdown and evidence bundle attached to that GitHub Release. |
+| Development | Manual end-to-end benchmark | Actions Summary and 30-day artifacts. No report commit or Release attachment. |
+| Final release | Explicit finalization of a selected complete run | Markdown report and checksummed evidence bundle on the existing GitHub Release. |
 
-Running the full `release` suite does not promote its result. Development runs
-can be repeated throughout implementation. On public repositories, readers can
-still see Actions output; development status is not private access.
+One round is useful during development. A final report requires all twelve
+phases, the declared ticker sample and all query operations, at least six even
+rounds, one successful manual workflow attempt, and a Release tag identifying
+the measured candidate commit. A first standalone report is supported; future
+paired comparisons rerun old and new versions on the same runner per phase.
 
-Finalization requires all 70 default-policy cases in both fixed-data regression
-and live-service regression (Hugging Face), with at least six even paired rounds.
-Both share source commits, exact dependency locks, harness identity, and one
-workflow attempt. The Release tag identifies the measured candidate commit.
-For retries, rerun all jobs rather than mixing attempts.
+Finalization validates saved evidence and harness checksums without executing
+downloaded code or rerunning queries. It preserves original per-phase records,
+merged JSON, readable Markdown, source commits, dependency locks, frozen harness,
+and a publication checksum manifest. Existing assets are not replaced. It does
+not create tags or publish software. Finalize before development artifacts expire.
 
-Finalization never repeats measurements or drops slower cases. It produces:
+Public Actions development output remains visible; development status is not a
+privacy setting. Git ignore rules concern accidental workstation commits only.
 
-- `performance-report.md`: standalone detailed comparisons for all experiments.
-- `performance-evidence.tar.gz`: original JSON, per-experiment reports, harness
-  sources, dependency locks, and a SHA256 publication manifest.
-
-The upload targets an existing Release, including a draft if desired. It does
-not create tags, publish packages, or change visibility. Existing assets are not
-replaced. If an upload is interrupted, inspect the assets before deliberate
-maintainer recovery. Promote accepted evidence before its Artifacts expire.
-
-The [guide](../README.md) documents workflow inputs and the local CLI. The
-[design](../DESIGN.md) defines cache states, timing, data changes, and limitations.
-
-## Historical evidence
-
-`archive/000_*`, `001_*`, and `002_release_0_0_62.*` remain unchanged historical
-records from older tools. Current report commands accept the new paired schema.
-Historical absolute times are not the new executable baseline; compare both
-versions again under the same framework to assess improvement.
-
-`local/` holds workstation development runs and diagnostic logs. Local ignore
-rules prevent accidental commits but do not govern Actions or Release assets.
+`archive/` retains historical release evidence unchanged. Old absolute timings
+and old schemas are not the new executable baseline. `local/` holds ignored
+workstation correctness checks and diagnostic evidence. See the
+[guide](../README.md) and [design](../DESIGN.md).

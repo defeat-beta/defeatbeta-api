@@ -1,7 +1,6 @@
 """Select a dataset endpoint without replacing either product's HTTP stack."""
 
 from contextlib import contextmanager
-from pathlib import Path
 from unittest.mock import patch
 
 
@@ -24,21 +23,3 @@ def dataset_endpoint(endpoint=None):
     with patch.object(HuggingFaceClient, "_make_request", metadata), \
             patch.object(HuggingFaceClient, "resolve_cdn_info", resolve):
         yield
-
-
-def clear_data(filesystem, directory):
-    if filesystem.await_pending()["errors"]:
-        raise RuntimeError("Pending downloads failed before cache preparation")
-    with filesystem._guard:
-        filesystem._memory_blocks.clear()
-        filesystem._memory_access_ns.clear()
-    for path in Path(directory).glob("*.block"):
-        path.unlink()
-    if any(Path(directory).glob("*.block")):
-        raise RuntimeError("Data cache preparation did not finish")
-
-
-def snapshot(directory):
-    root = Path(directory)
-    return {kind: {"files": len(paths), "bytes": sum(path.stat().st_size for path in paths)}
-            for kind, paths in ((kind, list(root.glob("*." + kind))) for kind in ("block", "footer"))}

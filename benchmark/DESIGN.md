@@ -1,134 +1,83 @@
-# Paired benchmark design
+# End-to-end benchmark contract
 
-## Experiment identity
+## Fixed work
 
-Resolve baseline and candidate Git refs once. Export product sources and install
-each into a separate virtual environment, using that version's dependencies and
-defaults. Save full commits, product source hashes, dependency locks, Python,
-CPU/RAM/platform, runner image, and proxy route. Both versions use one frozen
-harness. Changed harness sources, product files, or prepared dependencies prevent
-reuse of an experiment.
+Discovery declares W = sampled tickers x all public query operations with frozen
+parameters. The sample is chosen before timing, with no automatic replacement
+of slow, missing, or failing tickers. The method list is discovered from Ticker;
+new required arguments must be declared explicitly. Excel export and diagnostic
+output are excluded. Wrapper objects expand into real list/body calls.
 
-A/B run sequentially on one host with alternating AB/BA order. Six even paired
-rounds balance order for release evidence. Each variant/case/round has a new
-interpreter and isolated cache. Fixed-data regression and live-service regression
-run as separate jobs; their absolute times cannot be compared directly. A GitHub
-runner label does not fix the physical CPU or public network route.
+All concurrency levels execute identical W exactly once. Workers partition work;
+they do not multiply it. Unavailable source bodies stay in the ledger as not
+applicable and never count as successful work. Empty successful results remain
+valid results. Unexpected failures invalidate acceptance.
 
-## Data and network paths
+## Cache and timing boundaries
 
-Controlled mode generates one deterministic synthetic fixture before A/B with
-DuckDB `2.0.0.dev2610011535`. Both products read those same bytes. The fixture
-contains 33 symbols including SPY, 13 Parquet files, varied history lengths,
-multiple row groups, compressed/uncompressed tables, and nested payloads. Full
-file/footer hashes and the generator identity are retained. An independent
-price count/min/max oracle is tested; other APIs currently use A/B equality.
+Individual latency has two states: independent cold query cache, and exact-task
+warmup followed by a repeat call. Query clients and project caches are reset
+between individual tasks. Ticker construction is outside API timing and is
+recorded separately. HTTP lifecycle remains the product's responsibility.
 
-A separate Hypercorn 0.17.3 process serves actual HTTPS, redirects, and Range
-responses. A verified test CA and ALPN exercise HTTP/2. Metadata and
-data use two origins, 127.0.0.1 and localhost. The adapter redirects endpoints,
-while preserving each product's actual cache, pool, HTTP, TLS, and SQL paths.
-It does not inject results or replace transport with mocks. Historical baselines
-retain their original transport behavior; there is no forced-H1 experiment.
+Throughput has the same two states at concurrency 1/4/16/64/128. A cold batch
+starts with one empty shared query cache; sharing within the batch is intentional.
+A cached batch first warms all of W and drains prefetch. Generous equal capacities
+prevent budget eviction; actual disk capacity and observed cache misses remain
+validity checks. Local disk hits qualify alongside memory hits. Native DuckDB
+file caching follows each product's defaults and is recorded.
 
-The server records CPU/RSS, protocol, request, and byte counters. Loopback is
-unshaped and server capacity has not been calibrated. Host resources are shared
-with the server. This mode does not establish an absolute client bandwidth limit.
+API latency includes complete materialization, internal retries, and waiting.
+Warmup, constructor, and result hashing are outside that interval. Throughput
+wall time includes executor startup, dispatch, contention, and completion of
+all calls. Deferred prefetch is drained after measurement and before cleanup.
+Per-phase setup wall time is not API latency or batch throughput.
 
-Live mode keeps the normal product path to current Hugging Face main. Historical
-revisions can be deleted, so availability of old commits is not assumed. Record
-observed update_time and file/footer metadata. Daily changes are accepted; when
-metadata differs inside a pair, keep timing, waive cross-input result equality,
-and label the case inconclusive. Controlled samples and live samples with equal
-metadata must have matching results. Daily updates do not alter the controlled
-baseline.
+## Execution and identity
 
-## Workloads and states
+A discovery job resolves the current workload once. Twelve measurement jobs
+cover two latency phases plus ten throughput phases. Each phase compares old
+and new sources sequentially on the same GitHub runner, alternating AB/BA across
+rounds. The first report may omit a baseline. There is no universal historical
+absolute-time baseline, and no comparison of hardware across phase jobs.
 
-Suite v2 declares 32 cross-sector symbols and seed 1729. This is a predeclared
-corpus, not automatic stratification against the current remote files. Each
-method uses one selected symbol; mixed traffic spans the corpus. Selection is
-frozen before either product runs and never depends on favorable timings.
+Export each product from a full commit into an isolated environment with its
+original declared dependencies. Freeze harness sources, dependency locks,
+Python, environment, source hashes, workflow run and attempt. Each phase uses
+a fresh process and isolated cache per variant/round. Prepared environments
+cannot be reused after source, harness, or dependency changes.
 
-The 20 methods include nine direct reads, quarterly income/balance/cash-flow and
-revenue breakdown, market capitalization, trailing PE, beta, and transcript/news
-lists and bodies. Discovery freezes body identifiers before A/B; timed body
-calls actually materialize their content. The saved API coverage map explicitly
-identifies unmeasured related methods and presentation/export/AI exclusions.
+Current remote data can change daily and historical revisions can disappear.
+Observe file/footer identity at measurement time. Require result equality when
+inputs match; changed-data pairs retain evidence but receive no faster/slower
+verdict. Hash full row multisets and column names without rounding away numeric
+differences, outside timed API intervals.
 
-| State | Preparation and primary duration |
-| --- | --- |
-| First use | Empty application cache in a fresh process; Ticker constructor plus API. |
-| Memory warm | Materialize selected call and drain prefetch in the same process; time repeat API. |
-| Disk warm | Seed cache in another process; new interpreter measures constructor plus API. |
-| Metadata ready (project-only diagnostic) | Warm each distinct method, drain prefetch, clear data extents and memory blocks, retain metadata; time API. |
+## Evidence and interpretation
 
-The first-result metric sums constructor and API intervals; it excludes Python
-startup/imports and harness setup between these intervals. Metadata-ready
-connections can be reused while still live; preparation does not guarantee they
-remain open. Application cache preparation does not flush DNS, OS pages, proxy,
-or remote CDN caches. The default policy leaves each product's native
-`enable_external_file_cache` setting unchanged. The project-only diagnostic sets
-it to false to isolate `DatasetCacheFileSystem`. Neither policy uses the
-`cache_httpfs` extension. Initial and effective engine settings are recorded per
-measurement; missing or inconsistent observations invalidate suite v2 evidence.
-Other product defaults remain intact; the suite does not require pool tuning.
+Every task must have exactly one completion row with the declared parameters.
+Validate observed API coverage, source/dependency identity, finite positive
+measurements, fingerprints, completion counters, and all-hit cache conditions.
+Combine exactly one copy of all phases from one workflow attempt. Incomplete
+jobs, wrong capacities, missing applicability, and errors cannot become success.
 
-The default release contract has 20 methods times three states plus ten
-concurrent cases, totaling 70. Metadata-only preparation is excluded from this
-contract because clearing project extents would leave the native cache warm.
-The separate project-only diagnostic retains all four states and 90 cases. Its
-policy is included in the suite and each case, and changes the suite checksum.
-It cannot be promoted as default-behavior release evidence.
+Report every ticker/method and all concurrency levels, preserving unfavorable
+results. Per-case paired reduction is 100 * (1 - median(candidate / baseline)).
+Six or more pairs permit a seeded 2,000-resample bootstrap interval for that
+ratio. These intervals are per case without multiplicity correction and are not
+a universal performance guarantee. Smaller samples show exploratory medians.
 
-A burst synchronizes N calls; a bounded stream executes the same 128-task plan at
-concurrency 1, 4, 16, 64, and 128. The plan mixes price/info/shares/filings. Data
-starts cold but natural sharing and cache hits develop during each batch. Under
-the default policy, each batch starts without query warmup; under project-only,
-each batch uses metadata-only preparation with the native file cache disabled.
-Calls/s measures mixed-query completion, not sustained uncached download speed.
-Smoke mode reduces methods, states, and concurrency levels.
+Fixed synthetic Parquet and a local H2 TLS service remain correctness helpers,
+with a price oracle and cold/cached cache integration tests. They are not another
+user-facing performance experiment. Engineering diagnostics are separate from
+release acceptance. No protocol comparison or bandwidth measurement is required.
 
-## Metrics and correctness
+## Lifecycle
 
-Measure fully materialized call latency, batch wall time, empirical within-batch
-P95, CPU, RSS at query end (not peak), bytes, Range requests, prefetch drain, and
-available pool counters. Missing old-version counters are unavailable, not zero.
-Thread-pool queue time is separate; batch wall time includes dispatch/completion.
-Post-query prefetch is drained before cleanup. Query and post-drain byte totals
-remain distinct. Constructor and preparation CPU are separate from query CPU.
-Overlapping diagnostic spans must not be summed into exclusive phases.
-
-Result hashing occurs after the timed query interval. Fingerprints include
-column names and the complete row multiset, preserve duplicate rows, and do not
-round numeric differences away. Missing pairs, duplicate/undeclared samples,
-failed workers, missing fingerprints, nonfinite times, manifest changes, or
-applicable result mismatches invalidate comparison. Failures are retained rather
-than replaced with successful retries. Disk-cache seeding records are retained.
-
-Per-case reduction is `100 * (1 - median(candidate / baseline per pair))`.
-At least six pairs permit a 2,000-resample bootstrap interval for the paired
-median ratio; smaller samples remain exploratory. These are per-case intervals
-without multiple-comparison adjustment. There is no calibrated materiality
-threshold or automatic performance-regression gate. Correctness/completeness
-failures fail the job. Slower and inconclusive cases stay visible for review.
-
-## Report lifecycle
-
-Every measurement produces development JSON/Markdown, job Summary, and temporary
-Artifacts. Even the full release suite does not create a final release report.
-Ordinary workflows have no publication permission. Git ignore rules concern
-local files and do not control remote publication.
-
-A separate manual workflow selects one complete successful run and an existing
-Release tag identifying the candidate commit. It verifies both experiments,
-balanced rounds, source/dependency/harness identity, and one workflow attempt.
-It renders saved evidence without executing downloaded code or rerunning queries,
-then uploads a detailed Markdown report and checksummed evidence bundle to that
-Release. Existing assets are never replaced. It does not create tags or publish
-software. See [report lifecycle](results/README.md).
-
-The bundle retains raw evidence, readable reports, commits, dependency locks,
-and the frozen harness. Temporary source paths describe the original runner;
-reconstruction uses the commits and locks. A complete valid report is evidence
-for a release decision, not an assertion that every API or network improved.
+Every measurement is development evidence in Actions Summary and temporary
+artifacts. Release finalization separately verifies a complete declared sample,
+all phases, at least six even rounds, sources, locks, harness checksums, candidate
+tag, and one successful manual workflow attempt. It packages saved evidence
+without rerunning measurements or executing downloaded sources. Standalone first
+reports and later paired reports share this contract. Existing release assets
+are never replaced. See [report lifecycle](results/README.md).

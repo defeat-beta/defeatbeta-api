@@ -103,7 +103,7 @@ def serve_fixture(directory, runtime_directory):
         port = sock.getsockname()[1]
     url = f"https://127.0.0.1:{port}"
     log = (runtime_directory / "server.log").open("w")
-    process = subprocess.Popen([sys.executable, "-m", "benchmark.server", "--directory", str(directory),
+    process = subprocess.Popen([sys.executable, "-m", "benchmark.support.server", "--directory", str(directory),
                                 "--port", str(port), "--certificate", str(certificate), "--key", str(key)], stdout=log, stderr=log)
     try:
         context = ssl.create_default_context(cafile=str(certificate))

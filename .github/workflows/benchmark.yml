@@ -1,35 +1,21 @@
-name: Paired performance benchmark
+name: End-to-end performance benchmark
 
 on:
   workflow_dispatch:
     inputs:
       baseline:
-        description: Baseline Git ref (resolved to a full commit before installation)
-        required: true
+        description: Optional baseline Git ref; leave empty for a standalone first report
+        required: false
         type: string
       candidate:
         description: Candidate Git ref
-        required: true
         default: main
+        required: true
         type: string
-      suite:
-        description: Workload coverage
-        type: choice
-        options: [release, smoke]
-        default: release
       rounds:
-        description: Paired rounds (six for a publication comparison)
-        default: "6"
+        description: Repetitions per phase; six even rounds are required for finalization
+        default: "1"
         type: string
-  pull_request:
-    paths:
-      - "benchmark/**"
-      - "defeatbeta_api/client/**"
-      - "test/test_benchmark.py"
-      - "test/test_benchmark_publication.py"
-      - "pyproject.toml"
-      - "requirements.txt"
-      - ".github/workflows/benchmark.yml"
 
 permissions:
   contents: read
@@ -39,8 +25,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  resolve:
+  plan:
     runs-on: ubuntu-24.04
+    timeout-minutes: 40
     outputs:
       baseline: ${{ steps.refs.outputs.baseline }}
       candidate: ${{ steps.refs.outputs.candidate }}
@@ -49,22 +36,55 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - run: python -m pip install -r benchmark/requirements.txt
       - id: refs
-        name: Freeze product refs once for all experiments
+        name: Freeze source refs before discovery and all phase jobs
         env:
-          BASELINE_REF: ${{ inputs.baseline || github.event.pull_request.base.sha }}
-          CANDIDATE_REF: ${{ inputs.candidate || github.event.pull_request.head.sha }}
+          BASELINE_REF: ${{ inputs.baseline }}
+          CANDIDATE_REF: ${{ inputs.candidate }}
         run: |
-          baseline=$(git rev-parse --verify --end-of-options "${BASELINE_REF}^{commit}")
           candidate=$(git rev-parse --verify --end-of-options "${CANDIDATE_REF}^{commit}")
-          echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
           echo "candidate=$candidate" >> "$GITHUB_OUTPUT"
+          if [ -n "$BASELINE_REF" ]; then
+            baseline=$(git rev-parse --verify --end-of-options "${BASELINE_REF}^{commit}")
+            echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Discover all query operations and freeze one sample workload
+        env:
+          CANDIDATE: ${{ steps.refs.outputs.candidate }}
+        run: python -m benchmark discover --candidate "$CANDIDATE" --output benchmark/results/local/discovery
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            benchmark/results/local/discovery/plan.json
+            benchmark/results/local/discovery/discovery.json
+          retention-days: 30
 
-  controlled:
-    name: Fixed-data regression
-    needs: resolve
+  measure:
+    needs: plan
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        phase:
+          - latency.cold
+          - latency.cached
+          - throughput.cold.1
+          - throughput.cold.4
+          - throughput.cold.16
+          - throughput.cold.64
+          - throughput.cold.128
+          - throughput.cached.1
+          - throughput.cached.4
+          - throughput.cached.16
+          - throughput.cached.64
+          - throughput.cached.128
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,29 +94,31 @@ jobs:
         with:
           python-version: "3.11.10"
       - run: python -m pip install -r benchmark/requirements.txt
-      - name: Compare on the same runner
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: frozen-plan
+      - name: Measure identical work; paired versions share this runner
         env:
-          BASELINE_REF: ${{ needs.resolve.outputs.baseline }}
-          CANDIDATE_REF: ${{ needs.resolve.outputs.candidate }}
-          SUITE: ${{ inputs.suite || 'smoke' }}
-          ROUNDS: ${{ inputs.rounds || '2' }}
+          BASELINE: ${{ needs.plan.outputs.baseline }}
+          CANDIDATE: ${{ needs.plan.outputs.candidate }}
+          ROUNDS: ${{ inputs.rounds }}
+          PHASE: ${{ matrix.phase }}
         run: >-
-          python -m benchmark compare
-          --baseline "$BASELINE_REF" --candidate "$CANDIDATE_REF"
-          --output benchmark/results/local/experiment
-          --mode controlled --suite "$SUITE" --rounds "$ROUNDS"
-          --network-label "GitHub ubuntu-24.04; unshaped loopback TLS"
-      - name: Publish job summary
+          python -m benchmark compare --baseline "$BASELINE" --candidate "$CANDIDATE"
+          --output benchmark/results/local/experiment --plan frozen-plan/plan.json
+          --phase "$PHASE" --rounds "$ROUNDS"
+      - name: Publish phase development summary
         if: always()
         run: find benchmark/results/local/experiment -name results.md -exec cat {} \; >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fixed-data-${{ github.run_id }}-${{ github.run_attempt }}
+          name: e2e-phase-${{ matrix.phase }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             benchmark/results/local/experiment/*/results.json
             benchmark/results/local/experiment/*/results.md
-            benchmark/results/local/experiment/*/results_summary.json
+            benchmark/results/local/experiment/*/*/progress.jsonl
             benchmark/results/local/experiment/experiment.json
             benchmark/results/local/experiment/harness-dependencies.lock
             benchmark/results/local/experiment/harness/benchmark/**/*.py
@@ -105,48 +127,30 @@ jobs:
             benchmark/results/local/experiment/*/install.log
           retention-days: 30
 
-  hugging-face:
-    name: Live-service regression (Hugging Face)
-    needs: resolve
-    if: github.event_name == 'workflow_dispatch'
+  report:
+    needs: measure
+    if: always()
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11.10"
-      - run: python -m pip install -r benchmark/requirements.txt
-      - name: Compare using current remote data
-        env:
-          BASELINE_REF: ${{ needs.resolve.outputs.baseline }}
-          CANDIDATE_REF: ${{ needs.resolve.outputs.candidate }}
-          SUITE: ${{ inputs.suite }}
-          ROUNDS: ${{ inputs.rounds }}
-        run: >-
-          python -m benchmark compare
-          --baseline "$BASELINE_REF" --candidate "$CANDIDATE_REF"
-          --output benchmark/results/local/experiment
-          --mode live --suite "$SUITE" --rounds "$ROUNDS"
-          --network-label "GitHub ubuntu-24.04; Hugging Face public route"
-      - name: Publish job summary
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: e2e-phase-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+      - name: Verify complete coverage and render saved evidence
+        run: python -m benchmark collect --source evidence --output report
+      - name: Publish development summary
         if: always()
-        run: find benchmark/results/local/experiment -name results.md -exec cat {} \; >> "$GITHUB_STEP_SUMMARY"
+        run: cat report/results.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: live-service-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            benchmark/results/local/experiment/*/results.json
-            benchmark/results/local/experiment/*/results.md
-            benchmark/results/local/experiment/*/results_summary.json
-            benchmark/results/local/experiment/experiment.json
-            benchmark/results/local/experiment/harness-dependencies.lock
-            benchmark/results/local/experiment/harness/benchmark/**/*.py
-            benchmark/results/local/experiment/harness/benchmark/requirements.txt
-            benchmark/results/local/experiment/*/dependencies.lock
-            benchmark/results/local/experiment/*/install.log
+          name: e2e-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: report/
           retention-days: 30

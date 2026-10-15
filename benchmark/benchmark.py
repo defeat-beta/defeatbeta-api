@@ -1,7 +1,6 @@
 """Prepare isolated versions, run paired experiments, and publish saved evidence."""
 
 import argparse
-from contextlib import nullcontext
 from datetime import datetime, timezone
 import hashlib
 import io
@@ -12,12 +11,11 @@ import shutil
 import subprocess
 import sys
 import tarfile
-import tempfile
 import time
 import venv
 
 from benchmark.common import ROOT, redact_secrets, save_json, source_hashes
-from benchmark.suite import make_suite
+from benchmark.e2e import plan
 
 
 MARKER = "BENCHMARK_RESULT="
@@ -74,6 +72,8 @@ def prepare(args):
                 "harness_dependency_lock": harness_lock,
                 "harness": harness_hashes(harness)}
     for name, ref in (("baseline", args.baseline), ("candidate", args.candidate)):
+        if not ref:
+            continue
         source = output / name / "source"
         commit = export_source(ref, source)
         envdir = output / name / "venv"
@@ -89,7 +89,7 @@ def prepare(args):
             subprocess.run(install, stdout=log, stderr=log, check=True)
         lock = dependency_lock(python)
         (output / name / "dependencies.lock").write_text(lock, encoding="utf-8")
-        environment = worker_environment(output, source)
+        environment = worker_environment(output)
         info = json.loads(subprocess.check_output([str(python), "-c",
             "import json; from benchmark.common import environment_info; print(json.dumps(environment_info()))"],
             cwd=source, env=environment, text=True))
@@ -100,195 +100,148 @@ def prepare(args):
     return output
 
 
-def worker_environment(experiment, source, server=None):
+def worker_environment(experiment):
     env = dict(os.environ)
     env["PYTHONPATH"] = str(Path(experiment) / "harness")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    if server:
-        for key in list(env):
-            if key.lower().endswith("_proxy"):
-                env.pop(key)
-        env["NO_PROXY"] = "localhost,127.0.0.1"
-        env["SSL_CERT_FILE"] = server["certificate"]
-        env["REQUESTS_CA_BUNDLE"] = server["certificate"]
     return env
 
 
-def execute(experiment, environment, case, directory, timeout, server=None, action="measure"):
-    payload = {"case": case, "cache_directory": str(directory), "action": action,
+def execute(experiment, environment, request, directory, timeout):
+    directory.mkdir(parents=True, exist_ok=False)
+    payload = {**request, "cache_directory": str(directory / "cache"),
                "source": environment["source"], "source_hashes": environment["source_hashes"],
                "dependencies": environment["environment"]["dependencies"],
-               "endpoint": server["url"] if server else None}
+               "progress_path": str(directory / "progress.jsonl")}
+
+    def partial(value):
+        if "completed_tasks" not in value and Path(payload["progress_path"]).is_file():
+            rows = []
+            for line in Path(payload["progress_path"]).read_text().splitlines():
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    break
+            value.update(completed_tasks=len(rows), results=rows)
+        return value
     started = time.perf_counter()
     try:
         result = subprocess.run([environment["python"], "-m", "benchmark.worker"],
-            cwd=environment["source"], env=worker_environment(experiment, environment["source"], server),
+            cwd=environment["source"], env=worker_environment(experiment),
             input=json.dumps(payload), capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
-        return {"status": "timeout", "timeout_seconds": timeout,
-                "worker_wall_seconds": time.perf_counter() - started}
+        return partial({"status": "timeout", "worker_wall_seconds": time.perf_counter() - started})
     matches = [line[len(MARKER):] for line in result.stdout.splitlines() if line.startswith(MARKER)]
     if len(matches) != 1:
-        return {"status": "error", "returncode": result.returncode,
-                "output": redact_secrets(result.stdout + result.stderr)}
-    value = json.loads(matches[0])
-    value.update(worker_wall_seconds=time.perf_counter() - started, returncode=result.returncode,
-                 stderr=redact_secrets(result.stderr),
-                 stdout=redact_secrets("\n".join(line for line in result.stdout.splitlines()
-                                                  if not line.startswith(MARKER))))
-    if result.returncode:
-        value["status"] = "error"
-    return value
+        return partial({"status": "worker_error", "returncode": result.returncode,
+                        "output": redact_secrets(result.stdout + result.stderr)})
+    try:
+        value = json.loads(matches[0])
+    except json.JSONDecodeError:
+        return partial({"status": "worker_error", "error": "Worker produced invalid JSON"})
+    value.update(worker_wall_seconds=time.perf_counter() - started, returncode=result.returncode)
+    if result.returncode and value.get("status") == "complete":
+        value["status"] = "worker_error"
+    return partial(value)
 
 
-def paired_order(round_index, case_index):
-    return ("baseline", "candidate") if (round_index + case_index) % 2 == 0 else ("candidate", "baseline")
+def paired_order(round_index, phase_index):
+    return ("baseline", "candidate") if (round_index + phase_index) % 2 == 0 else ("candidate", "baseline")
 
 
 def measure(args):
-    from benchmark.fixture import generate, verify
-    from benchmark.server import serve_fixture
     from benchmark.report import render
 
     experiment = args.experiment.resolve()
     manifest = json.loads((experiment / "experiment.json").read_text())
-    harness = experiment / "harness" / "benchmark"
-    verify_harness(ROOT / "benchmark", harness, manifest["harness"])
+    verify_harness(ROOT / "benchmark", experiment / "harness" / "benchmark", manifest["harness"])
     if dependency_lock(sys.executable) != manifest["harness_dependency_lock"]:
         raise ValueError("Harness dependencies changed; create a new experiment")
     for environment in manifest["environments"].values():
         if dependency_lock(environment["python"]) != environment["dependency_lock"]:
             raise ValueError("Prepared dependencies changed; create a new experiment")
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
-    destination = experiment / f"{stamp}_{args.mode}_{args.suite}"
+    destination = experiment / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     destination.mkdir()
-    record = {"schema_version": 1, "stage": "development", "status": "running", "created_at": stamp,
-              "workflow": {"repository": os.environ.get("GITHUB_REPOSITORY"),
-                           "run_id": os.environ.get("GITHUB_RUN_ID"),
-                           "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
-                           "sha": os.environ.get("GITHUB_SHA")},
-              "mode": args.mode, "protocol_control": "h2" if args.mode == "controlled" else None,
-              "network": args.network_label, "experiment": manifest, "rounds": args.rounds,
-              "suite": make_suite(args.suite, cache_policy=args.cache_policy), "records": [], "preparation": [],
-              "policy": {"data": "Latest remote data; daily changes accepted and recorded" if args.mode == "live"
-                         else "One checksummed synthetic fixture for both products",
-                         "cache": "Fresh per variant/case/round; disk-warm uses a separate seeding process",
-                         "product": ("Declared defaults except an isolated cache directory"
-                                     if args.cache_policy == "default" else
-                                     "Project-only diagnostic: DuckDB external file cache disabled"),
-                         "metrics": "Fully materialized API; constructor reported separately and in first result",
-                         "order": "Balanced alternating AB/BA; sequential versions on one host",
-                         "stream": "Fixed total query plan; natural cache reuse inside a batch",
-                         "scope": "Paired changes in this environment; no universal bandwidth claim"}}
+    workload = json.loads(args.plan.read_text())
+    plan.validate_plan(workload)
+    selected = [phase for phase in plan.phases() if not args.phase or phase["id"] == args.phase]
+    record = {"schema_version": 2, "stage": "development", "status": "running",
+              "workflow": {key: os.environ.get(value) for key, value in (
+                  ("repository", "GITHUB_REPOSITORY"), ("run_id", "GITHUB_RUN_ID"),
+                  ("run_attempt", "GITHUB_RUN_ATTEMPT"), ("sha", "GITHUB_SHA"))},
+              "experiment": manifest, "rounds": args.rounds, "plan": workload,
+              "phases": selected, "records": []}
     target = destination / "results.json"
     save_json(target, record)
-    with tempfile.TemporaryDirectory(prefix="defeatbeta-benchmark-") as temporary:
-        temporary = Path(temporary)
-        if args.mode == "controlled":
-            fixture = temporary / "fixture"
-            generate(fixture)
-            record["fixture"] = verify(fixture)
-            context = serve_fixture(fixture, temporary)
-        else:
-            context = nullcontext(None)
-        with context as server:
-            unresolved = {}
-            for case in record["suite"]["cases"]:
-                for task in case["tasks"]:
-                    if task["method"] in ("transcript_body", "news_body"):
-                        unresolved[(task["symbol"], task["method"])] = task
-            if unresolved:
-                directory = temporary / "discovery"
-                directory.mkdir()
-                case = {"id": "discovery", "tasks": list(unresolved.values()), "cache_policy": args.cache_policy}
-                discovered = execute(experiment, manifest["environments"]["baseline"], case, directory,
-                                     args.timeout, server, "discover")
-                record["preparation"].append(discovered)
-                if discovered["status"] != "ok":
-                    record["status"] = "invalid_preparation"
-                    save_json(target, record)
-                    render(target)
-                    return 1
-                lookup = {(task["symbol"], task["method"]): task for task in discovered["tasks"]}
-                for case in record["suite"]["cases"]:
-                    case["tasks"] = [lookup.get((task["symbol"], task["method"]), task) for task in case["tasks"]]
-                record["coverage"] = discovered["coverage"]
-            record["resolved_suite_sha256"] = hashlib.sha256(json.dumps(record["suite"], sort_keys=True).encode()).hexdigest()
-            save_json(target, record)
-            for round_index in range(args.rounds):
-                for case_index, case in enumerate(record["suite"]["cases"]):
-                    for variant in paired_order(round_index, case_index):
-                        print(f"round={round_index + 1}/{args.rounds} case={case['id']} variant={variant}", flush=True)
-                        directory = temporary / f"cache-{round_index}-{case_index}-{variant}"
-                        directory.mkdir()
-                        env = manifest["environments"][variant]
-                        if case["state"] == "disk_warm":
-                            seed = {**case, "state": "first_use"}
-                            outcome = execute(experiment, env, seed, directory, args.timeout, server)
-                            record["preparation"].append({"case": case["id"], "round": round_index + 1,
-                                                         "variant": variant, "measurement": outcome})
-                            if outcome["status"] != "ok":
-                                record["records"].append({"case": case["id"], "round": round_index + 1,
-                                                          "variant": variant, "measurement": outcome})
-                                save_json(target, record)
-                                continue
-                        server_before = server["status"]() if server else None
-                        value = execute(experiment, env, case, directory, args.timeout, server)
-                        server_after = server["status"]() if server else None
-                        record["records"].append({"case": case["id"], "round": round_index + 1,
-                                                  "variant": variant, "measurement": value,
-                                                  "server_before": server_before, "server_after": server_after})
-                        save_json(target, record)
-                        # Each case is complete, so no cache or prefetch can leak into the next case.
-                        shutil.rmtree(directory)
-                        print(f"  {value['status']} api_seconds={value.get('wall_seconds')}", flush=True)
-            record["status"] = "complete"
-            save_json(target, record)
-            summary = render(target)
-            print(f"Report: {target.with_suffix('.md')}", flush=True)
-            return 0 if summary["valid"] else 1
+    for number in range(args.rounds):
+        for phase in selected:
+            index = plan.phases().index(phase)
+            for variant in paired_order(number, index):
+                if variant not in manifest["environments"]:
+                    continue
+                print(f"round={number + 1} phase={phase['id']} variant={variant}", flush=True)
+                directory = destination / f"cache-{number}-{index}-{variant}"
+                value = execute(experiment, manifest["environments"][variant],
+                    {"action": "measure", "phase": phase, "plan": workload}, directory, args.timeout)
+                record["records"].append({"phase": phase["id"], "round": number + 1,
+                                          "variant": variant, "measurement": value})
+                save_json(target, record)
+                shutil.rmtree(directory / "cache", ignore_errors=True)
+    record["status"] = "complete"
+    save_json(target, record)
+    return 0 if render(target)["valid"] else 1
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    prepare_parser = commands.add_parser("prepare", help="Install two explicit source revisions into isolated environments")
-    compare_parser = commands.add_parser("compare", help="Prepare and run a paired experiment")
-    for command in (prepare_parser, compare_parser):
-        command.add_argument("--baseline", required=True)
+    for name in ("prepare", "compare", "discover"):
+        command = commands.add_parser(name)
+        command.add_argument("--baseline", help="Optional comparison ref; omit for the first standalone report")
         command.add_argument("--candidate", default="HEAD")
         command.add_argument("--output", type=Path, required=True)
-        command.add_argument("--baseline-lock", type=Path, help="Reuse the archived baseline dependency lock")
-        command.add_argument("--candidate-lock", type=Path, help="Reuse the archived candidate dependency lock")
-    run_parser = commands.add_parser("run", help="Run an already prepared experiment; keep every attempt")
+        command.add_argument("--baseline-lock", type=Path)
+        command.add_argument("--candidate-lock", type=Path)
+    run_parser = commands.add_parser("run")
     run_parser.add_argument("--experiment", type=Path, required=True)
-    for command in (run_parser, compare_parser):
-        command.add_argument("--mode", choices=("controlled", "live"), default="controlled")
-        command.add_argument("--suite", choices=("smoke", "release"), default="release")
-        command.add_argument("--cache-policy", choices=("default", "project-only"), default="default",
-                             help="Preserve product defaults, or isolate the project cache for diagnostics")
-        command.add_argument("--rounds", type=int, default=6)
-        command.add_argument("--network-label", default="Unspecified local network")
-        command.add_argument("--timeout", type=float, default=180)
-    report_parser = commands.add_parser("report", help="Render a report from saved JSON without making requests")
+    for command in (commands.choices["compare"], run_parser):
+        command.add_argument("--plan", type=Path, required=True)
+        command.add_argument("--phase", choices=[phase["id"] for phase in plan.phases()])
+        command.add_argument("--rounds", type=int, default=1)
+        command.add_argument("--timeout", type=float, default=18000)
+    report_parser = commands.add_parser("report")
     report_parser.add_argument("record", type=Path)
-    final_parser = commands.add_parser("finalize", help="Validate and package one complete workflow run for a release")
-    final_parser.add_argument("--source", type=Path, required=True)
-    final_parser.add_argument("--output", type=Path, required=True)
+    collect_parser = commands.add_parser("collect")
+    collect_parser.add_argument("--source", type=Path, required=True)
+    collect_parser.add_argument("--output", type=Path, required=True)
+    final_parser = commands.add_parser("finalize")
+    for option in ("source", "output", "workflow-run"):
+        final_parser.add_argument("--" + option, type=Path, required=True)
     final_parser.add_argument("--release", required=True)
     final_parser.add_argument("--candidate-commit", required=True)
-    final_parser.add_argument("--workflow-run", type=Path, required=True)
     args = parser.parse_args()
-    if getattr(args, "rounds", 1) < 1 or not 0 < getattr(args, "timeout", 1) < float("inf"):
+    if (getattr(args, "rounds", 1) < 1
+            or not 0 < getattr(args, "timeout", 1) < float("inf")):
         parser.error("Rounds and timeout must be positive and finite")
-    if args.command == "prepare":
-        prepare(args)
-        return 0
-    if args.command == "compare":
+    if args.command in ("prepare", "compare", "discover"):
         args.experiment = prepare(args)
+        if args.command == "prepare":
+            return 0
+        if args.command == "discover":
+            manifest = json.loads((args.experiment / "experiment.json").read_text())
+            value = execute(args.experiment, manifest["environments"]["candidate"],
+                            {"action": "discover"}, args.experiment / "discovery", 1800)
+            save_json(args.experiment / "discovery.json", value)
+            if value["status"] != "complete":
+                return 1
+            save_json(args.experiment / "plan.json", value["plan"])
+            return 0
+    if args.command in ("compare", "run"):
         return measure(args)
-    if args.command == "run":
-        return measure(args)
+    if args.command == "collect":
+        from benchmark.report import collect, render
+        target = collect(args.source, args.output)
+        return 0 if render(target)["valid"] else 1
     if args.command == "finalize":
         from benchmark.publication import finalize, package
         directory = finalize(args.source, args.output, args.release, args.candidate_commit,

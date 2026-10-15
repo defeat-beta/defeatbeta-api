@@ -7,8 +7,7 @@ import json
 
 
 PLAN_VERSION = 1
-SAMPLE_SYMBOLS = ("AAPL", "MSFT", "NVDA", "JPM", "XOM", "JNJ", "WMT", "O",
-                  "BRK-B", "TSLA", "PDD", "BABA", "NVO", "TM", "ARM", "CRWV")
+SAMPLE_SYMBOLS = ("AAPL", "JPM", "XOM", "O", "PDD", "NVO", "ARM", "CRWV")
 EXCLUSIONS = {"dcf": "Excel export", "download_data_performance": "Diagnostic output"}
 WRAPPER_METHODS = ("earning_call_transcripts", "news")
 WRAPPERS = {

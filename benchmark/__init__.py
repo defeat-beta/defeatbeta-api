@@ -1,1 +1,1 @@
-"""Reproducible paired query experiments and optional diagnostics."""
+"""Sampled end-to-end query benchmarks and separate engineering diagnostics."""

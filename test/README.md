@@ -6,7 +6,7 @@ real TLS integration suite:
 ```sh
 python -m unittest test.test_benchmark test.test_benchmark_publication -q
 python -m pip install -r benchmark/requirements.txt
-DEFEATBETA_RUN_BENCHMARK_TLS_TESTS=1 python -m unittest test.test_benchmark.TestBenchmarkTLS -v
+DEFEATBETA_RUN_BENCHMARK_TLS_TESTS=1 python -m unittest test.test_benchmark.TestBenchmarkTLS test.test_e2e_integration -v
 ```
 
 TLS integration generates deterministic data and checks HTTP/2, HTTP/1.1,

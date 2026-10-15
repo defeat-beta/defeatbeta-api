@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: Successful full benchmark run ID (latest attempt, both experiments)
+        description: Successful complete end-to-end run ID (latest attempt)
         required: true
         type: string
       release_tag:
@@ -69,8 +69,7 @@ jobs:
           ATTEMPT: ${{ steps.provenance.outputs.attempt }}
         run: >-
           gh run download "$SOURCE_RUN"
-          --name "fixed-data-$SOURCE_RUN-$ATTEMPT"
-          --name "live-service-$SOURCE_RUN-$ATTEMPT"
+          --pattern "e2e-phase-*-$SOURCE_RUN-$ATTEMPT"
           --dir evidence
       - name: Validate and finalize saved evidence
         env:

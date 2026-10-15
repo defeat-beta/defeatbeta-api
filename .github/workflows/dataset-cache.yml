@@ -36,8 +36,6 @@ on:
       - "defeatbeta_api/utils/util.py"
       - "benchmark/**"
       - "test/test_benchmark_publication.py"
-      - "test/test_regression_attribution.py"
-      - ".github/workflows/benchmark-attribution.yml"
       - "pyproject.toml"
       - "requirements.txt"
       - "test/test_dataset_cache_fs.py"
@@ -85,8 +83,6 @@ on:
       - "defeatbeta_api/utils/util.py"
       - "benchmark/**"
       - "test/test_benchmark_publication.py"
-      - "test/test_regression_attribution.py"
-      - ".github/workflows/benchmark-attribution.yml"
       - "pyproject.toml"
       - "requirements.txt"
       - "test/test_dataset_cache_fs.py"
@@ -117,8 +113,7 @@ jobs:
       - run: python -m pip install -e .
       - run: python -m unittest test.test_dataset_cache_fs test.test_resolve_direct test.test_benchmark test.test_duckdb_client.TestDuckDBClient test.test_test_collection test.test_shared_resources test.test_http_pool test.test_http_runtime test.test_http_protocol test.test_http2_receive test.test_shared_query_benchmark test.test_connection_timeline test.test_http_pool_mixed test.test_cache_timeline test.test_http2_stream_timeline test.test_duckdb_wait_repro test.test_duckdb_cpu_comparison test.test_cdn_idle test.test_cdn_active -q
       - run: python -m unittest test.test_benchmark_publication -q
-      - run: python -m unittest test.test_e2e_benchmark test.test_e2e_execution test.test_e2e_calibration -q
-      - run: python -m unittest test.test_regression_attribution -q
+      - run: python -m unittest test.test_e2e_benchmark test.test_e2e_execution -q
       - name: Benchmark fixture TLS integration
         if: runner.os == 'Linux'
         env:

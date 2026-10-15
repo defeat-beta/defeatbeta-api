@@ -13,9 +13,10 @@ database server, full local dataset, or precomputed result injection. Changes
 inside caching, networking, metadata, planning, and execution remain in scope.
 
 Use the [paired benchmark](README.md) for explicit baseline/candidate comparisons.
-Cover first use, metadata reuse, memory reuse, disk reuse after restart, and mixed
-concurrent APIs. Controlled data gives repeatable inputs; live tests evaluate
-the current remote service. Neither makes a historical network speed universal.
+Cover every sampled ticker and query operation in cold and all-local-hit states,
+with identical work at concurrency 1/4/16/64/128. Fixed-data correctness tests
+validate cache behavior; the main report measures current remote public APIs.
+Historical network timings are not a universal baseline.
 
 Correct results, recorded defaults, all attempts, and clear timing boundaries
 come before speedup claims. Diagnostics explain mechanisms; end-to-end evidence

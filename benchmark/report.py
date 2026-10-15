@@ -1,6 +1,6 @@
-"""Render paired performance evidence without rerunning or selecting samples."""
+"""Validate and render complete user-visible query evidence without making requests."""
 
-import hashlib
+from copy import deepcopy
 import json
 import math
 from pathlib import Path
@@ -8,6 +8,8 @@ import random
 import statistics
 
 from benchmark.common import percentile, save_json
+from benchmark.e2e import plan
+from benchmark.e2e.execution import validate_ledger
 
 
 def ratio_interval(ratios):
@@ -18,199 +20,247 @@ def ratio_interval(ratios):
     return [percentile(samples, .025), percentile(samples, .975)]
 
 
-def primary(case, measurement):
-    if case["kind"] == "single":
-        return measurement["first_result_seconds"] if case["state"] in ("first_use", "disk_warm") else measurement["wall_seconds"]
-    return measurement["wall_seconds"]
+def experiment_identity(record):
+    manifest = record["experiment"]
+    return {"plan": record["plan"], "rounds": record["rounds"], "workflow": record["workflow"],
+            "harness": manifest["harness"], "harness_dependency_lock": manifest["harness_dependency_lock"],
+            "environments": {name: {key: environment[key] for key in
+                ("commit", "source_hashes", "dependency_lock")}
+                for name, environment in manifest["environments"].items()}}
 
 
-def fingerprints(measurement):
-    return [(item["task"], item.get("result")) for item in measurement.get("results", [])]
+def collect(source, output):
+    paths = sorted(Path(source).rglob("results.json"))
+    if not paths:
+        raise ValueError("No phase evidence found")
+    combined, identity = None, None
+    for path in paths:
+        record = json.loads(path.read_text())
+        shared = experiment_identity(record)
+        if identity is not None and shared != identity:
+            raise ValueError("Phase evidence mixes workloads, workflow attempts, sources, or dependencies")
+        identity = shared
+        if combined is None:
+            combined = deepcopy(record)
+            combined.update(phases=[], records=[], runners={})
+        combined["phases"].extend(record["phases"])
+        combined["records"].extend(record["records"])
+        for phase in record["phases"]:
+            combined["runners"][phase["id"]] = record["experiment"]["environments"]
+        if record["status"] != "complete":
+            combined["status"] = "incomplete"
+    combined["phases"].sort(key=lambda phase: plan.phases().index(phase))
+    if combined["phases"] != plan.phases():
+        raise ValueError("Exactly one copy of all twelve phases is required")
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=False)
+    target = output / "results.json"
+    save_json(target, combined)
+    return target
 
 
-def valid_engine_cache(measurement, policy):
-    observed = measurement.get("engine_cache", {})
-    initial = observed.get("initial_external_file_cache")
-    effective = observed.get("effective_external_file_cache")
-    return (policy in ("default", "project-only") and observed.get("policy") == policy
-            and type(initial) is bool and type(effective) is bool
-            and (effective == initial if policy == "default" else effective is False))
+def positive(value):
+    return type(value) in (int, float) and math.isfinite(value) and value > 0
+
+
+def validate_measurement(workload, phase, value):
+    if value.get("status") != "complete":
+        raise ValueError(f"Unsuccessful measurement: {value.get('status')}")
+    validate_ledger(workload, value["results"])
+    if not value.get("observed_dataset"):
+        raise ValueError("Missing observed data identity")
+    if value.get("api_coverage") != workload["methods"]:
+        raise ValueError("Actual public API coverage differs from the frozen workload")
+    declared = {task["id"]: task for task in plan.tasks(workload)}
+    for row in value["results"]:
+        task = declared[row["id"]]
+        if any(row.get(key) != task[key] for key in ("symbol", "method", "kwargs")):
+            raise ValueError("Measured parameters differ from the frozen workload")
+        if "not_applicable" in task:
+            if row.get("status") != "not_applicable" or row.get("reason") != task["not_applicable"]:
+                raise ValueError("Unexpected applicability status")
+        elif row.get("status") != "ok" or not row.get("fingerprint") or not positive(row.get("seconds")):
+            raise ValueError("Missing result, failed call, or nonpositive timing")
+        if phase["kind"] == "latency" and row.get("status") == "ok":
+            if not positive(row.get("initialization_seconds")):
+                raise ValueError("Missing constructor timing")
+    successful = sum(row["status"] == "ok" for row in value["results"])
+    if (value.get("completed_tasks") != workload["task_count"]
+            or value.get("successful_tasks") != successful
+            or value.get("failed_tasks") != 0
+            or value.get("not_applicable_tasks") != workload["task_count"] - successful):
+        raise ValueError("Completion counters differ from the task ledger")
+    settings = value.get("cache_settings", {})
+    if (settings.get("disk_limit_bytes") != workload["cache_capacity_bytes"]
+            or type(settings.get("native_file_cache")) is not bool
+            or not positive(settings.get("memory_limit_bytes"))):
+        raise ValueError("Missing or inconsistent cache settings")
+    if phase["state"] == "cached" and value.get("cache_misses") != 0:
+        raise ValueError("All-hit scenario contains query-data misses")
+    if phase["kind"] == "throughput":
+        if not positive(value.get("wall_seconds")):
+            raise ValueError("Invalid batch duration")
+        expected = successful / value["wall_seconds"]
+        if not math.isclose(value.get("successful_calls_per_second", -1), expected, rel_tol=1e-10):
+            raise ValueError("Throughput differs from completed successful work")
+
+
+def metric(identifier, kind, samples, changed=False):
+    variants = {variant: [sample[variant] for sample in samples] for variant in samples[0]} if samples else {}
+    row = {"case": identifier, "kind": kind, "pairs": len(samples),
+           "medians": {variant: statistics.median(values) for variant, values in variants.items()},
+           "classification": "standalone" if "baseline" not in variants else "inconclusive",
+           "data_changed": changed}
+    if "baseline" in variants:
+        ratios = [sample["candidate"] / sample["baseline"] for sample in samples]
+        interval = ratio_interval(ratios)
+        row.update(reduction_percent=100 * (1 - statistics.median(ratios)), ratio_interval=interval)
+        if interval and not changed:
+            row["classification"] = "faster" if interval[1] < 1 else "slower" if interval[0] > 1 else "inconclusive"
+    return row
 
 
 def summarize(record):
-    groups = {}
-    errors = []
-    if record.get("schema_version") != 1:
+    errors, rows, groups = [], [], {}
+    if record.get("schema_version") != 2:
         return {"valid": False, "errors": ["Unsupported evidence schema"], "cases": []}
-    cases = record["suite"]["cases"]
-    rounds = record["rounds"]
-    if not cases or type(rounds) is not int or rounds < 1:
-        return {"valid": False, "errors": ["A nonempty suite and positive integer rounds are required"], "cases": []}
-    identifiers = [case["id"] for case in cases]
-    if len(identifiers) != len(set(identifiers)):
-        errors.append("Duplicate case identifiers")
-    expected = {(case["id"], number, variant) for case in cases
-                for number in range(1, rounds + 1) for variant in ("baseline", "candidate")}
-    for sample in record["records"]:
-        key = (sample["case"], sample["round"], sample["variant"])
-        if key not in expected:
-            errors.append(f"Undeclared measurement: {key}")
-        if key in groups:
-            errors.append(f"Duplicate measurement: {key}")
-        groups[key] = sample["measurement"]
-    rows = []
-    for case in record["suite"]["cases"]:
-        base, candidate, ratios, notes = [], [], [], []
-        failed = 0
-        for round_number in range(1, record["rounds"] + 1):
-            a = groups.get((case["id"], round_number, "baseline"))
-            b = groups.get((case["id"], round_number, "candidate"))
-            if a is None or b is None:
-                failed += 1
-                errors.append(f"Missing pair: {case['id']} round {round_number}")
-                continue
-            if a.get("status") != "ok" or b.get("status") != "ok":
-                failed += 1
-                errors.append(f"Failed pair: {case['id']} round {round_number}")
-                continue
-            if record["suite"]["version"] >= 2:
-                policy = record["suite"].get("cache_policy")
-                if (case.get("cache_policy") != policy
-                        or any(not valid_engine_cache(item, policy) for item in (a, b))):
-                    failed += 1
-                    errors.append(f"Cache policy differs from observed settings: {case['id']} round {round_number}")
-                    continue
-            if any(not item.get("results") or any(not result.get("result") for result in item["results"])
-                   for item in (a, b)):
-                failed += 1
-                errors.append(f"Missing result fingerprint: {case['id']} round {round_number}")
-                continue
-            if "tasks" in case and any([item["task"] for item in value["results"]] != case["tasks"] for value in (a, b)):
-                failed += 1
-                errors.append(f"Measured tasks differ from the manifest: {case['id']} round {round_number}")
-                continue
-            same_data = a.get("dataset_version") == b.get("dataset_version") and a.get("file_metadata") == b.get("file_metadata")
-            if record["mode"] == "controlled" or same_data:
-                if fingerprints(a) != fingerprints(b):
-                    errors.append(f"Result mismatch: {case['id']} round {round_number}")
-                    failed += 1
-                    continue
-            elif "Remote data changed; timing retained, result equality not required" not in notes:
-                notes.append("Remote data changed; timing retained, result equality not required")
-            av, bv = primary(case, a), primary(case, b)
-            if any(type(value) not in (int, float) or not math.isfinite(value) or value <= 0 for value in (av, bv)):
-                errors.append(f"Nonpositive or nonfinite timing: {case['id']}")
-                failed += 1
-                continue
-            base.append(av)
-            candidate.append(bv)
-            ratios.append(bv / av)
-        interval = ratio_interval(ratios) if failed == 0 else None
-        classification = "invalid" if failed else "inconclusive"
-        if interval is not None and not notes:
-            classification = "faster in this run" if interval[1] < 1 else "slower in this run" if interval[0] > 1 else "inconclusive"
-        rows.append({"case": case["id"], "pairs": len(ratios), "failed_pairs": failed,
-                     "baseline_median_seconds": statistics.median(base) if base else None,
-                     "candidate_median_seconds": statistics.median(candidate) if candidate else None,
-                     "paired_latency_reduction_percent": 100 * (1 - statistics.median(ratios)) if ratios else None,
-                     "candidate_over_baseline_ratio_interval": interval,
-                     "classification": classification, "notes": notes,
-                     "baseline_trials": base, "candidate_trials": candidate})
-    return {"valid": record["status"] == "complete" and not errors, "errors": errors, "cases": rows}
+    try:
+        workload = record["plan"]
+        plan.validate_plan(workload)
+        phases, rounds = record["phases"], record["rounds"]
+        variants = set(record["experiment"]["environments"])
+        if variants not in ({"candidate"}, {"baseline", "candidate"}):
+            raise ValueError("Unsupported variant set")
+        if type(rounds) is not int or rounds < 1 or not phases:
+            raise ValueError("Positive rounds and nonempty phases are required")
+        if any(phase not in plan.phases() for phase in phases) or len({p["id"] for p in phases}) != len(phases):
+            raise ValueError("Unknown or duplicate phase")
+        expected = {(phase["id"], number, variant) for phase in phases
+                    for number in range(1, rounds + 1) for variant in variants}
+        for sample in record["records"]:
+            key = (sample["phase"], sample["round"], sample["variant"])
+            if key not in expected or key in groups:
+                raise ValueError(f"Undeclared or duplicate measurement: {key}")
+            groups[key] = sample["measurement"]
+        if set(groups) != expected:
+            raise ValueError("Missing phase/round/variant measurement")
+        for phase in phases:
+            trials, changed = [], False
+            for number in range(1, rounds + 1):
+                values = {variant: groups[phase["id"], number, variant] for variant in variants}
+                for value in values.values():
+                    validate_measurement(workload, phase, value)
+                if len(values) == 2:
+                    a, b = values["baseline"], values["candidate"]
+                    for setting in ("disk_limit_bytes", "memory_limit_bytes"):
+                        if a["cache_settings"][setting] != b["cache_settings"][setting]:
+                            raise ValueError("Paired cache capacities differ")
+                    same_data = a.get("observed_dataset") == b.get("observed_dataset")
+                    if not a.get("observed_dataset") or not b.get("observed_dataset"):
+                        raise ValueError("Missing observed data identity")
+                    changed |= not same_data
+                    fingerprints = [{r["id"]: r.get("fingerprint") for r in value["results"]}
+                                    for value in (a, b)]
+                    if same_data and fingerprints[0] != fingerprints[1]:
+                        raise ValueError(f"Result mismatch: {phase['id']} round {number}")
+                trials.append(values)
+            if phase["kind"] == "throughput":
+                samples = [{variant: value["wall_seconds"] for variant, value in trial.items()} for trial in trials]
+                row = metric(phase["id"], "throughput", samples, changed)
+                row["calls_per_second"] = {variant: statistics.median(
+                    trial[variant]["successful_calls_per_second"] for trial in trials) for variant in variants}
+                row["p95_seconds"] = {variant: statistics.median(
+                    percentile([r["seconds"] for r in trial[variant]["results"] if r["status"] == "ok"], .95)
+                    for trial in trials) for variant in variants}
+                rows.append(row)
+            else:
+                indexed = [{variant: {r["id"]: r for r in value["results"]}
+                            for variant, value in trial.items()} for trial in trials]
+                for task in plan.tasks(workload):
+                    if "not_applicable" in task:
+                        rows.append({"case": phase["id"] + ":" + task["id"], "kind": "latency",
+                                     "classification": "not_applicable", "medians": {}})
+                        continue
+                    samples = [{variant: trial[variant][task["id"]]["seconds"] for variant in variants}
+                               for trial in indexed]
+                    row = metric(phase["id"] + ":" + task["id"], "latency", samples, changed)
+                    row["initialization_seconds"] = {variant: statistics.median(
+                        trial[variant][task["id"]]["initialization_seconds"] for trial in indexed)
+                        for variant in variants}
+                    rows.append(row)
+    except (KeyError, TypeError, ValueError, IndexError) as exc:
+        errors.append(str(exc))
+    return {"valid": record.get("status") == "complete" and not errors, "errors": errors, "cases": rows}
 
 
-def format_value(value, digits=4):
-    return "n/a" if value is None else f"{value:.{digits}f}"
+def number(value):
+    return "n/a" if value is None else f"{value:.4f}"
 
 
 def render(path, release=None):
     path = Path(path)
     record = json.loads(path.read_text())
     summary = summarize(record)
-    environments = record["experiment"]["environments"]
-    stage = (f"Stage: **final release report** for `{release}`. The original raw evidence is unchanged."
-             if release else "Stage: **development evidence**. This run does not publish a final release report.")
-    experiment_name = "Fixed-data regression" if record["mode"] == "controlled" else "Live-service regression (Hugging Face)"
-    lines = ["# Paired API performance report", "", stage, "",
-             f"Status: **{'valid comparison' if summary['valid'] else 'incomplete or invalid comparison'}**.", "",
-             f"Experiment: **{experiment_name}**. Mode: `{record['mode']}`. Network: {record['network']}. Rounds: {record['rounds']}.", "",
-             "The baseline and candidate ran sequentially on one host. Results describe this experiment.",
-             "Daily remote updates are accepted and recorded; cross-date absolute times are not a fixed baseline.", "",
-             "## Provenance", "", "| Variant | Source commit | DuckDB | Python |", "| --- | --- | --- | --- |"]
-    for name, env in environments.items():
+    lines = ["# End-to-end API performance report", "",
+             f"Stage: **final release report** for `{release}`." if release else
+             "Stage: **development evidence**; no release publication.", "",
+             f"Status: **{'valid' if summary['valid'] else 'incomplete or invalid'}**.", "",
+             f"Workload: {len(record['plan']['symbols'])} tickers x {len(record['plan']['methods'])} query operations = "
+             f"{record['plan']['task_count']} fixed tasks per phase. Rounds: {record['rounds']}.",
+             "Tickers: " + ", ".join(record["plan"]["symbols"]) + ".", "",
+             "API latency includes full materialization; constructor, warmup, and hashing are outside it.",
+             "Cold latency isolates each task. Cold throughput allows natural sharing within one empty-cache batch.",
+             "Cached scenarios warm every applicable task and require zero query-data cache misses.",
+             "Every throughput concurrency executes the same complete Cartesian workload once.", "",
+             "## Provenance", "", "| Variant | Commit | DuckDB | Python |", "| --- | --- | --- | --- |"]
+    for name, env in record["experiment"]["environments"].items():
         info = env["environment"]
         lines.append(f"| {name} | `{env['commit']}` | {info['dependencies']['duckdb']} | {info['python']} |")
-    lines += ["", f"Cache policy: `{record['suite'].get('cache_policy', 'legacy: not recorded per sample')}`.",
-              "Default policy preserves each product's native file-cache setting. Project-only policy disables it for diagnostics.",
-              "Project-only results cannot replace default-behavior release acceptance.", "",
-              "| Variant | Native file cache before preparation | Native file cache during queries |",
-              "| --- | --- | --- |"]
-    for name in environments:
-        observations = [sample["measurement"].get("engine_cache", {}) for sample in record["records"]
-                        if sample["variant"] == name]
-        settings = [", ".join(sorted({str(item.get(key, "not recorded")).lower() for item in observations}))
-                    for key in ("initial_external_file_cache", "effective_external_file_cache")]
-        lines.append(f"| {name} | {settings[0] or 'not recorded'} | {settings[1] or 'not recorded'} |")
-    info = environments["candidate"]["environment"]
-    lines += ["", f"Platform: {info['platform']}; logical CPUs: {info['cpu_count']}; RAM: {info['ram_bytes']} bytes.",
-              f"Suite: `{record['suite']['name']}` v{record['suite']['version']}; resolved identity: `{record.get('resolved_suite_sha256', 'unresolved')}`.",
-              "Dependency locks, source hashes, route, default policies, data versions, and raw attempts are embedded in the JSON.", "",
-              "## Timing comparison", "",
-              "For first use and disk-warm restart, the primary metric includes the constructor and API call.",
-              "Other single cases measure the complete API call; concurrent cases measure complete batch wall time.",
-              "Positive reduction means faster: `100 * (1 - median(candidate / baseline per pair))`.",
-              "Intervals resample paired rounds; individual requests within a batch are not independent replicates.",
-              "With fewer than six pairs, results remain exploratory. No universal regression threshold is applied.", "",
-              "| Case | Pairs | Baseline median (s) | Candidate median (s) | Reduction (%) | Ratio interval (95%) | Assessment |",
-              "| --- | ---: | ---: | ---: | ---: | --- | --- |"]
+    lines += ["", "Baseline and candidate run sequentially on the same runner for each phase.",
+              "Different phases can use different runners. Compare paired ratios, not cross-job absolute times.",
+              "Cache capacities are generous and equal within pairs; this is an all-local-hit capacity assumption.",
+              "Daily remote changes are recorded; changed-data pairs remain inconclusive.", "",
+              "Intervals need at least six pairs and are per-case bootstrap intervals without multiplicity correction.",
+              "Fewer rounds show exploratory medians, without a faster/slower verdict.", "",
+              "## Throughput", "", "| Scenario | Baseline batch (s) | Candidate batch (s) | Baseline calls/s | Candidate calls/s | Baseline P95 (s) | Candidate P95 (s) | Reduction | Verdict |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"]
     for row in summary["cases"]:
-        interval = row["candidate_over_baseline_ratio_interval"]
-        bounds = "exploratory" if interval is None else " - ".join(format_value(value, 3) for value in interval)
-        lines.append(f"| {row['case']} | {row['pairs']} | {format_value(row['baseline_median_seconds'])} | "
-                     f"{format_value(row['candidate_median_seconds'])} | {format_value(row['paired_latency_reduction_percent'], 1)} | {bounds} | {row['classification']} |")
-    lines += ["", "## Resource and concurrency measurements", "",
-              "Values below are medians of successful attempts. Failures remain in the raw record and invalidate the case.",
-              "Application bytes include prefetch drain and are not wire bandwidth. Stream batches begin with cold query data",
-              "and can develop cache hits while executing the fixed plan. P95 is an empirical within-batch observation.", "",
-              "| Case | Variant | Calls/s | API P95 (s) | CPU (s) | RSS at end (MiB) | Downloaded bytes | Range GETs | Pool wait (s) |",
-              "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
-    for case in record["suite"]["cases"]:
-        for variant in ("baseline", "candidate"):
-            items = [sample["measurement"] for sample in record["records"]
-                     if sample["case"] == case["id"] and sample["variant"] == variant
-                     and sample["measurement"].get("status") == "ok"]
-            if not items:
-                continue
-            def median(extract):
-                values = [extract(item) for item in items]
-                return statistics.median(values) if all(value is not None for value in values) else None
-            values = [median(lambda item: item["completed_calls_per_second"]),
-                      median(lambda item: item["latency"]["p95_seconds"]),
-                      median(lambda item: item["cpu_seconds"]),
-                      median(lambda item: item["rss_bytes_at_query_end"] / 1024**2),
-                      median(lambda item: item["cache_total_delta"]["downloaded_bytes"]),
-                      median(lambda item: item["cache_total_delta"]["range_requests"]),
-                      median(lambda item: item["pool_after"]["pool_wait_seconds"] - item["pool_before"]["pool_wait_seconds"]
-                             if item.get("pool_after") is not None else None)]
-            lines.append(f"| {case['id']} | {variant} | " + " | ".join(format_value(value) for value in values) + " |")
-    lines += ["", "## Validation and limitations", ""]
-    lines += [f"- {error}" for error in summary["errors"]] or ["- All declared pairs completed and applicable result checks passed."]
+        if row["kind"] != "throughput":
+            continue
+        medians, rates, tails = row["medians"], row["calls_per_second"], row["p95_seconds"]
+        lines.append(f"| {row['case']} | {number(medians.get('baseline'))} | {number(medians.get('candidate'))} | "
+                     f"{number(rates.get('baseline'))} | {number(rates.get('candidate'))} | "
+                     f"{number(tails.get('baseline'))} | {number(tails.get('candidate'))} | "
+                     f"{number(row.get('reduction_percent'))}% | {row['classification']} |")
+    lines += ["", "## Individual query latency", "",
+              "| Scenario / ticker / method | Baseline API (s) | Candidate API (s) | Baseline init (s) | Candidate init (s) | Reduction | Verdict |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | --- |"]
     for row in summary["cases"]:
-        for note in row["notes"]:
-            lines.append(f"- {row['case']}: {note}.")
-    lines += ["- A successful comparison is evidence, not automatic permission to publish a package.",
-              "- The controlled server uses unshaped loopback TLS; server CPU, RSS, protocol and byte counters are recorded separately.",
-              "- The controlled fixture is synthetic; real data and public-network behavior are evaluated separately.",
-              "- The benchmark does not flush DNS, OS pages, proxy caches, or remote CDN caches.",
-              "- Individual API coverage and exclusions are recorded in the resolved experiment.", "",
-              "## Evidence and reproduction", "",
-              f"Raw evidence: [{path.name}]({path.name}). SHA256: `{hashlib.sha256(path.read_bytes()).hexdigest()}`.", "",
-              "```sh", f"python -m benchmark report {path.name}", "```", "",
-              "To repeat measurements, use the recorded commits, dependency locks, suite, and order. Public-network runs use current data.",
-              "Actions artifacts have finite retention; promote selected JSON and Markdown files together to a durable archive.", ""]
-    content = "\n".join(lines)
-    if any("\u4e00" <= char <= "\u9fff" for char in content):
-        raise ValueError("Report text must be English")
-    path.with_suffix(".md").write_text(content, encoding="utf-8")
-    save_json(path.with_name(path.stem + "_summary.json"), summary)
+        if row["kind"] != "latency":
+            continue
+        medians, init = row["medians"], row.get("initialization_seconds", {})
+        lines.append(f"| `{row['case']}` | {number(medians.get('baseline'))} | {number(medians.get('candidate'))} | "
+                     f"{number(init.get('baseline'))} | {number(init.get('candidate'))} | "
+                     f"{number(row.get('reduction_percent'))}% | {row['classification']} |")
+    lines += ["", "## Phase coverage", "",
+              "| Phase | Round | Variant | Status | Completed | Successful | Failed | Not applicable |",
+              "| --- | ---: | --- | --- | ---: | ---: | ---: | ---: |"]
+    failures = []
+    for sample in record["records"]:
+        value = sample["measurement"]
+        lines.append(f"| {sample['phase']} | {sample['round']} | {sample['variant']} | {value.get('status')} | "
+                     f"{value.get('completed_tasks', 0)} | {value.get('successful_tasks', 0)} | "
+                     f"{value.get('failed_tasks', 0)} | {value.get('not_applicable_tasks', 0)} |")
+        for row in value.get("results", []) + value.get("warmup_errors", []):
+            if row.get("status") == "error":
+                failures.append(f"- `{sample['phase']}` / round {sample['round']} / `{sample['variant']}` / "
+                                f"`{row.get('symbol')}` / `{row.get('method')}`: `{row.get('error_type')}`.")
+    lines += ["", "## Query failures", ""] + (failures or ["No query failures recorded."])
+    lines += ["", "## Validation", ""] + [f"- {error}" for error in summary["errors"]]
+    lines += ["", "Skipped source bodies remain not applicable and never count as successful calls.",
+              "Empty successful results are retained. Errors and missing tasks invalidate acceptance.",
+              "Full ledgers, parameters, cache settings, initialization, environment, and fingerprints are in",
+              "[results.json](results.json). No protocol or bandwidth benchmark is part of this report.", ""]
+    path.with_suffix(".md").write_text("\n".join(lines), encoding="utf-8")
+    save_json(path.with_name("results_summary.json"), summary)
     return summary
