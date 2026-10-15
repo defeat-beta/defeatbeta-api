@@ -1,5 +1,11 @@
 # Performance benchmarks
 
+The replacement sampled end-to-end contract is being calibrated in
+[e2e/](e2e/README.md). Run **End-to-end benchmark calibration** for the fixed
+16-ticker, all-query-method workload. Calibration has a 30-minute budget and
+does not generate release evidence. The paired workflow below still describes
+the existing suite until calibration establishes a practical replacement size.
+
 GitHub Actions is the primary entry point. Each experiment runs explicit baseline
 and candidate commits sequentially on the same runner, with isolated product
 environments and one workload. The baseline is reproducible source, dependencies,

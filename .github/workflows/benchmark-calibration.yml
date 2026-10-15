@@ -1,0 +1,49 @@
+name: End-to-end benchmark calibration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-calibration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - name: Install the recorded product and measurement tools
+        run: |
+          python -m pip install -e .
+          python -m pip install psutil==7.0.0
+      - name: Calibrate one candidate and one round within 30 minutes
+        run: >-
+          python -m benchmark.e2e.calibrate
+          --output benchmark/results/local/calibration --budget-seconds 1800
+      - name: Publish development summary
+        if: always()
+        run: |
+          if test -f benchmark/results/local/calibration/calibration.md; then
+            cat benchmark/results/local/calibration/calibration.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-calibration-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            benchmark/results/local/calibration/calibration.json
+            benchmark/results/local/calibration/calibration.md
+            benchmark/results/local/calibration/plan.json
+            benchmark/results/local/calibration/*/measurement.json
+            benchmark/results/local/calibration/*/measurement.jsonl
+            benchmark/e2e/*.py
+          retention-days: 30
