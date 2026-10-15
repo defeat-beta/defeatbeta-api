@@ -12,9 +12,9 @@ Running the full `release` suite does not promote its result. Development runs
 can be repeated throughout implementation. On public repositories, readers can
 still see Actions output; development status is not private access.
 
-Finalization requires all 70 default-policy cases in controlled HTTP/2, controlled HTTP/1.1,
-and live Hugging Face experiments, with at least six even paired rounds. All
-three share source commits, exact dependency locks, harness identity, and one
+Finalization requires all 70 default-policy cases in both fixed-data regression
+and live-service regression (Hugging Face), with at least six even paired rounds.
+Both share source commits, exact dependency locks, harness identity, and one
 workflow attempt. The Release tag identifies the measured candidate commit.
 For retries, rerun all jobs rather than mixing attempts.
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: Successful full benchmark run ID (latest attempt, all three experiments)
+        description: Successful full benchmark run ID (latest attempt, both experiments)
         required: true
         type: string
       release_tag:
@@ -69,9 +69,8 @@ jobs:
           ATTEMPT: ${{ steps.provenance.outputs.attempt }}
         run: >-
           gh run download "$SOURCE_RUN"
-          --name "controlled-h2-$SOURCE_RUN-$ATTEMPT"
-          --name "controlled-http1-$SOURCE_RUN-$ATTEMPT"
-          --name "hugging-face-$SOURCE_RUN-$ATTEMPT"
+          --name "fixed-data-$SOURCE_RUN-$ATTEMPT"
+          --name "live-service-$SOURCE_RUN-$ATTEMPT"
           --dir evidence
       - name: Validate and finalize saved evidence
         env:

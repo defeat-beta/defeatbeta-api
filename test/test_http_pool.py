@@ -1,8 +1,6 @@
 """Verify physical connection allocation and stream reservations."""
 
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import gzip
 import os
 import select
@@ -28,6 +26,7 @@ from defeatbeta_api.client.http_pool import (
 from defeatbeta_api.client.shared_resources import SharedHttpClient, close_network_resources
 from defeatbeta_api.client.http_runtime import runtime as http_runtime
 from test.http2_peer import http2_peer
+from test.proxy_peer import connect_proxy
 
 
 def wait_until(predicate, timeout=3):
@@ -37,44 +36,6 @@ def wait_until(predicate, timeout=3):
             return
         time.sleep(0.005)
     raise AssertionError("Expected state was not reached")
-
-
-@contextmanager
-def connect_proxy():
-    class Handler(BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.1"
-
-        def do_CONNECT(self):
-            host, port = self.path.rsplit(":", 1)
-            with self.server.lock:
-                self.server.tunnels += 1
-            with socket.create_connection((host, int(port)), timeout=3) as upstream:
-                self.send_response(200)
-                self.end_headers()
-                while True:
-                    readable, _, _ = select.select([self.connection, upstream], [], [], 0.05)
-                    for source in readable:
-                        data = source.recv(65536)
-                        if not data:
-                            return
-                        destination = upstream if source is self.connection else self.connection
-                        destination.sendall(data)
-
-        def log_message(self, *args):
-            pass
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    server.daemon_threads = True
-    server.lock = Lock()
-    server.tunnels = 0
-    thread = Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        yield f"http://127.0.0.1:{server.server_port}", server
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=3)
 
 
 class FakeConnection:
@@ -713,60 +674,41 @@ class TestHTTPPoolRegression(unittest.TestCase):
             finally:
                 client.close()
 
-    def test_buffered_http1_keeps_decoding_redirects_and_incomplete_body_errors(self):
+    def test_buffered_http2_keeps_decoding_redirects_and_incomplete_body_errors(self):
         payload = bytes(range(256)) * 4096
         compressed = gzip.compress(payload)
 
-        class Handler(BaseHTTPRequestHandler):
-            protocol_version = "HTTP/1.1"
+        def respond(request):
+            path = request[b":path"]
+            if request[b":method"] == b"HEAD":
+                return 200, [("content-length", str(len(payload)))], b""
+            if path == b"/redirect":
+                return 302, [("location", "/gzip"), ("content-length", "0")], b""
+            if path == b"/truncated":
+                return 200, [("content-length", "8")], b"partial"
+            if path == b"/gzip":
+                return 200, [("content-length", str(len(compressed))), ("content-encoding", "gzip")], compressed
+            return 200, [("content-length", "0")], b""
 
-            def do_GET(self):
-                redirected = self.path == "/redirect"
-                truncated = self.path == "/truncated"
-                body = b"partial" if truncated else compressed if self.path == "/gzip" else b""
-                self.send_response(302 if redirected else 200)
-                self.send_header("Content-Length", str(len(body) + int(truncated)))
-                if redirected:
-                    self.send_header("Location", "/gzip")
-                if self.path == "/gzip":
-                    self.send_header("Content-Encoding", "gzip")
-                if truncated:
-                    self.send_header("Connection", "close")
-                self.end_headers()
-                self.wfile.write(body)
-
-            def do_HEAD(self):
-                self.send_response(200)
-                self.send_header("Content-Length", str(len(payload)))
-                self.end_headers()
-
-            def log_message(self, *args):
-                pass
-
-        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        server.daemon_threads = True
-        thread = Thread(target=server.serve_forever, daemon=True)
-        thread.start()
-        client = SharedHttpClient(proxy="", timeout=3)
-        url = f"http://127.0.0.1:{server.server_port}"
-        try:
-            response = client.get(url + "/redirect", follow_redirects=True)
-            self.assertEqual(response.http_version, "HTTP/1.1")
-            self.assertEqual(response.content, payload)
-            self.assertEqual([item.status_code for item in response.history], [302])
-            self.assertEqual(client.get(url + "/empty").content, b"")
-            self.assertEqual(client.head(url).content, b"")
-            with self.assertRaises(httpx.RemoteProtocolError):
-                client.get(url + "/truncated")
-            self.assertEqual(get_connection_pool_status()["pending_requests"], 0)
-            self.assertEqual(client.get(url + "/gzip").content, payload)
-            self.assertTrue(all(c["reserved_streams"] == 0 for c in get_connection_pool_status()["connections"]))
-        finally:
-            client.close()
-            close_network_resources()
-            server.shutdown()
-            server.server_close()
-            thread.join(timeout=3)
+        with http2_peer(response=respond) as (url, certificate, _), \
+                patch.dict(os.environ, {"SSL_CERT_FILE": str(certificate)}):
+            client = SharedHttpClient(proxy="", timeout=3)
+            url = url.removesuffix("/file")
+            try:
+                response = client.get(url + "/redirect", follow_redirects=True)
+                self.assertEqual(response.http_version, "HTTP/2")
+                self.assertEqual(response.content, payload)
+                self.assertEqual([item.status_code for item in response.history], [302])
+                self.assertEqual(client.get(url + "/empty").content, b"")
+                self.assertEqual(client.head(url).content, b"")
+                with self.assertRaisesRegex(httpx.ProtocolError, "InvalidBodyLengthError"):
+                    client.get(url + "/truncated")
+                self.assertEqual(get_connection_pool_status()["pending_requests"], 0)
+                self.assertEqual(client.get(url + "/gzip").content, payload)
+                self.assertTrue(all(c["reserved_streams"] == 0 for c in get_connection_pool_status()["connections"]))
+            finally:
+                client.close()
+                close_network_resources()
 
     def test_full_http2_connection_allocates_another_physical_connection(self):
         close_network_resources()

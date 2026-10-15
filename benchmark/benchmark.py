@@ -160,14 +160,14 @@ def measure(args):
         if dependency_lock(environment["python"]) != environment["dependency_lock"]:
             raise ValueError("Prepared dependencies changed; create a new experiment")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
-    destination = experiment / f"{stamp}_{args.mode}_{args.protocol}_{args.suite}"
+    destination = experiment / f"{stamp}_{args.mode}_{args.suite}"
     destination.mkdir()
     record = {"schema_version": 1, "stage": "development", "status": "running", "created_at": stamp,
               "workflow": {"repository": os.environ.get("GITHUB_REPOSITORY"),
                            "run_id": os.environ.get("GITHUB_RUN_ID"),
                            "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
                            "sha": os.environ.get("GITHUB_SHA")},
-              "mode": args.mode, "protocol_control": args.protocol if args.mode == "controlled" else None,
+              "mode": args.mode, "protocol_control": "h2" if args.mode == "controlled" else None,
               "network": args.network_label, "experiment": manifest, "rounds": args.rounds,
               "suite": make_suite(args.suite, cache_policy=args.cache_policy), "records": [], "preparation": [],
               "policy": {"data": "Latest remote data; daily changes accepted and recorded" if args.mode == "live"
@@ -188,7 +188,7 @@ def measure(args):
             fixture = temporary / "fixture"
             generate(fixture)
             record["fixture"] = verify(fixture)
-            context = serve_fixture(fixture, temporary, args.protocol)
+            context = serve_fixture(fixture, temporary)
         else:
             context = nullcontext(None)
         with context as server:
@@ -268,7 +268,6 @@ def main():
         command.add_argument("--cache-policy", choices=("default", "project-only"), default="default",
                              help="Preserve product defaults, or isolate the project cache for diagnostics")
         command.add_argument("--rounds", type=int, default=6)
-        command.add_argument("--protocol", choices=("h2", "http1"), default="h2")
         command.add_argument("--network-label", default="Unspecified local network")
         command.add_argument("--timeout", type=float, default=180)
     report_parser = commands.add_parser("report", help="Render a report from saved JSON without making requests")

@@ -93,7 +93,6 @@ Run each case in a separate process, without other benchmark/test workloads:
 ```bash
 python -m benchmark.workloads.shared_query_benchmark --baseline --output baseline.json
 python -m benchmark.workloads.shared_query_benchmark --capacity 16 --output candidate.json
-python -m benchmark.workloads.pool_capacity_benchmark --output pool-capacity.json
 ```
 
 `--capacity` is a diagnostic script option, not a product setting. The baseline
@@ -152,7 +151,7 @@ It is a bounded fallback/resource choice, not a request to open 16 connections
 and not a limit of 16 concurrent Tickers. HTTP/2 can multiplex many Tickers on
 fewer connections, subject to server stream limits and available resources.
 
-The loopback HTTP/1.1 control ran 64 one-byte requests per batch, with 20 ms of
+The retired loopback HTTP/1.1 control ran 64 one-byte requests per batch, with 20 ms of
 simulated service delay. At 16 / 32 workers, capacity 8 took 0.238 / 0.222 seconds,
 capacity 16 took 0.142 / 0.135 seconds, and capacity 32 took 0.152 / 0.093 seconds.
 Observed active connections never exceeded the configured cap. These are queue

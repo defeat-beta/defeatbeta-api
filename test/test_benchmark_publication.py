@@ -90,8 +90,24 @@ class TestBenchmarkPublication(unittest.TestCase):
             self.finalize()
 
     def test_missing_experiment_is_rejected(self):
-        self.paths.pop().unlink()
-        with self.assertRaisesRegex(ValueError, "Both controlled protocols"):
+        for path in self.paths:
+            with self.subTest(artifact=path.parent.parent.name):
+                content = path.read_bytes()
+                path.unlink()
+                try:
+                    with self.assertRaisesRegex(ValueError, "Fixed-data and live-service"):
+                        self.finalize()
+                    self.assertFalse(self.output.exists())
+                finally:
+                    path.write_bytes(content)
+
+    def test_contract_requires_fixed_data_and_live_service_without_h1(self):
+        self.assertEqual(publication.REQUIRED_EXPERIMENTS,
+                         {("controlled", "h2"), ("live", None)})
+
+    def test_h1_evidence_cannot_replace_h2(self):
+        self.change(lambda value: value.update(mode="controlled", protocol_control="http1"))
+        with self.assertRaisesRegex(ValueError, "exactly one fixed-data H2"):
             self.finalize()
         self.assertFalse(self.output.exists())
 

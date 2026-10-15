@@ -73,7 +73,7 @@ class _AsyncReservedStreams:
 
 
 def _protocol(connection):
-    """Unwrap direct, CONNECT, forward-proxy, and SOCKS connections."""
+    """Unwrap direct, CONNECT, and SOCKS connections."""
     while hasattr(connection, "_connection"):
         child = connection._connection
         if child is None:
@@ -167,7 +167,7 @@ class ConnectionManager:
             limit = min(protocol._max_streams, protocol._h2_state.remote_settings.max_concurrent_streams)
             configured = self.configuration.max_streams_per_connection
             return limit if configured is None else min(limit, configured)
-        return 1 if connection.raw.is_available() else 0
+        return 0
 
     def _retire(self, connection):
         connection.draining = True
@@ -448,7 +448,7 @@ class ConnectionManager:
                 connections.append({
                     "connection_id": connection.number,
                     "origin": str(connection.origin),
-                    "protocol": "HTTP/2" if h2 else "HTTP/1.1" if connection.ready else None,
+                    "protocol": "HTTP/2" if h2 else None,
                     "state": "closing" if connection.closing else "draining" if connection.draining
                     else "connecting" if not connection.ready else "busy"
                     if connection.reserved >= self._capacity(connection) else "ready",
@@ -505,8 +505,8 @@ class _RoutePool:
             return [c.raw for c in self.manager._connections if c.route is self]
 
     def handle_request(self, request):
-        if request.url.scheme not in (b"http", b"https", b"ws", b"wss"):
-            raise httpcore.UnsupportedProtocol("Request URL must use HTTP or HTTPS")
+        if request.url.scheme != b"https":
+            raise httpcore.UnsupportedProtocol("HTTP/2 business requests require HTTPS")
         timeout = request.extensions.get("timeout", {}).get("pool")
         deadline = None if timeout is None else self.manager._clock() + timeout
         original_trace = request.extensions.get("trace")

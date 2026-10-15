@@ -105,9 +105,10 @@ class ResponseStream:
 
 
 class Connection:
-    def __init__(self, raw):
+    def __init__(self, raw, tls_event="connection.start_tls"):
         self._connection = raw
         self._runtime = runtime()
+        self._tls_event = tls_event
 
     async def _request(self, request):
         async def content():
@@ -120,6 +121,20 @@ class Connection:
         buffered = extensions.pop("defeatbeta_buffer_response", False)
 
         async def trace(event, info):
+            # httpcore 1.0.9 advertises H1 even with http1=False. Restrict
+            # business TLS before the handshake, then verify actual ALPN.
+            # The outer TLS connection to an HTTPS proxy is not business TLS.
+            if event == self._tls_event + ".started":
+                info["ssl_context"].set_alpn_protocols(["h2"])
+            elif event == self._tls_event + ".complete":
+                stream = info["return_value"]
+                tls = stream.get_extra_info("ssl_object")
+                if tls is None or tls.selected_alpn_protocol() != "h2":
+                    try:
+                        await stream.aclose()
+                    finally:
+                        raise httpcore.UnsupportedProtocol(
+                            "HTTP/2 is required; TLS ALPN did not negotiate h2")
             if event.endswith(".connect_tcp.complete") and socket_options:
                 stream = info["return_value"]
                 sock = stream.get_extra_info("socket")
@@ -139,8 +154,7 @@ class Connection:
                     result.close()
                 raise TypeError("A synchronous HTTP client requires a synchronous trace callback")
 
-        if original_trace is not None or socket_options:
-            extensions["trace"] = trace
+        extensions["trace"] = trace
         routed = httpcore.Request(method=request.method, url=request.url, headers=request.headers,
                                   content=content(), extensions=extensions)
         response = await self._connection.handle_async_request(routed)
@@ -174,10 +188,17 @@ class Connection:
 
 class ConnectionFactory:
     def __init__(self, *args, **kwargs):
+        kwargs.update(http1=False, http2=True)
         self._pool = httpx.AsyncHTTPTransport(*args, **kwargs)._pool
+        if isinstance(self._pool, httpcore.AsyncHTTPProxy):
+            self._tls_event = "proxy.start_tls"
+        elif isinstance(self._pool, httpcore.AsyncSOCKSProxy):
+            self._tls_event = "socks.start_tls"
+        else:
+            self._tls_event = "connection.start_tls"
 
     def create_connection(self, origin):
-        return Connection(self._pool.create_connection(origin))
+        return Connection(self._pool.create_connection(origin), self._tls_event)
 
     def close(self):
         runtime().call(self._pool.aclose())

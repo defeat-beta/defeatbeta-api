@@ -266,7 +266,7 @@ class TestBenchmarkTLS(unittest.TestCase):
                 "SELECT current_setting('enable_external_file_cache')").fetchone()[0])
             return original_close(client)
 
-        with serve_fixture(self.fixture, self.directory, "h2") as server, \
+        with serve_fixture(self.fixture, self.directory) as server, \
                 tempfile.TemporaryDirectory() as cache, \
                 patch.dict(os.environ, {"SSL_CERT_FILE": server["certificate"],
                                         "NO_PROXY": "localhost,127.0.0.1", "no_proxy": "localhost,127.0.0.1"}), \
@@ -300,59 +300,58 @@ class TestBenchmarkTLS(unittest.TestCase):
             target.write_bytes(original)
 
     def test_real_tls_protocol_range_and_product_states(self):
-        for protocol in ("h2", "http1"):
-            with self.subTest(protocol=protocol), serve_fixture(self.fixture, self.directory, protocol) as server:
-                context = ssl.create_default_context(cafile=server["certificate"])
-                with httpx.Client(verify=context, trust_env=False, http2=True) as http:
-                    response = http.get(server["url"] + "/data/stock_prices.parquet", headers={"Range": "bytes=0-3"})
-                    self.assertEqual(response.status_code, 206)
-                    self.assertEqual(response.content, b"PAR1")
-                    self.assertEqual(response.http_version, server["protocol"])
-                    self.assertEqual(http.get(server["url"] + "/data/stock_prices.parquet", headers={"Range": "bytes=8-4"}).status_code, 416)
-                # Exercise fresh interpreters to verify disk reuse and avoid shared test state.
-                experiment = self.directory / ("experiment-" + protocol)
-                (experiment / "harness").mkdir(parents=True)
-                (experiment / "harness" / "benchmark").symlink_to(common.ROOT / "benchmark", target_is_directory=True)
-                environment = {"python": sys.executable, "source": str(common.ROOT),
-                               "source_hashes": common.source_hashes(), "environment": common.environment_info()}
-                cache = experiment / "cache"
-                cache.mkdir()
-                for state in ("first_use", "disk_warm", "metadata_ready", "memory_warm"):
-                    if state != "disk_warm":
-                        case_cache = cache if state == "first_use" else experiment / state
-                        case_cache.mkdir(exist_ok=True)
-                    case = {"id": state, "kind": "single", "state": state, "concurrency": 1,
-                            "cache_policy": "project-only" if state == "metadata_ready" else "default",
-                            "tasks": [{"symbol": "PDD", "method": "price"}]}
-                    value = benchmark.execute(experiment, environment, case, case_cache, 90, server)
-                    self.assertEqual(value["status"], "ok", value)
-                    self.assertEqual(value["results"][0]["result"]["rows"], 32768)
-                    self.assertTrue(report.valid_engine_cache(value, case["cache_policy"]))
-                    if state == "metadata_ready":
-                        self.assertGreater(value["cache_total_delta"]["downloaded_bytes"], 0)
-                    if state in ("memory_warm", "disk_warm"):
-                        self.assertEqual(value["cache_query_delta"]["downloaded_bytes"], 0)
-                    if state == "memory_warm":
-                        observed = {**case, "diagnostics": {"memory": True, "profile_repeats": 3}}
-                        measured = benchmark.execute(experiment, environment, observed, case_cache, 90, server)
-                        self.assertEqual(measured["status"], "ok", measured)
-                        self.assertEqual(measured["results"][0]["result"], value["results"][0]["result"])
-                        self.assertEqual(measured["cache_total_delta"]["range_requests"], 0)
-                        self.assertEqual(measured["results"][0]["profile"]["repetitions"], 3)
-                        self.assertEqual([item["stage"] for item in measured["diagnostics"]["memory"]], [
-                            "before_constructor", "before_query", "after_query_and_drain",
-                            "after_results_released", "after_client_closed"])
-                mixed = []
-                for case in suite.make_suite("smoke")["cases"]:
-                    if case["id"] not in ("mixed.stream.1", "mixed.stream.4"):
-                        continue
-                    directory = experiment / case["id"]
-                    directory.mkdir()
-                    value = benchmark.execute(experiment, environment, case, directory, 90, server)
-                    self.assertEqual(value["status"], "ok", value)
-                    self.assertTrue(report.valid_engine_cache(value, "default"))
-                    self.assertEqual(value["pool_after"]["pending_requests"], 0)
-                    self.assertTrue(all(c["reserved_streams"] == 0 for c in value["pool_after"]["connections"]))
+        with serve_fixture(self.fixture, self.directory) as server:
+            context = ssl.create_default_context(cafile=server["certificate"])
+            with httpx.Client(verify=context, trust_env=False, http2=True) as http:
+                response = http.get(server["url"] + "/data/stock_prices.parquet", headers={"Range": "bytes=0-3"})
+                self.assertEqual(response.status_code, 206)
+                self.assertEqual(response.content, b"PAR1")
+                self.assertEqual(response.http_version, server["protocol"])
+                self.assertEqual(http.get(server["url"] + "/data/stock_prices.parquet", headers={"Range": "bytes=8-4"}).status_code, 416)
+            # Exercise fresh interpreters to verify disk reuse and avoid shared test state.
+            experiment = self.directory / "experiment-h2"
+            (experiment / "harness").mkdir(parents=True)
+            (experiment / "harness" / "benchmark").symlink_to(common.ROOT / "benchmark", target_is_directory=True)
+            environment = {"python": sys.executable, "source": str(common.ROOT),
+                           "source_hashes": common.source_hashes(), "environment": common.environment_info()}
+            cache = experiment / "cache"
+            cache.mkdir()
+            for state in ("first_use", "disk_warm", "metadata_ready", "memory_warm"):
+                if state != "disk_warm":
+                    case_cache = cache if state == "first_use" else experiment / state
+                    case_cache.mkdir(exist_ok=True)
+                case = {"id": state, "kind": "single", "state": state, "concurrency": 1,
+                        "cache_policy": "project-only" if state == "metadata_ready" else "default",
+                        "tasks": [{"symbol": "PDD", "method": "price"}]}
+                value = benchmark.execute(experiment, environment, case, case_cache, 90, server)
+                self.assertEqual(value["status"], "ok", value)
+                self.assertEqual(value["results"][0]["result"]["rows"], 32768)
+                self.assertTrue(report.valid_engine_cache(value, case["cache_policy"]))
+                if state == "metadata_ready":
                     self.assertGreater(value["cache_total_delta"]["downloaded_bytes"], 0)
-                    mixed.append(report.fingerprints(value))
-                self.assertEqual(mixed[0], mixed[1])
+                if state in ("memory_warm", "disk_warm"):
+                    self.assertEqual(value["cache_query_delta"]["downloaded_bytes"], 0)
+                if state == "memory_warm":
+                    observed = {**case, "diagnostics": {"memory": True, "profile_repeats": 3}}
+                    measured = benchmark.execute(experiment, environment, observed, case_cache, 90, server)
+                    self.assertEqual(measured["status"], "ok", measured)
+                    self.assertEqual(measured["results"][0]["result"], value["results"][0]["result"])
+                    self.assertEqual(measured["cache_total_delta"]["range_requests"], 0)
+                    self.assertEqual(measured["results"][0]["profile"]["repetitions"], 3)
+                    self.assertEqual([item["stage"] for item in measured["diagnostics"]["memory"]], [
+                        "before_constructor", "before_query", "after_query_and_drain",
+                        "after_results_released", "after_client_closed"])
+            mixed = []
+            for case in suite.make_suite("smoke")["cases"]:
+                if case["id"] not in ("mixed.stream.1", "mixed.stream.4"):
+                    continue
+                directory = experiment / case["id"]
+                directory.mkdir()
+                value = benchmark.execute(experiment, environment, case, directory, 90, server)
+                self.assertEqual(value["status"], "ok", value)
+                self.assertTrue(report.valid_engine_cache(value, "default"))
+                self.assertEqual(value["pool_after"]["pending_requests"], 0)
+                self.assertTrue(all(c["reserved_streams"] == 0 for c in value["pool_after"]["connections"]))
+                self.assertGreater(value["cache_total_delta"]["downloaded_bytes"], 0)
+                mixed.append(report.fingerprints(value))
+            self.assertEqual(mixed[0], mixed[1])

@@ -1,16 +1,10 @@
 """A certificate-verified HTTP/2 test peer with controlled connection retirement."""
 
 from contextlib import contextmanager
-from pathlib import Path
 import socket
-import shutil
 import socketserver
-import ssl
-import subprocess
-import tempfile
 from threading import Event, Lock, Thread
 import time
-import unittest
 
 import h2.config
 import h2.connection
@@ -18,27 +12,19 @@ import h2.events
 import h2.exceptions
 import h2.settings
 
+from test.tls_certificate import tls_certificate
+
 
 @contextmanager
 def http2_peer(*, retire_first=False, idle_retirement=None,
                max_concurrent_streams=None, response_delay=0,
                settings_change_after=None, changed_stream_limit=None,
-               payload=None, body_delay=0, body_chunk_size=16384):
+               payload=None, body_delay=0, body_chunk_size=16384,
+               response=None, alpn_protocols=("h2",)):
     if body_chunk_size < 1 or body_delay < 0:
         raise ValueError("Body chunk size must be positive and delay nonnegative")
-    if shutil.which("openssl") is None:
-        raise unittest.SkipTest("OpenSSL is required for the verified TLS fixture")
-    with tempfile.TemporaryDirectory() as directory:
-        certificate = Path(directory) / "certificate.pem"
-        key = Path(directory) / "key.pem"
-        subprocess.run([
-            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
-            "-keyout", str(key), "-out", str(certificate), "-subj", "/CN=localhost",
-            "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost",
-        ], check=True, capture_output=True, timeout=15)
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.load_cert_chain(certificate, key)
-        context.set_alpn_protocols(["h2"])
+    with tls_certificate() as (certificate, context):
+        context.set_alpn_protocols(list(alpn_protocols))
 
         class Server(socketserver.ThreadingTCPServer):
             daemon_threads = True
@@ -51,6 +37,8 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
                     number = self.server.connections
                 try:
                     with context.wrap_socket(self.request, server_side=True) as sock:
+                        with self.server.lock:
+                            self.server.negotiated_protocols.append(sock.selected_alpn_protocol())
                         sock.settimeout(0.01)
                         connection = h2.connection.H2Connection(
                             config=h2.config.H2Configuration(client_side=False))
@@ -73,7 +61,7 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
                         last_activity = time.monotonic()
                         retired = False
                         pending = {}
-                        ranges = {}
+                        headers_by_stream = {}
                         bodies = {}
                         requests = 0
                         settings_changed = False
@@ -94,11 +82,10 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
                             if retired:
                                 continue
                             for event in connection.receive_data(data) if data else []:
-                                if isinstance(event, h2.events.RequestReceived) and payload is not None:
-                                    headers = dict(event.headers)
-                                    value = headers.get(b"range", f"bytes=0-{len(payload) - 1}".encode())
-                                    start, end = (int(part) for part in value.removeprefix(b"bytes=").split(b"-"))
-                                    ranges[event.stream_id] = (start, end)
+                                if isinstance(event, h2.events.RequestReceived):
+                                    headers_by_stream[event.stream_id] = dict(event.headers)
+                                    with self.server.lock:
+                                        self.server.paths.append(dict(event.headers)[b":path"].decode())
                                 if isinstance(event, h2.events.StreamEnded):
                                     last_activity = time.monotonic()
                                     last_stream = event.stream_id
@@ -117,16 +104,28 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
                                         self.server.settings_changed.set()
                             for stream_id, ready_at in list(pending.items()):
                                 if ready_at <= time.monotonic() and self.server.release_responses.is_set():
-                                    start, end = ranges.pop(stream_id, (0, 0))
-                                    content = b"x" if payload is None else payload[start:end + 1]
-                                    total = 100 if payload is None else len(payload)
-                                    connection.send_headers(stream_id, [
-                                        (":status", "206"), ("content-length", str(len(content))),
-                                        ("content-range", f"bytes {start}-{end}/{total}")])
+                                    request_headers = headers_by_stream.pop(stream_id)
+                                    if response is not None:
+                                        status, headers, content = response(request_headers)
+                                    else:
+                                        total = 100 if payload is None else len(payload)
+                                        start, end = 0, 0 if payload is None else total - 1
+                                        if b"range" in request_headers:
+                                            start, end = (int(part) for part in request_headers[b"range"]
+                                                          .removeprefix(b"bytes=").split(b"-"))
+                                        content = b"x" if payload is None else payload[start:end + 1]
+                                        status = 206
+                                        headers = [("content-length", str(len(content))),
+                                                   ("content-range", f"bytes {start}-{end}/{total}")]
+                                    if request_headers[b":method"] == b"HEAD":
+                                        content = b""
+                                    connection.send_headers(stream_id, [(":status", str(status)), *headers])
                                     bodies[stream_id] = (content, 0, time.monotonic() + body_delay)
                                     pending.pop(stream_id)
                             for stream_id, (content, offset, ready_at) in list(bodies.items()):
                                 if ready_at <= time.monotonic():
+                                    if not content:
+                                        connection.end_stream(stream_id)
                                     while offset < len(content):
                                         size = min(body_chunk_size, connection.max_outbound_frame_size,
                                                    connection.local_flow_control_window(stream_id), len(content) - offset)
@@ -157,6 +156,9 @@ def http2_peer(*, retire_first=False, idle_retirement=None,
         server = Server(("127.0.0.1", 0), Handler)
         server.lock = Lock()
         server.connections = 0
+        server.server_port = server.server_address[1]
+        server.paths = []
+        server.negotiated_protocols = []
         server.streams = []
         server.active_streams = 0
         server.peak_active_streams = 0

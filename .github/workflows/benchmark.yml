@@ -61,13 +61,10 @@ jobs:
           echo "candidate=$candidate" >> "$GITHUB_OUTPUT"
 
   controlled:
+    name: Fixed-data regression
     needs: resolve
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        protocol: [h2, http1]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,12 +80,11 @@ jobs:
           CANDIDATE_REF: ${{ needs.resolve.outputs.candidate }}
           SUITE: ${{ inputs.suite || 'smoke' }}
           ROUNDS: ${{ inputs.rounds || '2' }}
-          PROTOCOL: ${{ matrix.protocol }}
         run: >-
           python -m benchmark compare
           --baseline "$BASELINE_REF" --candidate "$CANDIDATE_REF"
           --output benchmark/results/local/experiment
-          --mode controlled --protocol "$PROTOCOL" --suite "$SUITE" --rounds "$ROUNDS"
+          --mode controlled --suite "$SUITE" --rounds "$ROUNDS"
           --network-label "GitHub ubuntu-24.04; unshaped loopback TLS"
       - name: Publish job summary
         if: always()
@@ -96,7 +92,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: controlled-${{ matrix.protocol }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: fixed-data-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             benchmark/results/local/experiment/*/results.json
             benchmark/results/local/experiment/*/results.md
@@ -110,6 +106,7 @@ jobs:
           retention-days: 30
 
   hugging-face:
+    name: Live-service regression (Hugging Face)
     needs: resolve
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
@@ -141,7 +138,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: hugging-face-${{ github.run_id }}-${{ github.run_attempt }}
+          name: live-service-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             benchmark/results/local/experiment/*/results.json
             benchmark/results/local/experiment/*/results.md

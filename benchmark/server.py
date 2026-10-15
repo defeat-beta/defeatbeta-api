@@ -89,7 +89,7 @@ class RangeApplication:
 
 
 @contextmanager
-def serve_fixture(directory, runtime_directory, protocol="h2"):
+def serve_fixture(directory, runtime_directory):
     import httpx
 
     runtime_directory = Path(runtime_directory)
@@ -104,11 +104,10 @@ def serve_fixture(directory, runtime_directory, protocol="h2"):
     url = f"https://127.0.0.1:{port}"
     log = (runtime_directory / "server.log").open("w")
     process = subprocess.Popen([sys.executable, "-m", "benchmark.server", "--directory", str(directory),
-                                "--port", str(port), "--certificate", str(certificate), "--key", str(key),
-                                "--protocol", protocol], stdout=log, stderr=log)
+                                "--port", str(port), "--certificate", str(certificate), "--key", str(key)], stdout=log, stderr=log)
     try:
         context = ssl.create_default_context(cafile=str(certificate))
-        with httpx.Client(verify=context, trust_env=False, http2=True, timeout=5) as client:
+        with httpx.Client(verify=context, trust_env=False, http1=False, http2=True, timeout=5) as client:
             deadline = time.monotonic() + 30
             while True:
                 if process.poll() is not None:
@@ -121,7 +120,7 @@ def serve_fixture(directory, runtime_directory, protocol="h2"):
                     if time.monotonic() >= deadline:
                         raise TimeoutError("Fixture server did not start")
                     time.sleep(.05)
-            expected = "HTTP/2" if protocol == "h2" else "HTTP/1.1"
+            expected = "HTTP/2"
             if response.http_version != expected:
                 raise RuntimeError("Fixture protocol negotiation failed")
             yield {"url": url, "certificate": str(certificate), "protocol": expected,
@@ -144,12 +143,11 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--certificate", required=True)
     parser.add_argument("--key", required=True)
-    parser.add_argument("--protocol", choices=("h2", "http1"), default="h2")
     args = parser.parse_args()
     config = Config()
     config.bind = [f"127.0.0.1:{args.port}"]
     config.certfile, config.keyfile = args.certificate, args.key
-    config.alpn_protocols = ["h2", "http/1.1"] if args.protocol == "h2" else ["http/1.1"]
+    config.alpn_protocols = ["h2"]
     config.keep_alive_timeout = 60
     config.keep_alive_max_requests = 100000
     asyncio.run(serve(RangeApplication(args.directory), config))

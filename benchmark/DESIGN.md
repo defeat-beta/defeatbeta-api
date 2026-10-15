@@ -11,7 +11,7 @@ reuse of an experiment.
 
 A/B run sequentially on one host with alternating AB/BA order. Six even paired
 rounds balance order for release evidence. Each variant/case/round has a new
-interpreter and isolated cache. Controlled H2, controlled H1, and the live service
+interpreter and isolated cache. Fixed-data regression and live-service regression
 run as separate jobs; their absolute times cannot be compared directly. A GitHub
 runner label does not fix the physical CPU or public network route.
 
@@ -25,10 +25,11 @@ file/footer hashes and the generator identity are retained. An independent
 price count/min/max oracle is tested; other APIs currently use A/B equality.
 
 A separate Hypercorn 0.17.3 process serves actual HTTPS, redirects, and Range
-responses. A verified test CA and ALPN exercise HTTP/2 or HTTP/1.1. Metadata and
+responses. A verified test CA and ALPN exercise HTTP/2. Metadata and
 data use two origins, 127.0.0.1 and localhost. The adapter redirects endpoints,
 while preserving each product's actual cache, pool, HTTP, TLS, and SQL paths.
-It does not inject results or replace transport with mocks.
+It does not inject results or replace transport with mocks. Historical baselines
+retain their original transport behavior; there is no forced-H1 experiment.
 
 The server records CPU/RSS, protocol, request, and byte counters. Loopback is
 unshaped and server capacity has not been calibrated. Host resources are shared
@@ -120,7 +121,7 @@ Ordinary workflows have no publication permission. Git ignore rules concern
 local files and do not control remote publication.
 
 A separate manual workflow selects one complete successful run and an existing
-Release tag identifying the candidate commit. It verifies all three experiments,
+Release tag identifying the candidate commit. It verifies both experiments,
 balanced rounds, source/dependency/harness identity, and one workflow attempt.
 It renders saved evidence without executing downloaded code or rerunning queries,
 then uploads a detailed Markdown report and checksummed evidence bundle to that

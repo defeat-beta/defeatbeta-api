@@ -116,7 +116,7 @@ def run(args):
         if args.mode == "controlled":
             generate(temporary / "fixture")
             record["fixture"] = verify(temporary / "fixture")
-            context = serve_fixture(temporary / "fixture", temporary, "h2")
+            context = serve_fixture(temporary / "fixture", temporary)
         else:
             context = nullcontext(None)
         with context as server:

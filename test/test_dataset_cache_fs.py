@@ -7,11 +7,11 @@ import hashlib
 import logging
 import multiprocessing
 import os
+import ssl
 import time
 import httpx
 from contextlib import contextmanager, nullcontext
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import urlsplit
@@ -24,6 +24,8 @@ from defeatbeta_api.client.duckdb_client import DuckDBClient, plan_symbol_column
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
 from defeatbeta_api.data.ticker import Ticker
+from test.http2_peer import http2_peer
+from test.proxy_peer import connect_proxy
 
 
 MIB = 1024 * 1024
@@ -71,53 +73,11 @@ class FakeRangeClient:
 
 
 @contextmanager
-def local_range_server(payload, *, delay_seconds=0):
-    """Serve close-after-response ranges over real loopback HTTP/1.1 sockets."""
-
-    class Server(ThreadingHTTPServer):
-        daemon_threads = True
-
-        def get_request(self):
-            connection, address = super().get_request()
-            self.connection_count += 1
-            return connection, address
-
-    class Handler(BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.1"
-
-        def do_GET(self):
-            self.server.paths.append(self.path)
-            value = self.headers.get("Range", "")
-            if not value.startswith("bytes="):
-                self.send_error(400)
-                return
-            start, end = (int(part) for part in value[6:].split("-"))
-            time.sleep(delay_seconds)
-            content = payload[start:end + 1]
-            try:
-                self.send_response(206)
-                self.send_header("Content-Range", f"bytes {start}-{end}/{len(payload)}")
-                self.send_header("Content-Length", str(len(content)))
-                self.send_header("Connection", "close")
-                self.end_headers()
-                self.wfile.write(content)
-            except OSError:
-                pass
-
-        def log_message(self, format, *args):
-            pass
-
-    server = Server(("127.0.0.1", 0), Handler)
-    server.connection_count = 0
-    server.paths = []
-    worker = threading.Thread(target=server.serve_forever, daemon=True)
-    worker.start()
-    try:
+def local_range_server(payload, *, delay_seconds=0, retire_first=False):
+    """Serve ranges over verified H2, including in spawned cache readers."""
+    with http2_peer(payload=payload, response_delay=delay_seconds, retire_first=retire_first) as (
+            _, certificate, server), patch.dict(os.environ, {"SSL_CERT_FILE": str(certificate)}):
         yield server
-    finally:
-        server.shutdown()
-        server.server_close()
-        worker.join(timeout=2)
 
 
 def shared_cache_process_reader(directory, signed_url, total, start, messages):
@@ -129,6 +89,7 @@ def shared_cache_process_reader(directory, signed_url, total, start, messages):
             resolve=lambda url, refresh=False: (signed_url, total),
             http_proxy="", max_memory_bytes=0,
         )
+        filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
         path = filesystem.register(PINNED)
         messages.put(("ready", os.getpid()))
         if not start.wait(15):
@@ -434,7 +395,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         payload = bytes(range(256)) * 16
         with local_range_server(payload) as server:
             signed_url = (
-                f"http://127.0.0.1:{server.server_port}/object"
+                f"https://127.0.0.1:{server.server_port}/object"
                 "?Signature=secret&Expires=123"
             )
             filesystem = DatasetCacheFileSystem(
@@ -443,16 +404,19 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                 resolve=lambda url, refresh=False: (signed_url, len(payload)),
                 http_proxy="", max_memory_bytes=0,
             )
+            filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
             try:
                 path = filesystem.register(PINNED)
                 with self.assertLogs("httpx", level="INFO") as captured:
                     self.assertEqual(filesystem.cat_file(path, 100, 120), payload[100:120])
             finally:
                 filesystem.close()
-            with self.assertLogs("httpx", level="INFO") as unrelated:
-                response = httpx.get(
-                    f"http://127.0.0.1:{server.server_port}/other?marker=outside",
-                    headers={"Range": "bytes=0-0"}, trust_env=False,
+            with self.assertLogs("httpx", level="INFO") as unrelated, \
+                    httpx.Client(http2=True, verify=ssl.create_default_context(
+                        cafile=os.environ["SSL_CERT_FILE"]), trust_env=False) as unrelated_client:
+                response = unrelated_client.get(
+                    f"https://127.0.0.1:{server.server_port}/other?marker=outside",
+                    headers={"Range": "bytes=0-0"},
                 )
             self.assertEqual(response.status_code, 206)
 
@@ -467,7 +431,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         payload = bytes(range(256)) * 16
         with local_range_server(payload) as server:
             signed_url = (
-                f"http://127.0.0.1:{server.server_port}/object"
+                f"https://127.0.0.1:{server.server_port}/object"
                 "?Signature=secret&Expires=123"
             )
             filesystem = DatasetCacheFileSystem(
@@ -476,6 +440,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                 resolve=lambda url, refresh=False: (signed_url, len(payload)),
                 http_proxy="", max_memory_bytes=0,
             )
+            filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
             try:
                 path = filesystem.register(PINNED)
                 with self.assertLogs("httpcore", level="DEBUG") as captured:
@@ -491,7 +456,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         payload = bytes(range(256)) * 16
         with local_range_server(payload) as server:
             signed_url = (
-                f"http://127.0.0.1:{server.server_port}/object"
+                f"https://127.0.0.1:{server.server_port}/object"
                 "?Signature=secret"
             )
             filesystem = DatasetCacheFileSystem(
@@ -500,6 +465,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                 resolve=lambda url, refresh=False: (signed_url, len(payload)),
                 http_proxy="", max_memory_bytes=0,
             )
+            filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
             entered = threading.Event()
             release = threading.Event()
             original_get = filesystem._client.get
@@ -518,11 +484,11 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                             future = executor.submit(filesystem.cat_file, path, 100, 120)
                             try:
                                 self.assertTrue(entered.wait(5))
-                                response = httpx.get(
-                                    f"http://127.0.0.1:{server.server_port}/other"
-                                    "?marker=outside",
-                                    headers={"Range": "bytes=0-0"}, trust_env=False,
-                                )
+                                with httpx.Client(http2=True, verify=ssl.create_default_context(
+                                        cafile=os.environ["SSL_CERT_FILE"]), trust_env=False) as unrelated_client:
+                                    response = unrelated_client.get(
+                                        f"https://127.0.0.1:{server.server_port}/other?marker=outside",
+                                        headers={"Range": "bytes=0-0"})
                                 self.assertEqual(response.status_code, 206)
                             finally:
                                 release.set()
@@ -1374,7 +1340,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         messages = context.Queue()
         processes = []
         with local_range_server(payload, delay_seconds=0.1) as server:
-            signed_url = f"http://127.0.0.1:{server.server_port}/object"
+            signed_url = f"https://127.0.0.1:{server.server_port}/object"
             try:
                 processes = [
                     context.Process(
@@ -1413,6 +1379,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                     resolve=lambda url, refresh=False: (signed_url, len(payload)),
                     http_proxy="", max_memory_bytes=0,
                 )
+                reopened._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
                 try:
                     path = reopened.register(PINNED)
                     self.assertEqual(reopened.cat_file(path, 100, 2148),
@@ -1537,61 +1504,64 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         finally:
             filesystem.close()
 
-    def test_direct_http11_reopens_server_closed_connection(self):
+    def test_direct_http2_reopens_server_retired_connection(self):
         payload = bytes(range(128))
-        with local_range_server(payload) as server:
-            signed_url = f"http://127.0.0.1:{server.server_port}/object"
+        with local_range_server(payload, retire_first=True) as server:
+            signed_url = f"https://127.0.0.1:{server.server_port}/object"
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "direct-close"),
                 version="dataset-v1",
                 resolve=lambda url, refresh=False: (signed_url, len(payload)),
                 http_proxy="", workers=3,
             )
+            filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
             try:
                 path = filesystem.register(PINNED)
                 self.assertEqual(filesystem.cat_file(path, 0, 10), payload[:10])
                 self.assertEqual(filesystem.cat_file(path, 10, 20), payload[10:20])
-                self.assertEqual(server.connection_count, 2)
+                self.assertEqual(server.connections, 2)
                 self.assertEqual(server.paths, ["/object", "/object"])
                 self.assertEqual(
                     [event["http_version"] for event in filesystem.range_events()],
-                    ["HTTP/1.1", "HTTP/1.1"],
+                    ["HTTP/2", "HTTP/2"],
                 )
                 self.assertEqual(filesystem.connection_snapshot()["tracked_origins"], 1)
             finally:
                 filesystem.close()
 
-    def test_http11_proxy_reopens_server_closed_connection(self):
+    def test_connect_proxy_reopens_server_retired_http2_connection(self):
         payload = bytes(range(128))
-        with local_range_server(payload) as proxy:
-            signed_url = "http://origin.invalid/object"
+        with local_range_server(payload, retire_first=True) as server, connect_proxy() as (proxy_url, proxy):
+            signed_url = f"https://127.0.0.1:{server.server_port}/object"
             filesystem = DatasetCacheFileSystem(
                 directory=str(Path(self.temporary.name) / "proxy-close"),
                 version="dataset-v1",
                 resolve=lambda url, refresh=False: (signed_url, len(payload)),
-                http_proxy=f"http://127.0.0.1:{proxy.server_port}", workers=3,
+                http_proxy=proxy_url, workers=3,
             )
+            filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
             try:
                 path = filesystem.register(PINNED)
                 self.assertEqual(filesystem.cat_file(path, 0, 10), payload[:10])
                 self.assertEqual(filesystem.cat_file(path, 10, 20), payload[10:20])
-                self.assertEqual(proxy.connection_count, 2)
-                self.assertEqual(proxy.paths, [signed_url, signed_url])
+                self.assertEqual(proxy.tunnels, 2)
+                self.assertEqual(server.paths, ["/object", "/object"])
                 self.assertEqual(filesystem.connection_snapshot()["tracked_origins"], 1)
             finally:
                 filesystem.close()
 
     def test_slow_proxy_timeout_falls_back_without_caching_partial_bytes(self):
         payload = bytes(range(128))
-        with local_range_server(payload, delay_seconds=0.25) as proxy:
-            signed_url = "http://origin.invalid/object"
+        with local_range_server(payload, delay_seconds=0.25) as server, connect_proxy() as (proxy_url, proxy):
+            signed_url = f"https://127.0.0.1:{server.server_port}/object"
             directory = Path(self.temporary.name) / "proxy-timeout"
             filesystem = DatasetCacheFileSystem(
                 directory=str(directory), version="dataset-v1",
                 resolve=lambda url, refresh=False: (signed_url, len(payload)),
-                http_proxy=f"http://127.0.0.1:{proxy.server_port}",
+                http_proxy=proxy_url,
                 timeout=httpx.Timeout(0.05, connect=2.0),
             )
+            filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
             try:
                 path = filesystem.register(PINNED)
                 client = object.__new__(DuckDBClient)
@@ -1613,7 +1583,7 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
                     client.query(f"SELECT * FROM '{PINNED}'"), "fallback result"
                 )
                 self.assertEqual(attempted, [True, False])
-                self.assertEqual(len(proxy.paths), 2)
+                self.assertEqual(len(server.paths), 2)
                 self.assertEqual(filesystem.metrics()["downloaded_bytes"], 0)
                 self.assertFalse(list(directory.glob("*.block")))
             finally:

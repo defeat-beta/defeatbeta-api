@@ -21,10 +21,20 @@ Open **Actions > Paired performance benchmark > Run workflow**:
 | `suite` | `smoke` for framework checks; `release` for all 70 default-policy cases. |
 | `rounds` | Paired repetitions; at least six even rounds for release evidence. |
 
-Refs are resolved once before the jobs start. Each controlled protocol and the
-live service get separate runners; A/B always share one job and host. Do not
+Refs are resolved once before the jobs start. Fixed-data regression and
+live-service regression get separate runners; A/B always share one job and host. Do not
 compare absolute durations across jobs. Pull requests run the short controlled
 suite. Manual runs also query the real Hugging Face service.
+
+| Experiment | Purpose | Data and network |
+| --- | --- | --- |
+| Fixed-data regression (`controlled`) | Detect code regressions against repeatable inputs. | Deterministic synthetic files, local TLS server with H2. |
+| Live-service regression (`live`) | Evaluate end-to-end latency, concurrency, failures, and resources. | Current Hugging Face files through the normal product route. |
+
+Both exercise the candidate's real H2 transport. Live-service measurements already
+include H2 downloads; fixed-data measurements isolate changes from public-network
+and daily-data variation. Historical baselines retain their original protocol
+behavior. There is no forced-H1 benchmark variant or protocol selection option.
 
 Every run is **development evidence**, including runs of the `release` suite.
 Read the Summary and download Artifacts, retained for 30 days. The workflow
@@ -45,7 +55,7 @@ cache and does not use the `cache_httpfs` extension.
 
 Review the full run, then open **Actions > Finalize release performance report
 > Run workflow** on the default branch. Supply `source_run_id` and `release_tag`.
-The selected run must be a successful manual benchmark with all three experiments
+The selected run must be a successful manual benchmark with both experiments
 in its latest attempt. The existing GitHub Release tag must point to the exact
 measured candidate commit. A draft Release can be used before publication.
 
@@ -56,7 +66,7 @@ JSON, readable reports, dependency locks, the harness, and checksums. Promote
 accepted evidence before its Actions artifacts expire.
 
 Missing cases, short samples, different candidates, mixed attempts/dependencies,
-and incomplete protocol coverage are rejected. If jobs need retrying, rerun all
+and missing fixed-data or live-service evidence are rejected. If jobs need retrying, rerun all
 jobs to preserve one attempt identity. Earlier attempts remain in Actions history.
 Successful validation does not assert that every workload improved.
 
@@ -69,19 +79,19 @@ python -m pip install -r benchmark/requirements.txt
 python -m benchmark compare \
   --baseline release-0.0.62 --candidate HEAD \
   --output /tmp/defeatbeta-comparison-001 \
-  --mode controlled --protocol h2 --suite smoke --rounds 2 \
+  --mode controlled --suite smoke --rounds 2 \
   --network-label "Local loopback TLS"
 ```
 
 The output directory must be new. Preparation exports commits and creates two
 virtual environments; uncommitted product edits are not measured. Controlled
-mode uses a separate TLS server, verified test CA, HTTP/2 or HTTP/1.1, and no
+mode uses a separate TLS server, verified test CA, HTTP/2, and no
 proxy. It requires `openssl`. Live mode uses current Hugging Face files and the
 normal environment proxy policy. Reuse a prepared environment with:
 
 ```sh
 python -m benchmark run --experiment /tmp/defeatbeta-comparison-001 \
-  --mode controlled --protocol http1 --suite release --rounds 6
+  --mode controlled --suite release --rounds 6
 python -m benchmark report /path/to/results.json
 ```
 

@@ -130,9 +130,10 @@ def render(path, release=None):
     environments = record["experiment"]["environments"]
     stage = (f"Stage: **final release report** for `{release}`. The original raw evidence is unchanged."
              if release else "Stage: **development evidence**. This run does not publish a final release report.")
+    experiment_name = "Fixed-data regression" if record["mode"] == "controlled" else "Live-service regression (Hugging Face)"
     lines = ["# Paired API performance report", "", stage, "",
              f"Status: **{'valid comparison' if summary['valid'] else 'incomplete or invalid comparison'}**.", "",
-             f"Mode: `{record['mode']}`. Network: {record['network']}. Rounds: {record['rounds']}.", "",
+             f"Experiment: **{experiment_name}**. Mode: `{record['mode']}`. Network: {record['network']}. Rounds: {record['rounds']}.", "",
              "The baseline and candidate ran sequentially on one host. Results describe this experiment.",
              "Daily remote updates are accepted and recorded; cross-date absolute times are not a fixed baseline.", "",
              "## Provenance", "", "| Variant | Source commit | DuckDB | Python |", "| --- | --- | --- | --- |"]

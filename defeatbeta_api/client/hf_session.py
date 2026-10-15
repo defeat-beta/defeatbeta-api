@@ -49,6 +49,9 @@ class MetadataSession:
                 response = client.request(method, url, follow_redirects=allow_redirects, **kwargs)
                 if response.status_code not in (500, 502, 503, 504) or attempt == self.max_retries:
                     return MetadataResponse(response)
+            except httpx.UnsupportedProtocol as exc:
+                raise requests.RequestException(
+                    "Metadata requests require HTTPS with negotiated HTTP/2") from exc
             except httpx.RequestError as exc:
                 if attempt == self.max_retries:
                     raise requests.RequestException(type(exc).__name__) from exc

@@ -14,7 +14,7 @@ from benchmark.report import render, summarize
 from benchmark.suite import make_suite
 
 
-REQUIRED_EXPERIMENTS = {("controlled", "h2"), ("controlled", "http1"), ("live", None)}
+REQUIRED_EXPERIMENTS = {("controlled", "h2"), ("live", None)}
 
 
 def validate_run(run, repository):
@@ -77,7 +77,7 @@ def finalize(source, output, release, candidate, run):
         validate_record(record, candidate, run)
         key = (record["mode"], record.get("protocol_control"))
         if key not in REQUIRED_EXPERIMENTS or key in selected:
-            raise ValueError("Select exactly one complete H2, HTTP/1.1, and live experiment")
+            raise ValueError("Select exactly one fixed-data H2 and one live-service experiment")
         manifest = record["experiment"]
         shared = {"harness": manifest["harness"], "harness_dependency_lock": manifest["harness_dependency_lock"],
                   "rounds": record["rounds"],
@@ -89,9 +89,7 @@ def finalize(source, output, release, candidate, run):
         identity = shared
         selected[key] = (path, record)
     if set(selected) != REQUIRED_EXPERIMENTS:
-        raise ValueError("Both controlled protocols and the live experiment are required")
-    if selected[("controlled", "h2")][1]["fixture"] != selected[("controlled", "http1")][1]["fixture"]:
-        raise ValueError("Controlled experiments used different fixtures")
+        raise ValueError("Fixed-data and live-service experiments are required")
 
     # Downloaded source is evidence only. Read and copy verified files; never import it.
     sample_path, sample = selected[("controlled", "h2")]
@@ -123,7 +121,7 @@ def finalize(source, output, release, candidate, run):
                  "| Experiment | Faster cases | Slower cases | Inconclusive cases |",
                  "| --- | ---: | ---: | ---: |"]
         for key, (path, record) in sorted(selected.items()):
-            name = "hugging-face" if key[0] == "live" else "controlled-" + key[1]
+            name = "live-service" if key[0] == "live" else "fixed-data"
             folder = staging / name
             folder.mkdir()
             target = folder / "results.json"

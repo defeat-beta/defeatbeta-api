@@ -18,6 +18,7 @@ from weakref import WeakValueDictionary, ref
 from unittest.mock import Mock, patch
 
 import httpx
+import requests
 import duckdb
 
 from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem, DatasetVersionChanged
@@ -42,6 +43,7 @@ def shared_footer_process(directory, url, total, start, messages):
     filesystem = DatasetCacheFileSystem(
         directory=directory, version="footer-process-v1", http_proxy="",
         resolve=lambda pinned, refresh=False: (url, total))
+    filesystem._clients[0].trust_env = True  # Trust the fixture CA on the explicit route.
     try:
         path = filesystem.register(PINNED)
         messages.put(("ready", None))
@@ -353,7 +355,7 @@ class TestSharedResources(unittest.TestCase):
         payload = b"PAR1" + b"x" * 100 + FAKE_FOOTER_BYTES
         context = multiprocessing.get_context("spawn")
         with tempfile.TemporaryDirectory() as directory, local_range_server(payload, delay_seconds=0.1) as server:
-            url = f"http://127.0.0.1:{server.server_port}/file"
+            url = f"https://127.0.0.1:{server.server_port}/file"
             start, messages = context.Event(), context.Queue()
             processes = [context.Process(target=shared_footer_process,
                                          args=(directory, url, len(payload), start, messages)) for _ in range(2)]
@@ -409,6 +411,16 @@ class TestSharedResources(unittest.TestCase):
                 self.assertEqual(create.call_count, 1)
                 self.assertFalse(raw.is_closed)
         self.assertEqual(observed, [("GET", "/a"), ("HEAD", "/b"), ("GET", "/c")])
+
+    def test_metadata_protocol_rejection_is_immediate_and_explains_h2_requirement(self):
+        session = MetadataSession(max_retries=3)
+        with patch.object(SharedHttpClient, "request", side_effect=httpx.UnsupportedProtocol(
+                "HTTP/2 is required; TLS ALPN did not negotiate h2")) as request, \
+                patch("defeatbeta_api.client.hf_session.time.sleep") as sleep:
+            with self.assertRaisesRegex(requests.RequestException, "HTTPS.*HTTP/2"):
+                session.get("https://example.test/spec.json")
+        self.assertEqual(request.call_count, 1)
+        sleep.assert_not_called()
 
     def test_single_flight_failure_releases_waiters_and_allows_retry(self):
         cache = SharedCache()

@@ -90,7 +90,7 @@ def network_client(identity):
                                   max_keepalive_connections=None,
                                   keepalive_expiry=None)
             transport = ManagedHTTPTransport(
-                verify=context, http2=True, proxy=proxy, trust_env=False, limits=limits,
+                verify=context, proxy=proxy, trust_env=False, limits=limits,
                 socket_options=[(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)])
             resource = {"client": httpx.Client(transport=transport, trust_env=False,
                                                follow_redirects=False), "active": 0}

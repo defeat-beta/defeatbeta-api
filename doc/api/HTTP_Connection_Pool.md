@@ -72,7 +72,13 @@ their own sharing rules, documented in the cache guide.
 
 A **connection** is an established transport to an origin, directly or through
 a proxy. An HTTP/2 **stream** carries one request/response exchange on that
-connection. HTTP/1.1 connections have one scheduling slot in this implementation.
+connection. All business requests require HTTPS with negotiated HTTP/2. The
+transport advertises only `h2` and validates TLS ALPN before sending a request.
+There is no user protocol switch or H1 fallback. A destination that cannot
+negotiate H2 is rejected; plaintext business URLs are rejected before connecting.
+HTTP proxies may still use HTTP/1.1 to establish a CONNECT tunnel, including an
+outer TLS connection to an HTTPS proxy. The business TLS connection inside that
+tunnel must negotiate H2. SOCKS tunnels have the same H2 requirement.
 
 The allocator reserves a slot before dispatch and releases it when the response
 is closed. Reservations include requests that have not sent headers yet and
@@ -112,7 +118,7 @@ budget; capacity is returned only after closure finishes.
 
 At the defaults, four ready HTTP/2 connections can hold up to 16 reservations.
 Sixteen ready connections can hold up to 64 reservations in total, provided
-every peer permits at least four streams. HTTP/1.1, lower peer limits, and
+every peer permits at least four streams. Lower peer limits and
 connections being established or closed reduce available capacity. Further
 requests wait rather than creating unbounded sockets.
 
@@ -204,7 +210,7 @@ including per-filesystem workers and HTTP timeouts.
 | --- | --- |
 | `pending_requests` | Requests currently awaiting a connection reservation. |
 | `reserved_streams` | Slots owned by requests on this connection. |
-| `peer_stream_limit` | The observed HTTP/2 peer limit; absent for HTTP/1.1 or an unknown protocol. |
+| `peer_stream_limit` | The observed HTTP/2 peer limit; absent until the business protocol is established. |
 | `effective_stream_limit` | Capacity currently available to scheduling before subtracting reservations; zero for a connection that cannot admit work. |
 | `state` | `connecting`, `ready`, `busy`, `draining`, or `closing`. `ready` may already have active requests; it is not an idle flag. |
 | `pool_wait_seconds` | Accumulated acquisition time across requests, not remote-response time or a query's elapsed time. |
