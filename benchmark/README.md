@@ -34,12 +34,16 @@ The complete Cartesian workload is unchanged across worker counts:
 
 | Metric | Scenarios | Preparation |
 | --- | --- | --- |
-| Individual API latency | Cold and cached | Each ticker/method gets its own empty query cache; cached calls first warm that exact task. |
+| Individual API latency | Cold and cached | Each ticker/method gets its own empty query cache; cached calls first establish a zero-request replay of that exact task. |
 | Whole-workload throughput | 1, 4, 16, 64, 128 workers, each cold and cached | Every worker count shares the same complete workload, executing each task once. |
 
 Cold throughput starts with one empty shared query cache and allows natural
-reuse inside the batch. Cached throughput warms every ticker/method first and
-requires zero query-data cache misses during measurement. Capacity is deliberately
+reuse inside the batch. Cache preparation replays the exact individual task, or
+the complete batch at its measurement concurrency, until one complete pass has
+zero query-data requests. It drains prefetch after each pass and stops after at
+most eight passes. Errors or nonconvergence invalidate preparation. The formal
+measurement then runs once and still requires zero query-data cache misses; a
+measured miss is retained and never replaced with a later successful attempt. Capacity is deliberately
 generous: memory or disk hits qualify as local hits. Physical disk space remains
 a validity condition, rather than a guarantee from the logical cache budget.
 

@@ -9,7 +9,7 @@ import statistics
 
 from benchmark.common import percentile, save_json
 from benchmark.e2e import plan
-from benchmark.e2e.execution import validate_ledger
+from benchmark.e2e.execution import MAX_CACHE_PREPARATION_PASSES, validate_ledger
 
 
 def ratio_interval(ratios):
@@ -63,6 +63,29 @@ def positive(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
 
 
+def validate_preparation(preparation, tasks, phase):
+    if (not isinstance(preparation, dict) or preparation.get("status") != "ready"
+            or preparation.get("concurrency") != phase["concurrency"]
+            or preparation.get("execution") != ("caller" if phase["kind"] == "latency" else "thread_pool")
+            or preparation.get("max_passes") != MAX_CACHE_PREPARATION_PASSES
+            or preparation.get("errors") != []):
+        raise ValueError("Missing or inconsistent cache preparation evidence")
+    passes = preparation.get("passes")
+    if not isinstance(passes, list) or not 1 <= len(passes) <= MAX_CACHE_PREPARATION_PASSES:
+        raise ValueError("Cache preparation exceeded its bound or has no complete pass")
+    identifiers = [task["id"] for task in tasks]
+    unavailable = sum("not_applicable" in task for task in tasks)
+    for index, attempt in enumerate(passes):
+        if (attempt.get("number") != index + 1 or attempt.get("task_ids") != identifiers
+                or attempt.get("completed_tasks") != len(tasks) or attempt.get("failed_tasks") != 0
+                or attempt.get("successful_tasks") != len(tasks) - unavailable
+                or attempt.get("not_applicable_tasks") != unavailable):
+            raise ValueError("Cache preparation did not replay the complete declared work")
+        misses = attempt.get("cache_misses")
+        if type(misses) is not int or misses < 0 or (misses == 0) != (index == len(passes) - 1):
+            raise ValueError("Cache preparation requires a final zero-request pass")
+
+
 def validate_measurement(workload, phase, value):
     if value.get("status") != "complete":
         raise ValueError(f"Unsuccessful measurement: {value.get('status')}")
@@ -84,6 +107,8 @@ def validate_measurement(workload, phase, value):
         if phase["kind"] == "latency" and row.get("status") == "ok":
             if not positive(row.get("initialization_seconds")):
                 raise ValueError("Missing constructor timing")
+            if phase["state"] == "cached":
+                validate_preparation(row.get("cache_preparation"), [task], phase)
     successful = sum(row["status"] == "ok" for row in value["results"])
     if (value.get("completed_tasks") != workload["task_count"]
             or value.get("successful_tasks") != successful
@@ -98,6 +123,8 @@ def validate_measurement(workload, phase, value):
     if phase["state"] == "cached" and value.get("cache_misses") != 0:
         raise ValueError("All-hit scenario contains query-data misses")
     if phase["kind"] == "throughput":
+        if phase["state"] == "cached":
+            validate_preparation(value.get("cache_preparation"), list(declared.values()), phase)
         if not positive(value.get("wall_seconds")):
             raise ValueError("Invalid batch duration")
         expected = successful / value["wall_seconds"]
@@ -211,6 +238,8 @@ def render(path, release=None):
              "API latency includes full materialization; constructor, warmup, and hashing are outside it.",
              "Cold latency isolates each task. Cold throughput allows natural sharing within one empty-cache batch.",
              "Cached scenarios warm every applicable task and require zero query-data cache misses.",
+             f"Preparation uses the measurement concurrency and stops at the first zero-request pass, with at most {MAX_CACHE_PREPARATION_PASSES} passes.",
+             "Preparation is outside timing. Any subsequent measured miss invalidates the scenario; measured calls are never resampled.",
              "Every throughput concurrency executes the same complete Cartesian workload once.", "",
              "## Provenance", "", "| Variant | Commit | DuckDB | Python |", "| --- | --- | --- | --- |"]
     for name, env in record["experiment"]["environments"].items():
@@ -243,14 +272,17 @@ def render(path, release=None):
                      f"{number(init.get('baseline'))} | {number(init.get('candidate'))} | "
                      f"{number(row.get('reduction_percent'))}% | {row['classification']} |")
     lines += ["", "## Phase coverage", "",
-              "| Phase | Round | Variant | Status | Completed | Successful | Failed | Not applicable |",
-              "| --- | ---: | --- | --- | ---: | ---: | ---: | ---: |"]
+              "| Phase | Round | Variant | Status | Completed | Successful | Failed | Not applicable | Preparation passes |",
+              "| --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |"]
     failures = []
     for sample in record["records"]:
         value = sample["measurement"]
+        preparation = value.get("cache_preparation")
+        passes = (len(preparation["passes"]) if preparation else
+                  "per query" if sample["phase"] == "latency.cached" else "n/a")
         lines.append(f"| {sample['phase']} | {sample['round']} | {sample['variant']} | {value.get('status')} | "
                      f"{value.get('completed_tasks', 0)} | {value.get('successful_tasks', 0)} | "
-                     f"{value.get('failed_tasks', 0)} | {value.get('not_applicable_tasks', 0)} |")
+                     f"{value.get('failed_tasks', 0)} | {value.get('not_applicable_tasks', 0)} | {passes} |")
         for row in value.get("results", []) + value.get("warmup_errors", []):
             if row.get("status") == "error":
                 failures.append(f"- `{sample['phase']}` / round {sample['round']} / `{sample['variant']}` / "

@@ -31,5 +31,9 @@ current maintainer-approved list. The temporary calibration command and workflow
 are retired. Further measurements use the main CLI and per-phase GitHub jobs.
 
 Correctness tests cover new API discovery, frozen arguments, complete ledgers,
-all-hit preparation, timing boundaries, partial outcomes, and real Parquet cache
-integration. Official performance timings come from GitHub, not workstation runs.
+bounded all-hit preparation using the measurement concurrency, timing boundaries,
+partial outcomes, and real Parquet cache integration. A changing-read-footprint
+fixture verifies that newly required ranges are fetched before measurement.
+Preparation has at most eight passes and records a complete task ledger for each
+pass. A zero-request preparation pass is mandatory; formal measurement is never
+retried to replace a cache miss. Official performance timings come from GitHub, not workstation runs.

@@ -17,6 +17,7 @@ import pandas as pd
 from benchmark import benchmark, common, report
 from benchmark.support import fixture
 from benchmark.e2e import plan
+from benchmark.e2e.execution import MAX_CACHE_PREPARATION_PASSES
 from benchmark.support.server import serve_fixture
 
 
@@ -46,12 +47,47 @@ def fake_record(rounds=6, baseline=True):
                          "api_coverage": workload["methods"],
                          "cache_settings": {"disk_limit_bytes": 2**60, "memory_limit_bytes": 512,
                                             "native_file_cache": True}}
+                if phase["state"] == "cached":
+                    def preparation(identifiers):
+                        return {"status": "ready", "concurrency": phase["concurrency"],
+                                "execution": "caller" if phase["kind"] == "latency" else "thread_pool",
+                                "max_passes": MAX_CACHE_PREPARATION_PASSES, "errors": [],
+                                "elapsed_seconds": 1.0, "passes": [{"number": 1,
+                                    "task_ids": identifiers, "completed_tasks": len(identifiers),
+                                    "successful_tasks": len(identifiers), "not_applicable_tasks": 0,
+                                    "failed_tasks": 0, "cache_misses": 0, "elapsed_seconds": 1.0}]}
+                    if phase["kind"] == "latency":
+                        for row in rows:
+                            row["cache_preparation"] = preparation([row["id"]])
+                    else:
+                        value["cache_preparation"] = preparation([row["id"] for row in rows])
                 record["records"].append({"phase": phase["id"], "round": number,
                                           "variant": variant, "measurement": value})
     return record
 
 
 class TestBenchmarkContract(unittest.TestCase):
+    def test_cached_report_requires_complete_zero_request_preparation(self):
+        mutations = [lambda p: p.update(status="not_ready"),
+                     lambda p: p.update(concurrency=128),
+                     lambda p: p.update(execution="caller"),
+                     lambda p: p.update(passes=[]),
+                     lambda p: p["passes"][-1].update(cache_misses=1),
+                     lambda p: p["passes"][-1]["task_ids"].pop(),
+                     lambda p: p.update(errors=[{"status": "error"}])]
+        for mutate in mutations:
+            value = fake_record()
+            measurement = next(s["measurement"] for s in value["records"]
+                               if s["phase"] == "throughput.cached.4")
+            mutate(measurement["cache_preparation"])
+            self.assertFalse(report.summarize(value)["valid"])
+
+    def test_cached_latency_cannot_omit_its_preparation_evidence(self):
+        value = fake_record()
+        measurement = next(s["measurement"] for s in value["records"] if s["phase"] == "latency.cached")
+        measurement["results"][0].pop("cache_preparation")
+        self.assertFalse(report.summarize(value)["valid"])
+
     def test_timeout_preserves_finished_latency_outcomes(self):
         environment = {"python": "python", "source": "/source", "source_hashes": {},
                        "environment": {"dependencies": {}}}

@@ -9,6 +9,9 @@ from benchmark.common import canonical, distribution, redact_secrets, result_fin
 from benchmark.e2e import plan
 
 
+MAX_CACHE_PREPARATION_PASSES = 8
+
+
 def invoke(ticker, task):
     target = ticker
     parts = task["call"].split(".")
@@ -69,11 +72,62 @@ def summarize(workload, rows, elapsed, misses, *, complete=True):
             "cache_misses": misses, "results": rows}
 
 
+def run_calls(tasks, tickers, concurrency, stop):
+    """Use the caller for individual latency and a worker pool for batches."""
+    def query(task):
+        return None if stop() else call(tickers[task["symbol"]], task)
+
+    if concurrency is None:
+        rows = [query(task) for task in tasks]
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+            rows = list(executor.map(query, tasks))
+    return [row for row in rows if row is not None]
+
+
+def prepare_cache(tasks, tickers, backend, concurrency, stop):
+    """Require a complete zero-request replay, with a fixed safety limit."""
+    started = time.perf_counter()
+    preparation = {"status": "not_ready", "concurrency": concurrency or 1,
+                   "execution": "caller" if concurrency is None else "thread_pool",
+                   "max_passes": MAX_CACHE_PREPARATION_PASSES, "passes": [], "errors": []}
+
+    def finish(status):
+        preparation.update(status=status, elapsed_seconds=time.perf_counter() - started)
+        return preparation
+
+    for number in range(1, MAX_CACHE_PREPARATION_PASSES + 1):
+        if stop():
+            return finish("incomplete")
+        pass_started = time.perf_counter()
+        with backend.probe() as probe:
+            rows = run_calls(tasks, tickers, concurrency, stop)
+            backend.drain()
+        for row in rows:
+            fingerprint(row)
+        errors = [row for row in rows if row["status"] == "error"]
+        preparation["passes"].append({
+            "number": number, "task_ids": [row["id"] for row in rows],
+            "completed_tasks": len(rows), "successful_tasks": sum(row["status"] == "ok" for row in rows),
+            "not_applicable_tasks": sum(row["status"] == "not_applicable" for row in rows),
+            "failed_tasks": len(errors), "cache_misses": probe["misses"],
+            "elapsed_seconds": time.perf_counter() - pass_started,
+        })
+        preparation["errors"].extend(errors)
+        if errors:
+            return finish("warmup_errors")
+        if len(rows) != len(tasks) or stop():
+            return finish("incomplete")
+        if probe["misses"] == 0:
+            return finish("ready")
+    return finish("not_ready")
+
+
 def measure_latency(workload, backend, state, *, emit=None, stop=lambda: False):
     plan.validate_plan(workload)
     if state not in ("cold", "cached"):
         raise ValueError("Unknown cache state")
-    rows, misses = [], 0
+    rows, misses, preparation_failed = [], 0, False
     started = time.perf_counter()
     for task in plan.tasks(workload):
         if stop():
@@ -91,13 +145,22 @@ def measure_latency(workload, backend, state, *, emit=None, stop=lambda: False):
                            error_type=type(exc).__name__, error=redact_secrets(str(exc)))
             else:
                 initialization = time.perf_counter() - initialized
-                warmup = None
+                preparation = None
                 if state == "cached":
-                    warmup = call(ticker, task)
-                    fingerprint(warmup)
-                    backend.drain()
-                if warmup is not None and warmup["status"] == "error":
-                    row = {**warmup, "stage": "warmup", "initialization_seconds": initialization}
+                    preparation = prepare_cache([task], {task["symbol"]: ticker}, backend, None, stop)
+                    if preparation["status"] == "incomplete":
+                        break
+                if preparation is not None and preparation["status"] != "ready":
+                    row = {key: task[key] for key in ("id", "symbol", "method", "kwargs")}
+                    if preparation["errors"]:
+                        error = preparation["errors"][0]
+                        row.update(error_type=error["error_type"], error=error["error"])
+                    else:
+                        preparation_failed = True
+                        row.update(error_type="CacheNotReady",
+                                   error="Cache preparation did not reach a zero-request pass")
+                    row.update(status="error", seconds=None, stage="cache_preparation",
+                               initialization_seconds=initialization)
                 elif stop():
                     break
                 else:
@@ -108,13 +171,15 @@ def measure_latency(workload, backend, state, *, emit=None, stop=lambda: False):
                     row["cache_misses"] = probe["misses"]
                     if state == "cached":
                         misses += probe["misses"]
+                if preparation is not None:
+                    row["cache_preparation"] = preparation
             fingerprint(row)
         rows.append(row)
         if emit is not None:
             emit(row)
     result = summarize(workload, rows, time.perf_counter() - started, misses,
                        complete=len(rows) == workload["task_count"])
-    if state == "cached" and misses:
+    if state == "cached" and (misses or preparation_failed):
         result["status"] = "invalid_cache"
     return result
 
@@ -127,38 +192,31 @@ def measure_throughput(workload, backend, state, concurrency, *, stop=lambda: Fa
     initialization = time.perf_counter()
     tickers = {symbol: backend.ticker(symbol) for symbol in workload["symbols"]}
     initialization = time.perf_counter() - initialization
-    warmup_started = time.perf_counter()
-    warmup_errors = []
+    tasks = list(plan.tasks(workload))
+    preparation = None
     if state == "cached":
-        for task in plan.tasks(workload):
-            if stop():
-                result = summarize(workload, [], 0, 0, complete=False)
-                result["stage"] = "warmup"
-                return result
-            row = fingerprint(call(tickers[task["symbol"]], task))
-            if row["status"] == "error":
-                warmup_errors.append(row)
-        backend.drain()
-    preparation = time.perf_counter() - warmup_started
-    if warmup_errors:
-        return {**summarize(workload, [], 0, 0, complete=False),
-                "status": "warmup_errors", "warmup_errors": warmup_errors,
-                "initialization_seconds": initialization, "preparation_seconds": preparation}
-
-    def query(task):
-        return None if stop() else call(tickers[task["symbol"]], task)
+        preparation = prepare_cache(tasks, tickers, backend, concurrency, stop)
+        if preparation["status"] != "ready":
+            status = {"not_ready": "invalid_cache", "warmup_errors": "warmup_errors",
+                      "incomplete": "incomplete"}[preparation["status"]]
+            return {**summarize(workload, [], 0, 0, complete=False), "status": status,
+                    "stage": "cache_preparation", "warmup_errors": preparation["errors"],
+                    "cache_preparation": preparation, "initialization_seconds": initialization,
+                    "preparation_seconds": preparation["elapsed_seconds"]}
 
     with backend.probe() as probe:
         started = time.perf_counter()
-        with ThreadPoolExecutor(max_workers=concurrency) as executor:
-            rows = [row for row in executor.map(query, plan.tasks(workload)) if row is not None]
+        rows = run_calls(tasks, tickers, concurrency, stop)
         elapsed = time.perf_counter() - started
         backend.drain()
     for row in rows:
         fingerprint(row)
     result = summarize(workload, rows, elapsed, probe["misses"],
                        complete=len(rows) == workload["task_count"])
-    result.update(initialization_seconds=initialization, preparation_seconds=preparation)
+    result.update(initialization_seconds=initialization,
+                  preparation_seconds=preparation["elapsed_seconds"] if preparation else 0)
+    if preparation is not None:
+        result["cache_preparation"] = preparation
     if state == "cached" and probe["misses"]:
         result["status"] = "invalid_cache"
     return result

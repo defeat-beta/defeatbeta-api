@@ -19,6 +19,57 @@ from benchmark import common
 @unittest.skipUnless(os.environ.get("DEFEATBETA_RUN_BENCHMARK_TLS_TESTS") == "1",
                      "Set DEFEATBETA_RUN_BENCHMARK_TLS_TESTS=1 for cache integration")
 class TestE2ECacheIntegration(unittest.TestCase):
+    def test_new_read_ranges_are_prepared_before_real_cache_measurement(self):
+        from defeatbeta_api.client.shared_resources import close_network_resources
+        from defeatbeta_api.utils.const import stock_news
+
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            generate(directory / "fixture")
+            workload = plan.build_plan([{"ticker": "PDD"}],
+                                      {"price": {"call": "price", "kwargs": {}}})
+            with serve_fixture(directory / "fixture", directory) as server, \
+                    dataset_endpoint(server["url"]), redirect_stdout(io.StringIO()), \
+                    patch.dict(os.environ, {"SSL_CERT_FILE": server["certificate"],
+                        "NO_PROXY": "localhost,127.0.0.1", "no_proxy": "localhost,127.0.0.1"}):
+                backend = ProductBackend(directory / "cache", workload)
+                original_ticker = backend.ticker
+                observed = []
+
+                def ticker(symbol):
+                    product = original_ticker(symbol)
+                    filesystem = product.duckdb_client._dataset_fs
+                    path = filesystem.register(product.huggingface_client.get_url_path(stock_news))
+
+                    class ChangingReadFootprint:
+                        calls = 0
+
+                        def price(self):
+                            self.calls += 1
+                            start = 2048 if self.calls == 2 else 8
+                            filesystem.cat_file(path, start=start, end=start + 32)
+                            return {"value": 1}
+
+                    instance = ChangingReadFootprint()
+                    observed.append(instance)
+                    return instance
+
+                try:
+                    with patch.object(backend, "ticker", ticker):
+                        latency = execution.measure_latency(workload, backend, "cached")
+                        batch = execution.measure_throughput(workload, backend, "cached", 4)
+                    self.assertEqual(latency["status"], "complete", latency)
+                    self.assertEqual(batch["status"], "complete", batch)
+                    preparations = [latency["results"][0]["cache_preparation"], batch["cache_preparation"]]
+                    for preparation in preparations:
+                        self.assertEqual([p["cache_misses"] for p in preparation["passes"]], [1, 1, 0])
+                    self.assertEqual([instance.calls for instance in observed], [4, 4])
+                    self.assertEqual(latency["cache_misses"], 0)
+                    self.assertEqual(batch["cache_misses"], 0)
+                finally:
+                    backend.close()
+                    close_network_resources()
+
     def test_cold_queries_are_isolated_and_complete_warm_work_hits_local_cache(self):
         from defeatbeta_api.client.shared_resources import close_network_resources
 

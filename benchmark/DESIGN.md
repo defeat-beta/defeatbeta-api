@@ -24,8 +24,17 @@ recorded separately. HTTP lifecycle remains the product's responsibility.
 
 Throughput has the same two states at concurrency 1/4/16/64/128. A cold batch
 starts with one empty shared query cache; sharing within the batch is intentional.
-A cached batch first warms all of W and drains prefetch. Generous equal capacities
-prevent budget eviction; actual disk capacity and observed cache misses remain
+A cached batch prepares all of W with the same worker count as measurement;
+individual latency preparation runs on the caller thread. Each preparation pass
+executes the complete declared work and drains prefetch. The first complete pass
+with zero query-data requests establishes readiness, with an eight-pass safety
+limit. Retain each pass ledger, request count, duration, execution mode, and
+concurrency. Errors, interruption, or nonconvergence prevent valid measurement.
+
+The formal measurement executes once after readiness. A miss during measurement
+still invalidates the scenario; it never causes resampling or an omitted attempt.
+All preparation passes and hashing remain outside API and batch timing.
+Generous equal capacities prevent budget eviction; actual disk capacity and observed cache misses remain
 validity checks. Local disk hits qualify alongside memory hits. Native DuckDB
 file caching follows each product's defaults and is recorded.
 
