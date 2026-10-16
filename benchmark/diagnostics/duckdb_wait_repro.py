@@ -118,7 +118,7 @@ def _measure_case(payload, threads, queries, blocked_seconds, cancel):
         cpu_started = time.thread_time()
         try:
             effective_threads = cursors[index].execute(
-                "SELECT current_setting('threads')").fetchone()[0]
+                "SELECT current_setting('threads')").fetchall()[0][0]
             if effective_threads != threads:
                 raise AssertionError("Requested thread count was not applied to the cursor")
             rows = cursors[index].sql(

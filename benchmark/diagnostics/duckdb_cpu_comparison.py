@@ -52,7 +52,7 @@ def _measure(threads, queries, rows):
         connection.execute(
             f"CREATE TABLE fixture AS SELECT i % {PERIOD} AS value FROM range(?) t(i)", [rows])
         connection.execute(f"SET threads = {threads}")
-        effective = connection.execute("SELECT current_setting('threads')").fetchone()[0]
+        effective = connection.execute("SELECT current_setting('threads')").fetchall()[0][0]
         expected = expected_result(rows)
         if connection.sql(QUERY).fetchall() != expected:
             raise AssertionError("Warmup aggregate differs from the independent reference")

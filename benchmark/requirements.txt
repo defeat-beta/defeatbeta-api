@@ -1,5 +1,5 @@
 # Harness-only dependencies, separate from the product environments.
 hypercorn==0.17.3
-duckdb==2.0.0.dev2610011535
+duckdb==2.0.0.dev2610151406
 httpx[http2]==0.28.1
 psutil==7.0.0

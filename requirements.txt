@@ -1,4 +1,4 @@
-duckdb == 2.0.0.dev2610011535
+duckdb == 2.0.0.dev2610151406
 fsspec >= 2025.1.0
 httpx[http2,socks] == 0.28.1
 httpcore[asyncio] == 1.0.9

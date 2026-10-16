@@ -406,7 +406,7 @@ class TestDuckDBClient(unittest.TestCase):
                     config = Configuration(cache_directory=directory)
                     client = get_duckdb_client(config=config)
                     assert get_duckdb_client(config=config) is client
-                    assert client.connection.sql("SELECT 42").fetchone() == (42,)
+                    assert client.connection.sql("SELECT 42").fetchall() == [(42,)]
                     original_close = client.close
 
                     def close():

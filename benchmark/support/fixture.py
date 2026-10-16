@@ -7,7 +7,7 @@ from pathlib import Path
 from benchmark.common import SYMBOLS, save_json
 
 
-GENERATOR_DUCKDB = "2.0.0.dev2610011535"
+GENERATOR_DUCKDB = "2.0.0.dev2610151406"
 FIXTURE_VERSION = "2026-01-01T00:00:00Z"
 
 
