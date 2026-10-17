@@ -8,6 +8,7 @@ cache states, correctness checks, and report lifecycle.
 | --- | --- |
 | `plan.py` | Discover every query operation, freeze parameters and sample tickers, build the complete Cartesian workload and twelve phases. |
 | `backend.py` | Prepare isolated real product caches, discover body identifiers, record data identity, and observe cache misses. |
+| `cache.py` | Prepare complete native cache seeds, validate coverage and checksums, and restore isolated active caches. |
 | `execution.py` | Materialize public API calls, time them, warm exact tasks, distribute identical work, and retain every outcome. |
 
 The fixed sample is AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, and WMT. These
@@ -31,9 +32,12 @@ current maintainer-approved list. The temporary calibration command and workflow
 are retired. Further measurements use the main CLI and per-phase GitHub jobs.
 
 Correctness tests cover new API discovery, frozen arguments, complete ledgers,
-bounded all-hit preparation using the measurement concurrency, timing boundaries,
+complete-file cache preparation using the measurement concurrency, timing boundaries,
 partial outcomes, and real Parquet cache integration. A changing-read-footprint
-fixture verifies that newly required ranges are fetched before measurement.
-Preparation has at most eight passes and records a complete task ledger for each
-pass. A zero-request preparation pass is mandatory; formal measurement is never
-retried to replace a cache miss. Official performance timings come from GitHub, not workstation runs.
+fixture covers a zero-request replay followed by a previously unseen byte range.
+Complete seed coverage makes that range local too. One exact-work warmup records
+a complete task ledger and must have zero requests. Formal measurement is never
+retried to replace a cache miss. Tests reject coverage gaps, corrupt blocks,
+insufficient disk space, identity changes, and shared mutable metadata. Optional
+released-source integration verifies the original 0.0.62/DuckDB 1.5.3 environment.
+Official performance timings come from GitHub, not workstation runs.

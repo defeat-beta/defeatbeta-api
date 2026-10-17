@@ -80,6 +80,10 @@ def generate(directory):
             'STORY' type, 'https://example.test/article/' || i link,
             [struct_pack(highlight := 'Business update', paragraph := repeat(md5(symbol || i), 200))] news
             FROM symbols, range(4) t(i) ORDER BY symbol, i""")
+        save_json(directory / "company_tickers.json", {"data": {
+            str(i): {"cik_str": i + 1, "ticker": symbol, "title": symbol + " Corporation",
+                     "financial_currency": "USD"}
+            for i, symbol in enumerate((*SYMBOLS, "SPY"))}})
         spec = {"update_time": FIXTURE_VERSION, "footer_index": identities}
         save_json(directory / "spec.json", spec)
         manifest = {"generator_duckdb": GENERATOR_DUCKDB, "version": 1, "files": identities,

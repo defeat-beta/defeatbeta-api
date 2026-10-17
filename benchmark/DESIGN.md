@@ -18,25 +18,30 @@ valid results. Unexpected failures invalidate acceptance.
 ## Cache and timing boundaries
 
 Individual latency has two states: independent cold query cache, and exact-task
-warmup followed by a repeat call. Query clients and project caches are reset
+complete-file cache preparation plus one exact-task warmup followed by a repeat call. Query clients and project caches are reset
 between individual tasks. Ticker construction is outside API timing and is
 recorded separately. HTTP lifecycle remains the product's responsibility.
 
 Throughput has the same two states at concurrency 1/4/16/64/128. A cold batch
 starts with one empty shared query cache; sharing within the batch is intentional.
-A cached batch prepares all of W with the same worker count as measurement;
-individual latency preparation runs on the caller thread. Each preparation pass
-executes the complete declared work and drains prefetch. The first complete pass
-with zero query-data requests establishes readiness, with an eight-pass safety
-limit. Retain each pass ledger, request count, duration, execution mode, and
-concurrency. Errors, interruption, or nonconvergence prevent valid measurement.
+For cached phases, download complete current US dataset files and the company
+catalog using the selected product's own cachefs. Validate every native block's
+length and digest and prove continuous coverage of every file. Retain a seed
+with dataset identity, per-file coverage, block checksums, and preparation time.
+Prepare one seed per variant/phase/round; reuse its immutable block contents via
+hard links. Mutable metadata is copied into each isolated active cache, with
+independent locks. Verify identity before and after warmup and measurement and
+recheck seed contents once afterward. Insufficient space or incomplete preparation
+fails the phase instead of silently falling back to partial caching.
 
-The formal measurement executes once after readiness. A miss during measurement
-still invalidates the scenario; it never causes resampling or an omitted attempt.
-All preparation passes and hashing remain outside API and batch timing.
-Generous equal capacities prevent budget eviction; actual disk capacity and observed cache misses remain
-validity checks. Local disk hits qualify alongside memory hits. Native DuckDB
-file caching follows each product's defaults and is recorded.
+A cached batch warms all of W once with the measurement worker count. Individual
+latency warms its exact task once on the caller thread after restoring a new
+active cache and query client. Drain pending reads and require zero data requests
+in warmup and measurement. Keep complete preparation ledgers. Never resample a
+measured miss. All setup and hashing remain outside timed intervals. This models
+fully prepared local files; it does not claim normal repeated calls have a fixed
+read footprint. Memory and disk hits qualify. Native DuckDB file caching follows
+each product's defaults and is recorded.
 
 API latency includes complete materialization, internal retries, and waiting.
 Warmup, constructor, and result hashing are outside that interval. Throughput
@@ -62,7 +67,9 @@ Current remote data can change daily and historical revisions can disappear.
 Observe file/footer identity at measurement time. Require result equality when
 inputs match; changed-data pairs retain evidence but receive no faster/slower
 verdict. Hash full row multisets and column names without rounding away numeric
-differences, outside timed API intervals.
+differences, outside timed API intervals. Source identity covers Python, SQL,
+and packaged runtime resources. A release baseline retains its own declared
+DuckDB version instead of inheriting the candidate's engine.
 
 ## Evidence and interpretation
 
@@ -73,7 +80,11 @@ Combine exactly one copy of all phases from one workflow attempt. Incomplete
 jobs, wrong capacities, missing applicability, and errors cannot become success.
 
 Report every ticker/method and all concurrency levels, preserving unfavorable
-results. Per-case paired reduction is 100 * (1 - median(candidate / baseline)).
+results. Invalid measurements do not abort metrics from other valid phases.
+Same-input result mismatches remain acceptance errors. Preserve their raw timings,
+but suppress speed verdicts for the differing queries and any containing batch.
+Do not relax fingerprints to hide intended correctness fixes or numeric changes.
+Per-case paired reduction is 100 * (1 - median(candidate / baseline)).
 Six or more pairs permit a seeded 2,000-resample bootstrap interval for that
 ratio. These intervals are per case without multiplicity correction and are not
 a universal performance guarantee. Smaller samples show exploratory medians.

@@ -11,6 +11,7 @@ from unittest.mock import patch
 import psutil
 
 from benchmark.e2e import plan
+from benchmark.e2e.cache import CompleteCache
 
 
 class ProductBackend:
@@ -28,6 +29,8 @@ class ProductBackend:
         self.memory_capacity = min(512 * 1024**2, psutil.virtual_memory().total // 16)
         self.initial_free_bytes = shutil.disk_usage(self.directory).free
         self._config = None
+        self.seed = CompleteCache(self.directory / "complete-seed")
+        self.restored_seed = None
 
     def close(self):
         from defeatbeta_api.client import duckdb_client
@@ -39,7 +42,7 @@ class ProductBackend:
             client.close()
         self._tickers.clear()
 
-    def reset(self):
+    def reset(self, *, cached=False):
         self.close()
         try:
             shared = importlib.import_module("defeatbeta_api.client.shared_resources")
@@ -51,12 +54,44 @@ class ProductBackend:
         if self.cache_directory.exists():
             shutil.rmtree(self.cache_directory)
         self.cache_directory.mkdir()
+        self.restored_seed = self.seed.restore(self.cache_directory) if cached else None
         if shutil.disk_usage(self.directory).free < 512 * 1024**2:
             raise RuntimeError("Insufficient disk space to prepare a valid cache scenario")
         self._config = self._configuration(
             cache_directory=str(self.cache_directory),
             cache_data_disk_limit_bytes=(self.workload or {}).get("cache_capacity_bytes", 2**60),
             cache_data_memory_limit_bytes=self.memory_capacity)
+
+    def dataset(self):
+        if not self._tickers:
+            return {}
+        return {"update_time": self.client._data_update_time,
+                "footer_index": self.client._footer_index}
+
+    def prepare_seed(self):
+        if self.seed.evidence is not None:
+            return self.seed.evidence
+        self.reset()
+        # Use the product type directly so test wrappers cannot omit input files.
+        self._tickers[self.workload["symbols"][0]] = self._ticker(
+            self.workload["symbols"][0], config=self._config, log_level=logging.WARNING)
+        ticker = next(iter(self._tickers.values()))
+        dataset = self.dataset()
+        urls = [ticker.huggingface_client.get_url_path(Path(relative).stem)
+                for relative in dataset["footer_index"]
+                if relative.startswith("US/") and relative.endswith(".parquet")]
+        if not urls:
+            raise ValueError("Complete cache preparation requires a dataset file index")
+        urls.append(ticker.company_meta.company_tickers_url)
+        evidence = self.seed.build(self.client._dataset_fs, urls, dataset)
+        self.close()
+        return evidence
+
+    def cache_identity(self):
+        self.seed.assert_identity(self.dataset())
+        if self.restored_seed != self.seed.evidence["sha256"]:
+            raise ValueError("Active cache was not restored from the validated seed")
+        return self.restored_seed
 
     def ticker(self, symbol):
         if self._config is None:
@@ -101,7 +136,7 @@ class ProductBackend:
                 "free_disk_bytes_at_start": self.initial_free_bytes,
                 "disk_policy": "No budget eviction; physical capacity and measured misses remain validity checks",
                 "native_file_cache": self.client.connection.execute(
-                    "SELECT current_setting('enable_external_file_cache')").fetchone()[0]}
+                    "SELECT current_setting('enable_external_file_cache')").fetchone()[0] if self._tickers else None}
 
 
 def discover(backend):

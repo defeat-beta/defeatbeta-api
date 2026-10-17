@@ -34,18 +34,26 @@ The complete Cartesian workload is unchanged across worker counts:
 
 | Metric | Scenarios | Preparation |
 | --- | --- | --- |
-| Individual API latency | Cold and cached | Each ticker/method gets its own empty query cache; cached calls first establish a zero-request replay of that exact task. |
+| Individual API latency | Cold and cached | Each ticker/method gets an isolated query cache; cached calls start with complete validated remote-file coverage and one exact-task warmup. |
 | Whole-workload throughput | 1, 4, 16, 64, 128 workers, each cold and cached | Every worker count shares the same complete workload, executing each task once. |
 
 Cold throughput starts with one empty shared query cache and allows natural
-reuse inside the batch. Cache preparation replays the exact individual task, or
-the complete batch at its measurement concurrency, until one complete pass has
-zero query-data requests. It drains prefetch after each pass and stops after at
-most eight passes. Errors or nonconvergence invalidate preparation. The formal
-measurement then runs once and still requires zero query-data cache misses; a
-measured miss is retained and never replaced with a later successful attempt. Capacity is deliberately
-generous: memory or disk hits qualify as local hits. Physical disk space remains
-a validity condition, rather than a guarantee from the logical cache budget.
+reuse inside the batch. For cached phases, the framework uses each version's own
+cachefs to download complete current US dataset files, including the company
+catalog, outside timing. It checks native block digests and continuous byte
+coverage, then retains one seed per variant/phase/round. Each independent active
+cache hard-links immutable block contents and copies mutable metadata; locks are
+not shared. File checksums, coverage, dataset identity, and preparation duration
+are retained in the evidence. Seed contents are revalidated after measurement.
+
+One API warmup executes the exact task, or the whole batch at the target worker
+count, and drains pending reads. Both warmup and measurement must have zero
+query-data downloads. Any failure, data identity change, insufficient physical
+space, or subsequent measured miss invalidates the scenario. Measured attempts
+are never replaced. This is **fully prepared local-cache performance**, not a
+promise that an ordinary second call has already cached every possible prefetch
+range. Memory and disk hits both qualify. Product and native DuckDB cache defaults
+are unchanged; only benchmark capacity is deliberately generous.
 
 API timing ends after full result materialization. Ticker initialization is
 recorded separately; warmup and result hashing are outside API timing. Batch
@@ -64,7 +72,10 @@ paired changes rather than absolute numbers across jobs.
 
 The report job verifies that every phase, round, version, and applicable task is
 present. Missing tasks, errors, invalid cache hits, changed harnesses or dependency
-locks, and same-input result mismatches invalidate acceptance. Daily data changes
+locks, and same-input result mismatches invalidate acceptance. Validation failures
+in one phase do not hide valid metrics from other phases. Result mismatches retain
+raw timings but suppress the affected query's speed verdict and its batch's
+throughput verdict; unaffected queries remain comparable. Daily data changes
 are accepted and recorded; affected pairs remain inconclusive.
 
 Every run produces development evidence in Actions Summary and 30-day artifacts.
@@ -93,7 +104,10 @@ python -m benchmark compare --candidate HEAD \
   --plan /tmp/e2e-plan-001/plan.json --output /tmp/e2e-first-001 --rounds 1
 ```
 
-Add `--baseline <old-ref>` for a comparison. `--phase throughput.cached.16`
+Add `--baseline release-0.0.62` to compare against the published 0.0.62 release.
+Its original DuckDB 1.5.3 dependency remains isolated from the candidate's declared
+DuckDB dependency. The harness never upgrades the baseline to the candidate's
+engine version. Source identity includes runtime SQL and packaged resources. `--phase throughput.cached.16`
 selects one phase for development; partial runs cannot be finalized. Output
 directories must be new. Reuse isolated environments using `python -m benchmark
 run --experiment PATH --plan PLAN`. Changes to product sources, installed

@@ -46,10 +46,11 @@ def run(payload):
                     result = measure_latency(workload, backend, phase["state"], emit=emit)
             else:
                 result = measure_throughput(workload, backend, phase["state"], phase["concurrency"])
+            if phase["state"] == "cached":
+                backend.seed.validate()
             result["cache_settings"] = backend.settings()
             result["api_coverage"] = available
-            result["observed_dataset"] = {"update_time": backend.client._data_update_time,
-                                          "footer_index": backend.client._footer_index}
+            result["observed_dataset"] = backend.dataset()
             return result
         finally:
             backend.close()

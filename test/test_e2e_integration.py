@@ -3,7 +3,9 @@
 from contextlib import redirect_stdout
 import io
 import os
+import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -14,6 +16,22 @@ from benchmark.e2e import execution, plan
 from benchmark.support.fixture import generate
 from benchmark.support.server import serve_fixture
 from benchmark import common
+
+
+class TestWorkerFailures(unittest.TestCase):
+    def test_initialization_errors_keep_the_original_task_ledger(self):
+        from benchmark.worker import run
+
+        workload = plan.build_plan([{"ticker": "PDD"}], {"price": {"call": "price", "kwargs": {}}})
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(ProductBackend, "ticker", side_effect=RuntimeError("Expected initialization failure")):
+            result = run({"source": str(common.ROOT), "source_hashes": common.source_hashes(),
+                          "dependencies": common.environment_info()["dependencies"], "action": "measure",
+                          "plan": workload, "cache_directory": temporary,
+                          "phase": {"kind": "latency", "state": "cold", "concurrency": 1}})
+        self.assertEqual(result["status"], "query_errors")
+        self.assertEqual(result["results"][0]["stage"], "initialization")
+        self.assertEqual(result["results"][0]["error"], "Expected initialization failure")
 
 
 @unittest.skipUnless(os.environ.get("DEFEATBETA_RUN_BENCHMARK_TLS_TESTS") == "1",
@@ -46,7 +64,7 @@ class TestE2ECacheIntegration(unittest.TestCase):
 
                         def price(self):
                             self.calls += 1
-                            start = 2048 if self.calls == 2 else 8
+                            start = 2048 if self.calls >= 3 else 8
                             filesystem.cat_file(path, start=start, end=start + 32)
                             return {"value": 1}
 
@@ -58,17 +76,58 @@ class TestE2ECacheIntegration(unittest.TestCase):
                     with patch.object(backend, "ticker", ticker):
                         latency = execution.measure_latency(workload, backend, "cached")
                         batch = execution.measure_throughput(workload, backend, "cached", 4)
+                        with backend.probe() as probe:
+                            observed[-1].price()
+                            backend.drain()
+                        self.assertEqual(probe["misses"], 0)
                     self.assertEqual(latency["status"], "complete", latency)
                     self.assertEqual(batch["status"], "complete", batch)
                     preparations = [latency["results"][0]["cache_preparation"], batch["cache_preparation"]]
                     for preparation in preparations:
-                        self.assertEqual([p["cache_misses"] for p in preparation["passes"]], [1, 1, 0])
-                    self.assertEqual([instance.calls for instance in observed], [4, 4])
+                        self.assertEqual([p["cache_misses"] for p in preparation["passes"]], [0])
+                    self.assertEqual([instance.calls for instance in observed], [2, 3])
                     self.assertEqual(latency["cache_misses"], 0)
                     self.assertEqual(batch["cache_misses"], 0)
                 finally:
                     backend.close()
                     close_network_resources()
+
+    @unittest.skipUnless(os.environ.get("DEFEATBETA_BENCHMARK_BASELINE_PYTHON"),
+                         "Set the released baseline interpreter and source for compatibility")
+    def test_released_product_uses_its_original_duckdb_and_complete_cache(self):
+        source = Path(os.environ["DEFEATBETA_BENCHMARK_BASELINE_SOURCE"]).resolve()
+        python = os.environ["DEFEATBETA_BENCHMARK_BASELINE_PYTHON"]
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            generate(directory / "fixture")
+            workload = plan.build_plan([{"ticker": "PDD"}, {"ticker": "BABA"}],
+                                      {"price": {"call": "price", "kwargs": {}}})
+            with serve_fixture(directory / "fixture", directory) as server:
+                env = {**os.environ, "PYTHONPATH": str(common.ROOT),
+                       "SSL_CERT_FILE": server["certificate"],
+                       "REQUESTS_CA_BUNDLE": server["certificate"],
+                       "NO_PROXY": "localhost,127.0.0.1", "no_proxy": "localhost,127.0.0.1"}
+                dependencies = json.loads(subprocess.check_output([python, "-c",
+                    "import json; from benchmark.common import environment_info; print(json.dumps(environment_info()['dependencies']))"],
+                    cwd=source, env=env, text=True))
+                self.assertEqual(dependencies["duckdb"], "1.5.3")
+                for index, phase in enumerate([plan.phases()[0], plan.phases()[1], plan.phases()[-1]]):
+                    payload = {"source": str(source), "source_hashes": common.source_hashes(source),
+                               "dependencies": dependencies, "endpoint": server["url"],
+                               "action": "measure", "plan": workload, "phase": phase,
+                               "cache_directory": str(directory / f"baseline-{index}")}
+                    result = subprocess.run([python, "-m", "benchmark.worker"], cwd=source, env=env,
+                        input=json.dumps(payload), capture_output=True, text=True, timeout=180)
+                    marker = "BENCHMARK_RESULT="
+                    outcome = json.loads(next(line[len(marker):] for line in result.stdout.splitlines()
+                                              if line.startswith(marker)))
+                    progress = directory / "progress.jsonl"
+                    self.assertEqual(outcome["status"], "complete",
+                                     (phase, outcome, progress.read_text() if progress.exists() else result.stderr))
+                    self.assertEqual(outcome["completed_tasks"], 2)
+                    if phase["state"] == "cached":
+                        self.assertEqual(outcome["cache_misses"], 0)
+                        self.assertEqual(outcome["cache_seed"]["strategy"], "complete_files")
 
     def test_cold_queries_are_isolated_and_complete_warm_work_hits_local_cache(self):
         from defeatbeta_api.client.shared_resources import close_network_resources

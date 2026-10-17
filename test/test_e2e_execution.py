@@ -34,10 +34,19 @@ class FakeBackend:
         self.miss, self.fail = False, None
         self.counts, self.miss_on_calls = Counter(), {}
         self.guard, self.on_call = Lock(), None
+        self.seed_preparations, self.restores = 0, 0
 
-    def reset(self):
+    def reset(self, *, cached=False):
+        self.restores += int(cached)
         self.resets += 1
         self.counts.clear()
+
+    def prepare_seed(self):
+        self.seed_preparations += 1
+        return {"sha256": "seed"}
+
+    def cache_identity(self):
+        return "seed"
 
     def ticker(self, symbol):
         return FakeTicker(symbol, self)
@@ -61,28 +70,29 @@ def sample_plan():
 
 
 class TestE2EExecution(unittest.TestCase):
-    def test_cached_latency_waits_for_zero_requests_before_measurement(self):
+    def test_cached_latency_restores_one_complete_seed_for_each_task(self):
         backend = FakeBackend()
-        backend.miss_on_calls = {symbol: {1, 2} for symbol in ("A", "B")}
         result = execution.measure_latency(sample_plan(), backend, "cached")
         self.assertEqual(result["status"], "complete")
-        self.assertEqual(backend.calls, ["A"] * 4 + ["B"] * 4)
+        self.assertEqual(backend.calls, ["A"] * 2 + ["B"] * 2)
+        self.assertEqual(backend.seed_preparations, 1)
+        self.assertEqual(backend.restores, 2)
         for row in result["results"]:
             preparation = row["cache_preparation"]
             self.assertEqual(preparation["status"], "ready")
-            self.assertEqual([p["cache_misses"] for p in preparation["passes"]], [1, 1, 0])
+            self.assertEqual([p["cache_misses"] for p in preparation["passes"]], [0])
             self.assertEqual(row["cache_misses"], 0)
 
-    def test_cached_throughput_replays_the_complete_work_until_ready(self):
+    def test_cached_throughput_warms_the_complete_work_once(self):
         backend = FakeBackend()
-        backend.miss_on_calls = {symbol: {1, 2} for symbol in ("A", "B")}
         result = execution.measure_throughput(sample_plan(), backend, "cached", 4)
         self.assertEqual(result["status"], "complete")
-        self.assertEqual(len(backend.calls), 8)
+        self.assertEqual(len(backend.calls), 4)
+        self.assertEqual(backend.seed_preparations, 1)
         preparation = result["cache_preparation"]
         self.assertEqual(preparation["concurrency"], 4)
         expected = {task["id"] for task in plan.tasks(sample_plan())}
-        self.assertEqual([p["cache_misses"] for p in preparation["passes"]], [2, 2, 0])
+        self.assertEqual([p["cache_misses"] for p in preparation["passes"]], [0])
         for attempt in preparation["passes"]:
             self.assertEqual(set(attempt["task_ids"]), expected)
         self.assertEqual(result["completed_tasks"], 2)
@@ -125,12 +135,11 @@ class TestE2EExecution(unittest.TestCase):
 
     def test_batch_timing_excludes_all_preparation_passes(self):
         backend = FakeBackend()
-        backend.miss_on_calls = {symbol: {1, 2} for symbol in ("A", "B")}
         clock = [0.0]
         backend.on_call = lambda: clock.__setitem__(0, clock[0] + 1)
         with patch.object(execution.time, "perf_counter", side_effect=lambda: clock[0]):
             result = execution.measure_throughput(sample_plan(), backend, "cached", 4)
-        self.assertEqual(result["preparation_seconds"], 6)
+        self.assertEqual(result["preparation_seconds"], 2)
         self.assertEqual(result["wall_seconds"], 2)
 
     def test_all_pairs_are_warmed_before_cached_throughput(self):

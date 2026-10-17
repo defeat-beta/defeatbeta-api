@@ -9,7 +9,7 @@ from benchmark.common import canonical, distribution, redact_secrets, result_fin
 from benchmark.e2e import plan
 
 
-MAX_CACHE_PREPARATION_PASSES = 8
+MAX_CACHE_PREPARATION_PASSES = 1
 
 
 def invoke(ticker, task):
@@ -86,11 +86,12 @@ def run_calls(tasks, tickers, concurrency, stop):
 
 
 def prepare_cache(tasks, tickers, backend, concurrency, stop):
-    """Require a complete zero-request replay, with a fixed safety limit."""
+    """Warm the exact work once on a validated complete-file disk cache."""
     started = time.perf_counter()
     preparation = {"status": "not_ready", "concurrency": concurrency or 1,
                    "execution": "caller" if concurrency is None else "thread_pool",
-                   "max_passes": MAX_CACHE_PREPARATION_PASSES, "passes": [], "errors": []}
+                   "max_passes": MAX_CACHE_PREPARATION_PASSES, "passes": [], "errors": [],
+                   "seed_sha256": backend.cache_identity()}
 
     def finish(status):
         preparation.update(status=status, elapsed_seconds=time.perf_counter() - started)
@@ -118,6 +119,7 @@ def prepare_cache(tasks, tickers, backend, concurrency, stop):
             return finish("warmup_errors")
         if len(rows) != len(tasks) or stop():
             return finish("incomplete")
+        backend.cache_identity()
         if probe["misses"] == 0:
             return finish("ready")
     return finish("not_ready")
@@ -127,6 +129,7 @@ def measure_latency(workload, backend, state, *, emit=None, stop=lambda: False):
     plan.validate_plan(workload)
     if state not in ("cold", "cached"):
         raise ValueError("Unknown cache state")
+    seed = backend.prepare_seed() if state == "cached" else None
     rows, misses, preparation_failed = [], 0, False
     started = time.perf_counter()
     for task in plan.tasks(workload):
@@ -135,7 +138,7 @@ def measure_latency(workload, backend, state, *, emit=None, stop=lambda: False):
         if "not_applicable" in task:
             row = call(None, task)
         else:
-            backend.reset()
+            backend.reset(cached=state == "cached")
             initialized = time.perf_counter()
             try:
                 ticker = backend.ticker(task["symbol"])
@@ -167,6 +170,8 @@ def measure_latency(workload, backend, state, *, emit=None, stop=lambda: False):
                     with backend.probe() as probe:
                         row = call(ticker, task)
                         backend.drain()
+                    if state == "cached":
+                        backend.cache_identity()
                     row["initialization_seconds"] = initialization
                     row["cache_misses"] = probe["misses"]
                     if state == "cached":
@@ -179,6 +184,8 @@ def measure_latency(workload, backend, state, *, emit=None, stop=lambda: False):
             emit(row)
     result = summarize(workload, rows, time.perf_counter() - started, misses,
                        complete=len(rows) == workload["task_count"])
+    if seed is not None:
+        result["cache_seed"] = seed
     if state == "cached" and (misses or preparation_failed):
         result["status"] = "invalid_cache"
     return result
@@ -188,7 +195,8 @@ def measure_throughput(workload, backend, state, concurrency, *, stop=lambda: Fa
     plan.validate_plan(workload)
     if state not in ("cold", "cached") or concurrency not in plan.CONCURRENCIES:
         raise ValueError("Invalid throughput scenario")
-    backend.reset()
+    seed = backend.prepare_seed() if state == "cached" else None
+    backend.reset(cached=state == "cached")
     initialization = time.perf_counter()
     tickers = {symbol: backend.ticker(symbol) for symbol in workload["symbols"]}
     initialization = time.perf_counter() - initialization
@@ -202,7 +210,7 @@ def measure_throughput(workload, backend, state, concurrency, *, stop=lambda: Fa
             return {**summarize(workload, [], 0, 0, complete=False), "status": status,
                     "stage": "cache_preparation", "warmup_errors": preparation["errors"],
                     "cache_preparation": preparation, "initialization_seconds": initialization,
-                    "preparation_seconds": preparation["elapsed_seconds"]}
+                    "preparation_seconds": preparation["elapsed_seconds"], "cache_seed": seed}
 
     with backend.probe() as probe:
         started = time.perf_counter()
@@ -217,6 +225,8 @@ def measure_throughput(workload, backend, state, concurrency, *, stop=lambda: Fa
                   preparation_seconds=preparation["elapsed_seconds"] if preparation else 0)
     if preparation is not None:
         result["cache_preparation"] = preparation
+        result["cache_seed"] = seed
+        backend.cache_identity()
     if state == "cached" and probe["misses"]:
         result["status"] = "invalid_cache"
     return result

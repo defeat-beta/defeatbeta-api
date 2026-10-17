@@ -165,7 +165,7 @@ def measure(args):
     workload = json.loads(args.plan.read_text())
     plan.validate_plan(workload)
     selected = [phase for phase in plan.phases() if not args.phase or phase["id"] == args.phase]
-    record = {"schema_version": 2, "stage": "development", "status": "running",
+    record = {"schema_version": 3, "stage": "development", "status": "running",
               "workflow": {key: os.environ.get(value) for key, value in (
                   ("repository", "GITHUB_REPOSITORY"), ("run_id", "GITHUB_RUN_ID"),
                   ("run_attempt", "GITHUB_RUN_ATTEMPT"), ("sha", "GITHUB_SHA"))},

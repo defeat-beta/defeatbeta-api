@@ -63,12 +63,38 @@ def positive(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
 
 
-def validate_preparation(preparation, tasks, phase):
+def validate_seed(seed):
+    if not isinstance(seed, dict) or seed.get("strategy") != "complete_files" or seed.get("status") != "ready":
+        raise ValueError("Missing complete-file cache seed evidence")
+    content = {key: value for key, value in seed.items() if key != "sha256"}
+    if seed.get("sha256") != plan.checksum(content) or not seed.get("dataset"):
+        raise ValueError("Invalid complete-file cache seed identity")
+    manifest = seed.get("manifest", {})
+    if not manifest or seed.get("manifest_sha256") != plan.checksum(manifest):
+        raise ValueError("Invalid cache seed block manifest")
+    files = seed.get("files", [])
+    if (not files or len({row["file"] for row in files}) != len(files)
+            or any(type(row.get("size")) is not int or row["size"] <= 0
+                   or row.get("covered_bytes") != row["size"]
+                   or not positive(row.get("validated_extents")) for row in files)
+            or seed.get("total_bytes") != sum(row["size"] for row in files)):
+        raise ValueError("Incomplete cache seed coverage")
+    expected = {relative: identity["file_size"]
+                for relative, identity in seed["dataset"].get("footer_index", {}).items()
+                if relative.startswith("US/") and relative.endswith(".parquet")}
+    actual = {row["file"]: row["size"] for row in files}
+    if any(actual.get(name) != size for name, size in expected.items()):
+        raise ValueError("Cache seed omits a declared dataset file")
+    return seed["sha256"]
+
+
+def validate_preparation(preparation, tasks, phase, seed_sha256):
     if (not isinstance(preparation, dict) or preparation.get("status") != "ready"
             or preparation.get("concurrency") != phase["concurrency"]
             or preparation.get("execution") != ("caller" if phase["kind"] == "latency" else "thread_pool")
             or preparation.get("max_passes") != MAX_CACHE_PREPARATION_PASSES
-            or preparation.get("errors") != []):
+            or preparation.get("errors") != []
+            or preparation.get("seed_sha256") != seed_sha256):
         raise ValueError("Missing or inconsistent cache preparation evidence")
     passes = preparation.get("passes")
     if not isinstance(passes, list) or not 1 <= len(passes) <= MAX_CACHE_PREPARATION_PASSES:
@@ -94,6 +120,12 @@ def validate_measurement(workload, phase, value):
         raise ValueError("Missing observed data identity")
     if value.get("api_coverage") != workload["methods"]:
         raise ValueError("Actual public API coverage differs from the frozen workload")
+    seed_sha256 = None
+    if phase["state"] == "cached":
+        seed = value.get("cache_seed")
+        seed_sha256 = validate_seed(seed)
+        if seed["dataset"] != value["observed_dataset"]:
+            raise ValueError("Measured dataset differs from the prepared cache seed")
     declared = {task["id"]: task for task in plan.tasks(workload)}
     for row in value["results"]:
         task = declared[row["id"]]
@@ -108,7 +140,7 @@ def validate_measurement(workload, phase, value):
             if not positive(row.get("initialization_seconds")):
                 raise ValueError("Missing constructor timing")
             if phase["state"] == "cached":
-                validate_preparation(row.get("cache_preparation"), [task], phase)
+                validate_preparation(row.get("cache_preparation"), [task], phase, seed_sha256)
     successful = sum(row["status"] == "ok" for row in value["results"])
     if (value.get("completed_tasks") != workload["task_count"]
             or value.get("successful_tasks") != successful
@@ -124,7 +156,7 @@ def validate_measurement(workload, phase, value):
         raise ValueError("All-hit scenario contains query-data misses")
     if phase["kind"] == "throughput":
         if phase["state"] == "cached":
-            validate_preparation(value.get("cache_preparation"), list(declared.values()), phase)
+            validate_preparation(value.get("cache_preparation"), list(declared.values()), phase, seed_sha256)
         if not positive(value.get("wall_seconds")):
             raise ValueError("Invalid batch duration")
         expected = successful / value["wall_seconds"]
@@ -149,7 +181,7 @@ def metric(identifier, kind, samples, changed=False):
 
 def summarize(record):
     errors, rows, groups = [], [], {}
-    if record.get("schema_version") != 2:
+    if record.get("schema_version") != 3:
         return {"valid": False, "errors": ["Unsupported evidence schema"], "cases": []}
     try:
         workload = record["plan"]
@@ -172,49 +204,59 @@ def summarize(record):
         if set(groups) != expected:
             raise ValueError("Missing phase/round/variant measurement")
         for phase in phases:
-            trials, changed = [], False
-            for number in range(1, rounds + 1):
-                values = {variant: groups[phase["id"], number, variant] for variant in variants}
-                for value in values.values():
-                    validate_measurement(workload, phase, value)
-                if len(values) == 2:
-                    a, b = values["baseline"], values["candidate"]
-                    for setting in ("disk_limit_bytes", "memory_limit_bytes"):
-                        if a["cache_settings"][setting] != b["cache_settings"][setting]:
-                            raise ValueError("Paired cache capacities differ")
-                    same_data = a.get("observed_dataset") == b.get("observed_dataset")
-                    if not a.get("observed_dataset") or not b.get("observed_dataset"):
-                        raise ValueError("Missing observed data identity")
-                    changed |= not same_data
-                    fingerprints = [{r["id"]: r.get("fingerprint") for r in value["results"]}
-                                    for value in (a, b)]
-                    if same_data and fingerprints[0] != fingerprints[1]:
-                        raise ValueError(f"Result mismatch: {phase['id']} round {number}")
-                trials.append(values)
-            if phase["kind"] == "throughput":
-                samples = [{variant: value["wall_seconds"] for variant, value in trial.items()} for trial in trials]
-                row = metric(phase["id"], "throughput", samples, changed)
-                row["calls_per_second"] = {variant: statistics.median(
-                    trial[variant]["successful_calls_per_second"] for trial in trials) for variant in variants}
-                row["p95_seconds"] = {variant: statistics.median(
-                    percentile([r["seconds"] for r in trial[variant]["results"] if r["status"] == "ok"], .95)
-                    for trial in trials) for variant in variants}
-                rows.append(row)
-            else:
-                indexed = [{variant: {r["id"]: r for r in value["results"]}
-                            for variant, value in trial.items()} for trial in trials]
-                for task in plan.tasks(workload):
-                    if "not_applicable" in task:
-                        rows.append({"case": phase["id"] + ":" + task["id"], "kind": "latency",
-                                     "classification": "not_applicable", "medians": {}})
-                        continue
-                    samples = [{variant: trial[variant][task["id"]]["seconds"] for variant in variants}
-                               for trial in indexed]
-                    row = metric(phase["id"] + ":" + task["id"], "latency", samples, changed)
-                    row["initialization_seconds"] = {variant: statistics.median(
-                        trial[variant][task["id"]]["initialization_seconds"] for trial in indexed)
-                        for variant in variants}
+            try:
+                trials, changed, mismatches = [], False, set()
+                for number in range(1, rounds + 1):
+                    values = {variant: groups[phase["id"], number, variant] for variant in variants}
+                    for value in values.values():
+                        validate_measurement(workload, phase, value)
+                    if len(values) == 2:
+                        a, b = values["baseline"], values["candidate"]
+                        for setting in ("disk_limit_bytes", "memory_limit_bytes"):
+                            if a["cache_settings"][setting] != b["cache_settings"][setting]:
+                                raise ValueError("Paired cache capacities differ")
+                        same_data = a.get("observed_dataset") == b.get("observed_dataset")
+                        if not a.get("observed_dataset") or not b.get("observed_dataset"):
+                            raise ValueError("Missing observed data identity")
+                        changed |= not same_data
+                        fingerprints = [{r["id"]: r.get("fingerprint") for r in value["results"]}
+                                        for value in (a, b)]
+                        if same_data and fingerprints[0] != fingerprints[1]:
+                            different = {key for key in fingerprints[0] if fingerprints[0][key] != fingerprints[1][key]}
+                            mismatches.update(different)
+                            errors.append(f"Result mismatch: {phase['id']} round {number}: {sorted(different)}")
+                    trials.append(values)
+                if phase["kind"] == "throughput":
+                    samples = [{variant: value["wall_seconds"] for variant, value in trial.items()} for trial in trials]
+                    row = metric(phase["id"], "throughput", samples, changed)
+                    row["calls_per_second"] = {variant: statistics.median(
+                        trial[variant]["successful_calls_per_second"] for trial in trials) for variant in variants}
+                    row["p95_seconds"] = {variant: statistics.median(
+                        percentile([r["seconds"] for r in trial[variant]["results"] if r["status"] == "ok"], .95)
+                        for trial in trials) for variant in variants}
+                    if mismatches:
+                        row.update(classification="result_mismatch", reduction_percent=None,
+                                   ratio_interval=None, mismatched_tasks=sorted(mismatches))
                     rows.append(row)
+                else:
+                    indexed = [{variant: {r["id"]: r for r in value["results"]}
+                                for variant, value in trial.items()} for trial in trials]
+                    for task in plan.tasks(workload):
+                        if "not_applicable" in task:
+                            rows.append({"case": phase["id"] + ":" + task["id"], "kind": "latency",
+                                         "classification": "not_applicable", "medians": {}})
+                            continue
+                        samples = [{variant: trial[variant][task["id"]]["seconds"] for variant in variants}
+                                   for trial in indexed]
+                        row = metric(phase["id"] + ":" + task["id"], "latency", samples, changed)
+                        row["initialization_seconds"] = {variant: statistics.median(
+                            trial[variant][task["id"]]["initialization_seconds"] for trial in indexed)
+                            for variant in variants}
+                        if task["id"] in mismatches:
+                            row.update(classification="result_mismatch", reduction_percent=None, ratio_interval=None)
+                        rows.append(row)
+            except (KeyError, TypeError, ValueError, IndexError) as exc:
+                errors.append(f"{phase['id']}: {exc}")
     except (KeyError, TypeError, ValueError, IndexError) as exc:
         errors.append(str(exc))
     return {"valid": record.get("status") == "complete" and not errors, "errors": errors, "cases": rows}
@@ -238,7 +280,8 @@ def render(path, release=None):
              "API latency includes full materialization; constructor, warmup, and hashing are outside it.",
              "Cold latency isolates each task. Cold throughput allows natural sharing within one empty-cache batch.",
              "Cached scenarios warm every applicable task and require zero query-data cache misses.",
-             f"Preparation uses the measurement concurrency and stops at the first zero-request pass, with at most {MAX_CACHE_PREPARATION_PASSES} passes.",
+             "Complete remote files are prepared and coverage-validated outside timing; one API warmup uses the measurement concurrency.",
+             "Each isolated cache links immutable seed blocks and copies mutable metadata; this is not ordinary second-call latency.",
              "Preparation is outside timing. Any subsequent measured miss invalidates the scenario; measured calls are never resampled.",
              "Every throughput concurrency executes the same complete Cartesian workload once.", "",
              "## Provenance", "", "| Variant | Commit | DuckDB | Python |", "| --- | --- | --- | --- |"]

@@ -85,7 +85,8 @@ def result_fingerprint(frame):
 
 def source_hashes(root=ROOT):
     return {str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in sorted((Path(root) / "defeatbeta_api").rglob("*.py"))}
+            for path in sorted((Path(root) / "defeatbeta_api").rglob("*"))
+            if path.is_file() and path.suffix in (".py", ".sql", ".json", ".md", ".html")}
 
 
 def environment_info():

@@ -28,7 +28,7 @@ def fake_record(rounds=6, baseline=True):
         "source_hashes": {"product.py": "digest"}, "dependency_lock": "product==1\n",
         "environment": {"dependencies": {"duckdb": "2"}, "python": "3.11", "cpu_count": 4}}
         for name in (("baseline", "candidate") if baseline else ("candidate",))}
-    record = {"schema_version": 2, "status": "complete", "stage": "development", "rounds": rounds,
+    record = {"schema_version": 3, "status": "complete", "stage": "development", "rounds": rounds,
               "phases": plan.phases(), "plan": workload, "records": [],
               "workflow": {"repository": "owner/repo", "run_id": "42", "run_attempt": "1", "sha": "c" * 40},
               "experiment": {"environments": environments, "harness": {}, "harness_dependency_lock": "tool==1\n"}}
@@ -48,10 +48,16 @@ def fake_record(rounds=6, baseline=True):
                          "cache_settings": {"disk_limit_bytes": 2**60, "memory_limit_bytes": 512,
                                             "native_file_cache": True}}
                 if phase["state"] == "cached":
+                    seed = {"strategy": "complete_files", "status": "ready", "dataset": value["observed_dataset"],
+                            "files": [{"file": "US/input.parquet", "size": 100, "covered_bytes": 100,
+                                       "validated_extents": 1}], "total_bytes": 100, "manifest": {"block": {"sha256": "digest", "size": 132}}}
+                    seed["manifest_sha256"] = plan.checksum(seed["manifest"])
+                    seed["sha256"] = plan.checksum(seed)
+                    value["cache_seed"] = seed
                     def preparation(identifiers):
                         return {"status": "ready", "concurrency": phase["concurrency"],
                                 "execution": "caller" if phase["kind"] == "latency" else "thread_pool",
-                                "max_passes": MAX_CACHE_PREPARATION_PASSES, "errors": [],
+                                "max_passes": MAX_CACHE_PREPARATION_PASSES, "errors": [], "seed_sha256": seed["sha256"],
                                 "elapsed_seconds": 1.0, "passes": [{"number": 1,
                                     "task_ids": identifiers, "completed_tasks": len(identifiers),
                                     "successful_tasks": len(identifiers), "not_applicable_tasks": 0,
@@ -67,6 +73,34 @@ def fake_record(rounds=6, baseline=True):
 
 
 class TestBenchmarkContract(unittest.TestCase):
+    def test_invalid_phase_does_not_hide_other_phase_metrics(self):
+        value = fake_record(rounds=1)
+        next(s["measurement"] for s in value["records"]
+             if s["phase"] == "latency.cached")["status"] = "invalid_cache"
+        summary = report.summarize(value)
+        self.assertFalse(summary["valid"])
+        self.assertIn("throughput.cached.128", {row["case"] for row in summary["cases"]})
+
+    def test_result_mismatch_only_blocks_affected_query_and_batch_comparisons(self):
+        value = fake_record()
+        value["records"][0]["measurement"]["results"][0]["fingerprint"] = {"sha256": "different"}
+        summary = report.summarize(value)
+        self.assertFalse(summary["valid"])
+        indexed = {row["case"]: row for row in summary["cases"]}
+        self.assertEqual(indexed['latency.cold:["AAPL","price"]']["classification"], "result_mismatch")
+        self.assertEqual(indexed['latency.cold:["PDD","price"]']["classification"], "faster")
+        self.assertIn("throughput.cached.128", indexed)
+
+    def test_source_identity_includes_runtime_sql(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            product = root / "defeatbeta_api"
+            product.mkdir()
+            (product / "query.sql").write_text("SELECT 1", encoding="utf-8")
+            before = common.source_hashes(root)
+            (product / "query.sql").write_text("SELECT 2", encoding="utf-8")
+            self.assertNotEqual(before, common.source_hashes(root))
+
     def test_cached_report_requires_complete_zero_request_preparation(self):
         mutations = [lambda p: p.update(status="not_ready"),
                      lambda p: p.update(concurrency=128),
@@ -87,6 +121,21 @@ class TestBenchmarkContract(unittest.TestCase):
         measurement = next(s["measurement"] for s in value["records"] if s["phase"] == "latency.cached")
         measurement["results"][0].pop("cache_preparation")
         self.assertFalse(report.summarize(value)["valid"])
+
+    def test_cached_results_require_the_validated_seed_and_matching_identity(self):
+        changes = [lambda m: m.pop("cache_seed"),
+                   lambda m: m["cache_seed"].update(total_bytes=99),
+                   lambda m: m["cache_seed"].update(manifest={}),
+                   lambda m: m["cache_preparation"].update(seed_sha256="another-seed"),
+                   lambda m: m.update(observed_dataset={"update_time": "changed"})]
+        for change in changes:
+            value = fake_record(rounds=1)
+            measurement = next(s["measurement"] for s in value["records"]
+                               if s["phase"] == "throughput.cached.4")
+            change(measurement)
+            summary = report.summarize(value)
+            self.assertFalse(summary["valid"])
+            self.assertIn("throughput.cached.128", {row["case"] for row in summary["cases"]})
 
     def test_timeout_preserves_finished_latency_outcomes(self):
         environment = {"python": "python", "source": "/source", "source_hashes": {},
