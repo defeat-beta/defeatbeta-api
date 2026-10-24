@@ -1,6 +1,16 @@
 Change Log
 ===========
 
+0.0.63
+-------
+- perf: share one process-wide HTTP/2 connection pool across Tickers, dataset files and metadata requests, with a global connection budget, atomic stream reservations and local idle shrinkage; add ``configure_connection_pool()`` and ``get_connection_pool_status()`` [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+- perf: share dataset version checks, CDN resolutions, file sizes, Parquet footers and parsed row-group indexes across clients in one process with single-flight preparation and bounded memory; raise the default ``cache_fetch_workers`` from 3 to 16 [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+- fix: identify cached files by dataset version, file size and footer digest, retry a whole query once when the dataset changes during it, and keep serving queries with the current version when the dataset version check fails [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+- fix: use the latest historical share count for each day in industry valuations (``ASOF JOIN``), so ``industry_pb_ratio``, ``industry_ps_ratio`` and ``industry_ttm_pe`` no longer vary between runs; align paired industry values in one monthly pass [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+- breaking: business requests require HTTP/2 over HTTPS with no HTTP/1.1 fallback; ``httpx`` and ``httpcore`` are pinned to 0.28.1 and 1.0.9; ``http_proxy=""`` now forces direct connections for dataset metadata as well [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+- breaking: retain downloaded extents per dataset version without size-based eviction; ``cache_data_disk_limit_bytes`` is deprecated and ignored, ``resolve_cdn_for_uncached_reads`` is ignored, startup connection prewarm is removed, and ``download_data_performance()`` no longer reports connection-warmup counters [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+- test: replace the benchmarks with an end-to-end concurrency comparison against the previous release on one GitHub runner [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+
 0.0.62
 -------
 - perf: use a single variable-length extent cache, prepare each Parquet footer only when its file is queried, and reuse versioned footer bytes across symbols and process restarts; rebuild the in-memory row-group index from cached footer bytes after restart [`#205 <https://github.com/defeat-beta/defeatbeta-api/issues/205>`_]
