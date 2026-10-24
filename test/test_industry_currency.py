@@ -74,7 +74,18 @@ def subject(scenario="normal"):
     if scenario == "extreme":
         curves["CNY=X"]["close"] = [np.nan, 0.0, 0.0, np.inf]
     ticker.currency = Mock(side_effect=lambda *, symbol: curves[symbol].copy(deep=True))
+    ticker._exchange_rates = Mock(side_effect=lambda symbols: {
+        symbol: curves[symbol].copy(deep=True) for symbol in symbols})
     return ticker
+
+
+def requested_rates(ticker):
+    """Count the rate symbols requested, one entry per batched query."""
+    return Counter(symbol for call in ticker._exchange_rates.call_args_list for symbol in call.args[0])
+
+
+def rate_tables(ticker, *currencies):
+    return ticker._industry_rate_tables(currencies)
 
 
 def decode_frame(saved):
@@ -99,7 +110,7 @@ class TestIndustryCurrency(unittest.TestCase):
                     actual = self.invoke(subject(scenario), method)
                     assert_frame_equal(actual, decode_frame(expected), check_exact=True)
 
-    def test_each_currency_is_queried_and_aligned_once_per_calculation(self):
+    def test_each_calculation_loads_its_rates_in_one_query_and_aligns_once(self):
         for method in [*VALUATIONS, *PAIRS]:
             with self.subTest(method=method):
                 ticker = subject()
@@ -113,20 +124,21 @@ class TestIndustryCurrency(unittest.TestCase):
 
                 with patch("defeatbeta_api.data.ticker.pd.merge_asof", side_effect=merge):
                     self.invoke(ticker, method)
-                self.assertEqual(Counter(c.kwargs["symbol"] for c in ticker.currency.call_args_list),
-                                 {"CNY=X": 1, "EUR=X": 1})
+                ticker._exchange_rates.assert_called_once_with(["CNY=X", "EUR=X"])
+                ticker.currency.assert_not_called()
                 self.assertTrue(all(count == 1 for count in aligned.values()), aligned)
 
     def test_a_new_call_loads_new_rates_and_keeps_date_axes_separate(self):
         ticker = subject()
         first = self.invoke(ticker, "industry_ps_ratio")
-        source = ticker.currency.side_effect
-        ticker.currency.side_effect = lambda **kw: source(**kw).assign(close=lambda df: df.close * 2)
+        source = ticker._exchange_rates.side_effect
+        ticker._exchange_rates.side_effect = lambda symbols: {
+            symbol: frame.assign(close=frame.close * 2) for symbol, frame in source(symbols).items()}
         second = self.invoke(ticker, "industry_ps_ratio")
         self.assertFalse(first.equals(second))
-        self.assertEqual(ticker.currency.call_count, 4)
+        self.assertEqual(ticker._exchange_rates.call_count, 2)
         self.invoke(ticker, "industry_roa")
-        self.assertEqual(ticker.currency.call_count, 6)
+        self.assertEqual(ticker._exchange_rates.call_count, 3)
 
     def test_only_usd_and_missing_currency_do_not_query_rates(self):
         for method in [*VALUATIONS, *PAIRS]:
@@ -134,6 +146,7 @@ class TestIndustryCurrency(unittest.TestCase):
                 ticker = subject()
                 ticker.company_meta.get_financial_currency_map = lambda: {}
                 self.invoke(ticker, method)
+                ticker._exchange_rates.assert_not_called()
                 ticker.currency.assert_not_called()
 
     def test_concurrent_calculations_keep_their_own_rates(self):
@@ -145,41 +158,100 @@ class TestIndustryCurrency(unittest.TestCase):
         for method, actual in zip(METHODS, results):
             assert_frame_equal(actual, decode_frame(snapshots[method]), check_exact=True)
         # Nine direct methods and two composite methods, each with two constituents.
-        self.assertEqual(Counter(c.kwargs["symbol"] for c in ticker.currency.call_args_list),
-                         {"CNY=X": 13, "EUR=X": 13})
+        self.assertEqual(requested_rates(ticker), {"CNY=X": 13, "EUR=X": 13})
+        self.assertEqual(ticker._exchange_rates.call_count, 13)
 
     def test_alignment_preserves_duplicate_dates_and_positional_index(self):
         ticker = subject()
         dates = pd.Series(pd.to_datetime(["2024-01-01", "2024-02-29", "2024-02-29"]),
                           index=[8, 3, 5]).astype("datetime64[us]")
-        cache = {}
-        actual = ticker._industry_currency_rates(dates, "CNY", cache)
+        cache, tables = {}, rate_tables(ticker, "CNY")
+        actual = ticker._industry_currency_rates(dates, "CNY", cache, tables)
         assert_series_equal(actual, pd.Series([np.nan, 7.2, 7.2], name="close"), check_exact=True)
-        self.assertIs(ticker._industry_currency_rates(dates, "CNY", cache), actual)
-        ticker.currency.assert_called_once_with(symbol="CNY=X")
+        self.assertIs(ticker._industry_currency_rates(dates, "CNY", cache, tables), actual)
+        ticker._exchange_rates.assert_called_once_with(["CNY=X"])
 
     def test_empty_alignment_and_invalid_date_order(self):
         ticker = subject()
         empty = pd.Series([], dtype="datetime64[us]")
-        self.assertTrue(ticker._industry_currency_rates(empty, "CNY", {}).empty)
+        self.assertTrue(ticker._industry_currency_rates(empty, "CNY", {}, rate_tables(ticker, "CNY")).empty)
         unsorted = pd.Series(pd.to_datetime(["2024-03-01", "2024-02-01"])).astype("datetime64[us]")
         with self.assertRaisesRegex(ValueError, "sorted"):
-            ticker._industry_currency_rates(unsorted, "USD", {})
+            ticker._industry_currency_rates(unsorted, "USD", {}, {})
         with self.assertRaises(ValueError):
-            ticker._industry_currency_rates(pd.Series([pd.NaT], dtype="datetime64[us]"), "USD", {})
+            ticker._industry_currency_rates(pd.Series([pd.NaT], dtype="datetime64[us]"), "USD", {}, {})
 
-    def test_failed_rate_load_is_not_cached(self):
+    def test_failed_rate_load_fails_the_calculation_and_is_not_cached(self):
         ticker = subject()
-        dates = pd.Series(pd.to_datetime(["2024-03-01"])).astype("datetime64[us]")
-        source = ticker.currency.side_effect
-        ticker.currency.side_effect = RuntimeError("Rate load failed")
-        cache = {}
+        source = ticker._exchange_rates.side_effect
+        ticker._exchange_rates.side_effect = RuntimeError("Rate load failed")
         with self.assertRaisesRegex(RuntimeError, "Rate load failed"):
-            ticker._industry_currency_rates(dates, "CNY", cache)
-        self.assertEqual(cache, {})
-        ticker.currency.side_effect = source
-        self.assertEqual(ticker._industry_currency_rates(dates, "CNY", cache).iloc[0], 7.2)
+            self.invoke(ticker, "industry_roa")
+        ticker._exchange_rates.side_effect = source
+        snapshots = json.loads(SNAPSHOTS.read_text())["normal"]
+        assert_frame_equal(self.invoke(ticker, "industry_roa"), decode_frame(snapshots["industry_roa"]),
+                           check_exact=True)
+        self.assertEqual(ticker._exchange_rates.call_count, 2)
 
+    def test_batched_rates_restore_date_order_and_fall_back_on_duplicate_dates(self):
+        ticker = Ticker.__new__(Ticker)
+        ticker.huggingface_client = SimpleNamespace(get_url_path=lambda name: name)
+        dates = pd.to_datetime(["2024-01-02", "2024-01-03", "2024-01-04"]).astype("datetime64[us]")
+        frame = pd.DataFrame({"symbol": ["EUR=X", "CNY=X", "EUR=X", "CNY=X", "EUR=X", "JPY=X", "JPY=X"],
+                              "report_date": [dates[2], dates[1], dates[0], dates[0], dates[1], dates[0], dates[0]],
+                              "close": [0.93, 7.2, 0.91, 7.1, 0.92, 140.0, 141.0]})
+        ticker.duckdb_client = SimpleNamespace(query=Mock(return_value=frame))
+        single = pd.DataFrame({"symbol": ["JPY=X", "JPY=X"], "report_date": [dates[0], dates[0]],
+                               "close": [141.0, 140.0]})
+        ticker.currency = Mock(return_value=single)
+        with patch("defeatbeta_api.data.ticker.load_sql", side_effect=lambda name, **kw: name):
+            rates = ticker._exchange_rates(["CNY=X", "EUR=X", "JPY=X"])
+        assert_frame_equal(rates["EUR=X"], pd.DataFrame({"symbol": ["EUR=X"] * 3, "report_date": dates,
+                                                         "close": [0.91, 0.92, 0.93]}), check_exact=True)
+        self.assertEqual(rates["CNY=X"]["close"].tolist(), [7.1, 7.2])
+        # Duplicate dates cannot be ordered from the batch; keep the single-symbol result.
+        self.assertIs(rates["JPY=X"], single)
+        ticker.currency.assert_called_once_with("JPY=X")
+        ticker.duckdb_client.query.assert_called_once()
+
+    def test_batched_rates_match_single_currency_queries(self):
+        import tempfile
+        import duckdb
+        from test.client_stub import bare_client
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "exchange_rate.parquet")
+            rows = [("EUR=X", "2024-01-02", 0.91), ("CNY=X", "2024-01-02", 7.1), ("EUR=X", "2024-01-03", 0.92),
+                    ("JPY=X", "2024-01-02", 141.0), ("CNY=X", "2024-01-03", 7.2), ("EUR=X", "2024-01-04", 0.93)]
+            connection = duckdb.connect()
+            try:
+                connection.execute(
+                    "COPY (SELECT s AS symbol, CAST(d AS DATE) AS report_date, c AS open, c AS close "
+                    f"FROM (VALUES {', '.join(map(str, rows))}) t(s, d, c)) TO '{path}' (FORMAT PARQUET)")
+                ticker = Ticker.__new__(Ticker)
+                ticker.ticker = "AAA"
+                ticker.huggingface_client = SimpleNamespace(get_url_path=lambda name: path)
+                ticker.duckdb_client = bare_client(connection=connection)
+                symbols = ["CNY=X", "EUR=X", "GBP=X"]
+                batched = ticker._exchange_rates(symbols)
+                self.assertEqual(list(batched), symbols)
+                dates = pd.Series(pd.to_datetime(["2024-01-01", "2024-01-03", "2024-01-05"])).astype("datetime64[us]")
+                for symbol in symbols:
+                    with self.subTest(symbol=symbol):
+                        single = ticker.currency(symbol)
+                        if single.empty:
+                            # An empty result keeps the schema; DuckDB types an empty string column
+                            # as object. Calculations only use the aligned close values.
+                            self.assertTrue(batched[symbol].empty)
+                            self.assertEqual(list(batched[symbol].columns), list(single.columns))
+                        else:
+                            assert_frame_equal(batched[symbol], single, check_exact=True)
+                        align = lambda frame: pd.merge_asof(pd.DataFrame({"report_date": dates}), frame,
+                                                            on="report_date", direction="backward")["close"]
+                        assert_series_equal(align(batched[symbol]), align(single), check_exact=True)
+                self.assertTrue(batched["GBP=X"].empty)
+            finally:
+                connection.close()
 
 if __name__ == "__main__":
     unittest.main()

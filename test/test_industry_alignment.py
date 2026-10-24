@@ -20,6 +20,9 @@ def legacy_alignment(ticker, table, baseline, currencies):
     """Preserve the former paired dropna and two-merge algorithm as a reference."""
     result = baseline.reset_index(drop=True).copy()
     rates = {}
+    tables = ticker._industry_rate_tables(
+        currencies.get(column[:-len(FIRST)], 'USD') for column in table.columns
+        if column.endswith(FIRST) and column[:-len(FIRST)] + SECOND in table)
     for column in table.columns:
         if not column.endswith(FIRST):
             continue
@@ -27,7 +30,7 @@ def legacy_alignment(ticker, table, baseline, currencies):
         other = symbol + SECOND
         if other not in table:
             continue
-        fx = ticker._industry_currency_rates(table['report_date'], currencies.get(symbol, 'USD'), rates)
+        fx = ticker._industry_currency_rates(table['report_date'], currencies.get(symbol, 'USD'), rates, tables)
         pair = pd.DataFrame({
             'report_date': table['report_date'],
             column: (table[column] / fx).values,

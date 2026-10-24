@@ -2519,14 +2519,40 @@ class Ticker:
             'description': f'DCF Valuation Analysis for {self.ticker}'
         }
 
+    def _exchange_rates(self, symbols: List[str]) -> Dict[str, pd.DataFrame]:
+        """Load several rate series in one query; each matches currency() for its symbol."""
+        url = self.huggingface_client.get_url_path(exchange_rate)
+        sql = load_sql("select_all_by_symbols", url=url,
+                       symbols=", ".join(f"'{symbol}'" for symbol in symbols))
+        df = self.duckdb_client.query(sql)
+        df['report_date'] = _to_datetime_us(df['report_date'])
+        rates = {}
+        for symbol in symbols:
+            frame = df[df['symbol'] == symbol]
+            if frame['report_date'].duplicated().any():
+                # A parallel scan may reorder rows, and ties cannot be restored by date.
+                rates[symbol] = self.currency(symbol)
+            else:
+                rates[symbol] = frame.sort_values('report_date', kind='stable').reset_index(drop=True)
+        return rates
+
+    def _industry_rate_tables(self, currencies) -> Dict[str, pd.DataFrame]:
+        """Load every non-USD rate one calculation needs, once and in one query."""
+        needed = sorted({currency for currency in currencies if currency != 'USD'})
+        if not needed:
+            return {}
+        rates = self._exchange_rates([currency + '=X' for currency in needed])
+        return {currency: rates[currency + '=X'] for currency in needed}
+
     def _industry_currency_rates(self, report_dates: pd.Series, currency: str,
-                                 aligned_rates: Dict[str, pd.Series]) -> pd.Series:
+                                 aligned_rates: Dict[str, pd.Series],
+                                 rate_tables: Dict[str, pd.DataFrame]) -> pd.Series:
         """Reuse rates in a caller-owned cache for one unchanged date axis."""
         if currency not in aligned_rates:
             if currency == 'USD':
                 currency_df = pd.DataFrame({'report_date': report_dates, 'close': 1.0})
             else:
-                currency_df = self.currency(symbol=currency + '=X')
+                currency_df = rate_tables[currency]
             aligned_rates[currency] = pd.merge_asof(
                 pd.DataFrame({'report_date': report_dates}),
                 currency_df,
@@ -2539,24 +2565,38 @@ class Ticker:
                                 currencies: Dict[str, str], first_suffix: str,
                                 second_suffix: str) -> pd.DataFrame:
         """Align all company pairs once, carrying only complete pairs forward."""
-        converted = {'report_date': table['report_date']}
-        aligned_rates = {}
+        pairs = []
         for first_col in table.columns:
             if not first_col.endswith(first_suffix):
                 continue
             symbol = first_col[:-len(first_suffix)]
             second_col = f"{symbol}{second_suffix}"
-            if second_col not in table.columns:
-                continue
-            fx = self._industry_currency_rates(table['report_date'], currencies.get(symbol, 'USD'), aligned_rates)
-            first = table[first_col] / fx
-            second = table[second_col] / fx
-            complete = first.notna() & second.notna()
-            # Mask both sides before filling so values never cross incomplete pairs.
-            converted[first_col] = first.where(complete)
-            converted[second_col] = second.where(complete)
+            if second_col in table.columns:
+                pairs.append((first_col, second_col, currencies.get(symbol, 'USD')))
 
-        quarterly = pd.DataFrame(converted).ffill()
+        rate_tables = self._industry_rate_tables(currency for _, _, currency in pairs)
+        aligned_rates = {}
+        converted = {}
+        # Convert all companies sharing a currency at once; the arithmetic is element-wise.
+        for currency in dict.fromkeys(currency for _, _, currency in pairs):
+            group = [(first_col, second_col) for first_col, second_col, pair_currency in pairs
+                     if pair_currency == currency]
+            fx = self._industry_currency_rates(table['report_date'], currency, aligned_rates, rate_tables)
+            first = table[[first_col for first_col, _ in group]].div(fx, axis=0)
+            second = table[[second_col for _, second_col in group]].div(fx, axis=0)
+            complete = first.notna().to_numpy() & second.notna().to_numpy()
+            # Mask both sides before filling so values never cross incomplete pairs.
+            first = first.where(complete)
+            second = second.where(complete)
+            for first_col, second_col in group:
+                converted[first_col] = first[first_col]
+                converted[second_col] = second[second_col]
+
+        ordered = {'report_date': table['report_date']}
+        for first_col, second_col, _ in pairs:
+            ordered[first_col] = converted[first_col]
+            ordered[second_col] = converted[second_col]
+        quarterly = pd.DataFrame(ordered).ffill()
         return pd.merge_asof(baseline, quarterly, on='report_date', direction='backward')
 
     def industry_ttm_pe(self) -> pd.DataFrame:
@@ -2596,11 +2636,13 @@ class Ticker:
 
         usd_columns = []
         aligned_rates = {}
+        rate_tables = self._industry_rate_tables(
+            currency_dict.get(symbol, 'USD') for symbol in ttm_net_income_df.columns if symbol != 'report_date')
         for symbol in ttm_net_income_df.columns:
             if symbol == 'report_date':
                 continue
             currency = currency_dict.get(symbol, 'USD')
-            fx_series = self._industry_currency_rates(ttm_net_income_df['report_date'], currency, aligned_rates)
+            fx_series = self._industry_currency_rates(ttm_net_income_df['report_date'], currency, aligned_rates, rate_tables)
             # merge_asof uses positional rows, including for a non-default input index.
             values = ttm_net_income_df[symbol].reset_index(drop=True)
             usd_series = (values / fx_series).round(2)
@@ -2693,11 +2735,13 @@ class Ticker:
 
         usd_columns = []
         aligned_rates = {}
+        rate_tables = self._industry_rate_tables(
+            currency_dict.get(symbol, 'USD') for symbol in ttm_revenue_df.columns if symbol != 'report_date')
         for symbol in ttm_revenue_df.columns:
             if symbol == 'report_date':
                 continue
             currency = currency_dict.get(symbol, 'USD')
-            fx_series = self._industry_currency_rates(ttm_revenue_df['report_date'], currency, aligned_rates)
+            fx_series = self._industry_currency_rates(ttm_revenue_df['report_date'], currency, aligned_rates, rate_tables)
             # merge_asof uses positional rows, including for a non-default input index.
             values = ttm_revenue_df[symbol].reset_index(drop=True)
             usd_series = (values / fx_series).round(2)
@@ -2785,11 +2829,13 @@ class Ticker:
 
         usd_columns = []
         aligned_rates = {}
+        rate_tables = self._industry_rate_tables(
+            currency_dict.get(symbol, 'USD') for symbol in bve_df.columns if symbol != 'report_date')
         for symbol in bve_df.columns:
             if symbol == 'report_date':
                 continue
             currency = currency_dict.get(symbol, 'USD')
-            fx_series = self._industry_currency_rates(bve_df['report_date'], currency, aligned_rates)
+            fx_series = self._industry_currency_rates(bve_df['report_date'], currency, aligned_rates, rate_tables)
             # merge_asof uses positional rows, including for a non-default input index.
             values = bve_df[symbol].reset_index(drop=True)
             usd_series = (values / fx_series).round(2)
