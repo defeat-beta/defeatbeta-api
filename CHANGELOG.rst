@@ -3,6 +3,7 @@ Change Log
 
 0.0.63
 -------
+- perf: reduce GIL-held Python work for cached queries: skip reparsing datetime columns that are already converted, load the exchange rates of one industry calculation in a single query and convert pairs per currency, and build statement frames and the company currency map without per-row pandas operations; with a fully cached dataset this cuts single-thread and multi-thread runtime by about a quarter. Document process-based parallelism for large cached workloads [`#209 <https://github.com/defeat-beta/defeatbeta-api/issues/209>`_]
 - perf: share one process-wide HTTP/2 connection pool across Tickers, dataset files and metadata requests, with a global connection budget, atomic stream reservations and local idle shrinkage; add ``configure_connection_pool()`` and ``get_connection_pool_status()`` [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
 - perf: share dataset version checks, CDN resolutions, file sizes, Parquet footers and parsed row-group indexes across clients in one process with single-flight preparation and bounded memory; raise the default ``cache_fetch_workers`` from 3 to 16 [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
 - fix: identify cached files by dataset version, file size and footer digest, retry a whole query once when the dataset changes during it, and keep serving queries with the current version when the dataset version check fails [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]

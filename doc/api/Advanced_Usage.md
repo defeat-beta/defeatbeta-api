@@ -7,6 +7,7 @@
   - [Set Http Proxy (if you’re in a region where cannot access Hugging Face)](#set-http-proxy-if-youre-in-a-region-where-cannot-access-hugging-face)
   - [Set Logging](#set-logging)
   - [Set Configuration](#set-configuration)
+  - [Parallel Queries](#parallel-queries)
   - [Load from Hugging Face](#load-from-hugging-face)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -195,6 +196,41 @@ in-process publication; live index updates from other processes are not supporte
 Version changes, changed footer hashes or detected corruption require new
 validation. Sharing applies while entries remain valid and retained, rather than
 guaranteeing that every file is downloaded exactly once forever.
+
+
+## Parallel Queries
+
+Threads, including `Tickers(max_workers=...)`, share one process: connections,
+Parquet footers and parsed metadata are reused, which helps most while data is
+still being downloaded. Once the data is cached locally, most of the remaining
+time is DataFrame conversion and pandas post-processing. That work holds
+Python's global interpreter lock (GIL), so threads run it one at a time and
+adding threads stops helping. With a fully cached dataset (8 tickers x 78
+methods on a 10-core laptop), 4 threads took 22.8 s and 4 processes 13.9 s.
+
+For large workloads over cached data, split the tickers across processes:
+
+```python
+from concurrent.futures import ProcessPoolExecutor
+
+from defeatbeta_api.data.ticker import Ticker
+
+symbols = ["AAPL", "MSFT", "NVDA", "TSLA"]
+
+
+def price(symbol):
+    return Ticker(symbol).price()
+
+
+if __name__ == "__main__":
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        prices = dict(zip(symbols, executor.map(price, symbols)))
+```
+
+Each process has its own connection pool and memory caches, and all processes
+share the disk cache directory. A process reuses data another process
+downloaded before it started; extents downloaded concurrently by another
+process are reused only when their byte range matches exactly.
 
 
 ## Load from Hugging Face
