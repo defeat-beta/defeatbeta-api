@@ -64,16 +64,21 @@ class PrintVisitor(StatementVisitor):
         return statement
 
     def _get_data(self) -> pd.DataFrame:
-        """Build the frame once, matching the dtypes and index of row-by-row .loc appends."""
+        """Build the frame once, with the dtypes and index of row-by-row .loc appends."""
         if not self.frame_rows:
             return pd.DataFrame(columns=self.headers)
+        # Appends inferred dtypes from the first row and widened a column once it received
+        # a reported value; pandas versions differ in how. Let the installed pandas infer them
+        # from the first row plus one row holding each column's first later value, if any.
+        sample = pd.DataFrame(columns=self.headers)
+        sample.loc[0] = self.frame_rows[0]
+        rest = self.frame_rows[1:]
+        if rest:
+            sample.loc[1] = [next((row[i] for row in rest if not isinstance(row[i], str)), rest[0][i])
+                             for i in range(len(self.headers))]
         data = pd.DataFrame(self.frame_rows, columns=self.headers, dtype=object,
                             index=pd.Index(np.arange(len(self.frame_rows), dtype="int64")))
-        # Appends kept str columns only while every cell was a string; any reported
-        # value (a Decimal) turned every column into object.
-        if all(isinstance(cell, str) for row in self.frame_rows for cell in row):
-            data = data.astype("str")
-        return data
+        return data.astype(sample.dtypes.to_dict())
 
     def _get_table_string(self) -> str:
         col_widths = [
