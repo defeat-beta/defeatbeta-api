@@ -81,7 +81,7 @@ class CompanyMeta:
 
     def get_financial_currency_map(self) -> Dict[str, Optional[str]]:
         df = self._get_all_companies()
-        return dict(zip(df["symbol"], df["financial_currency"]))
+        return dict(zip(df["symbol"].tolist(), df["financial_currency"].tolist()))
 
     def get_all_companies_info(self) -> List[dict]:
         df = self._get_all_companies()

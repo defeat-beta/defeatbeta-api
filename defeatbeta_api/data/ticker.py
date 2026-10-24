@@ -3410,8 +3410,10 @@ class Ticker:
     @staticmethod
     def _dataframe_to_stock_statements(df: pd.DataFrame) -> List[StockStatement]:
         statements = []
-
-        for _, row in df.iterrows():
+        columns = ['symbol', 'report_date', 'item_name', 'item_value', 'finance_type', 'period_type']
+        # Read whole columns instead of building one Series per row with iterrows().
+        for values in zip(*(df[column].tolist() for column in columns)):
+            row = dict(zip(columns, values))
             try:
                 item_value = Decimal(str(row['item_value'])) if not pd.isna(row['item_value']) else None
                 statement = StockStatement(

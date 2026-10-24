@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+import numpy as np
 import pandas as pd
 
 from defeatbeta_api.data.finance_item import FinanceItem
@@ -15,12 +16,11 @@ class PrintVisitor(StatementVisitor):
         self.table_data = []
         self.headers = []
         self.parent_index = []
-        self.data = pd.DataFrame()
+        self.frame_rows = []
         self.row_meta = []
 
     def visit_title(self, fields: List[str]) -> None:
         self.headers = fields
-        self.data = pd.DataFrame(columns=fields)
 
     def visit_row(self,
                   parent_item: Optional[FinanceItem],
@@ -56,12 +56,24 @@ class PrintVisitor(StatementVisitor):
         if has_children:
             self.parent_index.append(item)
         self.table_data.append(row_data)
-        self.data.loc[len(self.data)] = frame
+        self.frame_rows.append(frame)
         self.row_meta.append({"indent": layer, "is_section": has_children})
 
     def get_statement(self) -> Statement:
-        statement = Statement(self.data, self._get_table_string(), self.row_meta)
+        statement = Statement(self._get_data(), self._get_table_string(), self.row_meta)
         return statement
+
+    def _get_data(self) -> pd.DataFrame:
+        """Build the frame once, matching the dtypes and index of row-by-row .loc appends."""
+        if not self.frame_rows:
+            return pd.DataFrame(columns=self.headers)
+        data = pd.DataFrame(self.frame_rows, columns=self.headers, dtype=object,
+                            index=pd.Index(np.arange(len(self.frame_rows), dtype="int64")))
+        # Appends kept str columns only while every cell was a string; any reported
+        # value (a Decimal) turned every column into object.
+        if all(isinstance(cell, str) for row in self.frame_rows for cell in row):
+            data = data.astype("str")
+        return data
 
     def _get_table_string(self) -> str:
         col_widths = [
