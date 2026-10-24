@@ -2,6 +2,7 @@
 
 import runpy
 import os
+import re
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -10,6 +11,19 @@ from defeatbeta_api.data.company_meta import CompanyMeta
 
 
 class TestTestCollection(unittest.TestCase):
+    def test_workflow_test_modules_exist(self):
+        root = Path(__file__).resolve().parents[1]
+        checked = 0
+        for workflow in sorted((root / ".github" / "workflows").glob("*.yml")):
+            # Inspect references without importing optional network test suites.
+            modules = set(re.findall(r"\btest\.(test_[A-Za-z0-9_]+)", workflow.read_text(encoding="utf-8")))
+            for module in sorted(modules):
+                with self.subTest(workflow=workflow.name, module=module):
+                    self.assertTrue((root / "test" / f"{module}.py").is_file(),
+                                    f"{workflow.name} references missing test module test.{module}")
+                checked += 1
+        self.assertGreater(checked, 0, "No explicit workflow test modules were checked")
+
     def test_all_ticker_module_does_not_initialize_a_client_on_import(self):
         module = Path(__file__).with_name("test_all_tickers.py")
         with patch.object(

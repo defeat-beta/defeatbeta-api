@@ -576,8 +576,8 @@ class TestTicker(unittest.TestCase):
 
         for update_time in ("2026-05-29T05:42:24Z", "2026-05-29 05:42:24"):
             with self.subTest(update_time=update_time):
-                with patch.object(self.ticker.huggingface_client,
-                                  "get_data_update_time", return_value=update_time), \
+                with patch.object(self.ticker.duckdb_client,
+                                  "_get_data_update_time", return_value=update_time), \
                      patch.object(self.ticker.huggingface_client,
                                   "get_url_path", return_value="dummy.parquet"), \
                      patch.object(self.ticker.duckdb_client,

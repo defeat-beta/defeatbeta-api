@@ -4,49 +4,19 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "defeatbeta_api/client/dataset_cache_fs.py"
-      - "defeatbeta_api/client/duckdb_client.py"
-      - "defeatbeta_api/client/duckdb_conf.py"
-      - "defeatbeta_api/client/hugging_face_client.py"
-      - "defeatbeta_api/data/ticker.py"
-      - "defeatbeta_api/data/transcripts.py"
-      - "defeatbeta_api/utils/util.py"
-      - "benchmark/benchmark.py"
-      - "benchmark/report.py"
+      - "defeatbeta_api/**"
+      - "test/**"
+      - "benchmark/**"
       - "pyproject.toml"
       - "requirements.txt"
-      - "test/test_dataset_cache_fs.py"
-      - "test/test_duckdb_client.py"
-      - "test/test_resolve_direct.py"
-      - "test/test_benchmark.py"
-      - "test/test_test_collection.py"
-      - "test/test_all_tickers.py"
-      - "test/test_ticker.py"
-      - "test/test_ticker_multithreaded.py"
-      - "test/test_report.py"
       - ".github/workflows/dataset-cache.yml"
   pull_request:
     paths:
-      - "defeatbeta_api/client/dataset_cache_fs.py"
-      - "defeatbeta_api/client/duckdb_client.py"
-      - "defeatbeta_api/client/duckdb_conf.py"
-      - "defeatbeta_api/client/hugging_face_client.py"
-      - "defeatbeta_api/data/ticker.py"
-      - "defeatbeta_api/data/transcripts.py"
-      - "defeatbeta_api/utils/util.py"
-      - "benchmark/benchmark.py"
-      - "benchmark/report.py"
+      - "defeatbeta_api/**"
+      - "test/**"
+      - "benchmark/**"
       - "pyproject.toml"
       - "requirements.txt"
-      - "test/test_dataset_cache_fs.py"
-      - "test/test_duckdb_client.py"
-      - "test/test_resolve_direct.py"
-      - "test/test_benchmark.py"
-      - "test/test_test_collection.py"
-      - "test/test_all_tickers.py"
-      - "test/test_ticker.py"
-      - "test/test_ticker_multithreaded.py"
-      - "test/test_report.py"
       - ".github/workflows/dataset-cache.yml"
 
 jobs:
@@ -63,7 +33,27 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e .
-      - run: python -m unittest test.test_dataset_cache_fs test.test_resolve_direct test.test_benchmark test.test_duckdb_client.TestDuckDBClient test.test_test_collection -q
+      - name: Product unit tests
+        run: >-
+          python -m unittest -q
+          test.test_dataset_cache_fs test.test_resolve_direct test.test_duckdb_client.TestDuckDBClient
+          test.test_extent_retention test.test_shared_resources test.test_http_pool test.test_http_runtime
+          test.test_http_protocol test.test_http2_receive test.test_query_materialization
+          test.test_catalog_reuse test.test_industry_currency test.test_industry_alignment
+          test.test_industry_market_cap test.test_test_collection
+      - name: Benchmark harness unit tests
+        run: >-
+          python -m unittest -q
+          test.test_benchmark test.test_shared_query_benchmark test.test_e2e_benchmark
+          test.test_e2e_execution test.test_e2e_probe test.test_e2e_concurrency
+          test.test_e2e_integration.TestWorkerFailures
+      - name: Benchmark fixture TLS integration
+        if: runner.os == 'Linux'
+        env:
+          DEFEATBETA_RUN_BENCHMARK_TLS_TESTS: "1"
+        run: |
+          python -m pip install -r benchmark/requirements.txt
+          python -m unittest test.test_benchmark.TestBenchmarkTLS test.test_e2e_integration -v
 
   network-smoke:
     if: github.event_name == 'workflow_dispatch'

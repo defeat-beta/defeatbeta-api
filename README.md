@@ -2,12 +2,12 @@
 
 # Defeat Beta API
 
-[![MCP Toplist](https://mcptoplist.com/badge/glama%2Fdefeat-beta%2Fdefeatbeta-api.svg)](https://mcptoplist.com/server/glama%2Fdefeat-beta%2Fdefeatbeta-api)
-
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/badge/python-3.11+-blue.svg?style=flat" alt="Python version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/v/defeatbeta-api.svg?maxAge=60%" alt="PyPi version"></a>
 <a target="new" href="https://pypi.python.org/pypi/defeatbeta-api"><img border=0 src="https://img.shields.io/pypi/dm/defeatbeta-api.svg?maxAge=2592000&label=installs&color=%23438546" alt="PyPi downloads"></a>
 <a target="new" href="https://github.com/defeat-beta/defeatbeta-api"><img border=0 src="https://img.shields.io/github/stars/defeat-beta/defeatbeta-api.svg?style=social&label=Star&maxAge=60" alt="Star this repo"></a>
+
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2Fdefeat-beta%2Fdefeatbeta-api.svg)](https://mcptoplist.com/server/glama%2Fdefeat-beta%2Fdefeatbeta-api) <a href="https://huggingface.co/spaces/tardellirs/model-pulse?dataset=defeatbeta/yahoo-finance-data"><img src="https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fmodelpulse.ifsp.dev%2Fbadge%2Fdataset%2Fdefeatbeta%2Fyahoo-finance-data.svg&amp;query=(%2F%2F*%5Blocal-name()%3D%22text%22%5D)%5B2%5D&amp;label=Hugging%20Face%20Dataset&amp;prefix=downloads%20&amp;suffix=%2Fmonth&amp;color=FFD21E&amp;labelColor=111318&amp;style=flat-square" alt="Hugging Face Dataset monthly downloads (Model Pulse)" height="20"></a>
 
 
 An open-source alternative to Yahoo Finance's market data APIs with higher reliability.
@@ -53,7 +53,7 @@ import defeatbeta_api
 from defeatbeta_api.data.ticker import Ticker
 ticker = Ticker('TSLA')
 ```
-The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/README)):
+The following examples demonstrate common API usage patterns (see more examples in [this documentation](doc/README.md)):
 
 #### Example: Fetching Stock Price Data
 ```python
@@ -390,33 +390,6 @@ tickers = Tickers(['NVDA', 'SHOP', 'TSLA'], max_workers=2)
 
 See [Advanced Usage](doc/api/Advanced_Usage.md) for details.
 
-### Development tests
-
-Run the offline cache and benchmark regressions with:
-
-```sh
-python -m unittest test.test_dataset_cache_fs test.test_resolve_direct test.test_benchmark test.test_duckdb_client.TestDuckDBClient test.test_test_collection -q
-```
-
-These offline regressions include concurrent thread/process cache tests and
-local loopback HTTP/1.1 tests for direct connection reopening, proxy
-connection reopening, and slow-proxy fallback.
-They bind a random port on `127.0.0.1` but do not require internet access.
-The manually dispatched `dataset-cache` GitHub workflow additionally checks
-direct Hugging Face HTTP/2 Range reads on Linux, macOS, and Windows.
-
-The exhaustive ticker sweep no longer runs during test discovery. A small
-live price sample is opt-in with `DEFEATBETA_RUN_NETWORK_TESTS=1`; the full US
-ticker price sweep is opt-in with `DEFEATBETA_RUN_ALL_TICKERS=1`. Set
-`DEFEATBETA_TEST_HTTP_PROXY` only if your network needs a proxy. The Excel
-formula verification in `TestTicker.test_dcf` is opt-in with
-`DEFEATBETA_RUN_EXCEL_TESTS=1` because it launches Excel. Use `pytest -s` to
-show DEBUG output while running tests; pytest otherwise captures passing-test
-output.
-SiliconFlow transcript integration tests are opt-in with
-`DEFEATBETA_RUN_AI_TESTS=1` and require `test/siliconflow_api.key`.
-
-
 ## How it compares to yfinance:
 `defeatbeta-api` is not superior to `yfinance` in every aspect, but its free and efficient features make it ideal for users needing bulk historical data analysis.
 
@@ -426,7 +399,7 @@ SiliconFlow transcript integration tests are opt-in with
 
 **2. Efficient data format:** It uses the Parquet format, supporting flexible SQL queries via `DuckDB`.
 
-**3. High-performance caching:** Data stays on Hugging Face. DefeatBeta downloads the needed byte ranges on demand, stores them locally, and reuses them for subsequent queries. Cache keys include the dataset update time, not the short-lived signed CDN URL. Direct access and HTTP proxies are both supported; a cache transport failure falls back to DuckDB's standard HTTP reader without local caching. See the [local file cache guide](doc/api/Local_File_Cache.md).
+**3. High-performance caching:** Data stays on Hugging Face. DefeatBeta downloads the needed byte ranges on demand, stores them locally, and reuses them for subsequent queries. Cache keys include the dataset update time, not the short-lived signed CDN URL. Connections and Parquet metadata are shared across Tickers. Direct access and HTTP proxies are both supported; a local cache failure retries through the shared transport without local caching. See the [local file cache guide](doc/api/Local_File_Cache.md).
 
 **4. Multi-source data:** defeat-beta integrates additional data sources, unlike `yfinance` which relies solely on Yahoo Finance data.
 

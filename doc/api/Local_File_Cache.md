@@ -21,26 +21,90 @@ cache is enabled by default and does not require users to select a layout.
 ## Architecture
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#FAF9F7',
+  'primaryBorderColor': '#D4CFC9',
+  'primaryTextColor': '#2A2520',
+  'lineColor': '#9C8E82',
+  'secondaryColor': '#F0EDE8',
+  'tertiaryColor': '#E8E4DE'
+}, 'flowchart': {'curve': 'linear', 'nodeSpacing': 35, 'rankSpacing': 50}}}%%
 flowchart LR
-    QUERY["Query"] --> DUCKDB["DuckDB requests byte ranges"]
-    DUCKDB --> CACHE{"Range in local cache?"}
-    CACHE -->|"yes"| LOCAL["Serve local bytes<br/>from memory or disk"]
-    CACHE -->|"no"| REMOTE["Range GET only missing bytes<br/>from Hugging Face"]
-    REMOTE -->|"validate and save"| LOCAL
+    subgraph LOCAL["Local Machine"]
+        direction LR
+        subgraph PROCESS["Python Process"]
+            direction TB
+            CLIENT("DuckDBClient")
+            ENGINE("DuckDB")
+            PREFETCH("Parquet Prefetch Planner<br/>Optional, in DuckDBClient")
+            CACHE("DatasetCacheFileSystem<br/>fsspec adapter")
+            HTTP("Shared HTTP Transport<br/>Origin-specific connections")
+            MEMORY("Memory Cache<br/>Data extents and footer bytes")
+
+            CLIENT -->|"SQL"| ENGINE
+            CLIENT -.-> PREFETCH
+            ENGINE <-->|"fsspec byte reads"| CACHE
+            PREFETCH -.->|"Column-chunk ranges"| CACHE
+            CACHE <--> HTTP
+            CACHE <--> MEMORY
+        end
+
+        subgraph DISK["Disk Cache"]
+            direction TB
+            DATA[("Data Extents<br/>SHA-256 / Retained by Version")]
+            FOOTER[("Parquet Footers<br/>Retained separately")]
+        end
+    end
+
+    subgraph REMOTE["Remote Services"]
+        direction TB
+        HF[("Hugging Face / CDN<br/>Parquet and JSON files")]
+    end
+
+    CACHE <-->|"Read / write"| DATA
+    CACHE <-->|"Read / write"| FOOTER
+    HTTP <-->|"HTTP Range<br/>Direct or configured proxy"| HF
+
+    %% Layout-only links keep the pool above memory and route HTTP above disk.
+    ENGINE ~~~ HTTP
+    HTTP ~~~ DATA
+    HTTP ~~~ FOOTER
+    DATA ~~~ HF
+    FOOTER ~~~ HF
+
+    style LOCAL fill:#FAF9F7,stroke:#D4CFC9,stroke-width:2px,color:#2A2520,rx:12,ry:12
+    style PROCESS fill:#F7F3EE,stroke:#C9BFB3,stroke-width:2px,color:#2A2520,rx:12,ry:12
+    style DISK fill:#F0EEE9,stroke:#C4C0B5,stroke-width:2px,color:#2A2520,rx:12,ry:12
+    style REMOTE fill:#FDF5EC,stroke:#DFC9AD,stroke-width:2px,color:#2A2520,rx:12,ry:12
+
+    classDef component fill:#fff,stroke:#C9BFB3,stroke-width:1.5px,color:#2A2520
+    classDef storage fill:#fff,stroke:#C4C0B5,stroke-width:1.5px,color:#2A2520
+    classDef remote fill:#fff,stroke:#DFC9AD,stroke-width:1.5px,color:#2A2520
+    class CLIENT,ENGINE,PREFETCH,CACHE,MEMORY,HTTP component
+    class DATA,FOOTER storage
+    class HF remote
 ```
 
 The local cache stores variable-length extents instead of requiring complete
-file downloads or fixed-size blocks. Cached bytes are keyed by the pinned
-file and dataset version, so a new dataset version cannot reuse stale data.
+file downloads or fixed-size blocks. Cached bytes use one file identity:
+the pinned URL, dataset version, and available file size, footer size, and footer
+SHA-256 from the dataset spec. A changed file cannot reuse the previous identity's
+data merely because the dataset update timestamp stayed the same.
 Concurrent reads can share a pending download instead of issuing another
 Range GET.
 
-**Connection pool:** Cache misses use one pooled HTTP client per remote
-origin, allowing files on the same origin to reuse connections and issue
-concurrent requests. The client count is not a physical connection limit.
-Direct access and user-configured proxies are supported. If a proxy or server closes an idle
-connection, the next request opens another; status logging does not send
-keepalive traffic.
+**Connection pool:** Metadata and dataset requests share process-wide HTTP
+transports across Tickers and files. Effective proxy and TLS trust settings
+select the transport; the shared allocator maintains origin-specific connections.
+The default process-wide budget is 16 physical connections across all transports,
+with four retained core connections per origin/route and four scheduling slots
+per HTTP/2 connection, further bounded by negotiated protocol limits.
+Connections grow on demand and idle surplus connections shrink after 60 seconds.
+See [HTTP connection pool](HTTP_Connection_Pool.md) for sharing, stream capacity,
+connection creation, idle recovery, configuration, and diagnostics. Closing one owner does not close
+other owners' pools. Direct access and user-configured proxies are supported.
+If a peer retires an idle HTTP session, the next business request recovers it;
+there is no periodic HTTP heartbeat or HTTP/2 PING.
 
 ## What is stored
 
@@ -53,8 +117,11 @@ in-flight extents are reused instead of downloaded again.
 
 The first query for a Parquet file prepares its footer and, with column
 prefetch enabled, a simple symbol scan parses row-group metadata from that
-footer. The footer is stored locally; the parsed metadata is reused in memory
-by later queries for any symbol in the same file. After process restart, the
+footer. Validated footer bytes and immutable parsed metadata are shared across
+Ticker and DuckDB client instances in the process. Concurrent preparation of
+the same file identity coalesces into one download and one parse. The footer is
+stored locally, with a per-file interprocess lock for shared directories. Reads
+do not change its modification time. After process restart, the
 metadata is parsed again from the local footer without downloading it again.
 DuckDB uses a temporary metadata-only Parquet file for this parse; it is
 removed immediately and is not part of the persistent cache.
@@ -64,8 +131,10 @@ client starts.
 
 Each cached range contains a SHA-256 digest and is published only after its
 entire HTTP response has passed Range validation. A corrupt local range is
-fetched again. Cache names are based on the pinned dataset file and the
-dataset update version, not on the short-lived signed CDN URL.
+fetched again. Data extents, footer bytes, parsed indexes, and resolved CDN
+addresses all follow the same file identity. Short-lived CDN signatures are
+excluded from persistent cache names. Identical identities can reuse disk
+data after restart; metadata changes for another file preserve that reuse.
 
 ## Location and lifetime
 
@@ -81,36 +150,87 @@ bytes from the old version and removes stale cache-owned files. An occupied
 file that Windows cannot remove is retried during later cleanup. Files not
 recognized as cache-owned are left alone.
 
-The default 5 GiB disk limit applies to data extents. The least recently
-used data extents are evicted when new data would exceed the limit. Memory
-hits also count as recent use for this decision without writing a new file.
-Footer extents are retained separately from the data-extent limit. No parsed
-index or file-size JSON is persisted. The in-memory data tier is bounded
-independently and can be disabled. Eviction only considers cache-owned data
-extents in the active flat directory; unrelated files are never removed.
-This limit can currently hold the published Parquet data set, but caching is
-still on demand and a larger future data set may exceed the limit.
+Each dataset query records the client's data generation before execution and
+validates it after result materialization. If a concurrent query detects a
+version or footer-metadata change, the affected query discards its result and
+retries the whole query once. A second change raises `DatasetVersionChanged`
+instead of returning mixed-generation results or retrying indefinitely.
+Expired virtual file paths also reject further reads. The checks apply with
+disk caching enabled or disabled and do not serialize SQL execution.
+
+CDN address reuse also follows the file identity and effective network route,
+including when disk caching is disabled. An older in-flight resolution cannot
+replace the current identity's retained address. Clients consult the shared
+resolution cache so they can reuse an address refreshed by another client.
+Result publication and retirement of the corresponding in-flight build are
+atomic, so a forced refresh cannot rejoin an already completed stale build.
+
+Footer preparation keeps one persistent lock file per dataset URL in a cache
+directory, independent of daily data versions. Contending processes wait for
+the owner on all supported platforms; process termination releases the OS lock.
+Lock files are retained, including any left by earlier implementations, because
+another running process may still be using them.
+
+All downloaded data extents and footers remain on disk until their dataset
+version becomes stale. There is no disk LRU, capacity-triggered eviction, or
+modification-time update on reads. Only requested bytes are downloaded. If a
+data extent cannot be saved, its validated download can still satisfy the read.
+
+A process-local interval inventory locates extents without directory scans on
+reads or publication. Filesystems using the same directory and dataset version
+share this inventory within the process. It is reconstructed from retained
+files once when first opened in a process; later publications update it directly.
+No inventory log, parsed index, or file-size JSON is persisted. The in-memory
+data tier remains independently bounded; removing bytes from that tier does
+not delete disk extents. Corrupt or missing disk bytes are fetched again.
+
+Realtime discovery of files published by another running process is outside
+this cache-sharing contract. A fresh process discovers the files retained at
+startup. Existing atomic publication and version-transition locks remain in
+place, but active processes do not exchange index updates.
 
 ## Network and queries
 
-The cache works with either direct access or a configured HTTP proxy. A
-connection pool can be reused across files that resolve to the same origin;
-different origins receive separate pools. The client attempts a one-byte
-startup connection warmup request, but does not save that byte as query data.
-Remote peers and proxies may close idle connections, which are reopened on
-the next request. If the cache transport fails during a query, DefeatBeta
-falls back to DuckDB's standard HTTP reader for that query.
+The cache works with either direct access or a configured HTTP proxy. Shared
+connections can serve different files and Tickers on the same origin, with
+sequential reuse and concurrent HTTP/2 streams. There is no startup connection
+warmup request. TCP keepalive uses OS socket options and timer defaults;
+HTTPX/httpcore handles GOAWAY and replacement connections on demand, with
+bounded request retries. If a local cache path fails during a query, DefeatBeta
+retries supported dataset reads through the same shared HTTPX transport without
+local caching. Disabling caching also preserves shared transport management.
 
-`Ticker.download_data_performance()` reports cumulative data-cache and
-connection-warmup counters separately. A warm query may increase cache hits
+Company metadata calls sharing a DuckDB client reuse parsed company directories
+in a bounded memory cache. Dataset generations and schemas separate the entries;
+version or footer-metadata changes prevent stale reuse. Returned frames and
+records are independent of the cached directory. Disabling caching also disables
+this parsed-directory cache.
+
+Calculations that need the dataset update time use the active query client's
+version and its existing refresh interval, rather than requesting spec.json on
+every calculation. Explicit HuggingFaceClient fresh-version reads remain fresh.
+
+Industry calculations query and align each financial currency once per input
+date axis, reusing those rates across companies within that calculation. The
+reuse ends when the calculation returns; later calls load their own rates.
+Company ordering, per-company rounding, and paired exclusion remain unchanged.
+Industry ratios align all company financial pairs to the monthly date baseline
+in one operation. An incomplete pair is excluded before forward filling, so both
+values always come from the same last complete observation for that company.
+This intermediate table belongs to the calculation and is not retained afterward.
+
+`Ticker.download_data_performance()` reports cumulative data-cache counters
+since client initialization. A warm query may increase cache hits
 without increasing downloaded bytes. The benchmark's per-query deltas are
 more appropriate when measuring one specific query.
 
 ## Configuration
 
 Use `Configuration(cache_enabled=False)` to disable the project cache, or
-set `cache_directory`, `cache_data_disk_limit_bytes`, `cache_data_memory_limit_bytes`, and
-`cache_fetch_workers` to change its resource limits. The cache stores exact missing
+set `cache_directory`, `cache_data_memory_limit_bytes`, and `cache_fetch_workers`
+to change its location and memory/download resources. The deprecated
+`cache_data_disk_limit_bytes` argument is still accepted but does not limit disk
+retention; setting it emits a `DeprecationWarning`. The cache stores exact missing
 byte ranges as variable-length extents, up to 16 MiB each; there is no public
 block-size setting. The memory tier retains at most 64 extents within its byte
 budget. `cache_prepare_footer_on_first_use=False`

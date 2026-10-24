@@ -2,19 +2,23 @@ import logging
 import inspect
 import io
 import os
+import subprocess
+import sys
 import tempfile
+import textwrap
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
-from threading import Lock
+from threading import Barrier, Event, Lock, current_thread
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from defeatbeta_api.client.duckdb_client import DuckDBClient, capture_performance
 from defeatbeta_api.client.duckdb_client import Configuration
 from defeatbeta_api.client.dataset_cache_fs import DatasetCacheFileSystem
+from test.client_stub import bare_client
 
 
 FAKE_FOOTER_BYTES = b"meta" + (4).to_bytes(4, "little") + b"PAR1"
@@ -38,6 +42,565 @@ def metadata_cursor(rows, delay=0):
 
 
 class TestDuckDBClient(unittest.TestCase):
+
+    def test_footer_identity_refresh_invalidates_shared_resolved_object(self):
+        from defeatbeta_api.client.shared_resources import SharedCache
+        from test.test_dataset_cache_fs import PINNED
+        first, second = self.resolution_client(), self.resolution_client()
+        remote = Mock(side_effect=[("https://cdn.test/old", 100), ("https://cdn.test/new", 100)])
+        old = {"US/stock_prices.parquet": {"file_size": 100, "footer_size": 4, "footer_sha256": "a" * 64}}
+        new = {"US/stock_prices.parquet": {"file_size": 100, "footer_size": 4, "footer_sha256": "b" * 64}}
+        for client in (first, second):
+            client._footer_index = old
+            client._hf_client.resolve_cdn_info = remote
+            client._hf_client.get_shared_data_update_time.return_value = client._data_update_time
+            client._hf_client.dataset_spec = {"footer_index": new}
+        with patch("defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()):
+            self.assertEqual(first._resolve_for_dataset(PINNED), ("https://cdn.test/old", 100))
+            first._refresh_dataset_version_if_due()
+            self.assertEqual(first._resolve_for_dataset(PINNED), ("https://cdn.test/new", 100))
+            self.assertEqual(second._resolve_for_dataset(PINNED), ("https://cdn.test/old", 100))
+            second._refresh_dataset_version_if_due()
+            self.assertEqual(second._resolve_for_dataset(PINNED), ("https://cdn.test/new", 100))
+            self.assertEqual(remote.call_count, 2)
+
+    def test_old_resolution_cannot_replace_changed_footer_identity(self):
+        from defeatbeta_api.client.shared_resources import SharedCache
+        from test.test_dataset_cache_fs import PINNED
+        client = self.resolution_client()
+        entered, release = Event(), Event()
+        client._footer_index = {"US/stock_prices.parquet": {"file_size": 100, "footer_sha256": "a" * 64}}
+        client._hf_client.get_shared_data_update_time.return_value = client._data_update_time
+        client._hf_client.dataset_spec = {"footer_index": {
+            "US/stock_prices.parquet": {"file_size": 100, "footer_sha256": "b" * 64}}}
+        def resolve(*args, **kwargs):
+            if not entered.is_set():
+                entered.set()
+                if not release.wait(5):
+                    raise TimeoutError("Old resolution was not released")
+                return "https://cdn.test/old", 100
+            return "https://cdn.test/new", 100
+        client._hf_client.resolve_cdn_info.side_effect = resolve
+        with patch("defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()), \
+                ThreadPoolExecutor(max_workers=1) as executor:
+            pending = executor.submit(client._resolve_for_dataset, PINNED)
+            try:
+                self.assertTrue(entered.wait(3))
+                client._refresh_dataset_version_if_due()
+                self.assertEqual(client._resolve_for_dataset(PINNED), ("https://cdn.test/new", 100))
+            finally:
+                release.set()
+            self.assertEqual(pending.result(timeout=3), ("https://cdn.test/old", 100))
+            self.assertEqual(client._resolve_for_dataset(PINNED), ("https://cdn.test/new", 100))
+            self.assertEqual(client._hf_client.resolve_cdn_info.call_count, 2)
+
+    def test_inflight_query_retries_as_a_whole_after_version_change(self):
+        self._check_inflight_query_change(metadata_only=False)
+
+    def test_inflight_query_retries_after_same_version_footer_change(self):
+        self._check_inflight_query_change(metadata_only=True)
+
+    def _check_inflight_query_change(self, *, metadata_only):
+        import duckdb
+        from defeatbeta_api.client.shared_resources import SharedCache
+        from test.test_dataset_cache_fs import FakeRangeClient, PINNED, TestDatasetCacheFileSystem
+
+        for cached in (True, False):
+            for new_rows in (8192, 8193):
+                with self.subTest(cached=cached, new_rows=new_rows), \
+                        tempfile.TemporaryDirectory() as directory, patch(
+                            "defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()):
+                    con = duckdb.connect()
+                    objects = {}
+                    metadata = {}
+                    expected = {}
+                    for name, rows, first, second in (
+                            ("old", 8192, "AAA", "BBB"),
+                            ("new", new_rows, "BBB", "AAA")):
+                        path = str(Path(directory) / f"{name}.parquet")
+                        con.execute(
+                            "COPY (SELECT CASE WHEN i < 4096 THEN $first ELSE $second END AS symbol, "
+                            "i, md5(i::VARCHAR) || md5((i + 1)::VARCHAR) AS payload "
+                            "FROM range($rows) t(i)) TO $path "
+                            "(FORMAT PARQUET, ROW_GROUP_SIZE 2048, COMPRESSION UNCOMPRESSED)",
+                            {"first": first, "second": second, "rows": rows, "path": path})
+                        payload = Path(path).read_bytes()
+                        metadata[name] = TestDatasetCacheFileSystem.file_identity_hint(payload)
+                        objects[f"https://cdn.test/{name}"] = FakeRangeClient(
+                            len(payload), payload=payload)
+                        expected[name] = con.execute(
+                            "SELECT count(*), sum(i) FROM read_parquet(?) WHERE symbol = 'AAA'",
+                            [path]).fetchone()
+                    if new_rows == 8192:
+                        self.assertEqual(objects["https://cdn.test/old"].size,
+                                         objects["https://cdn.test/new"].size)
+                    client = self.resolution_client()
+                    old_version = client._data_update_time
+                    client.connection = con
+                    client.logger = Mock()
+                    client._network_fs_lock = Lock()
+                    client._hf_client.get_shared_data_update_time.return_value = old_version
+                    if metadata_only:
+                        client._footer_index = metadata["old"]
+                        client._hf_client.dataset_spec = {"footer_index": metadata["old"]}
+
+                    def resolve(*args, **kwargs):
+                        is_old = (client._footer_index == metadata["old"] if metadata_only
+                                  else client._data_update_time == old_version)
+                        name = "old" if is_old else "new"
+                        url = f"https://cdn.test/{name}"
+                        return url, objects[url].size
+
+                    client._hf_client.resolve_cdn_info.side_effect = resolve
+                    remote = SimpleNamespace(get=lambda url, headers: objects[url].get(url, headers))
+                    fs = DatasetCacheFileSystem(
+                        directory=str(Path(directory) / "cache"), version=old_version,
+                        resolve=client._resolve_for_dataset, http_client=remote,
+                        cache_enabled=cached, footer_index=client._footer_index)
+                    if cached:
+                        client._dataset_fs = fs
+                        client._get_uncached_filesystem = Mock(
+                            side_effect=AssertionError("Version retry must keep the selected reader"))
+                    else:
+                        client._uncached_fs = fs
+                        client._get_uncached_filesystem = lambda: fs
+                    con.register_filesystem(fs)
+                    entered, release = Event(), Event()
+                    request_range = fs._request_range
+
+                    def gated_range(url, start, end, *args, **kwargs):
+                        # Hold the first data read after DuckDB has bound the old footer.
+                        if start < 4096 and not entered.is_set():
+                            entered.set()
+                            if not release.wait(5):
+                                raise TimeoutError("Data read was not released")
+                        return request_range(url, start, end, *args, **kwargs)
+
+                    fs._request_range = gated_range
+                    sql = f"SELECT count(*) AS n, sum(i) AS total FROM '{PINNED}' WHERE symbol = 'AAA'"
+                    try:
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            result = executor.submit(client.query, sql)
+                            try:
+                                self.assertTrue(entered.wait(3))
+                                if metadata_only:
+                                    client._hf_client.dataset_spec = {"footer_index": metadata["new"]}
+                                else:
+                                    client._hf_client.get_shared_data_update_time.return_value = (
+                                        "2026-10-13T00:00:00Z")
+                                client._refresh_dataset_version_if_due(use_dataset_cache=cached)
+                            finally:
+                                release.set()
+                            frame = result.result(timeout=5)
+                        self.assertEqual(tuple(frame.iloc[0]), expected["new"])
+                    finally:
+                        con.unregister_filesystem(fs.protocol)
+                        fs.close()
+                        con.close()
+
+    def resolution_client(self):
+        client = bare_client()
+        client._cdn_lock = Lock()
+        client._dataset_cdn_cache = {}
+        client._resolve_ttl = 1800
+        client.http_proxy = ""
+        client._data_update_time = "2026-10-12T00:00:00Z"
+        client.config = Configuration(cache_version_check_interval_seconds=0)
+        client._version_lock = Lock()
+        client._last_version_check = float("-inf")
+        client._footer_index = {}
+        client._parquet_indexes = {}
+        client._parquet_index_locks_guard = Lock()
+        client._prepared_footers = set()
+        client._dataset_fs = None
+        client._hf_client = SimpleNamespace(
+            resolve_cdn_info=Mock(), dataset_spec={},
+            get_shared_data_update_time=Mock(return_value="2026-10-13T00:00:00Z"))
+        return client
+
+    def test_failed_version_check_keeps_the_current_version_and_defers_the_next_check(self):
+        sql = ("SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/"
+               "resolve/main/data/US/stock_prices.parquet'")
+        for cached in (True, False):
+            with self.subTest(cached=cached):
+                client = self.resolution_client()
+                client.config = Configuration(cache_version_check_interval_seconds=300)
+                client.logger = Mock()
+                client._dataset_generation = 0
+                old = client._data_update_time
+                client._hf_client.get_shared_data_update_time.side_effect = RuntimeError("spec.json unreachable")
+                reader = Mock(version=old, _footer_index={})
+                client._dataset_fs = reader if cached else None
+                client._uncached_fs = None if cached else reader
+                client._get_uncached_filesystem = Mock(return_value=reader)
+                client._execute_query = Mock(return_value="current-version result")
+
+                self.assertEqual(client.query(sql), "current-version result")
+                self.assertEqual(client.query(sql), "current-version result")
+
+                self.assertEqual(client._hf_client.get_shared_data_update_time.call_count, 1)
+                self.assertEqual(client._execute_query.call_count, 2)
+                self.assertEqual(client._data_update_time, old)
+                self.assertEqual(client._dataset_generation, 0)
+                reader.update_version.assert_not_called()
+                self.assertIn("spec.json unreachable", str(client.logger.warning.call_args_list[0]))
+
+    def test_failed_disk_cache_transition_still_moves_the_network_reader_to_the_remote_version(self):
+        sql = ("SELECT * FROM 'https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/"
+               "resolve/main/data/US/stock_prices.parquet'")
+        client = self.resolution_client()
+        client.config = Configuration(cache_version_check_interval_seconds=300)
+        client.logger = Mock()
+        client._dataset_generation = 0
+        remote = "2026-10-11T00:00:00Z"
+        client._hf_client.get_shared_data_update_time.return_value = remote
+        client._hf_client.dataset_spec = {"footer_index": {"US/stock_prices.parquet": {"file_size": 9}}}
+        client._dataset_fs = Mock(version=client._data_update_time, _footer_index={})
+        client._dataset_fs.update_version.side_effect = ValueError(
+            "Remote dataset version is older than the active cache")
+        network = Mock(version=client._data_update_time, _footer_index={})
+        client._uncached_fs = network
+        client._get_uncached_filesystem = Mock(return_value=network)
+        client._execute_query = Mock(return_value="network result")
+
+        self.assertEqual(client.query(sql), "network result")
+
+        network.update_version.assert_called_once_with(
+            remote, footer_index={"US/stock_prices.parquet": {"file_size": 9}})
+        self.assertEqual(client._data_update_time, remote)
+        self.assertEqual(client._execute_query.call_args.kwargs["filesystem"], network)
+
+    def test_remote_version_check_runs_outside_the_version_lock_once_at_a_time(self):
+        client = self.resolution_client()
+        client.config = Configuration(cache_version_check_interval_seconds=300)
+        client._dataset_generation = 0
+        started, release = Event(), Event()
+
+        def slow_check(max_age):
+            started.set()
+            release.wait(timeout=5)
+            return "2026-10-13T00:00:00Z"
+
+        client._hf_client.get_shared_data_update_time.side_effect = slow_check
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            checking = executor.submit(client._refresh_dataset_version_if_due)
+            self.assertTrue(started.wait(timeout=5))
+            try:
+                self.assertTrue(client._version_lock.acquire(timeout=1))
+                client._version_lock.release()
+                self.assertEqual(client._refresh_dataset_version_if_due(), 0)
+                self.assertEqual(client._data_update_time, "2026-10-12T00:00:00Z")
+            finally:
+                release.set()
+            self.assertEqual(checking.result(timeout=5), 1)
+        self.assertEqual(client._data_update_time, "2026-10-13T00:00:00Z")
+        self.assertEqual(client._hf_client.get_shared_data_update_time.call_count, 1)
+
+    def test_query_validates_generation_after_result_materialization(self):
+        client = self.resolution_client()
+        client.logger = Mock()
+        old = client._data_update_time
+        client._hf_client.get_shared_data_update_time.return_value = old
+
+        def execute(*args, **kwargs):
+            if client._data_update_time == old:
+                client._hf_client.get_shared_data_update_time.return_value = "new"
+                client._refresh_dataset_version_if_due()
+                return "stale materialized result"
+            return "new result"
+
+        client._execute_query = Mock(side_effect=execute)
+        self.assertEqual(client._query_dataset("query"), "new result")
+        self.assertEqual(client._execute_query.call_count, 2)
+
+    def test_repeated_generation_changes_stop_without_cache_fallback(self):
+        from defeatbeta_api.client.dataset_cache_fs import DatasetVersionChanged
+        from test.test_dataset_cache_fs import PINNED
+
+        for cached in (True, False):
+            with self.subTest(cached=cached):
+                client = self.resolution_client()
+                client.logger = Mock()
+                client._dataset_fs = Mock(version=client._data_update_time, _footer_index={}) if cached else None
+                client._get_uncached_filesystem = Mock(return_value=None)
+                client._hf_client.get_shared_data_update_time.return_value = client._data_update_time
+
+                def execute(*args, **kwargs):
+                    client._hf_client.get_shared_data_update_time.return_value = (
+                        str(client._execute_query.call_count))
+                    client._refresh_dataset_version_if_due(use_dataset_cache=cached)
+                    return "stale result"
+
+                client._execute_query = Mock(side_effect=execute)
+                with self.assertRaisesRegex(DatasetVersionChanged, "Dataset changed during both query attempts"):
+                    client.query(f"SELECT * FROM '{PINNED}'")
+                self.assertEqual(client._execute_query.call_count, 2)
+                if cached:
+                    client._get_uncached_filesystem.assert_not_called()
+
+    def test_unchanged_generation_preserves_query_error_without_retry(self):
+        client = self.resolution_client()
+        failure = ValueError("Invalid query")
+        client._execute_query = Mock(side_effect=failure)
+        with self.assertRaises(ValueError) as raised:
+            client._query_dataset("query")
+        self.assertIs(raised.exception, failure)
+        self.assertEqual(client._execute_query.call_count, 1)
+
+    def test_version_validation_does_not_serialize_concurrent_queries(self):
+        client = self.resolution_client()
+        client._hf_client.get_shared_data_update_time.return_value = client._data_update_time
+        together = Barrier(2, timeout=3)
+
+        def execute(sql, **kwargs):
+            together.wait()
+            return sql
+
+        client._execute_query = execute
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(client._query_dataset, ("first", "second")))
+        self.assertEqual(results, ["first", "second"])
+
+    def test_dataset_version_refresh_invalidates_resolved_object(self):
+        from defeatbeta_api.client.shared_resources import SharedCache
+
+        for cached in (True, False):
+            for new_size in (100, 101):
+                with self.subTest(cached=cached, new_size=new_size), patch(
+                        "defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()):
+                    client = self.resolution_client()
+                    client._hf_client.resolve_cdn_info.side_effect = [
+                        ("https://cdn.test/old", 100), ("https://cdn.test/new", new_size)]
+                    self.assertEqual(client._resolve_for_dataset("pinned-url"),
+                                     ("https://cdn.test/old", 100))
+                    client._refresh_dataset_version_if_due(use_dataset_cache=cached)
+                    for _ in range(2):
+                        self.assertEqual(client._resolve_for_dataset("pinned-url"),
+                                         ("https://cdn.test/new", new_size))
+                    self.assertEqual(client._hf_client.resolve_cdn_info.call_count, 2)
+
+    def test_old_inflight_resolution_cannot_replace_new_version(self):
+        from defeatbeta_api.client.shared_resources import SharedCache
+
+        client = self.resolution_client()
+        entered, release = Event(), Event()
+
+        def resolve(*args, **kwargs):
+            if not entered.is_set():
+                entered.set()
+                if not release.wait(5):
+                    raise TimeoutError("Old resolution was not released")
+                return "https://cdn.test/old", 100
+            return "https://cdn.test/new", 100
+
+        client._hf_client.resolve_cdn_info.side_effect = resolve
+        with patch("defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()):
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                old = executor.submit(client._resolve_for_dataset, "pinned-url")
+                try:
+                    self.assertTrue(entered.wait(3))
+                    client._refresh_dataset_version_if_due()
+                    self.assertEqual(client._resolve_for_dataset("pinned-url"),
+                                     ("https://cdn.test/new", 100))
+                finally:
+                    release.set()
+                self.assertEqual(old.result(timeout=3), ("https://cdn.test/old", 100))
+            self.assertEqual(client._resolve_for_dataset("pinned-url"),
+                             ("https://cdn.test/new", 100))
+            self.assertEqual(client._hf_client.resolve_cdn_info.call_count, 2)
+
+    def test_version_refresh_reads_new_bytes_with_and_without_disk_cache(self):
+        from defeatbeta_api.client.shared_resources import SharedCache
+        from test.test_dataset_cache_fs import FakeRangeClient, PINNED
+
+        for cached in (True, False):
+            for new_size in (100, 101):
+                with self.subTest(cached=cached, new_size=new_size), \
+                        tempfile.TemporaryDirectory() as directory, patch(
+                            "defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()):
+                    client = self.resolution_client()
+                    old_url, new_url = "https://cdn.test/old", "https://cdn.test/new"
+                    objects = {old_url: FakeRangeClient(100, payload=b"a" * 100),
+                               new_url: FakeRangeClient(new_size, payload=b"b" * new_size)}
+                    remote = SimpleNamespace(get=lambda url, headers: objects[url].get(url, headers))
+                    client._hf_client.resolve_cdn_info.side_effect = [
+                        (old_url, 100), (new_url, new_size)]
+                    filesystem = DatasetCacheFileSystem(
+                        directory=directory, version=client._data_update_time,
+                        resolve=client._resolve_for_dataset, http_client=remote,
+                        cache_enabled=cached)
+                    if cached:
+                        client._dataset_fs = filesystem
+                    else:
+                        client._uncached_fs = filesystem
+                    try:
+                        self.assertEqual(filesystem.cat_file(filesystem.register(PINNED), 0, 100),
+                                         b"a" * 100)
+                        client._refresh_dataset_version_if_due(use_dataset_cache=cached)
+                        path = filesystem.register(PINNED)
+                        for _ in range(2):
+                            self.assertEqual(filesystem.cat_file(path, 0, new_size), b"b" * new_size)
+                        self.assertEqual(client._hf_client.resolve_cdn_info.call_count, 2)
+                        self.assertEqual(len(objects[old_url].calls), 1)
+                        self.assertEqual(len(objects[new_url].calls), 1 if cached else 2)
+                    finally:
+                        filesystem.close()
+
+    def test_resolution_reuses_latest_shared_refresh_and_separates_routes(self):
+        from defeatbeta_api.client.shared_resources import SharedCache
+
+        first, second = self.resolution_client(), self.resolution_client()
+        remote = Mock(side_effect=[("old", 100), ("renewed", 100), ("other-route", 100)])
+        first._hf_client.resolve_cdn_info = second._hf_client.resolve_cdn_info = remote
+        with patch("defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()):
+            self.assertEqual(first._resolve_for_dataset("pinned-url"), ("old", 100))
+            self.assertEqual(second._resolve_for_dataset("pinned-url"), ("old", 100))
+            self.assertEqual(second._resolve_for_dataset("pinned-url", refresh=True),
+                             ("renewed", 100))
+            self.assertEqual(first._resolve_for_dataset("pinned-url"), ("renewed", 100))
+            first.http_proxy = "http://proxy.test:8080"
+            self.assertEqual(first._resolve_for_dataset("pinned-url"), ("other-route", 100))
+            self.assertEqual(remote.call_count, 3)
+
+    def test_shared_client_is_closed_before_interpreter_shutdown(self):
+        script = textwrap.dedent('''
+            import tempfile
+            import duckdb
+            from unittest.mock import patch
+            from defeatbeta_api.client.duckdb_client import (
+                Configuration, DuckDBClient, get_duckdb_client,
+            )
+
+            def initialize(client):
+                client.connection = duckdb.connect(config={"threads": 1})
+
+            def load_version(client):
+                client._data_update_time = "shutdown-fixture-v1"
+
+            with tempfile.TemporaryDirectory() as directory:
+                with patch.object(DuckDBClient, "_initialize_connection", initialize), \\
+                        patch.object(DuckDBClient, "_load_dataset_version", load_version):
+                    config = Configuration(cache_directory=directory)
+                    client = get_duckdb_client(config=config)
+                    assert get_duckdb_client(config=config) is client
+                    assert client.connection.sql("SELECT 42").fetchall() == [(42,)]
+                    original_close = client.close
+
+                    def close():
+                        original_close()
+                        print("shared-client-closed", flush=True)
+
+                    client.close = close
+        ''')
+        result = subprocess.run(
+            [sys.executable, "-c", script], capture_output=True, text=True,
+            timeout=20, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count("shared-client-closed"), 1, result.stderr)
+        self.assertNotIn("nanobind: leaked", result.stderr)
+        self.assertNotIn("Exception ignored in atexit", result.stderr)
+
+    def test_shared_shutdown_drains_registry_and_continues_after_close_failure(self):
+        import defeatbeta_api.client.duckdb_client as module
+
+        first = Mock()
+        first.close.side_effect = RuntimeError("Close failed")
+        second = Mock()
+        registry = {"first": first, "second": second}
+        with patch.object(module, "_instances", registry):
+            with self.assertRaisesRegex(RuntimeError, "Close failed"):
+                module._close_shared_duckdb_clients()
+            self.assertEqual(registry, {})
+            first.close.assert_called_once_with()
+            second.close.assert_called_once_with()
+            module._close_shared_duckdb_clients()
+            second.close.assert_called_once_with()
+
+    def test_version_refresh_cache_failure_does_not_block_network_fallback(self):
+        client = bare_client()
+        client.config = Configuration(cache_version_check_interval_seconds=60)
+        client._last_version_check = float("-inf")
+        client._version_lock = Lock()
+        client._parquet_index_locks_guard = Lock()
+        client._parquet_indexes = {}
+        client._data_update_time = "old"
+        client._footer_index = {}
+        client._hf_client = SimpleNamespace(
+            get_shared_data_update_time=Mock(return_value="new"), dataset_spec={})
+        cached = SimpleNamespace(version="old", _footer_index={})
+        cached.update_version = Mock(side_effect=OSError("Cache directory is read-only"))
+        network = SimpleNamespace(version="old", _footer_index={})
+
+        def update_network(version, footer_index):
+            network.version = version
+            network._footer_index = footer_index
+
+        network.update_version = Mock(side_effect=update_network)
+        client._dataset_fs = cached
+        client._uncached_fs = network
+        client._get_uncached_filesystem = Mock(return_value=network)
+        client.logger = Mock()
+        client._execute_query = Mock(return_value="network result")
+        url = ("https://huggingface.co/datasets/defeatbeta/yahoo-finance-data/"
+               "resolve/main/data/US/stock_prices.parquet")
+        sql = f"SELECT * FROM '{url}'"
+
+        self.assertEqual(client.query(sql), "network result")
+        client._execute_query.assert_called_once_with(
+            sql, use_dataset_cache=True, filesystem=network)
+        self.assertEqual(network.version, "new")
+        self.assertEqual(cached.update_version.call_count, 1)
+
+        def recover_cache(version, footer_index):
+            cached.version = version
+            cached._footer_index = footer_index
+
+        cached.update_version.side_effect = recover_cache
+        client._execute_query.reset_mock()
+        client.query(sql)
+        self.assertEqual(cached.version, "new")
+        client._execute_query.assert_called_once_with(sql, use_dataset_cache=True)
+
+    def test_concurrent_forced_url_refresh_does_not_return_invalid_generation(self):
+        from defeatbeta_api.client.shared_resources import SharedCache
+
+        client = bare_client()
+        client._version_lock = Lock()
+        client._cdn_lock = Lock()
+        client._dataset_cdn_cache = {}
+        client._resolve_ttl = 3600
+        client.http_proxy = ""
+        client._data_update_time = "version"
+        client._hf_client = SimpleNamespace(resolve_cdn_info=Mock(
+            side_effect=[("old-url", 100), ("new-url", 100)]))
+        paused, resume = Event(), Event()
+        worker = []
+
+        def identity(*args):
+            if worker and current_thread() is worker[0]:
+                paused.set()
+                if not resume.wait(3):
+                    raise TimeoutError("Refresh was not resumed")
+            return (None, None, None)
+
+        def first_refresh():
+            worker.append(current_thread())
+            return client._resolve_for_dataset("pinned-url", refresh=True)
+
+        with patch("defeatbeta_api.client.duckdb_client.RESOLVED_URLS", SharedCache()), \
+                patch("defeatbeta_api.client.duckdb_client.network_identity", identity):
+            self.assertEqual(client._resolve_for_dataset("pinned-url"), ("old-url", 100))
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                first = executor.submit(first_refresh)
+                try:
+                    self.assertTrue(paused.wait(3))
+                    second = client._resolve_for_dataset("pinned-url", refresh=True)
+                finally:
+                    resume.set()
+                self.assertEqual(first.result(timeout=3), ("new-url", 100))
+                self.assertEqual(second, ("new-url", 100))
+            self.assertEqual(client._hf_client.resolve_cdn_info.call_count, 2)
 
     def test_debug_logging_works_with_an_existing_root_handler(self):
         output = io.StringIO()
@@ -83,7 +646,7 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(return_value="defeatbeta://stock_prices"),
             prefetch_ranges=Mock(),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {"defeatbeta://stock_prices": rows}
         client._get_cursor = Mock(side_effect=AssertionError("metadata scan during query"))
@@ -100,6 +663,7 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(return_value="defeatbeta://stock_prices"),
             prepare_footer=Mock(return_value=4096),
             cached_footer_bytes=Mock(return_value=FAKE_FOOTER_BYTES),
+            shared_parquet_index=lambda path, footer, build: build(),
         )
         cursor = Mock()
         cursor.execute.return_value.fetchall.return_value = rows
@@ -108,7 +672,7 @@ class TestDuckDBClient(unittest.TestCase):
         def get_cursor():
             yield cursor
 
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor = get_cursor
@@ -118,11 +682,11 @@ class TestDuckDBClient(unittest.TestCase):
         cursor.execute.assert_called_once()
         self.assertEqual(client._parquet_indexes["defeatbeta://stock_prices"], rows)
 
-    def test_project_cache_defaults_are_bounded(self):
+    def test_project_cache_retains_disk_data_and_bounds_memory(self):
         config = Configuration(duckdb_threads=8)
         self.assertEqual(config.cache_data_memory_limit_bytes, 64 * 1024 * 1024)
-        self.assertEqual(config.cache_data_disk_limit_bytes, 5 * 1024 * 1024 * 1024)
-        self.assertEqual(config.cache_fetch_workers, 3)
+        self.assertIsNone(config.cache_data_disk_limit_bytes)
+        self.assertEqual(config.cache_fetch_workers, 16)
         self.assertFalse(hasattr(config, "cache_block_size"))
         self.assertFalse(hasattr(config, "cache_max_memory_blocks"))
         self.assertEqual(
@@ -131,6 +695,19 @@ class TestDuckDBClient(unittest.TestCase):
         )
         self.assertFalse(hasattr(config, "cache_layout"))
         self.assertTrue(config.cache_symbol_column_chunk_prefetch)
+
+    def test_legacy_disk_limit_warns_only_when_set(self):
+        import warnings
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            Configuration()
+            Configuration(cache_data_disk_limit_bytes=None)
+        self.assertEqual(caught, [])
+        with self.assertWarnsRegex(DeprecationWarning, "cache_data_disk_limit_bytes") as warning:
+            config = Configuration(cache_data_disk_limit_bytes=1024)
+        self.assertEqual(warning.filename, __file__)
+        self.assertEqual(config.cache_data_disk_limit_bytes, 1024)
 
     def test_configuration_exposes_layer_specific_names(self):
         config = Configuration(
@@ -184,7 +761,7 @@ class TestDuckDBClient(unittest.TestCase):
             prepare_footer=Mock(),
             prefetch_ranges=Mock(),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor = Mock(side_effect=AssertionError("unneeded index"))
@@ -215,9 +792,10 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(side_effect=lambda url: "defeatbeta://" + url.rsplit("/", 1)[-1]),
             prepare_footer=Mock(return_value=4096),
             cached_footer_bytes=Mock(return_value=FAKE_FOOTER_BYTES),
+            shared_parquet_index=lambda path, footer, build: build(),
             prefetch_ranges=Mock(),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor, cursor = metadata_cursor(rows)
@@ -241,7 +819,7 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(return_value="defeatbeta://stock_prices.parquet"),
             prepare_footer=Mock(return_value=4096),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor = Mock(side_effect=AssertionError("unneeded index"))
@@ -263,9 +841,10 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(side_effect=lambda url: f"defeatbeta://{fs.version}/stock_prices.parquet"),
             prepare_footer=Mock(),
             cached_footer_bytes=Mock(return_value=FAKE_FOOTER_BYTES),
+            shared_parquet_index=lambda path, footer, build: build(),
             prefetch_ranges=Mock(),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor, cursor = metadata_cursor(
@@ -299,8 +878,9 @@ class TestDuckDBClient(unittest.TestCase):
         fs.register = register
         fs.prepare_footer = Mock()
         fs.cached_footer_bytes = Mock(return_value=FAKE_FOOTER_BYTES)
+        fs.shared_parquet_index = lambda path, footer, build: build()
         fs.prefetch_ranges = Mock()
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor, cursor = metadata_cursor(
@@ -323,8 +903,9 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(return_value="defeatbeta://stock_prices.parquet"),
             prepare_footer=Mock(),
             cached_footer_bytes=Mock(return_value=FAKE_FOOTER_BYTES),
+            shared_parquet_index=lambda path, footer, build: build(),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client._get_cursor, cursor = metadata_cursor(rows, delay=0.02)
@@ -349,7 +930,7 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(return_value="defeatbeta://stock_prices.parquet"),
             prepare_footer=Mock(side_effect=RuntimeError("temporary failure")),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {}
         client.config = Configuration()
@@ -369,7 +950,7 @@ class TestDuckDBClient(unittest.TestCase):
             register=Mock(return_value="defeatbeta://stock_prices.parquet"),
             prefetch_ranges=Mock(side_effect=lambda path, ranges: time.sleep(0.03)),
         )
-        client = object.__new__(DuckDBClient)
+        client = bare_client()
         client._dataset_fs = fs
         client._parquet_indexes = {
             "defeatbeta://stock_prices.parquet": [(0, "symbol", "AAPL", "AAPL", 4, 100)]

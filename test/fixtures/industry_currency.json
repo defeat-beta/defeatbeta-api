@@ -1,0 +1,321 @@
+{
+  "normal": {
+    "industry_ttm_pe": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_ttm_net_income", "industry_pe"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 1010.0, 40.76, 24.78],
+        ["2024-04-30", "Example", 2010.0, 73.67, 27.28]
+      ]
+    },
+    "industry_ps_ratio": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_ttm_revenue", "industry_ps_ratio"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 1010.0, 40.76, 24.78],
+        ["2024-04-30", "Example", 2010.0, 73.67, 27.28]
+      ]
+    },
+    "industry_pb_ratio": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_bve", "industry_pb_ratio"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 1010.0, 40.76, 24.78],
+        ["2024-04-30", "Example", 2010.0, 73.67, 27.28]
+      ]
+    },
+    "industry_roe": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_avg_equity", "industry_roe"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_roa": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_avg_assets", "industry_roa"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_roic": {
+      "columns": ["report_date", "industry", "total_ttm_nopat", "total_avg_invested_capital", "industry_roic"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_quarterly_gross_margin": {
+      "columns": ["report_date", "industry", "total_ttm_gross_profit", "total_ttm_revenue", "industry_gross_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_quarterly_ebitda_margin": {
+      "columns": ["report_date", "industry", "total_ttm_ebitda", "total_ttm_revenue", "industry_ebitda_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_quarterly_net_margin": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_ttm_revenue", "industry_net_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_equity_multiplier": {
+      "columns": ["report_date", "industry", "industry_roe", "industry_roa", "industry_equity_multiplier"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [0, 1, 2],
+      "data": [
+        ["2024-02-29", "Example", 0.3333, 0.3333, 1.0],
+        ["2024-03-31", "Example", 0.3339, 0.3339, 1.0],
+        ["2024-04-30", "Example", 0.3333, 0.3333, 1.0]
+      ]
+    },
+    "industry_asset_turnover": {
+      "columns": ["report_date", "industry", "industry_roa", "industry_net_margin", "industry_asset_turnover"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [0, 1, 2],
+      "data": [
+        ["2024-02-29", "Example", 0.3333, 0.3333, 1.0],
+        ["2024-03-31", "Example", 0.3339, 0.3339, 1.0],
+        ["2024-04-30", "Example", 0.3333, 0.3333, 1.0]
+      ]
+    }
+  },
+  "index": {
+    "industry_ttm_pe": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_ttm_net_income", "industry_pe"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 204.0, 0.66, 309.09],
+        ["2024-04-30", "Example", 2010.0, 73.67, 27.28]
+      ]
+    },
+    "industry_ps_ratio": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_ttm_revenue", "industry_ps_ratio"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 1010.0, -3.539999999999999, -285.31],
+        ["2024-04-30", "Example", 2010.0, 73.67, 27.28]
+      ]
+    },
+    "industry_pb_ratio": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_bve", "industry_pb_ratio"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 204.0, 0.66, 309.09],
+        ["2024-04-30", "Example", 2010.0, 73.67, 27.28]
+      ]
+    },
+    "industry_roe": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_avg_equity", "industry_roe"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_roa": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_avg_assets", "industry_roa"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_roic": {
+      "columns": ["report_date", "industry", "total_ttm_nopat", "total_avg_invested_capital", "industry_roic"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_quarterly_gross_margin": {
+      "columns": ["report_date", "industry", "total_ttm_gross_profit", "total_ttm_revenue", "industry_gross_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_quarterly_ebitda_margin": {
+      "columns": ["report_date", "industry", "total_ttm_ebitda", "total_ttm_revenue", "industry_ebitda_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_quarterly_net_margin": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_ttm_revenue", "industry_net_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 2, 3],
+      "data": [
+        ["2024-02-29", "Example", 40.75270833333334, 122.27472222222224, 0.3333],
+        ["2024-03-31", "Example", -3.528680555555556, -10.569444444444441, 0.3339],
+        ["2024-04-30", "Example", 73.65132467165655, 220.9704985171586, 0.3333]
+      ]
+    },
+    "industry_equity_multiplier": {
+      "columns": ["report_date", "industry", "industry_roe", "industry_roa", "industry_equity_multiplier"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [0, 1, 2],
+      "data": [
+        ["2024-02-29", "Example", 0.3333, 0.3333, 1.0],
+        ["2024-03-31", "Example", 0.3339, 0.3339, 1.0],
+        ["2024-04-30", "Example", 0.3333, 0.3333, 1.0]
+      ]
+    },
+    "industry_asset_turnover": {
+      "columns": ["report_date", "industry", "industry_roa", "industry_net_margin", "industry_asset_turnover"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [0, 1, 2],
+      "data": [
+        ["2024-02-29", "Example", 0.3333, 0.3333, 1.0],
+        ["2024-03-31", "Example", 0.3339, 0.3339, 1.0],
+        ["2024-04-30", "Example", 0.3333, 0.3333, 1.0]
+      ]
+    }
+  },
+  "extreme": {
+    "industry_ttm_pe": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_ttm_net_income", "industry_pe"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 608.0, "inf", 0.0],
+        ["2024-04-30", "Example", 807.0, 47.75, 16.9]
+      ]
+    },
+    "industry_ps_ratio": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_ttm_revenue", "industry_ps_ratio"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 808.0, "inf", 0.0],
+        ["2024-04-30", "Example", 2010.0, "-inf", -0.0]
+      ]
+    },
+    "industry_pb_ratio": {
+      "columns": ["report_date", "industry", "total_market_cap", "total_bve", "industry_pb_ratio"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", 608.0, "inf", 0.0],
+        ["2024-04-30", "Example", 807.0, 47.75, 16.9]
+      ]
+    },
+    "industry_roe": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_avg_equity", "industry_roe"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", "inf", "inf", "nan"],
+        ["2024-04-30", "Example", "-inf", "-inf", "nan"]
+      ]
+    },
+    "industry_roa": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_avg_assets", "industry_roa"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", "inf", "inf", "nan"],
+        ["2024-04-30", "Example", "-inf", "-inf", "nan"]
+      ]
+    },
+    "industry_roic": {
+      "columns": ["report_date", "industry", "total_ttm_nopat", "total_avg_invested_capital", "industry_roic"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", "inf", "inf", "nan"],
+        ["2024-04-30", "Example", "-inf", "-inf", "nan"]
+      ]
+    },
+    "industry_quarterly_gross_margin": {
+      "columns": ["report_date", "industry", "total_ttm_gross_profit", "total_ttm_revenue", "industry_gross_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", "inf", "inf", "nan"],
+        ["2024-04-30", "Example", "-inf", "-inf", "nan"]
+      ]
+    },
+    "industry_quarterly_ebitda_margin": {
+      "columns": ["report_date", "industry", "total_ttm_ebitda", "total_ttm_revenue", "industry_ebitda_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", "inf", "inf", "nan"],
+        ["2024-04-30", "Example", "-inf", "-inf", "nan"]
+      ]
+    },
+    "industry_quarterly_net_margin": {
+      "columns": ["report_date", "industry", "total_ttm_net_income", "total_ttm_revenue", "industry_net_margin"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [1, 3],
+      "data": [
+        ["2024-02-29", "Example", "inf", "inf", "nan"],
+        ["2024-04-30", "Example", "-inf", "-inf", "nan"]
+      ]
+    },
+    "industry_equity_multiplier": {
+      "columns": ["report_date", "industry", "industry_roe", "industry_roa", "industry_equity_multiplier"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [0, 1],
+      "data": [
+        ["2024-02-29", "Example", "nan", "nan", "nan"],
+        ["2024-04-30", "Example", "nan", "nan", "nan"]
+      ]
+    },
+    "industry_asset_turnover": {
+      "columns": ["report_date", "industry", "industry_roa", "industry_net_margin", "industry_asset_turnover"],
+      "dtypes": ["datetime64[us]", "str", "float64", "float64", "float64"],
+      "index": [0, 1],
+      "data": [
+        ["2024-02-29", "Example", "nan", "nan", "nan"],
+        ["2024-04-30", "Example", "nan", "nan", "nan"]
+      ]
+    }
+  }
+}

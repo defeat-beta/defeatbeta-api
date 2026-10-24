@@ -110,7 +110,7 @@ class Ticker:
         value, unit = int(match.group(1)), match.group(2)
 
         # Use data update time as end date (data may not be current to today)
-        raw_update_time = self.huggingface_client.get_data_update_time()
+        raw_update_time = self.duckdb_client._get_data_update_time()
         try:
             # New ISO 8601 format, e.g. '2026-05-29T05:42:24Z'
             end_date = datetime.fromisoformat(raw_update_time.replace('Z', '+00:00'))
@@ -2518,6 +2518,47 @@ class Ticker:
             'description': f'DCF Valuation Analysis for {self.ticker}'
         }
 
+    def _industry_currency_rates(self, report_dates: pd.Series, currency: str,
+                                 aligned_rates: Dict[str, pd.Series]) -> pd.Series:
+        """Reuse rates in a caller-owned cache for one unchanged date axis."""
+        if currency not in aligned_rates:
+            if currency == 'USD':
+                currency_df = pd.DataFrame({'report_date': report_dates, 'close': 1.0})
+            else:
+                currency_df = self.currency(symbol=currency + '=X')
+                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+            aligned_rates[currency] = pd.merge_asof(
+                pd.DataFrame({'report_date': report_dates}),
+                currency_df,
+                on='report_date',
+                direction='backward'
+            )['close']
+        return aligned_rates[currency]
+
+    def _industry_monthly_pairs(self, table: pd.DataFrame, baseline: pd.DataFrame,
+                                currencies: Dict[str, str], first_suffix: str,
+                                second_suffix: str) -> pd.DataFrame:
+        """Align all company pairs once, carrying only complete pairs forward."""
+        converted = {'report_date': table['report_date']}
+        aligned_rates = {}
+        for first_col in table.columns:
+            if not first_col.endswith(first_suffix):
+                continue
+            symbol = first_col[:-len(first_suffix)]
+            second_col = f"{symbol}{second_suffix}"
+            if second_col not in table.columns:
+                continue
+            fx = self._industry_currency_rates(table['report_date'], currencies.get(symbol, 'USD'), aligned_rates)
+            first = table[first_col] / fx
+            second = table[second_col] / fx
+            complete = first.notna() & second.notna()
+            # Mask both sides before filling so values never cross incomplete pairs.
+            converted[first_col] = first.where(complete)
+            converted[second_col] = second.where(complete)
+
+        quarterly = pd.DataFrame(converted).ffill()
+        return pd.merge_asof(baseline, quarterly, on='report_date', direction='backward')
+
     def industry_ttm_pe(self) -> pd.DataFrame:
         info = self.info()
         industry = info['industry']
@@ -2554,27 +2595,15 @@ class Ticker:
         ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date']).astype('datetime64[us]')
 
         usd_columns = []
+        aligned_rates = {}
         for symbol in ttm_net_income_df.columns:
             if symbol == 'report_date':
                 continue
             currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': ttm_net_income_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-
-            merged_df = pd.merge_asof(
-                ttm_net_income_df[['report_date', symbol]].rename(columns={symbol: 'ttm_net_income'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            usd_series = (merged_df['ttm_net_income'] / merged_df['close']).round(2)
+            fx_series = self._industry_currency_rates(ttm_net_income_df['report_date'], currency, aligned_rates)
+            # merge_asof uses positional rows, including for a non-default input index.
+            values = ttm_net_income_df[symbol].reset_index(drop=True)
+            usd_series = (values / fx_series).round(2)
             usd_series.name = f"{symbol}_usd"
             usd_columns.append(usd_series)
 
@@ -2663,27 +2692,15 @@ class Ticker:
         ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date']).astype('datetime64[us]')
 
         usd_columns = []
+        aligned_rates = {}
         for symbol in ttm_revenue_df.columns:
             if symbol == 'report_date':
                 continue
             currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': ttm_revenue_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-
-            merged_df = pd.merge_asof(
-                ttm_revenue_df[['report_date', symbol]].rename(columns={symbol: 'ttm_revenue'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            usd_series = (merged_df['ttm_revenue'] / merged_df['close']).round(2)
+            fx_series = self._industry_currency_rates(ttm_revenue_df['report_date'], currency, aligned_rates)
+            # merge_asof uses positional rows, including for a non-default input index.
+            values = ttm_revenue_df[symbol].reset_index(drop=True)
+            usd_series = (values / fx_series).round(2)
             usd_series.name = f"{symbol}_usd"
             usd_columns.append(usd_series)
 
@@ -2767,27 +2784,15 @@ class Ticker:
         bve_df['report_date'] = pd.to_datetime(bve_df['report_date']).astype('datetime64[us]')
 
         usd_columns = []
+        aligned_rates = {}
         for symbol in bve_df.columns:
             if symbol == 'report_date':
                 continue
             currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                currency_df = pd.DataFrame({
-                    'report_date': bve_df['report_date'],
-                    'close': 1.0
-                })
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-
-            merged_df = pd.merge_asof(
-                bve_df[['report_date', symbol]].rename(columns={symbol: 'bve'}),
-                currency_df,
-                left_on='report_date',
-                right_on='report_date',
-                direction='backward'
-            )
-            usd_series = (merged_df['bve'] / merged_df['close']).round(2)
+            fx_series = self._industry_currency_rates(bve_df['report_date'], currency, aligned_rates)
+            # merge_asof uses positional rows, including for a non-default input index.
+            values = bve_df[symbol].reset_index(drop=True)
+            usd_series = (values / fx_series).round(2)
             usd_series.name = f"{symbol}_usd"
             usd_columns.append(usd_series)
 
@@ -2875,40 +2880,16 @@ class Ticker:
         total_avg_equity = np.zeros(len(baseline))
         count_with_data = np.zeros(len(baseline), dtype=int)
 
+        monthly = self._industry_monthly_pairs(
+            ttm_roe_table, baseline, currency_dict, ni_suffix, eq_suffix)
         for symbol in ni_symbols:
             ni_col = f"{symbol}{ni_suffix}"
             eq_col = f"{symbol}{eq_suffix}"
             if ni_col not in ttm_roe_table.columns or eq_col not in ttm_roe_table.columns:
                 continue
 
-            currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                fx_series = pd.Series(1.0, index=ttm_roe_table.index)
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-                fx_series = pd.merge_asof(
-                    ttm_roe_table[['report_date']],
-                    currency_df,
-                    on='report_date',
-                    direction='backward'
-                )['close']
-
-            symbol_df = pd.DataFrame({
-                'report_date': ttm_roe_table['report_date'],
-                'ni_usd': (ttm_roe_table[ni_col] / fx_series).values,
-                'eq_usd': (ttm_roe_table[eq_col] / fx_series).values,
-            }).dropna()
-
-            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
-            ni_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'ni_usd']],
-                on='report_date', direction='backward'
-            )['ni_usd']
-            eq_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'eq_usd']],
-                on='report_date', direction='backward'
-            )['eq_usd']
+            ni_aligned = monthly[ni_col]
+            eq_aligned = monthly[eq_col]
 
             # Paired exclusion: only include when both TTM net income and avg equity are available
             has_data = ni_aligned.notna().values & eq_aligned.notna().values
@@ -2965,40 +2946,16 @@ class Ticker:
         total_avg_assets = np.zeros(len(baseline))
         count_with_data = np.zeros(len(baseline), dtype=int)
 
+        monthly = self._industry_monthly_pairs(
+            ttm_roa_table, baseline, currency_dict, ni_suffix, assets_suffix)
         for symbol in ni_symbols:
             ni_col = f"{symbol}{ni_suffix}"
             assets_col = f"{symbol}{assets_suffix}"
             if ni_col not in ttm_roa_table.columns or assets_col not in ttm_roa_table.columns:
                 continue
 
-            currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                fx_series = pd.Series(1.0, index=ttm_roa_table.index)
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-                fx_series = pd.merge_asof(
-                    ttm_roa_table[['report_date']],
-                    currency_df,
-                    on='report_date',
-                    direction='backward'
-                )['close']
-
-            symbol_df = pd.DataFrame({
-                'report_date': ttm_roa_table['report_date'],
-                'ni_usd': (ttm_roa_table[ni_col] / fx_series).values,
-                'assets_usd': (ttm_roa_table[assets_col] / fx_series).values,
-            }).dropna()
-
-            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
-            ni_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'ni_usd']],
-                on='report_date', direction='backward'
-            )['ni_usd']
-            assets_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'assets_usd']],
-                on='report_date', direction='backward'
-            )['assets_usd']
+            ni_aligned = monthly[ni_col]
+            assets_aligned = monthly[assets_col]
 
             # Paired exclusion: only include when both TTM net income and avg assets are available
             has_data = ni_aligned.notna().values & assets_aligned.notna().values
@@ -3055,40 +3012,16 @@ class Ticker:
         total_avg_invested_capital = np.zeros(len(baseline))
         count_with_data = np.zeros(len(baseline), dtype=int)
 
+        monthly = self._industry_monthly_pairs(
+            ttm_roic_table, baseline, currency_dict, nopat_suffix, ic_suffix)
         for symbol in nopat_symbols:
             nopat_col = f"{symbol}{nopat_suffix}"
             ic_col = f"{symbol}{ic_suffix}"
             if nopat_col not in ttm_roic_table.columns or ic_col not in ttm_roic_table.columns:
                 continue
 
-            currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                fx_series = pd.Series(1.0, index=ttm_roic_table.index)
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-                fx_series = pd.merge_asof(
-                    ttm_roic_table[['report_date']],
-                    currency_df,
-                    on='report_date',
-                    direction='backward'
-                )['close']
-
-            symbol_df = pd.DataFrame({
-                'report_date': ttm_roic_table['report_date'],
-                'nopat_usd': (ttm_roic_table[nopat_col] / fx_series).values,
-                'ic_usd': (ttm_roic_table[ic_col] / fx_series).values,
-            }).dropna()
-
-            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
-            nopat_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'nopat_usd']],
-                on='report_date', direction='backward'
-            )['nopat_usd']
-            ic_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'ic_usd']],
-                on='report_date', direction='backward'
-            )['ic_usd']
+            nopat_aligned = monthly[nopat_col]
+            ic_aligned = monthly[ic_col]
 
             # Paired exclusion: only include when both TTM nopat and avg invested capital are available
             has_data = nopat_aligned.notna().values & ic_aligned.notna().values
@@ -3162,40 +3095,16 @@ class Ticker:
         total_revenue = np.zeros(len(baseline))
         count_with_data = np.zeros(len(baseline), dtype=int)
 
+        monthly = self._industry_monthly_pairs(
+            ttm_table, baseline, currency_dict, gp_suffix, rev_suffix)
         for symbol in gp_symbols:
             gp_col = f"{symbol}{gp_suffix}"
             rev_col = f"{symbol}{rev_suffix}"
             if gp_col not in ttm_table.columns or rev_col not in ttm_table.columns:
                 continue
 
-            currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                fx_series = pd.Series(1.0, index=ttm_table.index)
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-                fx_series = pd.merge_asof(
-                    ttm_table[['report_date']],
-                    currency_df,
-                    on='report_date',
-                    direction='backward'
-                )['close']
-
-            symbol_df = pd.DataFrame({
-                'report_date': ttm_table['report_date'],
-                'gp_usd': (ttm_table[gp_col] / fx_series).values,
-                'rev_usd': (ttm_table[rev_col] / fx_series).values,
-            }).dropna()
-
-            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
-            gp_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'gp_usd']],
-                on='report_date', direction='backward'
-            )['gp_usd']
-            rev_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'rev_usd']],
-                on='report_date', direction='backward'
-            )['rev_usd']
+            gp_aligned = monthly[gp_col]
+            rev_aligned = monthly[rev_col]
 
             # Paired exclusion: only include when both TTM gross profit and revenue are available
             has_data = gp_aligned.notna().values & rev_aligned.notna().values
@@ -3252,40 +3161,16 @@ class Ticker:
         total_revenue = np.zeros(len(baseline))
         count_with_data = np.zeros(len(baseline), dtype=int)
 
+        monthly = self._industry_monthly_pairs(
+            ttm_table, baseline, currency_dict, ebitda_suffix, rev_suffix)
         for symbol in ebitda_symbols:
             ebitda_col = f"{symbol}{ebitda_suffix}"
             rev_col = f"{symbol}{rev_suffix}"
             if ebitda_col not in ttm_table.columns or rev_col not in ttm_table.columns:
                 continue
 
-            currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                fx_series = pd.Series(1.0, index=ttm_table.index)
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-                fx_series = pd.merge_asof(
-                    ttm_table[['report_date']],
-                    currency_df,
-                    on='report_date',
-                    direction='backward'
-                )['close']
-
-            symbol_df = pd.DataFrame({
-                'report_date': ttm_table['report_date'],
-                'ebitda_usd': (ttm_table[ebitda_col] / fx_series).values,
-                'rev_usd': (ttm_table[rev_col] / fx_series).values,
-            }).dropna()
-
-            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
-            ebitda_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'ebitda_usd']],
-                on='report_date', direction='backward'
-            )['ebitda_usd']
-            rev_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'rev_usd']],
-                on='report_date', direction='backward'
-            )['rev_usd']
+            ebitda_aligned = monthly[ebitda_col]
+            rev_aligned = monthly[rev_col]
 
             # Paired exclusion: only include when both TTM ebitda and revenue are available
             has_data = ebitda_aligned.notna().values & rev_aligned.notna().values
@@ -3342,40 +3227,16 @@ class Ticker:
         total_revenue = np.zeros(len(baseline))
         count_with_data = np.zeros(len(baseline), dtype=int)
 
+        monthly = self._industry_monthly_pairs(
+            ttm_table, baseline, currency_dict, ni_suffix, rev_suffix)
         for symbol in ni_symbols:
             ni_col = f"{symbol}{ni_suffix}"
             rev_col = f"{symbol}{rev_suffix}"
             if ni_col not in ttm_table.columns or rev_col not in ttm_table.columns:
                 continue
 
-            currency = currency_dict.get(symbol, 'USD')
-            if currency == 'USD':
-                fx_series = pd.Series(1.0, index=ttm_table.index)
-            else:
-                currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
-                fx_series = pd.merge_asof(
-                    ttm_table[['report_date']],
-                    currency_df,
-                    on='report_date',
-                    direction='backward'
-                )['close']
-
-            symbol_df = pd.DataFrame({
-                'report_date': ttm_table['report_date'],
-                'ni_usd': (ttm_table[ni_col] / fx_series).values,
-                'rev_usd': (ttm_table[rev_col] / fx_series).values,
-            }).dropna()
-
-            # Align each company's quarterly TTM data to the monthly baseline via forward-fill
-            ni_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'ni_usd']],
-                on='report_date', direction='backward'
-            )['ni_usd']
-            rev_aligned = pd.merge_asof(
-                baseline, symbol_df[['report_date', 'rev_usd']],
-                on='report_date', direction='backward'
-            )['rev_usd']
+            ni_aligned = monthly[ni_col]
+            rev_aligned = monthly[rev_col]
 
             # Paired exclusion: only include when both TTM net income and revenue are available
             has_data = ni_aligned.notna().values & rev_aligned.notna().values
@@ -3560,11 +3421,5 @@ class Ticker:
             "-------------- Download Data Performance ---------------",
         ]
         lines.extend(f"{key}: {value}" for key, value in sorted(metrics.items()))
-        lines.append("--------------------------------------------------------")
-        lines.append("------------- Connection Warmup Performance -------------")
-        lines.extend(
-            f"{key}: {value}"
-            for key, value in sorted(filesystem.warmup_metrics().items())
-        )
         lines.append("--------------------------------------------------------")
         return "\n".join(lines)

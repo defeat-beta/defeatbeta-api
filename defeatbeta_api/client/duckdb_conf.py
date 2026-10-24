@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import Optional
+import warnings
 
 from defeatbeta_api.utils.util import validate_cache_directory, validate_memory_limit
 
 
 class Configuration:
-    """DuckDB, CDN resolution, and demand-driven dataset cache settings."""
+    """DuckDB and dataset settings; the legacy disk limit no longer evicts data."""
 
     def __init__(
             self,
@@ -21,9 +22,9 @@ class Configuration:
             cdn_url_cache_ttl_seconds=1800,
             cache_enabled=True,
             cache_directory: Optional[str] = None,
-            cache_data_disk_limit_bytes=5 * 1024 * 1024 * 1024,
+            cache_data_disk_limit_bytes=None,
             cache_data_memory_limit_bytes=64 * 1024 * 1024,
-            cache_fetch_workers=3,
+            cache_fetch_workers=16,
             cache_version_check_interval_seconds=300,
             cache_range_split_bytes=0,
             cache_http_timeout_seconds=120,
@@ -38,6 +39,11 @@ class Configuration:
             raise ValueError("Cache fetch workers must be positive")
         if cache_http_timeout_seconds <= 0 or duckdb_http_timeout_seconds <= 0:
             raise ValueError("HTTP timeouts must be positive")
+        if cache_data_disk_limit_bytes is not None:
+            warnings.warn(
+                "cache_data_disk_limit_bytes no longer limits disk usage; cached data is kept "
+                "until its dataset version is replaced",
+                DeprecationWarning, stacklevel=2)
         configs = locals()
         configs.pop('self')
 

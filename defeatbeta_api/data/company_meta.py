@@ -57,18 +57,14 @@ class CompanyMeta:
             identifier_type=self._identifier_type,
             identifier_alias=self._identifier_alias,
         )
-        return self.duckdb_client.query(sql)
+        return self.duckdb_client._query_catalog(sql)
 
     def _get_company_by_symbol(self, symbol: str) -> pd.DataFrame:
-        sql = load_sql(
-            "select_company_by_symbol",
-            url=self.company_tickers_url,
-            symbol=symbol,
-            identifier_field=self._identifier_field,
-            identifier_type=self._identifier_type,
-            identifier_alias=self._identifier_alias,
-        )
-        return self.duckdb_client.query(sql)
+        companies = self._get_all_companies()
+        with self.duckdb_client._get_cursor() as cursor:
+            cursor.register("_company_catalog", companies)
+            cursor.execute("SELECT * FROM _company_catalog WHERE symbol = ?", [symbol])
+            return cursor.fetchdf()
 
     def get_company_info(self, symbol: str) -> Optional[dict]:
         df = self._get_company_by_symbol(symbol)

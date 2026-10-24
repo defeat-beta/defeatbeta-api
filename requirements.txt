@@ -1,6 +1,7 @@
 duckdb == 1.5.3
 fsspec >= 2025.1.0
-httpx[http2,socks] >= 0.28.1, < 1
+httpx[http2,socks] == 0.28.1
+httpcore[asyncio] == 1.0.9
 pandas >= 3.0.1
 requests[socks] >= 2.33.0
 psutil >= 7.0.0

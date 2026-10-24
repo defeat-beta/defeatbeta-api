@@ -1,0 +1,60 @@
+name: End-to-end concurrency comparison
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-concurrency-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - run: python -m pip install -e . -r benchmark/requirements.txt
+      - name: Verify the comparison harness offline
+        run: python -m unittest test.test_e2e_concurrency test.test_e2e_execution test.test_e2e_probe test.test_extent_retention test.test_test_collection test.test_industry_market_cap -v
+      - name: Verify disk-cache reuse across processes
+        env:
+          DEFEATBETA_RUN_BENCHMARK_TLS_TESTS: "1"
+        run: >-
+          python -m unittest
+          test.test_e2e_integration.TestE2ECacheIntegration.test_second_process_reuses_the_first_process_disk_cache -v
+      - name: Compare release 0.0.62 and current code without diagnostic probes
+        run: |
+          python -m benchmark.e2e_concurrency \
+            --baseline release-0.0.62 --candidate "$GITHUB_SHA" \
+            --output benchmark/results/local/e2e-concurrency
+      - name: Publish development summary
+        if: always()
+        run: |
+          if [ -f benchmark/results/local/e2e-concurrency/results.md ]; then
+            cat benchmark/results/local/e2e-concurrency/results.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-concurrency-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            benchmark/results/local/e2e-concurrency/case-*/progress.jsonl
+            benchmark/results/local/e2e-concurrency/results.*
+            benchmark/results/local/e2e-concurrency/plan.json
+            benchmark/results/local/e2e-concurrency/discovery.json
+            benchmark/results/local/e2e-concurrency/experiment.json
+            benchmark/results/local/e2e-concurrency/harness-dependencies.lock
+            benchmark/results/local/e2e-concurrency/harness/benchmark/**/*.py
+            benchmark/results/local/e2e-concurrency/harness/benchmark/requirements.txt
+            benchmark/results/local/e2e-concurrency/*/dependencies.lock
+            benchmark/results/local/e2e-concurrency/*/install.log
+          retention-days: 30

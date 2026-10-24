@@ -21,6 +21,7 @@ from defeatbeta_api.client.duckdb_client import (
 )
 from defeatbeta_api.client.duckdb_conf import Configuration
 from defeatbeta_api.client.hugging_face_client import HuggingFaceClient
+from test.client_stub import bare_client
 
 
 PINNED = ("https://huggingface.co/datasets/defeatbeta/yahoo-finance-data"
@@ -133,10 +134,11 @@ class TestConfiguration(unittest.TestCase):
 
 class TestPerformanceCapture(unittest.TestCase):
     class _Cursor:
-        def sql(self, sql):
-            result = Mock()
-            result.df.return_value = pd.DataFrame([{"value": 1}])
-            return result
+        def execute(self, sql):
+            return self
+
+        def fetchdf(self):
+            return pd.DataFrame([{"value": 1}])
 
         def close(self):
             pass
@@ -148,7 +150,7 @@ class TestPerformanceCapture(unittest.TestCase):
     def test_execute_query_emits_precise_phase_timings(self):
         import logging
 
-        client = DuckDBClient.__new__(DuckDBClient)
+        client = bare_client()
         client.connection = self._Connection()
         client.logger = logging.getLogger("test")
         events = []
@@ -171,59 +173,19 @@ class TestPerformanceCapture(unittest.TestCase):
         self.assertEqual(events[-1]["rows"], 1)
 
 
-class TestMemo(unittest.TestCase):
-    def _client(self):
-        client = DuckDBClient.__new__(DuckDBClient)
-        import logging
-        from threading import Lock
-        client.logger = logging.getLogger("test")
-        client._cdn_cache = {}
-        client._cdn_lock = Lock()
-        client._resolve_ttl = 1800
-        client.http_proxy = None
-        return client
-
-    def test_memoizes_within_ttl(self):
-        client = self._client()
-        calls = []
-
-        class FakeHF:
-            def resolve_cdn_url(self, url, proxies=None, timeout=20):
-                calls.append(url)
-                return CDN
-
-        client._hf_client = FakeHF()
-        first = client._resolve_one(PINNED)
-        second = client._resolve_one(PINNED)
-        self.assertEqual(first, CDN)
-        self.assertEqual(second, CDN)
-        self.assertEqual(len(calls), 1)
-
-    def test_falls_back_to_pinned_url(self):
-        client = self._client()
-
-        class FailingHF:
-            def resolve_cdn_url(self, url, proxies=None, timeout=20):
-                raise RuntimeError("boom")
-
-        client._hf_client = FailingHF()
-        with self.assertLogs(client.logger, level="WARNING") as logs:
-            self.assertEqual(client._resolve_one(PINNED), PINNED)
-        self.assertIn("CDN resolve failed", logs.output[0])
-
-
 class TestQueryFallback(unittest.TestCase):
     class _Cursor:
         def __init__(self, calls):
             self.calls = calls
 
-        def sql(self, sql):
+        def execute(self, sql):
             self.calls.append(sql)
             if "us.aws.cdn.hf.co" in sql:
                 raise OSError("CDN blocked")
-            result = Mock()
-            result.df.return_value = pd.DataFrame([{"value": 1}])
-            return result
+            return self
+
+        def fetchdf(self):
+            return pd.DataFrame([{"value": 1}])
 
         def close(self):
             pass
@@ -235,37 +197,18 @@ class TestQueryFallback(unittest.TestCase):
         def cursor(self):
             return TestQueryFallback._Cursor(self.calls)
 
-    def test_cdn_query_failure_retries_original_sql_and_invalidates_url(self):
+    def test_dataset_cache_failure_retries_through_the_uncached_shared_transport(self):
         import logging
         from threading import Lock
 
-        calls = []
-        client = DuckDBClient.__new__(DuckDBClient)
-        client.connection = self._Connection(calls)
-        client.logger = logging.getLogger("test")
-        client.resolve_cdn_for_uncached_reads = True
-        client._cdn_lock = Lock()
-        client._cdn_cache = {PINNED: (CDN, 1.0)}
-        client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
-
-        original = f"SELECT * FROM '{PINNED}'"
-        with self.assertLogs(client.logger, level="WARNING") as logs:
-            result = client.query(original)
-
-        self.assertEqual(result.to_dict("records"), [{"value": 1}])
-        self.assertEqual(calls, [f"SELECT * FROM read_parquet(['{CDN}'])", original])
-        self.assertNotIn(PINNED, client._cdn_cache)
-        self.assertIn("CDN query failed", logs.output[0])
-
-    def test_dataset_cache_failure_uses_existing_remote_path(self):
-        import logging
-
-        client = DuckDBClient.__new__(DuckDBClient)
+        client = bare_client()
         client.logger = logging.getLogger("dataset-cache-fallback-test")
         client._dataset_fs = object()
-        client._refresh_dataset_version_if_due = Mock()
-        client.resolve_cdn_for_uncached_reads = True
-        client._to_cdn_sql = lambda sql: rewrite_resolve_urls(sql, lambda url: CDN)
+        client._version_lock = Lock()
+        client._dataset_generation = 0
+        client._refresh_dataset_version_if_due = Mock(return_value=0)
+        network = object()
+        client._get_uncached_filesystem = Mock(return_value=network)
         expected = pd.DataFrame([{"value": 1}])
         client._execute_query = Mock(side_effect=[RuntimeError("cache unavailable"), expected])
         sql = f"SELECT * FROM '{PINNED}'"
@@ -273,16 +216,24 @@ class TestQueryFallback(unittest.TestCase):
         with self.assertLogs(client.logger, level="WARNING") as logs:
             self.assertTrue(client.query(sql).equals(expected))
         self.assertIn("Dataset cache query failed", logs.output[0])
-        client._refresh_dataset_version_if_due.assert_called_once_with()
-        self.assertEqual(client._execute_query.call_args_list[0].args, (sql,))
-        self.assertEqual(
-            client._execute_query.call_args_list[0].kwargs,
-            {"use_dataset_cache": True},
-        )
-        self.assertEqual(
-            client._execute_query.call_args_list[1].args,
-            (f"SELECT * FROM read_parquet(['{CDN}'])",),
-        )
+        self.assertEqual([c.kwargs for c in client._refresh_dataset_version_if_due.call_args_list],
+                         [{"use_dataset_cache": True}, {"use_dataset_cache": False}])
+        first, second = client._execute_query.call_args_list
+        self.assertEqual((first.args, first.kwargs), ((sql,), {"use_dataset_cache": True}))
+        self.assertEqual((second.args, second.kwargs),
+                         ((sql,), {"use_dataset_cache": True, "filesystem": network}))
+
+    def test_sql_without_dataset_urls_runs_unchanged(self):
+        import logging
+
+        calls = []
+        client = bare_client()
+        client.connection = self._Connection(calls)
+        client.logger = logging.getLogger("plain-sql-test")
+        client._dataset_fs = object()
+        sql = "SELECT 1 AS value"
+        self.assertEqual(client.query(sql).to_dict("records"), [{"value": 1}])
+        self.assertEqual(calls, [sql])
 
 
 class TestClientRegistry(unittest.TestCase):

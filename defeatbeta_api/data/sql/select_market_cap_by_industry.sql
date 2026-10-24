@@ -5,7 +5,7 @@ WITH market_cap_table AS (
         ROUND(p.close * s.shares_outstanding, 2) AS market_capitalization
     FROM
         read_parquet('{stock_prices}') AS p
-    LEFT JOIN
+    ASOF LEFT JOIN
         read_parquet('{stock_shares_outstanding}') AS s
         ON p.symbol = s.symbol
         AND p.report_date >= s.report_date
