@@ -36,6 +36,13 @@ from defeatbeta_api.utils.util import load_finance_template, parse_all_title_key
     in_notebook
 
 
+def _to_datetime_us(values: pd.Series) -> pd.Series:
+    """Return pd.to_datetime(values).astype('datetime64[us]') without reparsing converted columns."""
+    if values.dtype == "datetime64[us]":
+        return values.copy()
+    return pd.to_datetime(values).astype("datetime64[us]")
+
+
 class Ticker:
     def __init__(self, ticker, http_proxy: Optional[str] = None, log_level: Optional[str] = logging.INFO, config: Optional[Configuration] = None):
         self.ticker = ticker.upper()
@@ -140,7 +147,7 @@ class Ticker:
             raise ValueError(f"Insufficient data for period {period}")
 
         # Convert report_date to datetime
-        merged_df['report_date'] = pd.to_datetime(merged_df['report_date']).astype('datetime64[us]')
+        merged_df['report_date'] = _to_datetime_us(merged_df['report_date'])
 
         # For periods >= 1 year, use monthly returns (industry standard)
         # For shorter periods, use daily returns
@@ -186,7 +193,7 @@ class Ticker:
 
     def currency(self, symbol: str) -> pd.DataFrame:
         df = self._query_data2(exchange_rate, symbol)
-        df['report_date'] = pd.to_datetime(df['report_date']).astype('datetime64[us]')
+        df['report_date'] = _to_datetime_us(df['report_date'])
         return df
 
     def shares(self) -> pd.DataFrame:
@@ -215,8 +222,8 @@ class Ticker:
 
         eps_df = self.ttm_eps()
 
-        price_df['report_date'] = pd.to_datetime(price_df['report_date']).astype('datetime64[us]')
-        eps_df['report_date'] = pd.to_datetime(eps_df['report_date']).astype('datetime64[us]')
+        price_df['report_date'] = _to_datetime_us(price_df['report_date'])
+        eps_df['report_date'] = _to_datetime_us(eps_df['report_date'])
 
         result_df = price_df.copy()
         result_df = result_df.rename(columns={'report_date': 'price_report_date'})
@@ -389,8 +396,8 @@ class Ticker:
 
         shares_df = self.shares()
 
-        price_df['report_date'] = pd.to_datetime(price_df['report_date']).astype('datetime64[us]')
-        shares_df['report_date'] = pd.to_datetime(shares_df['report_date']).astype('datetime64[us]')
+        price_df['report_date'] = _to_datetime_us(price_df['report_date'])
+        shares_df['report_date'] = _to_datetime_us(shares_df['report_date'])
 
         result_df = price_df.copy()
         result_df = result_df.rename(columns={'report_date': 'price_report_date'})
@@ -427,8 +434,8 @@ class Ticker:
         market_cap_df = self.market_capitalization()
         ttm_revenue_df = self.ttm_revenue()
 
-        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date']).astype('datetime64[us]')
-        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date']).astype('datetime64[us]')
+        market_cap_df['report_date'] = _to_datetime_us(market_cap_df['report_date'])
+        ttm_revenue_df['report_date'] = _to_datetime_us(ttm_revenue_df['report_date'])
 
         result_df = market_cap_df.copy()
         result_df = result_df.rename(columns={'report_date': 'market_cap_report_date'})
@@ -470,8 +477,8 @@ class Ticker:
         market_cap_df = self.market_capitalization()
         bve_df = self._quarterly_book_value_of_equity()
 
-        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date']).astype('datetime64[us]')
-        bve_df['report_date'] = pd.to_datetime(bve_df['report_date']).astype('datetime64[us]')
+        market_cap_df['report_date'] = _to_datetime_us(market_cap_df['report_date'])
+        bve_df['report_date'] = _to_datetime_us(bve_df['report_date'])
 
         result_df = market_cap_df.copy()
         result_df = result_df.rename(columns={'report_date': 'market_cap_report_date'})
@@ -544,13 +551,13 @@ class Ticker:
 
         if currency == 'USD':
             currency_df = pd.DataFrame()
-            currency_df['report_date'] = pd.to_datetime(ev_components_df['report_date']).astype('datetime64[us]')
+            currency_df['report_date'] = _to_datetime_us(ev_components_df['report_date'])
             currency_df['close'] = 1.0
         else:
             currency_df = self.currency(currency + '=X')
 
-        ev_components_df['report_date'] = pd.to_datetime(ev_components_df['report_date']).astype('datetime64[us]')
-        currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+        ev_components_df['report_date'] = _to_datetime_us(ev_components_df['report_date'])
+        currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
 
         ev_components_df = pd.merge_asof(
             ev_components_df.sort_values('report_date'),
@@ -565,7 +572,7 @@ class Ticker:
             ev_components_df[f'{col}_usd'] = round(ev_components_df[col] / ev_components_df['exchange_to_usd_rate'], 2)
 
         market_cap_df = self.market_capitalization().drop(columns=['symbol'])
-        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date']).astype('datetime64[us]')
+        market_cap_df['report_date'] = _to_datetime_us(market_cap_df['report_date'])
 
         result_df = market_cap_df.copy()
         result_df = result_df.rename(columns={'report_date': 'market_cap_report_date'})
@@ -617,8 +624,8 @@ class Ticker:
         ev_df = self.enterprise_value().drop(columns=['symbol'])
         ttm_revenue_df = self.ttm_revenue().drop(columns=['symbol'])
 
-        ev_df['report_date'] = pd.to_datetime(ev_df['report_date']).astype('datetime64[us]')
-        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date']).astype('datetime64[us]')
+        ev_df['report_date'] = _to_datetime_us(ev_df['report_date'])
+        ttm_revenue_df['report_date'] = _to_datetime_us(ttm_revenue_df['report_date'])
 
         result_df = ev_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ev_report_date'})
@@ -658,9 +665,9 @@ class Ticker:
         ttm_pe_df = self.ttm_pe()
         eps_yoy_df = self.quarterly_eps_yoy_growth()
 
-        ttm_pe_df['report_date'] = pd.to_datetime(ttm_pe_df['report_date']).astype('datetime64[us]')
-        ttm_pe_df['eps_report_date'] = pd.to_datetime(ttm_pe_df['eps_report_date']).astype('datetime64[us]')
-        eps_yoy_df['report_date'] = pd.to_datetime(eps_yoy_df['report_date']).astype('datetime64[us]')
+        ttm_pe_df['report_date'] = _to_datetime_us(ttm_pe_df['report_date'])
+        ttm_pe_df['eps_report_date'] = _to_datetime_us(ttm_pe_df['eps_report_date'])
+        eps_yoy_df['report_date'] = _to_datetime_us(eps_yoy_df['report_date'])
 
         result_df = ttm_pe_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_pe_report_date'})
@@ -714,8 +721,7 @@ class Ticker:
 
         if currency == 'USD':
             currency_df = pd.DataFrame()
-            currency_df['report_date'] = pd.to_datetime(
-                stockholders_equity_df['report_date']).astype('datetime64[us]')
+            currency_df['report_date'] = _to_datetime_us(stockholders_equity_df['report_date'])
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -724,8 +730,8 @@ class Ticker:
         else:
             currency_df = self.currency(currency + '=X')
 
-        stockholders_equity_df['report_date'] = pd.to_datetime(stockholders_equity_df['report_date']).astype('datetime64[us]')
-        currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+        stockholders_equity_df['report_date'] = _to_datetime_us(stockholders_equity_df['report_date'])
+        currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
 
         result_df = stockholders_equity_df.copy()
         result_df = result_df.rename(columns={'report_date': 'book_value_of_equity_report_date'})
@@ -768,8 +774,7 @@ class Ticker:
         currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
         if currency == 'USD':
             currency_df = pd.DataFrame()
-            currency_df['report_date'] = pd.to_datetime(
-                ttm_revenue_df['report_date']).astype('datetime64[us]')
+            currency_df['report_date'] = _to_datetime_us(ttm_revenue_df['report_date'])
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -778,8 +783,8 @@ class Ticker:
         else:
             currency_df = self.currency(symbol = currency + '=X')
 
-        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date']).astype('datetime64[us]')
-        currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+        ttm_revenue_df['report_date'] = _to_datetime_us(ttm_revenue_df['report_date'])
+        currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
 
         result_df = ttm_revenue_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_revenue_report_date'})
@@ -823,8 +828,7 @@ class Ticker:
         currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
         if currency == 'USD':
             currency_df = pd.DataFrame()
-            currency_df['report_date'] = pd.to_datetime(
-                ttm_fcf_df['report_date']).astype('datetime64[us]')
+            currency_df['report_date'] = _to_datetime_us(ttm_fcf_df['report_date'])
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -833,8 +837,8 @@ class Ticker:
         else:
             currency_df = self.currency(symbol=currency + '=X')
 
-        ttm_fcf_df['report_date'] = pd.to_datetime(ttm_fcf_df['report_date']).astype('datetime64[us]')
-        currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+        ttm_fcf_df['report_date'] = _to_datetime_us(ttm_fcf_df['report_date'])
+        currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
 
         result_df = ttm_fcf_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_fcf_report_date'})
@@ -878,7 +882,7 @@ class Ticker:
         currency = company_info["financial_currency"] if company_info and company_info.get("financial_currency") else 'USD'
         if currency == 'USD':
             currency_df = pd.DataFrame()
-            currency_df['report_date'] = pd.to_datetime(ttm_ebitda_df['report_date']).astype('datetime64[us]')
+            currency_df['report_date'] = _to_datetime_us(ttm_ebitda_df['report_date'])
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -887,8 +891,8 @@ class Ticker:
         else:
             currency_df = self.currency(symbol=currency + '=X')
 
-        ttm_ebitda_df['report_date'] = pd.to_datetime(ttm_ebitda_df['report_date']).astype('datetime64[us]')
-        currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+        ttm_ebitda_df['report_date'] = _to_datetime_us(ttm_ebitda_df['report_date'])
+        currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
 
         result_df = ttm_ebitda_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_ebitda_report_date'})
@@ -925,8 +929,8 @@ class Ticker:
         ev_df = self.enterprise_value().drop(columns=['symbol'])
         ttm_ebitda_df = self.ttm_ebitda().drop(columns=['symbol'])
 
-        ev_df['report_date'] = pd.to_datetime(ev_df['report_date']).astype('datetime64[us]')
-        ttm_ebitda_df['report_date'] = pd.to_datetime(ttm_ebitda_df['report_date']).astype('datetime64[us]')
+        ev_df['report_date'] = _to_datetime_us(ev_df['report_date'])
+        ttm_ebitda_df['report_date'] = _to_datetime_us(ttm_ebitda_df['report_date'])
 
         result_df = ev_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ev_report_date'})
@@ -972,8 +976,7 @@ class Ticker:
 
         if currency == 'USD':
             currency_df = pd.DataFrame()
-            currency_df['report_date'] = pd.to_datetime(
-                ttm_net_income_df['report_date']).astype('datetime64[us]')
+            currency_df['report_date'] = _to_datetime_us(ttm_net_income_df['report_date'])
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -982,8 +985,8 @@ class Ticker:
         else:
             currency_df = self.currency(symbol = currency + '=X')
 
-        ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date']).astype('datetime64[us]')
-        currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+        ttm_net_income_df['report_date'] = _to_datetime_us(ttm_net_income_df['report_date'])
+        currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
 
         result_df = ttm_net_income_df.copy()
         result_df = result_df.rename(columns={'report_date': 'ttm_net_income_report_date'})
@@ -1082,8 +1085,8 @@ class Ticker:
         roe = self.roe()
         roa = self.roa()
 
-        roe['report_date'] = pd.to_datetime(roe['report_date']).astype('datetime64[us]')
-        roa['report_date'] = pd.to_datetime(roa['report_date']).astype('datetime64[us]')
+        roe['report_date'] = _to_datetime_us(roe['report_date'])
+        roa['report_date'] = _to_datetime_us(roa['report_date'])
 
         result_df = pd.merge_asof(
             roe,
@@ -1109,8 +1112,8 @@ class Ticker:
         roa = self.roa()
         quarterly_net_margin = self.quarterly_net_margin()
 
-        roa['report_date'] = pd.to_datetime(roa['report_date']).astype('datetime64[us]')
-        quarterly_net_margin['report_date'] = pd.to_datetime(quarterly_net_margin['report_date']).astype('datetime64[us]')
+        roa['report_date'] = _to_datetime_us(roa['report_date'])
+        quarterly_net_margin['report_date'] = _to_datetime_us(quarterly_net_margin['report_date'])
 
         result_df = pd.merge_asof(
             roa,
@@ -1141,8 +1144,7 @@ class Ticker:
 
         if currency == 'USD':
             currency_df = pd.DataFrame()
-            currency_df['report_date'] = pd.to_datetime(
-                wacc_df['report_date']).astype('datetime64[us]')
+            currency_df['report_date'] = _to_datetime_us(wacc_df['report_date'])
             currency_df['symbol'] = currency + '=X'
             currency_df['open'] = 1.0
             currency_df['close'] = 1.0
@@ -1159,8 +1161,8 @@ class Ticker:
             'close': 'exchange_rate',
         })
 
-        wacc_df['report_date'] = pd.to_datetime(wacc_df['report_date']).astype('datetime64[us]')
-        currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+        wacc_df['report_date'] = _to_datetime_us(wacc_df['report_date'])
+        currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
 
         wacc_df = pd.merge_asof(
             wacc_df,
@@ -1176,7 +1178,7 @@ class Ticker:
 
         market_cap_df = self.market_capitalization().drop(columns=['symbol'])
 
-        market_cap_df['report_date'] = pd.to_datetime(market_cap_df['report_date']).astype('datetime64[us]')
+        market_cap_df['report_date'] = _to_datetime_us(market_cap_df['report_date'])
 
         result_df1 = pd.merge_asof(
             wacc_df,
@@ -1218,7 +1220,7 @@ class Ticker:
             'tax_rate_for_calcs'
         ]]
         ten_year_returns = sp500_cagr_returns_rolling(10)
-        ten_year_returns['end_date'] = pd.to_datetime(ten_year_returns['end_date']).astype('datetime64[us]')
+        ten_year_returns['end_date'] = _to_datetime_us(ten_year_returns['end_date'])
 
         result_df = pd.merge_asof(
             result_df,
@@ -1252,7 +1254,7 @@ class Ticker:
         })
 
         treasure = self.treasure.daily_treasure_yield()
-        treasure['report_date'] = pd.to_datetime(treasure['report_date']).astype('datetime64[us]')
+        treasure['report_date'] = _to_datetime_us(treasure['report_date'])
 
         result_df = pd.merge_asof(
             result_df,
@@ -1805,7 +1807,7 @@ class Ticker:
                             else:
                                 latest_bs_date = pd.to_datetime(date_columns[0])
                                 currency_df = self.currency(finance_currency + '=X')
-                                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
+                                currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
                                 exchange_rate_row = currency_df[currency_df['report_date'] <= latest_bs_date].tail(1)
                                 if not exchange_rate_row.empty:
                                     _exchange_rate = exchange_rate_row.iloc[0]['close']
@@ -2230,8 +2232,7 @@ class Ticker:
                         else:
                             latest_bs_date = pd.to_datetime(date_columns[0])
                             currency_df = self.currency(finance_currency + '=X')
-                            currency_df['report_date'] = pd.to_datetime(
-                                currency_df['report_date']).astype('datetime64[us]')
+                            currency_df['report_date'] = _to_datetime_us(currency_df['report_date'])
                             ex_row = currency_df[
                                 currency_df['report_date'] <= latest_bs_date].tail(1)
                             if not ex_row.empty:
@@ -2526,7 +2527,6 @@ class Ticker:
                 currency_df = pd.DataFrame({'report_date': report_dates, 'close': 1.0})
             else:
                 currency_df = self.currency(symbol=currency + '=X')
-                currency_df['report_date'] = pd.to_datetime(currency_df['report_date']).astype('datetime64[us]')
             aligned_rates[currency] = pd.merge_asof(
                 pd.DataFrame({'report_date': report_dates}),
                 currency_df,
@@ -2582,7 +2582,7 @@ class Ticker:
         # Keep wide format (report_date + one column per symbol) for paired exclusion
         market_cap_wide = self.duckdb_client.query(market_cap_table_sql)
         market_cap_wide = market_cap_wide.dropna(axis=1, how='all')
-        market_cap_wide['report_date'] = pd.to_datetime(market_cap_wide['report_date']).astype('datetime64[us]')
+        market_cap_wide['report_date'] = _to_datetime_us(market_cap_wide['report_date'])
         market_cap_cols = [col for col in market_cap_wide.columns if col != 'report_date']
 
         ttm_net_income_sql = load_sql("select_ttm_net_income_by_industry",
@@ -2592,7 +2592,7 @@ class Ticker:
 
 
         currency_dict = self.company_meta.get_financial_currency_map()
-        ttm_net_income_df['report_date'] = pd.to_datetime(ttm_net_income_df['report_date']).astype('datetime64[us]')
+        ttm_net_income_df['report_date'] = _to_datetime_us(ttm_net_income_df['report_date'])
 
         usd_columns = []
         aligned_rates = {}
@@ -2680,7 +2680,7 @@ class Ticker:
         # Keep wide format (report_date + one column per symbol) for paired exclusion
         market_cap_wide = self.duckdb_client.query(market_cap_table_sql)
         market_cap_wide = market_cap_wide.dropna(axis=1, how='all')
-        market_cap_wide['report_date'] = pd.to_datetime(market_cap_wide['report_date']).astype('datetime64[us]')
+        market_cap_wide['report_date'] = _to_datetime_us(market_cap_wide['report_date'])
         market_cap_cols = [col for col in market_cap_wide.columns if col != 'report_date']
 
         ttm_revenue_sql = load_sql("select_ttm_revenue_by_industry",
@@ -2689,7 +2689,7 @@ class Ticker:
         ttm_revenue_df = self.duckdb_client.query(ttm_revenue_sql).copy()
 
         currency_dict = self.company_meta.get_financial_currency_map()
-        ttm_revenue_df['report_date'] = pd.to_datetime(ttm_revenue_df['report_date']).astype('datetime64[us]')
+        ttm_revenue_df['report_date'] = _to_datetime_us(ttm_revenue_df['report_date'])
 
         usd_columns = []
         aligned_rates = {}
@@ -2772,7 +2772,7 @@ class Ticker:
         # Keep wide format (report_date + one column per symbol) for paired exclusion
         market_cap_wide = self.duckdb_client.query(market_cap_table_sql)
         market_cap_wide = market_cap_wide.dropna(axis=1, how='all')
-        market_cap_wide['report_date'] = pd.to_datetime(market_cap_wide['report_date']).astype('datetime64[us]')
+        market_cap_wide['report_date'] = _to_datetime_us(market_cap_wide['report_date'])
         market_cap_cols = [col for col in market_cap_wide.columns if col != 'report_date']
 
         bve_sql = load_sql("select_quarterly_book_value_of_equity_by_industry",
@@ -2781,7 +2781,7 @@ class Ticker:
         bve_df = self.duckdb_client.query(bve_sql).copy()
 
         currency_dict = self.company_meta.get_financial_currency_map()
-        bve_df['report_date'] = pd.to_datetime(bve_df['report_date']).astype('datetime64[us]')
+        bve_df['report_date'] = _to_datetime_us(bve_df['report_date'])
 
         usd_columns = []
         aligned_rates = {}
@@ -2860,7 +2860,7 @@ class Ticker:
                                symbols=", ".join(f"'{s}'" for s in symbols))
         ttm_roe_table = self.duckdb_client.query(ttm_roe_sql)
 
-        ttm_roe_table['report_date'] = pd.to_datetime(ttm_roe_table['report_date']).astype('datetime64[us]')
+        ttm_roe_table['report_date'] = _to_datetime_us(ttm_roe_table['report_date'])
         ttm_roe_table = ttm_roe_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
@@ -2926,7 +2926,7 @@ class Ticker:
                                symbols=", ".join(f"'{s}'" for s in symbols))
         ttm_roa_table = self.duckdb_client.query(ttm_roa_sql)
 
-        ttm_roa_table['report_date'] = pd.to_datetime(ttm_roa_table['report_date']).astype('datetime64[us]')
+        ttm_roa_table['report_date'] = _to_datetime_us(ttm_roa_table['report_date'])
         ttm_roa_table = ttm_roa_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
@@ -2992,7 +2992,7 @@ class Ticker:
                                 symbols=", ".join(f"'{s}'" for s in symbols))
         ttm_roic_table = self.duckdb_client.query(ttm_roic_sql)
 
-        ttm_roic_table['report_date'] = pd.to_datetime(ttm_roic_table['report_date']).astype('datetime64[us]')
+        ttm_roic_table['report_date'] = _to_datetime_us(ttm_roic_table['report_date'])
         ttm_roic_table = ttm_roic_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
@@ -3042,8 +3042,8 @@ class Ticker:
         roe = self.industry_roe()
         roa = self.industry_roa()
 
-        roe['report_date'] = pd.to_datetime(roe['report_date']).astype('datetime64[us]')
-        roa['report_date'] = pd.to_datetime(roa['report_date']).astype('datetime64[us]')
+        roe['report_date'] = _to_datetime_us(roe['report_date'])
+        roa['report_date'] = _to_datetime_us(roa['report_date'])
 
         # Both use the same monthly baseline, so a regular inner merge aligns perfectly
         result_df = roe[['report_date', 'industry', 'industry_roe']].merge(
@@ -3075,7 +3075,7 @@ class Ticker:
                            symbols=", ".join(f"'{s}'" for s in symbols))
         ttm_table = self.duckdb_client.query(ttm_sql)
 
-        ttm_table['report_date'] = pd.to_datetime(ttm_table['report_date']).astype('datetime64[us]')
+        ttm_table['report_date'] = _to_datetime_us(ttm_table['report_date'])
         ttm_table = ttm_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
@@ -3141,7 +3141,7 @@ class Ticker:
                            symbols=", ".join(f"'{s}'" for s in symbols))
         ttm_table = self.duckdb_client.query(ttm_sql)
 
-        ttm_table['report_date'] = pd.to_datetime(ttm_table['report_date']).astype('datetime64[us]')
+        ttm_table['report_date'] = _to_datetime_us(ttm_table['report_date'])
         ttm_table = ttm_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
@@ -3207,7 +3207,7 @@ class Ticker:
                            symbols=", ".join(f"'{s}'" for s in symbols))
         ttm_table = self.duckdb_client.query(ttm_sql)
 
-        ttm_table['report_date'] = pd.to_datetime(ttm_table['report_date']).astype('datetime64[us]')
+        ttm_table['report_date'] = _to_datetime_us(ttm_table['report_date'])
         ttm_table = ttm_table.sort_values('report_date').reset_index(drop=True)
 
         currency_dict = self.company_meta.get_financial_currency_map()
@@ -3257,8 +3257,8 @@ class Ticker:
         roa = self.industry_roa()
         net_margin = self.industry_quarterly_net_margin()
 
-        roa['report_date'] = pd.to_datetime(roa['report_date']).astype('datetime64[us]')
-        net_margin['report_date'] = pd.to_datetime(net_margin['report_date']).astype('datetime64[us]')
+        roa['report_date'] = _to_datetime_us(roa['report_date'])
+        net_margin['report_date'] = _to_datetime_us(net_margin['report_date'])
 
         # Both use the same monthly baseline, so a regular inner merge aligns perfectly
         result_df = roa[['report_date', 'industry', 'industry_roa']].merge(
