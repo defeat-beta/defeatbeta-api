@@ -880,6 +880,54 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
         finally:
             filesystem.close()
 
+    def test_range_finishing_between_disk_and_pending_checks_is_not_downloaded_again(self):
+        payload = bytes(range(256)) * (4 * MIB // 256)
+        release = threading.Event()
+
+        class GatedClient(FakeRangeClient):
+            def get(self, url, headers):
+                release.wait(timeout=5)
+                return super().get(url, headers)
+
+        remote = GatedClient(len(payload), payload=payload)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "pending-race"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, len(payload)),
+            http_client=remote, workers=2,
+        )
+        try:
+            path = filesystem.register(PINNED)
+            key, url = filesystem._key_and_url(path)
+            filesystem.prefetch_ranges(path, [(100, 200)])
+            with filesystem._guard:
+                first = next(iter(filesystem._pending.values()))
+            original = filesystem._cached_extents
+            scheduler = threading.current_thread()
+
+            def finish_first_download_during_disk_check(*args):
+                extents = original(*args)
+                if threading.current_thread() is not scheduler:
+                    return extents  # The download's own publication check.
+                release.set()
+                first.result(timeout=5)
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    with filesystem._guard:
+                        if first not in filesystem._pending.values():
+                            break
+                    time.sleep(0.01)
+                return extents
+
+            with patch.object(filesystem, "_cached_extents", side_effect=finish_first_download_during_disk_check):
+                filesystem._schedule_io_extents(key, url, 150, 250, len(payload))
+            filesystem.await_pending()
+            self.assertEqual(sorted(call[1:] for call in remote.calls), [(100, 199), (200, 249)])
+            self.assertEqual(filesystem.cat_file(path, 100, 250), payload[100:250])
+        finally:
+            release.set()
+            filesystem.close()
+
     def test_footer_warmup_persists_validated_bytes_across_restart(self):
         footer = b"m" * (300 * 1024)
         payload = (b"PAR1" + b"d" * MIB + footer

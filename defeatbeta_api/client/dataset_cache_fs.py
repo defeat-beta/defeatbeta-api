@@ -883,14 +883,22 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
         if cursor < end:
             yield cursor, end
 
+    def _pending_extents_locked(self, key, start, end):
+        return [(offset, offset + length, future)
+                for (pending_key, offset, length), future in self._pending.items()
+                if pending_key == key and offset < end and offset + length > start]
+
     def _schedule_io_extents(self, key, url, start, end, total):
-        extents = self._cached_extents(key, start, end)
+        # A download leaves _pending only after publishing its extent. Snapshot
+        # in-flight ranges before reading the disk index, so a range finishing
+        # between the two checks is seen by at least one of them.
+        with self._guard:
+            in_flight = self._pending_extents_locked(key, start, end)
+        extents = self._cached_extents(key, start, end) + in_flight
         max_extent = _MAX_IO_EXTENT_BYTES
         scheduled = []
         with self._guard:
-            for (pending_key, offset, length), future in self._pending.items():
-                if pending_key == key and offset < end and offset + length > start:
-                    extents.append((offset, offset + length, future))
+            extents.extend(self._pending_extents_locked(key, start, end))
             missing = list(self._uncovered_intervals(start, end, extents))
             for gap_start, gap_end in missing:
                 for offset in range(gap_start, gap_end, max_extent):
