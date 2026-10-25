@@ -208,6 +208,19 @@ Python's global interpreter lock (GIL), so threads run it one at a time and
 adding threads stops helping. With a fully cached dataset (8 tickers x 78
 methods on a 10-core laptop), 4 threads took 22.8 s and 4 processes 13.9 s.
 
+Cached queries are CPU-bound, so each process runs at most as many of them at
+once as it has CPUs. The count is detected automatically from the CPUs the
+process may use, including CPU affinity and container CPU quotas (cgroup v1 and
+v2). Further threads wait for a free slot without using CPU, and the downloads
+their queries need start before they wait. Queries that read over the network
+without the disk cache are not limited.
+
+`duckdb_threads` (default 4) is a separate setting: it is the size of DuckDB's
+helper thread pool for splitting one query. It speeds up a single thread, but
+when many threads already keep every CPU busy the helpers only add contention.
+For bulk workloads with many threads on a machine with few CPUs, a lower value
+such as `Configuration(duckdb_threads=1)` can be faster.
+
 For large workloads over cached data, split the tickers across processes:
 
 ```python
