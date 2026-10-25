@@ -11,7 +11,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
-from threading import Barrier, Event, Lock, current_thread
+from threading import Barrier, BoundedSemaphore, Event, Lock, current_thread
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -989,3 +989,148 @@ class TestDuckDBClientIntegration(unittest.TestCase):
                 self.assertFalse(list(Path(cache_directory).glob("*-index.json")))
             finally:
                 client.close()
+
+
+class _SlotFileSystem:
+    """Cache filesystem stub with the counters _execute_query reads."""
+
+    def metrics(self):
+        return {}
+
+    def range_event_sequence(self):
+        return 0
+
+    read_event_sequence = range_event_sequence
+
+    def range_event_snapshot(self, offset):
+        return 0, True
+
+    read_event_snapshot = range_event_snapshot
+
+
+class _SlotConnection:
+    """Records how many cursors execute at once; each execute waits for `release`."""
+
+    def __init__(self, fail_first=False):
+        self.lock = Lock()
+        self.active = self.peak = self.calls = 0
+        self.release = Event()
+        self.fail_first = fail_first
+
+    def cursor(self):
+        connection = self
+
+        class Cursor:
+            def execute(self, sql):
+                with connection.lock:
+                    connection.calls += 1
+                    call = connection.calls
+                    connection.active += 1
+                    connection.peak = max(connection.peak, connection.active)
+                try:
+                    connection.release.wait(0.2)
+                    if connection.fail_first and call == 1:
+                        raise RuntimeError("query failed")
+                finally:
+                    with connection.lock:
+                        connection.active -= 1
+                return self
+
+            def fetchdf(self):
+                import pandas as pd
+                return pd.DataFrame({"value": [1]})
+
+            def close(self):
+                pass
+
+        return Cursor()
+
+
+class TestQuerySlots(unittest.TestCase):
+
+    def client(self, connection):
+        filesystem = _SlotFileSystem()
+        client = bare_client(connection=connection, _dataset_fs=filesystem)
+        client._to_dataset_sql = lambda sql, filesystem: sql
+        return client, filesystem
+
+    def test_cached_dataset_queries_run_at_most_the_slot_count_at_once(self):
+        connection = _SlotConnection()
+        client, _ = self.client(connection)
+        with patch("defeatbeta_api.client.duckdb_client._QUERY_SLOTS", BoundedSemaphore(2)):
+            with ThreadPoolExecutor(6) as pool:
+                results = list(pool.map(
+                    lambda _: client._execute_query("SELECT 1", use_dataset_cache=True), range(6)))
+        self.assertEqual(connection.peak, 2)
+        self.assertEqual([len(result) for result in results], [1] * 6)
+
+    def test_uncached_and_plain_queries_are_not_limited(self):
+        connection = _SlotConnection()
+        client, _ = self.client(connection)
+        network = _SlotFileSystem()
+        calls = [
+            lambda: client._execute_query("SELECT 1"),
+            lambda: client._execute_query("SELECT 1", use_dataset_cache=True, filesystem=network),
+        ]
+        with patch("defeatbeta_api.client.duckdb_client._QUERY_SLOTS", BoundedSemaphore(1)):
+            for call in calls:
+                connection.peak = 0
+                with ThreadPoolExecutor(3) as pool:
+                    for future in [pool.submit(call) for _ in range(3)]:
+                        future.result()
+                self.assertEqual(connection.peak, 3)
+
+    def test_failed_query_releases_its_slot(self):
+        connection = _SlotConnection(fail_first=True)
+        connection.release.set()
+        client, _ = self.client(connection)
+        with patch("defeatbeta_api.client.duckdb_client._QUERY_SLOTS", BoundedSemaphore(1)):
+            with self.assertRaises(RuntimeError):
+                client._execute_query("SELECT 1", use_dataset_cache=True)
+            self.assertEqual(len(client._execute_query("SELECT 1", use_dataset_cache=True)), 1)
+
+    def test_slot_wait_is_reported_before_the_cursor_opens(self):
+        connection = _SlotConnection()
+        connection.release.set()
+        client, _ = self.client(connection)
+        events = []
+        with capture_performance(events.append):
+            client._execute_query("SELECT 1", use_dataset_cache=True)
+        names = [event["name"] for event in events]
+        self.assertLess(names.index("duckdb.query_slot.wait"), names.index("duckdb.cursor.open"))
+
+
+class TestAvailableCpuCount(unittest.TestCase):
+
+    def count(self, files, process_count=8):
+        from defeatbeta_api.client import duckdb_client
+        with tempfile.TemporaryDirectory() as root:
+            for name, text in files.items():
+                path = Path(root, name)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text)
+            with patch.object(duckdb_client, "_process_cpu_count", return_value=process_count):
+                return duckdb_client.available_cpu_count(cgroup_root=root)
+
+    def test_without_a_cpu_quota_uses_the_cpus_the_process_may_run_on(self):
+        self.assertEqual(self.count({}), 8)
+        self.assertEqual(self.count({"cpu.max": "max 100000\n"}), 8)
+        self.assertEqual(self.count({"cpu/cpu.cfs_quota_us": "-1\n", "cpu/cpu.cfs_period_us": "100000\n"}), 8)
+
+    def test_cgroup_v2_quota_caps_the_count_rounding_up(self):
+        self.assertEqual(self.count({"cpu.max": "200000 100000\n"}), 2)
+        self.assertEqual(self.count({"cpu.max": "150000 100000\n"}), 2)
+        self.assertEqual(self.count({"cpu.max": "50000 100000\n"}), 1)
+
+    def test_cgroup_v1_quota_caps_the_count(self):
+        self.assertEqual(self.count({"cpu/cpu.cfs_quota_us": "300000\n", "cpu/cpu.cfs_period_us": "100000\n"}), 3)
+        self.assertEqual(self.count({"cpu,cpuacct/cpu.cfs_quota_us": "100000\n",
+                                     "cpu,cpuacct/cpu.cfs_period_us": "100000\n"}), 1)
+
+    def test_quota_above_the_affinity_does_not_raise_the_count(self):
+        self.assertEqual(self.count({"cpu.max": "1600000 100000\n"}, process_count=4), 4)
+
+    def test_unreadable_values_fall_back_and_never_return_zero(self):
+        self.assertEqual(self.count({"cpu.max": "garbage\n"}), 8)
+        self.assertEqual(self.count({"cpu.max": "0 100000\n"}), 8)
+        self.assertEqual(self.count({}, process_count=None), 1)

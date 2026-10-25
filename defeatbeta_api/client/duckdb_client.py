@@ -1,11 +1,14 @@
 import atexit
 import logging
+import math
+import os
 import re
 import sys
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
-from threading import Lock
+from pathlib import Path
+from threading import BoundedSemaphore, Lock
 from typing import Callable, Dict, Optional
 from weakref import WeakValueDictionary
 
@@ -53,6 +56,58 @@ _SIMPLE_ORDER_RE = re.compile(
     r"(?P<column>[A-Za-z_][A-Za-z0-9_]*)(?:\s+(?:ASC|DESC))?",
     re.IGNORECASE,
 )
+
+
+def _process_cpu_count():
+    """CPUs this process may run on, honoring affinity where the OS exposes it."""
+    if hasattr(os, "process_cpu_count"):
+        return os.process_cpu_count()
+    if hasattr(os, "sched_getaffinity"):
+        return len(os.sched_getaffinity(0))
+    return os.cpu_count()
+
+
+def _cgroup_cpu_quota(root):
+    """CPU quota from cgroup v2 or v1 limits, or None when unlimited or unknown."""
+    candidates = [("cpu.max", None)] + [
+        (f"{folder}/cpu.cfs_quota_us", f"{folder}/cpu.cfs_period_us")
+        for folder in ("cpu", "cpu,cpuacct")
+    ]
+    for quota_name, period_name in candidates:
+        try:
+            if period_name is None:
+                quota, period = Path(root, quota_name).read_text().split()
+            else:
+                quota = Path(root, quota_name).read_text().strip()
+                period = Path(root, period_name).read_text().strip()
+            quota, period = int(quota), int(period)
+        except (OSError, ValueError):
+            continue
+        if quota > 0 and period > 0:
+            return math.ceil(quota / period)
+    return None
+
+
+def available_cpu_count(cgroup_root="/sys/fs/cgroup"):
+    """CPUs usable by this process: affinity, then any container CPU quota."""
+    count = _process_cpu_count() or 1
+    quota = _cgroup_cpu_quota(cgroup_root)
+    return max(1, min(count, quota) if quota else count)
+
+
+# Cached dataset queries are CPU-bound and DuckDB runs each one on its calling
+# thread, so running more of them at once than there are CPUs only adds
+# contention. Network-bound queries are not limited.
+_QUERY_SLOTS = BoundedSemaphore(available_cpu_count())
+
+
+def _reset_query_slots():
+    global _QUERY_SLOTS
+    _QUERY_SLOTS = BoundedSemaphore(available_cpu_count())
+
+
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(after_in_child=_reset_query_slots)
 
 
 def redact_signed_urls(text: str) -> str:
@@ -592,6 +647,7 @@ class DuckDBClient:
         started_ns = time.perf_counter_ns()
         cursor_opened_ns = started_ns
         prepared_ns = started_ns
+        slot_acquired_ns = started_ns
         materialized_ns = started_ns
         ended_ns = started_ns
         status = "error"
@@ -606,12 +662,16 @@ class DuckDBClient:
         try:
             if use_dataset_cache:
                 sql = self._to_dataset_sql(sql, filesystem)
-                prepared_ns = time.perf_counter_ns()
-            with self._get_cursor() as cursor:
-                cursor_opened_ns = time.perf_counter_ns()
-                cursor.execute(sql)
-                result = cursor.fetchdf()
-                materialized_ns = time.perf_counter_ns()
+                prepared_ns = slot_acquired_ns = time.perf_counter_ns()
+            # Prefetches are scheduled above, so queued queries still download.
+            limited = use_dataset_cache and filesystem is self._dataset_fs
+            with _QUERY_SLOTS if limited else nullcontext():
+                slot_acquired_ns = time.perf_counter_ns()
+                with self._get_cursor() as cursor:
+                    cursor_opened_ns = time.perf_counter_ns()
+                    cursor.execute(sql)
+                    result = cursor.fetchdf()
+                    materialized_ns = time.perf_counter_ns()
             ended_ns = time.perf_counter_ns()
             status = "ok"
         finally:
@@ -632,6 +692,9 @@ class DuckDBClient:
                     "duckdb.dataset_cache.prepare", started_ns, prepared_ns
                 )
                 _record_performance(
+                    "duckdb.query_slot.wait", prepared_ns, slot_acquired_ns
+                )
+                _record_performance(
                     "duckdb.dataset_cache.io", prepared_ns, materialized_ns,
                     **{
                         key: cache_after[key] - cache_before[key]
@@ -642,7 +705,7 @@ class DuckDBClient:
                     reads_complete=reads_complete,
                 )
             events = (
-                ("duckdb.cursor.open", prepared_ns, cursor_opened_ns, {}),
+                ("duckdb.cursor.open", slot_acquired_ns, cursor_opened_ns, {}),
                 ("duckdb.sql_to_dataframe", cursor_opened_ns, materialized_ns, {"rows": rows}),
                 ("duckdb.cursor.close", materialized_ns, ended_ns, {}),
                 ("duckdb.execute_query", started_ns, ended_ns, {"status": status, "rows": rows}),
