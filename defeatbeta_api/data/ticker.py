@@ -1999,6 +1999,11 @@ class Ticker:
 
         revenue_growth = self.annual_revenue_yoy_growth()
         revenue_details = _get_growth_details(revenue_growth, 3)
+        if not revenue_details:
+            raise ValueError(
+                f"Cannot calculate DCF for {self.ticker}: annual revenue data is unavailable. "
+                f"This typically means the ticker has no annual financial statements."
+            )
 
         eps_yoy_df = self.quarterly_ttm_eps_yoy_growth()
         treasure_df = self.treasure.daily_treasure_yield()
