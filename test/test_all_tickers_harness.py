@@ -233,3 +233,83 @@ class TestRunShard(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMethodSelection(unittest.TestCase):
+
+    def test_selected_bodies_bring_their_listing(self):
+        selected = all_tickers.select_methods(METHODS, ["transcript_body", "price"])
+        self.assertEqual(set(selected), {"transcript_body", "transcripts_list", "price"})
+
+    def test_no_selection_keeps_every_method(self):
+        self.assertEqual(all_tickers.select_methods(METHODS, None), METHODS)
+
+    def test_method_missing_from_an_older_version_is_reported(self):
+        methods = {**METHODS, "new_method": {"call": "new_method", "kwargs": {}}}
+        rows = {row["method"]: row for row in all_tickers.run_ticker(
+            "TEST", None, methods, lambda symbol: FakeTicker(pd.DataFrame()), PACKAGE)}
+        self.assertEqual(rows["new_method"]["status"], "missing_method")
+
+
+def line(symbol, status="done", **calls):
+    return {"symbol": symbol, "status": status, "seconds": 1.0, "dataset_version": "v1",
+            "calls": [{"method": method, "status": state, "error_type": "IndexError",
+                       "package_site": "defeatbeta_api/data/ticker.py:10", "error": "boom"}
+                      for method, state in calls.items()]}
+
+
+class TestRecheckAndVerdicts(unittest.TestCase):
+
+    def test_errors_and_failed_tickers_are_rechecked(self):
+        lines = [line("A", price="ok", industry_roe="unexpected_error", dcf_data="expected_error"),
+                 line("B", price="ok"), line("C", "timeout"), line("D", "crashed")]
+        self.assertEqual(all_tickers.recheck_selection(lines),
+                         {"A": ["dcf_data", "industry_roe"], "C": None, "D": None})
+
+    def test_verdict_rules(self):
+        cases = [
+            ("unexpected_error", "ok", "regression"),
+            ("expected_error", "ok", "regression"),
+            ("unexpected_error", "expected_error", "regression"),
+            ("timeout", "ok", "regression"),
+            ("unexpected_error", "unexpected_error", "pre_existing"),
+            ("crashed", "timeout", "pre_existing"),
+            ("expected_error", "expected_error", "business_error"),
+            ("expected_error", "unexpected_error", "business_error"),
+            ("unexpected_error", "missing_method", "regression"),
+            ("expected_error", "missing_method", "business_error"),
+            ("unexpected_error", None, "not_rechecked"),
+        ]
+        for candidate, baseline, verdict in cases:
+            with self.subTest(candidate=candidate, baseline=baseline):
+                self.assertEqual(all_tickers.verdict(candidate, baseline), verdict)
+
+    def test_comparison_groups_calls_and_sets_the_status(self):
+        candidate = [line("A", industry_roe="unexpected_error", price="ok"),
+                     line("B", industry_roe="unexpected_error"),
+                     line("C", dcf_data="unexpected_error"), line("D", "timeout")]
+        baseline = [line("A", industry_roe="unexpected_error"), line("B", industry_roe="unexpected_error"),
+                    line("C", dcf_data="ok"), line("D", price="ok")]
+        report = all_tickers.compare(candidate, baseline, planned={"A", "B", "C", "D"})
+        self.assertEqual(report["status"], "fail")
+        groups = {(group["verdict"], group["method"]): group for group in report["groups"]}
+        self.assertEqual(groups["pre_existing", "industry_roe"]["tickers"], ["A", "B"])
+        self.assertEqual(groups["regression", "dcf_data"]["tickers"], ["C"])
+        self.assertEqual(groups["regression", "__ticker__"]["tickers"], ["D"])
+        self.assertEqual(report["calls"]["ok"], 1)
+
+    def test_comparison_without_regressions_passes_and_missing_tickers_are_incomplete(self):
+        candidate = [line("A", industry_roe="unexpected_error")]
+        baseline = [line("A", industry_roe="unexpected_error")]
+        self.assertEqual(all_tickers.compare(candidate, baseline, planned={"A"})["status"], "pass")
+        self.assertEqual(all_tickers.compare(candidate, baseline, planned={"A", "B"})["status"], "incomplete")
+        self.assertEqual(all_tickers.compare(candidate, [], planned={"A"})["status"], "incomplete")
+
+    def test_markdown_lists_regressions_before_pre_existing_errors(self):
+        candidate = [line("A", industry_roe="unexpected_error"), line("C", dcf_data="unexpected_error")]
+        baseline = [line("A", industry_roe="unexpected_error"), line("C", dcf_data="ok")]
+        report = all_tickers.compare(candidate, baseline, planned={"A", "C"})
+        text = all_tickers.render(report)
+        self.assertIn("Status: fail", text)
+        self.assertLess(text.index("## Regressions"), text.index("## Pre-existing errors"))
+        self.assertIn("| dcf_data | IndexError | `defeatbeta_api/data/ticker.py:10` | 1 | C |", text)
