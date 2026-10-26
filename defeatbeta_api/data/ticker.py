@@ -2599,6 +2599,16 @@ class Ticker:
         quarterly = pd.DataFrame(ordered).ffill()
         return pd.merge_asof(baseline, quarterly, on='report_date', direction='backward')
 
+    def _monthly_baseline(self, report_dates: pd.Series) -> pd.DataFrame:
+        """Every month end from the first to the last fiscal quarter in the data."""
+        if report_dates.isna().all():
+            # No company in the industry reports this metric, e.g. gross profit for banks.
+            return pd.DataFrame({'report_date': pd.Series(dtype='datetime64[us]')})
+        return pd.DataFrame({
+            'report_date': pd.date_range(start=report_dates.min(), end=report_dates.max(),
+                                         freq='ME').astype('datetime64[us]')
+        })
+
     def _industry(self) -> str:
         industry = self.info()['industry']
         if isinstance(industry, pd.Series):
@@ -2901,12 +2911,7 @@ class Ticker:
         eq_suffix = '_ttm_avg_equity'
         ni_symbols = [col[:-len(ni_suffix)] for col in ttm_roe_table.columns if col.endswith(ni_suffix)]
 
-        # Monthly date baseline: every month end from first to last fiscal quarter in the data
-        min_date = ttm_roe_table['report_date'].min()
-        max_date = ttm_roe_table['report_date'].max()
-        baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
-        })
+        baseline = self._monthly_baseline(ttm_roe_table['report_date'])
 
         total_net_income = np.zeros(len(baseline))
         total_avg_equity = np.zeros(len(baseline))
@@ -2961,12 +2966,7 @@ class Ticker:
         assets_suffix = '_ttm_avg_assets'
         ni_symbols = [col[:-len(ni_suffix)] for col in ttm_roa_table.columns if col.endswith(ni_suffix)]
 
-        # Monthly date baseline: every month end from first to last fiscal quarter in the data
-        min_date = ttm_roa_table['report_date'].min()
-        max_date = ttm_roa_table['report_date'].max()
-        baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
-        })
+        baseline = self._monthly_baseline(ttm_roa_table['report_date'])
 
         total_net_income = np.zeros(len(baseline))
         total_avg_assets = np.zeros(len(baseline))
@@ -3021,12 +3021,7 @@ class Ticker:
         ic_suffix = '_ttm_avg_invested_capital'
         nopat_symbols = [col[:-len(nopat_suffix)] for col in ttm_roic_table.columns if col.endswith(nopat_suffix)]
 
-        # Monthly date baseline: every month end from first to last fiscal quarter in the data
-        min_date = ttm_roic_table['report_date'].min()
-        max_date = ttm_roic_table['report_date'].max()
-        baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
-        })
+        baseline = self._monthly_baseline(ttm_roic_table['report_date'])
 
         total_ttm_nopat = np.zeros(len(baseline))
         total_avg_invested_capital = np.zeros(len(baseline))
@@ -3098,12 +3093,7 @@ class Ticker:
         rev_suffix = '_ttm_revenue'
         gp_symbols = [col[:-len(gp_suffix)] for col in ttm_table.columns if col.endswith(gp_suffix)]
 
-        # Monthly date baseline: every month end from first to last fiscal quarter in the data
-        min_date = ttm_table['report_date'].min()
-        max_date = ttm_table['report_date'].max()
-        baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
-        })
+        baseline = self._monthly_baseline(ttm_table['report_date'])
 
         total_gross_profit = np.zeros(len(baseline))
         total_revenue = np.zeros(len(baseline))
@@ -3158,12 +3148,7 @@ class Ticker:
         rev_suffix = '_ttm_revenue'
         ebitda_symbols = [col[:-len(ebitda_suffix)] for col in ttm_table.columns if col.endswith(ebitda_suffix)]
 
-        # Monthly date baseline: every month end from first to last fiscal quarter in the data
-        min_date = ttm_table['report_date'].min()
-        max_date = ttm_table['report_date'].max()
-        baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
-        })
+        baseline = self._monthly_baseline(ttm_table['report_date'])
 
         total_ebitda = np.zeros(len(baseline))
         total_revenue = np.zeros(len(baseline))
@@ -3218,12 +3203,7 @@ class Ticker:
         rev_suffix = '_ttm_revenue'
         ni_symbols = [col[:-len(ni_suffix)] for col in ttm_table.columns if col.endswith(ni_suffix)]
 
-        # Monthly date baseline: every month end from first to last fiscal quarter in the data
-        min_date = ttm_table['report_date'].min()
-        max_date = ttm_table['report_date'].max()
-        baseline = pd.DataFrame({
-            'report_date': pd.date_range(start=min_date, end=max_date, freq='ME').astype('datetime64[us]')
-        })
+        baseline = self._monthly_baseline(ttm_table['report_date'])
 
         total_net_income = np.zeros(len(baseline))
         total_revenue = np.zeros(len(baseline))
