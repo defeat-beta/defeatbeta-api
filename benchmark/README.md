@@ -92,14 +92,21 @@ concurrency comparison does for its eight tickers.
 
 Use **Actions > All-tickers functional test > Run workflow**. A plan job freezes
 the catalog, the method list and the dataset version. The tickers are split
-into shards (8 by default, at most 20) that run on separate runners at the same
-time, each with 4 worker processes; a full run takes about an hour. A final job
-rechecks errors on the baseline release and publishes `results.md` as the job
-summary. Progress files and the report are kept as artifacts for 30 days.
+into shards (16 by default, at most 20) that run on separate runners at the same
+time, each with 4 worker processes. With 16 shards the shards take 40 to 85
+minutes, depending on the speed of the runner each one gets, and the final job
+takes about 30 minutes more: about 2 hours in all. The final job rechecks errors
+on the baseline release and publishes `results.md` as the job summary. Progress files and the report are kept as artifacts for 30 days.
 
 Every call is classified:
 
 - `ok`: the call returned, including an empty result.
+- `not_applicable`: the call was not made. News and transcript bodies take the
+  latest item of the ticker's news or transcript list; a ticker with an empty
+  list has nothing to read.
+- `missing_method`: the installed version has no such method. Only a baseline
+  release older than the method produces it, and the call is then compared
+  like a business error.
 - `expected_error`: a `ValueError` raised by `defeatbeta_api` itself, such as
   an unknown industry or missing WACC data.
 - `unexpected_error`: any other exception, recorded with its raise site and the

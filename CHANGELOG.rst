@@ -14,6 +14,7 @@ Change Log
 - fix: raise a "Cannot calculate DCF" ``ValueError`` from ``dcf_data()`` and ``dcf()`` when a ticker has WACC data but no annual revenue, instead of ``IndexError`` [`#210 <https://github.com/defeat-beta/defeatbeta-api/issues/210>`_]
 - breaking: business requests require HTTP/2 over HTTPS with no HTTP/1.1 fallback; ``httpx`` and ``httpcore`` are pinned to 0.28.1 and 1.0.9; ``http_proxy=""`` now forces direct connections for dataset metadata as well [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
 - breaking: retain downloaded extents per dataset version without size-based eviction; ``cache_data_disk_limit_bytes`` is deprecated and ignored, ``resolve_cdn_for_uncached_reads`` is ignored, startup connection prewarm is removed, and ``download_data_performance()`` no longer reports connection-warmup counters [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
+- test: add a manually dispatched all-tickers functional test that calls every query method for every US ticker on parallel runners and rechecks errors on the previous release [`#210 <https://github.com/defeat-beta/defeatbeta-api/issues/210>`_]
 - test: replace the benchmarks with an end-to-end concurrency comparison against the previous release on one GitHub runner [`#208 <https://github.com/defeat-beta/defeatbeta-api/issues/208>`_]
 
 0.0.62

@@ -6,7 +6,7 @@ on:
       shards:
         description: Number of runners that split the tickers (1-20)
         required: true
-        default: "8"
+        default: "16"
       baseline:
         description: Release that rechecks the errors
         required: true
