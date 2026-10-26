@@ -2599,14 +2599,18 @@ class Ticker:
         quarterly = pd.DataFrame(ordered).ffill()
         return pd.merge_asof(baseline, quarterly, on='report_date', direction='backward')
 
-    def industry_ttm_pe(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
+    def _industry(self) -> str:
+        industry = self.info()['industry']
         if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
+            # Tickers without a profile row have no industry either.
+            industry = industry.iloc[0] if not industry.empty else None
 
         if not industry or pd.isna(industry):
             raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        return industry
+
+    def industry_ttm_pe(self) -> pd.DataFrame:
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -2699,13 +2703,7 @@ class Ticker:
         return result
 
     def industry_ps_ratio(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -2793,13 +2791,7 @@ class Ticker:
         return result
 
     def industry_pb_ratio(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -2887,13 +2879,7 @@ class Ticker:
         return result
 
     def industry_roe(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -2953,13 +2939,7 @@ class Ticker:
         return result
 
     def industry_roa(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -3019,13 +2999,7 @@ class Ticker:
         return result
 
     def industry_roic(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -3102,13 +3076,7 @@ class Ticker:
         return result_df
 
     def industry_quarterly_gross_margin(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -3168,13 +3136,7 @@ class Ticker:
         return result
 
     def industry_quarterly_ebitda_margin(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
@@ -3234,13 +3196,7 @@ class Ticker:
         return result
 
     def industry_quarterly_net_margin(self) -> pd.DataFrame:
-        info = self.info()
-        industry = info['industry']
-        if isinstance(industry, pd.Series):
-            industry = industry.iloc[0]
-
-        if not industry or pd.isna(industry):
-            raise ValueError(f"Unknown industry for this ticker: {self.ticker}")
+        industry = self._industry()
 
         url = self.huggingface_client.get_url_path(stock_profile)
         sql = load_sql("select_tickers_by_industry", url=url, industry=industry)
