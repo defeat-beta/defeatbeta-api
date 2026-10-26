@@ -11,7 +11,7 @@ import ssl
 import time
 import httpx
 from contextlib import contextmanager, nullcontext
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import urlsplit
@@ -730,6 +730,72 @@ class TestDatasetCacheFileSystem(unittest.TestCase):
             self.assertEqual(filesystem.cat_file(path, 100, 200), b"\0" * 100)
             self.assertEqual(filesystem.metrics()["downloaded_bytes"], 100)
         finally:
+            filesystem.close()
+
+    def test_failed_prefetch_awaiting_its_callback_is_not_reused(self):
+        remote = FakeRangeClient(4 * MIB)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "failed-pending"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, remote.size),
+            http_client=remote,
+            max_disk_bytes=16 * MIB,
+        )
+        try:
+            path = filesystem.register(PINNED)
+            key, _ = filesystem._key_and_url(path)
+            failed = Future()
+            failed.set_exception(httpx.ConnectError("proxy disconnected"))
+            # Waiters wake before done callbacks run, so _pending can still hold it.
+            with filesystem._guard:
+                filesystem._pending[(key, 100, 100)] = failed
+            self.assertEqual(filesystem.cat_file(path, 100, 200), b"\0" * 100)
+            self.assertEqual([call[1:] for call in remote.calls], [(100, 199)])
+        finally:
+            filesystem.close()
+
+    def test_demand_read_refetches_when_joined_prefetch_fails(self):
+        release = threading.Event()
+
+        class FailingFirstRequest(FakeRangeClient):
+            def get(self, url, headers):
+                release.wait(timeout=5)
+                with self.lock:
+                    failing = len(self.calls) < 2
+                    if failing:
+                        self.calls.append((url, headers["Range"]))
+                if failing:
+                    raise httpx.ConnectError("proxy disconnected")
+                return super().get(url, headers)
+
+        remote = FailingFirstRequest(4 * MIB)
+        filesystem = DatasetCacheFileSystem(
+            directory=str(Path(self.temporary.name) / "joined-failure"),
+            version="dataset-v1",
+            resolve=lambda url, refresh=False: (SIGNED, remote.size),
+            http_client=remote,
+            max_disk_bytes=16 * MIB,
+        )
+        joined = threading.Event()
+        original = filesystem._schedule_io_extents
+
+        def schedule(*args):
+            extents = original(*args)
+            joined.set()
+            return extents
+
+        try:
+            path = filesystem.register(PINNED)
+            filesystem.prefetch_ranges(path, [(100, 200)])
+            with patch.object(filesystem, "_schedule_io_extents", side_effect=schedule):
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    read = executor.submit(filesystem.cat_file, path, 100, 200)
+                    self.assertTrue(joined.wait(timeout=5))
+                    release.set()
+                    self.assertEqual(read.result(timeout=10), b"\0" * 100)
+            self.assertEqual(len(remote.calls), 3)
+        finally:
+            release.set()
             filesystem.close()
 
     def test_io_prefetch_reuses_prepared_footer_bytes(self):

@@ -884,9 +884,12 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             yield cursor, end
 
     def _pending_extents_locked(self, key, start, end):
+        # Waiters wake before done callbacks run, so a failed download can still
+        # be listed here; schedule its range again instead of reusing the error.
         return [(offset, offset + length, future)
                 for (pending_key, offset, length), future in self._pending.items()
-                if pending_key == key and offset < end and offset + length > start]
+                if pending_key == key and offset < end and offset + length > start
+                and not (future.done() and (future.cancelled() or future.exception() is not None))]
 
     def _schedule_io_extents(self, key, url, start, end, total):
         # A download leaves _pending only after publishing its extent. Snapshot
@@ -915,14 +918,20 @@ class DatasetCacheFileSystem(fsspec.AbstractFileSystem):
             future.add_done_callback(
                 lambda completed, item=pending_key: self._forget_pending(item, completed)
             )
-        return extents
+        return extents, {future for _, future in scheduled}
 
-    def _cat_io(self, key, url, start, end, total):
-        extents = self._schedule_io_extents(key, url, start, end, total)
+    def _cat_io(self, key, url, start, end, total, retry_joined=True):
+        extents, own = self._schedule_io_extents(key, url, start, end, total)
         result = bytearray(end - start)
         for offset, extent_end, content in extents:
             if isinstance(content, Future):
-                content = content.result()
+                try:
+                    content = content.result()
+                except Exception:
+                    if content in own or not retry_joined:
+                        raise
+                    # A download started by another read failed; fetch its range once more.
+                    content = self._cat_io(key, url, offset, extent_end, total, retry_joined=False)
             overlap_start = max(start, offset)
             overlap_end = min(end, extent_end)
             if overlap_start < overlap_end:
