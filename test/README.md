@@ -7,8 +7,8 @@ python -m unittest -q \
   test.test_dataset_cache_fs test.test_resolve_direct test.test_duckdb_client.TestDuckDBClient \
   test.test_extent_retention test.test_shared_resources test.test_http_pool test.test_http_runtime \
   test.test_http_protocol test.test_http2_receive test.test_query_materialization \
-  test.test_catalog_reuse test.test_industry_currency test.test_industry_alignment \
-  test.test_industry_market_cap test.test_datetime_conversion test.test_statement_construction
+  test.test_catalog_reuse test.test_industry_currency test.test_industry_alignment test.test_industry_profile \
+  test.test_industry_market_cap test.test_datetime_conversion test.test_statement_construction \
   test.test_test_collection
 ```
 
