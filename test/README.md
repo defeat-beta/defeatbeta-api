@@ -30,7 +30,8 @@ complete module list is in the [workflow](../.github/workflows/dataset-cache.yml
 ## Opt-in suites
 
 - A small live price sample: `DEFEATBETA_RUN_NETWORK_TESTS=1`.
-- The full US ticker price sweep: `DEFEATBETA_RUN_ALL_TICKERS=1`.
+- Every query method for every US ticker runs in the **All-tickers functional test**
+  workflow; see the [benchmark README](../benchmark/README.md#all-tickers-functional-test).
 - Set `DEFEATBETA_TEST_HTTP_PROXY` only if the test network needs an explicit proxy.
 - Excel formula verification in `TestTicker.test_dcf`: `DEFEATBETA_RUN_EXCEL_TESTS=1`
   (it launches Excel).

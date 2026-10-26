@@ -82,3 +82,47 @@ DEFEATBETA_RUN_BENCHMARK_TLS_TESTS=1 python -m unittest test.test_benchmark.Test
 The TLS integration suite serves deterministic Parquet data over local HTTP/2
 and runs real workers against it, including a second process that reuses the
 first process's disk cache. These tests do not assert speed thresholds.
+
+# All-tickers functional test
+
+`benchmark/all_tickers.py` calls every query operation of the end-to-end
+workload, 78 at present, for every US ticker in the catalog (about 10,000). It
+checks that calls complete; it does not compare returned values, which the
+concurrency comparison does for its eight tickers.
+
+Use **Actions > All-tickers functional test > Run workflow**. A plan job freezes
+the catalog, the method list and the dataset version. The tickers are split
+into shards (8 by default, at most 20) that run on separate runners at the same
+time, each with 4 worker processes; a full run takes about an hour. A final job
+rechecks errors on the baseline release and publishes `results.md` as the job
+summary. Progress files and the report are kept as artifacts for 30 days.
+
+Every call is classified:
+
+- `ok`: the call returned, including an empty result.
+- `expected_error`: a `ValueError` raised by `defeatbeta_api` itself, such as
+  an unknown industry or missing WACC data.
+- `unexpected_error`: any other exception, recorded with its raise site and the
+  innermost `defeatbeta_api` frame.
+- A ticker that runs longer than 10 minutes is a `timeout`; a worker process
+  that exits is `crashed`. Both are replaced and the shard continues.
+
+Every erroring call, and every ticker that timed out or crashed, is rerun in an
+isolated install of the baseline release (`release-0.0.62` by default). A call
+whose result is worse than in the baseline is a regression and fails the run:
+an error where the baseline returned data, or an unexpected error where the
+baseline raised a business error. Errors that also occur in the baseline are
+listed as pre-existing and do not fail the run. Missing or unrechecked tickers
+make the run incomplete.
+
+For a local run over the first tickers of the catalog:
+
+```sh
+out=benchmark/results/local/all-tickers
+mkdir -p "$out"
+python -m benchmark.all_tickers plan --output "$out/plan.json" --limit 20
+python -m benchmark.all_tickers run --plan "$out/plan.json" --output "$out/run"
+python -m benchmark.all_tickers compare --plan "$out/plan.json" --candidate "$out/run" --output "$out/report"
+```
+
+Offline tests: `python -m unittest test.test_all_tickers_harness -v`.

@@ -1,0 +1,141 @@
+name: All-tickers functional test
+
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: Number of runners that split the tickers (1-20)
+        required: true
+        default: "8"
+      baseline:
+        description: Release that rechecks the errors
+        required: true
+        default: release-0.0.62
+      limit:
+        description: Keep only the first N sorted tickers (0 runs all)
+        required: true
+        default: "0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: all-tickers-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      shards: ${{ steps.shards.outputs.list }}
+      count: ${{ steps.shards.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - run: python -m pip install -e .
+      - id: shards
+        env:
+          SHARDS: ${{ inputs.shards }}
+        run: |
+          python - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os
+          count = int(os.environ["SHARDS"])
+          if not 1 <= count <= 20:
+              raise SystemExit("shards must be between 1 and 20")
+          print(f"count={count}")
+          print("list=" + json.dumps(list(range(count))))
+          EOF
+      - name: Freeze the catalog and the method list
+        env:
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          options=()
+          if [ "$LIMIT" != "0" ]; then options+=(--limit "$LIMIT"); fi
+          python -m benchmark.all_tickers plan --output plan.json "${options[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-tickers-plan-${{ github.run_id }}
+          path: plan.json
+          retention-days: 30
+
+  run:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - run: python -m pip install -e .
+      - uses: actions/download-artifact@v4
+        with:
+          name: all-tickers-plan-${{ github.run_id }}
+          path: plan
+      - name: Run one shard
+        # Stop starting tickers after 4.5 hours so the progress is still uploaded.
+        run: >-
+          python -m benchmark.all_tickers run --plan plan/plan.json
+          --shard ${{ matrix.shard }} --shards ${{ needs.plan.outputs.count }}
+          --output shard --processes 4 --stop-after 16200
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-tickers-shard-${{ github.run_id }}-${{ matrix.shard }}
+          path: shard/progress.jsonl
+          retention-days: 30
+
+  compare:
+    needs: [plan, run]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.10"
+      - run: python -m pip install -e .
+      - uses: actions/download-artifact@v4
+        with:
+          name: all-tickers-plan-${{ github.run_id }}
+          path: plan
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: all-tickers-shard-${{ github.run_id }}-*
+          path: candidate
+      - name: Recheck errors on the baseline and write the report
+        env:
+          BASELINE: ${{ inputs.baseline }}
+        run: >-
+          python -m benchmark.all_tickers compare --plan plan/plan.json
+          --candidate candidate --output report --baseline "$BASELINE"
+      - name: Publish summary
+        if: always()
+        run: |
+          if [ -f report/results.md ]; then cat report/results.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-tickers-report-${{ github.run_id }}
+          path: |
+            report/results.*
+            report/recheck-plan.json
+            report/baseline/progress.jsonl
+            report/experiment/experiment.json
+            report/experiment/baseline/install.log
+          retention-days: 30
