@@ -48,7 +48,7 @@ jobs:
           python -m unittest -q
           test.test_benchmark test.test_shared_query_benchmark test.test_e2e_benchmark
           test.test_e2e_execution test.test_e2e_probe test.test_e2e_concurrency
-          test.test_e2e_integration.TestWorkerFailures
+          test.test_e2e_integration.TestWorkerFailures test.test_all_tickers_harness
       - name: Benchmark fixture TLS integration
         if: runner.os == 'Linux'
         env:
