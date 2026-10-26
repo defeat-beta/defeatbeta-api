@@ -23,6 +23,22 @@ from defeatbeta_api.data.ticker import Ticker
 from test import test_duckdb_client as client_fixtures
 
 
+# The per-symbol query CompanyMeta ran before it filtered the shared catalog,
+# kept as the oracle for the filtered result.
+LEGACY_COMPANY_BY_SYMBOL_SQL = """\
+SELECT
+    idx,
+    info.ticker as symbol,
+    info.{identifier_field} as {identifier_alias},
+    info.title as name,
+    info.financial_currency as financial_currency
+FROM (
+    SELECT unnest(map_keys(data)) as idx, unnest(map_values(data)) as info
+    FROM read_json('{url}',
+                   columns={{data: 'MAP(VARCHAR, STRUCT({identifier_field} {identifier_type}, ticker VARCHAR, title VARCHAR, financial_currency VARCHAR))'}})
+) WHERE symbol = '{symbol}'"""
+
+
 class TestCatalogReuse(unittest.TestCase):
     def setUp(self):
         self.directory = TemporaryDirectory()
@@ -97,7 +113,7 @@ class TestCatalogReuse(unittest.TestCase):
                                   (self.hk, ("0700.HK", "MISSING"))):
             for symbol in symbols:
                 with self.subTest(market=company.market, symbol=symbol):
-                    sql = load_sql("select_company_by_symbol", url=company.company_tickers_url,
+                    sql = LEGACY_COMPANY_BY_SYMBOL_SQL.format(url=company.company_tickers_url,
                         symbol=symbol, identifier_field=company._identifier_field,
                         identifier_type=company._identifier_type, identifier_alias=company._identifier_alias)
                     assert_frame_equal(company._get_company_by_symbol(symbol),
