@@ -32,6 +32,21 @@ class ServerV2Tests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual("", completed.stdout)
 
+    def test_server_suppresses_per_request_httpx_info_logs(self):
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import logging, defeatbeta_mcp.server; "
+                "print(logging.getLogger('httpx').isEnabledFor(logging.INFO))",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual("False", completed.stdout.strip())
+
     async def test_server_negotiates_v2_and_lists_all_tools(self):
         self.assertIsInstance(mcp, MCPServer)
 

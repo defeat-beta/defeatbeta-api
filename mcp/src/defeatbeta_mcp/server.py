@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from mcp.server import MCPServer
@@ -58,6 +59,9 @@ mcp = MCPServer(
         )
     ]
 )
+
+# defeatbeta-api fetches datasets with httpx, which logs every request at INFO.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 # Meta / system tools
