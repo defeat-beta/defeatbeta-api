@@ -77,6 +77,23 @@ ticker.price()
 [3721 rows x 7 columns]
 ```
 
+Hong Kong daily prices use the same API and DataFrame columns. Symbols ending in
+`.HK` read `data/HK/stock_prices.parquet`; existing US symbols read
+`data/US/stock_prices.parquet`. Keep the leading zeros in Yahoo Finance symbols.
+
+```python
+Ticker("0700.HK").price()
+Ticker("2800.HK").price()  # Hong Kong ETFs use the same price API.
+
+from defeatbeta_api.data.tickers import Tickers
+Tickers(["AAPL", "0700.HK", "2800.HK"]).price()
+```
+
+Price queries read the published price file directly, including instruments
+outside the company metadata catalog. The MCP `get_stock_price` tool also accepts
+`.HK` symbols with its existing date filters and row limit. This support covers
+daily prices; cross-market beta and HK financial ratios require separate work.
+
 #### Example: Accessing Financial Statements
 
 ```python

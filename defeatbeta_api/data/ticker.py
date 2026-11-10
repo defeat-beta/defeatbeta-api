@@ -86,6 +86,7 @@ class Ticker:
         return self._query_data(stock_tailing_eps)
 
     def price(self) -> pd.DataFrame:
+        """Return daily OHLCV prices, using the HK dataset for .HK symbols."""
         return self._query_data(stock_prices)
 
     def beta(self, period: str = "5y", benchmark: str = "SPY") -> pd.DataFrame:
@@ -3305,7 +3306,10 @@ class Ticker:
         return self._query_data2(table_name, self.ticker)
 
     def _query_data2(self, table_name: str, ticker: str) -> pd.DataFrame:
-        url = self.huggingface_client.get_url_path(table_name)
+        if table_name == stock_prices and ticker.upper().endswith(".HK"):
+            url = self.huggingface_client.get_url_path(table_name, market="HK")
+        else:
+            url = self.huggingface_client.get_url_path(table_name)
         sql = load_sql(
             "select_all_by_symbol",
                         ticker = ticker,

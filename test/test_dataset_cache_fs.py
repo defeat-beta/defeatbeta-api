@@ -106,6 +106,84 @@ def shared_cache_process_reader(directory, signed_url, total, start, messages):
 
 
 class TestDatasetCacheFileSystem(unittest.TestCase):
+    def test_us_and_hk_price_files_have_isolated_bytes_and_footers(self):
+        hk_url = PINNED.replace("/US/", "/HK/")
+        payloads = {
+            PINNED: b"PAR1" + b"A" * 80 + b"usmt" + (4).to_bytes(4, "little") + b"PAR1",
+            hk_url: b"PAR1" + b"B" * 80 + b"hkmt" + (4).to_bytes(4, "little") + b"PAR1",
+        }
+        hints = {url.split("/data/")[1]: next(iter(self.file_identity_hint(payload).values()))
+                 for url, payload in payloads.items()}
+        for enabled in (False, True):
+            with self.subTest(cache_enabled=enabled), tempfile.TemporaryDirectory() as directory:
+                remotes = {url: FakeRangeClient(len(payload), payload=payload)
+                           for url, payload in payloads.items()}
+                remote = Mock()
+                remote.get.side_effect = lambda url, headers: remotes[url].get(url, headers)
+                fs = DatasetCacheFileSystem(
+                    directory=str(Path(directory) / "cache"), version="hk-routing-v1",
+                    resolve=lambda url, refresh=False: (url, len(payloads[url])),
+                    http_client=remote, footer_index=hints, cache_enabled=enabled,
+                    max_memory_bytes=0)
+                try:
+                    paths = {url: fs.register(url) for url in payloads}
+                    self.assertNotEqual(paths[PINNED], paths[hk_url])
+                    for url, payload in payloads.items():
+                        if enabled:
+                            fs.prepare_footer(paths[url])
+                            self.assertEqual(fs.cached_footer_bytes(paths[url]), payload[-12:])
+                        self.assertEqual(fs.cat_file(paths[url], 4, 14), payload[4:14])
+                    before = remote.get.call_count
+                    for url, payload in payloads.items():
+                        self.assertEqual(fs.cat_file(paths[url], 4, 14), payload[4:14])
+                    if enabled:
+                        self.assertEqual(remote.get.call_count, before)
+                    else:
+                        self.assertGreater(remote.get.call_count, before)
+                        self.assertFalse(fs.directory.exists())
+                finally:
+                    fs.close()
+
+    def test_changed_hk_footer_keeps_us_identity_and_rejects_old_hk_bytes(self):
+        hk_url = PINNED.replace("/US/", "/HK/")
+        us = b"PAR1" + b"A" * 80 + b"usmt" + (4).to_bytes(4, "little") + b"PAR1"
+        old_hk = b"PAR1" + b"B" * 80 + b"hkmt" + (4).to_bytes(4, "little") + b"PAR1"
+        new_hk = b"PAR1" + b"C" * 80 + b"next" + (4).to_bytes(4, "little") + b"PAR1"
+
+        def hints(hk_payload):
+            return {
+                "US/stock_prices.parquet": next(iter(self.file_identity_hint(us).values())),
+                "HK/stock_prices.parquet": next(iter(self.file_identity_hint(hk_payload).values())),
+            }
+
+        remotes = {PINNED: FakeRangeClient(len(us), payload=us),
+                   hk_url: FakeRangeClient(len(old_hk), payload=old_hk)}
+        remote = Mock()
+        remote.get.side_effect = lambda url, headers: remotes[url].get(url, headers)
+        with tempfile.TemporaryDirectory() as directory:
+            fs = DatasetCacheFileSystem(
+                directory=directory, version="hk-routing-refresh-v1",
+                resolve=lambda url, refresh=False: (url, remotes[url].size),
+                http_client=remote, footer_index=hints(old_hk))
+            try:
+                us_path, old_hk_path = fs.register(PINNED), fs.register(hk_url)
+                for path in (us_path, old_hk_path):
+                    fs.prepare_footer(path)
+                    fs.cat_file(path, 4, 14)
+                remotes[hk_url].payload = new_hk
+                fs.update_version("hk-routing-refresh-v1", footer_index=hints(new_hk))
+                self.assertEqual(fs.register(PINNED), us_path)
+                new_hk_path = fs.register(hk_url)
+                self.assertNotEqual(old_hk_path, new_hk_path)
+                with self.assertRaises(DatasetVersionChanged):
+                    fs.cat_file(old_hk_path, 4, 14)
+                fs.prepare_footer(new_hk_path)
+                self.assertEqual(fs.cached_footer_bytes(new_hk_path), new_hk[-12:])
+                self.assertEqual(fs.cat_file(new_hk_path, 4, 14), b"C" * 10)
+                self.assertEqual(fs.cat_file(us_path, 4, 14), b"A" * 10)
+            finally:
+                fs.close()
+
     @staticmethod
     def file_identity_hint(payload):
         footer_size = int.from_bytes(payload[-8:-4], "little")

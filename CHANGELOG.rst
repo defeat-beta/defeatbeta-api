@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.64
+-------
+- feat: route daily price queries for Hong Kong equities and ETFs with a ``.HK`` suffix to ``data/HK/stock_prices.parquet``, preserving leading zeros and the existing US behavior; support mixed US/HK ``Tickers.price()`` queries and MCP ``get_stock_price`` with the existing DataFrame schema and date filters [`#198 <https://github.com/defeat-beta/defeatbeta-api/issues/198>`_]
+- test: cover Hong Kong price routing, concurrent mixed-market queries, US/HK cache and footer isolation, and MCP date filtering; add an opt-in live price check for ``0700.HK``, ``9988.HK``, ``1299.HK`` and ``2800.HK`` [`#198 <https://github.com/defeat-beta/defeatbeta-api/issues/198>`_]
+
 0.0.63
 -------
 - perf: reduce GIL-held Python work for cached queries: skip reparsing datetime columns that are already converted, load the exchange rates of one industry calculation in a single query and convert pairs per currency, and build statement frames and the company currency map without per-row pandas operations; with a fully cached dataset this cuts single-thread and multi-thread runtime by about a quarter. Document process-based parallelism for large cached workloads [`#209 <https://github.com/defeat-beta/defeatbeta-api/issues/209>`_]

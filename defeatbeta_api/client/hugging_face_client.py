@@ -8,7 +8,7 @@ from copy import deepcopy
 from defeatbeta_api.client.hf_session import MetadataSession
 from defeatbeta_api.client.shared_resources import DATASET_SPECS, network_identity
 
-from defeatbeta_api.utils.const import tables
+from defeatbeta_api.utils.const import stock_prices, tables
 
 
 class HuggingFaceClient:
@@ -110,9 +110,19 @@ class HuggingFaceClient:
             return target, size if size is not None and size > 0 else None
         raise RuntimeError(f"Too many redirects for {resolve_url}")
 
-    def get_url_path(self, table: str) -> str:
+    def get_url_path(self, table: str, market: str = "US") -> str:
+        """Return a published table URL, defaulting to the existing US dataset."""
         if table not in tables:
             raise ValueError(
                 f"Invalid table '{table}'. Valid options are: {', '.join(tables)}"
             )
-        return f"{self.base_url}/resolve/main/data/US/{table}.parquet"
+        normalized_market = market.upper() if isinstance(market, str) else ""
+        if normalized_market not in {"US", "HK"}:
+            raise ValueError(
+                f"Unsupported market: {market!r}. Supported markets: HK, US"
+            )
+        if normalized_market == "HK" and table != stock_prices:
+            raise ValueError(
+                f"Unsupported HK table: {table!r}. Only stock_prices is available."
+            )
+        return f"{self.base_url}/resolve/main/data/{normalized_market}/{table}.parquet"

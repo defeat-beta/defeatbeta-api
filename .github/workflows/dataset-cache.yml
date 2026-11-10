@@ -42,7 +42,7 @@ jobs:
           test.test_http_protocol test.test_http2_receive test.test_query_materialization
           test.test_catalog_reuse test.test_industry_currency test.test_industry_alignment test.test_industry_profile test.test_dcf_data
           test.test_industry_market_cap test.test_datetime_conversion test.test_statement_construction
-          test.test_test_collection
+          test.test_test_collection test.test_price_routing
       - name: Benchmark harness unit tests
         run: >-
           python -m unittest -q
@@ -75,7 +75,7 @@ jobs:
         env:
           DEFEATBETA_RUN_DIRECT_HTTP2_TESTS: "1"
       - run: python -m unittest test.test_duckdb_client.TestDuckDBClientIntegration -q
-      - run: python -m unittest test.test_all_tickers.TestRepresentativeTickers -q
+      - run: python -m unittest test.test_all_tickers.TestRepresentativeTickers test.test_price_routing.TestHKPriceNetwork -q
         env:
           DEFEATBETA_RUN_NETWORK_TESTS: "1"
       - run: python -m unittest test.test_ticker_multithreaded -q
